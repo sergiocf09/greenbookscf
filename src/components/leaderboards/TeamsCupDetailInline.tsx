@@ -38,6 +38,7 @@ import { LinkRoundToLeaderboardDialog } from '@/components/leaderboards/LinkRoun
 import { AddCupParticipantsDialog } from '@/components/leaderboards/AddCupParticipantsDialog';
 import { TeePicker, type TeeColor } from '@/components/leaderboards/TeePicker';
 import { CreateRoundFromCupDialog } from '@/components/leaderboards/CreateRoundFromCupDialog';
+import { cupSlotKey, cupSessionLabel } from '@/types/leaderboard';
 import { ManageFoursomesDialog } from '@/components/leaderboards/ManageFoursomesDialog';
 import { useActiveRoundForLink } from '@/hooks/useActiveRoundForLink';
 
@@ -443,6 +444,8 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   const [participantToRemove, setParticipantToRemove] = useState<CupParticipant | null>(null);
   const [removingParticipant, setRemovingParticipant] = useState(false);
   const [addingSelf, setAddingSelf] = useState(false);
+  /** null = vista acumulada (todos los días); si no, slot "day-session". */
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
   const creatorIsParticipant = !!(profile && cup.participants.some(p => p.profile_id === profile.id));
 
@@ -740,7 +743,34 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
 
   const teamA = cup.teams[0] ?? null;
   const teamB = cup.teams[1] ?? null;
+
+  // Slot chips: one per day/session. Only shown when the cup spans more
+  // than a single day/session.
+  const slotOptions = cup.days.flatMap(d =>
+    d.sessions.map(sess => ({
+      key: cupSlotKey(d.day_number, sess.session_number),
+      day_number: d.day_number,
+      session_number: sess.session_number,
+      label: cupSessionLabel(d, sess, d.sessions.length > 1),
+      format: sess.format,
+    })),
+  );
+  const isMultiSlot = slotOptions.length > 1;
+  const activeSlot = isMultiSlot ? selectedSlot : null;
+  const activeSlotOption = activeSlot
+    ? slotOptions.find(o => o.key === activeSlot) ?? null
+    : null;
+
+  // Accumulated scoreboard (all days) stays visible always; when a slot is
+  // selected we additionally show that slot's partial score.
   const st = cup.standings;
+  const slotSt = activeSlot ? cup.standingsBySlot.get(activeSlot) ?? null : null;
+
+  const visibleMatches = activeSlotOption
+    ? cup.matches.filter(m =>
+        (m.day_number ?? 1) === activeSlotOption.day_number &&
+        (m.session_number ?? 1) === activeSlotOption.session_number)
+    : cup.matches;
 
   const cupFormat = (event as any)?.cup_format || 'match_individual';
 
@@ -854,13 +884,54 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         )}
         <div className="flex items-center justify-center gap-2 flex-wrap">
           <Badge variant="secondary" className="text-[10px]">
-            {cupFormat === 'fourball' ? 'Fourball (Best Ball)' : 'Match Play Individual'}
+            {activeSlotOption
+              ? (activeSlotOption.format === 'fourball' ? 'Fourball (Best Ball)' : 'Match Play Individual')
+              : isMultiSlot
+                ? `${cup.days.length} ${cup.days.length === 1 ? 'día' : 'días'} · ${slotOptions.length} sesiones`
+                : (cupFormat === 'fourball' ? 'Fourball (Best Ball)' : 'Match Play Individual')}
           </Badge>
           <Badge variant="outline" className="text-[10px]">
             {cup.participants.length} jugadores
           </Badge>
         </div>
       </div>
+
+      {/* ── Day / session chips ─── */}
+      {isMultiSlot && (
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
+          <button
+            type="button"
+            onClick={() => setSelectedSlot(null)}
+            className={`shrink-0 h-7 px-3 rounded-full text-xs font-medium border transition-colors ${
+              activeSlot === null
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-background text-muted-foreground border-border hover:bg-muted'
+            }`}
+          >
+            Total
+          </button>
+          {slotOptions.map(o => {
+            const s2 = cup.standingsBySlot.get(o.key);
+            return (
+              <button
+                key={o.key}
+                type="button"
+                onClick={() => setSelectedSlot(o.key)}
+                className={`shrink-0 h-7 px-3 rounded-full text-xs font-medium border transition-colors ${
+                  activeSlot === o.key
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-background text-muted-foreground border-border hover:bg-muted'
+                }`}
+              >
+                {o.label}
+                {s2 && s2.matches_total > 0 && (
+                  <span className="ml-1 opacity-80">{s2.points_a}–{s2.points_b}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* ── Section 1: Global Scoreboard ─── */}
       {st ? (
@@ -912,9 +983,26 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
               ) : null}
             </div>
             <p className="text-xs text-muted-foreground text-center mt-2">
+              {isMultiSlot && <span className="font-medium">Acumulado · </span>}
               {st.matches_total} matches · {st.matches_completed} completados
               {st.has_in_progress && <span className="ml-1 italic">· en vivo</span>}
             </p>
+            {slotSt && (
+              <div className="mt-3 pt-3 border-t text-center">
+                <p className="text-[11px] text-muted-foreground">
+                  {activeSlotOption?.label}
+                </p>
+                <p className="text-lg font-bold">
+                  <span style={{ color: st.team_a?.color }}>{slotSt.points_a}</span>
+                  <span className="text-muted-foreground font-light mx-1.5">—</span>
+                  <span style={{ color: st.team_b?.color }}>{slotSt.points_b}</span>
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  {slotSt.matches_total} matches · {slotSt.matches_completed} completados
+                  {slotSt.has_in_progress && <span className="ml-1 italic">· en vivo</span>}
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -941,13 +1029,15 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           )}
         </div>
 
-        {cup.matches.length === 0 ? (
+        {visibleMatches.length === 0 ? (
           <p className="text-xs text-muted-foreground italic py-1">
-            Aún no hay matches. Usa <span className="font-medium">+ Agregar Match</span> para crear el primero.
+            {activeSlotOption
+              ? 'No hay matches en esta jornada todavía.'
+              : <>Aún no hay matches. Usa <span className="font-medium">+ Agregar Match</span> para crear el primero.</>}
           </p>
         ) : (
           <div className="space-y-2">
-            {[...cup.matches]
+            {[...visibleMatches]
               .sort((a, b) => {
                 // Most-advanced match (more holes played) shown first.
                 // Tie-break by original match_order (creation order).
@@ -1354,6 +1444,11 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         teams={cup.teams}
         participants={cup.participants}
         allMatches={cup.matches}
+        days={cup.days}
+        defaultDay={activeSlotOption?.day_number ?? 1}
+        defaultSession={activeSlotOption?.session_number ?? 1}
+        participantsForSlot={(d, sess) =>
+          cup.participantsForRound(cup.standingsBySlot.get(cupSlotKey(d, sess))?.round_id ?? null)}
         defaultFormat={cupFormat}
         onClose={() => { setShowMatchEditor(false); setEditingMatch(null); }}
         onSave={async (params) => {
@@ -1464,6 +1559,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           onOpenChange={setShowSettings}
           event={event as any}
           teams={cup.teams}
+          matches={cup.matches}
           onUpdateTeam={(teamId, updates) => cup.updateTeam(teamId, updates)}
           onDeleteRequest={() => {
             setShowSettings(false);
