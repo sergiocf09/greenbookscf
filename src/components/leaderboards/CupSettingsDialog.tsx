@@ -53,11 +53,11 @@ export const CupSettingsDialog: React.FC<Props> = ({
 }) => {
   const [name, setName] = useState(event.name);
   const [description, setDescription] = useState(event.description || '');
-  const [format, setFormat] = useState<CupFormat>(
-    (event.cup_format as CupFormat) || 'match_individual'
-  );
   const [defaultPoints, setDefaultPoints] = useState<number>(
     Number(event.rules_json?.default_points_per_match ?? 1)
+  );
+  const [days, setDays] = useState<CupDay[]>(
+    getCupDays(event.rules_json, (event.cup_format as CupFormat) || 'match_individual', event.start_date ?? null)
   );
 
   // Local team draft state — flushed on Save
@@ -68,12 +68,18 @@ export const CupSettingsDialog: React.FC<Props> = ({
 
   const [saving, setSaving] = useState(false);
 
+  const lockedSlots = React.useMemo(() => {
+    const s = new Set<string>();
+    matches.forEach(m => s.add(cupSlotKey(m.day_number ?? 1, m.session_number ?? 1)));
+    return s;
+  }, [matches]);
+
   useEffect(() => {
     if (open) {
       setName(event.name);
       setDescription(event.description || '');
-      setFormat((event.cup_format as CupFormat) || 'match_individual');
       setDefaultPoints(Number(event.rules_json?.default_points_per_match ?? 1));
+      setDays(getCupDays(event.rules_json, (event.cup_format as CupFormat) || 'match_individual', event.start_date ?? null));
       setTeamAName(teams[0]?.name ?? 'Equipo A');
       setTeamAColor(teams[0]?.color ?? '#3B82F6');
       setTeamBName(teams[1]?.name ?? 'Equipo B');
@@ -91,17 +97,23 @@ export const CupSettingsDialog: React.FC<Props> = ({
       const newRules = {
         ...(event.rules_json || {}),
         default_points_per_match: defaultPoints,
+        cup_days: days,
       };
+      const sortedDates = days.map(d => d.date).filter(Boolean).sort() as string[];
       const { error } = await supabase
         .from('leaderboard_events')
         .update({
           name: name.trim(),
           description: description.trim() || null,
-          cup_format: format,
+          cup_format: days[0]?.sessions[0]?.format ?? 'match_individual',
           rules_json: newRules,
+          ...(sortedDates.length > 0
+            ? { start_date: sortedDates[0], end_date: sortedDates[sortedDates.length - 1] }
+            : {}),
         } as any)
         .eq('id', event.id);
       if (error) throw error;
+
 
       // Persist team changes only when something actually changed
       const teamA = teams[0];
