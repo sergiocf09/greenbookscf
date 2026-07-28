@@ -43,6 +43,11 @@ export interface CreateRoundFromCupInput {
    * is preserved (not re-inserted).
    */
   existingRoundId?: string | null;
+  /**
+   * Day/session this round belongs to. When set, the round is assigned to the
+   * cup_matches of that slot only, so multi-day cups keep one round per slot.
+   */
+  targetSlot?: { day: number; session: number } | null;
 }
 
 interface CupParticipantRow {
@@ -58,6 +63,7 @@ export async function createRoundFromCup(input: CreateRoundFromCupInput): Promis
   const {
     leaderboardId, organizerProfileId, courseId, teeColor,
     startingHole, roundHoles, date, groups, playerOverrides, existingRoundId,
+    targetSlot,
   } = input;
 
   // 1. Load all selected participants in one go.
@@ -265,12 +271,22 @@ export async function createRoundFromCup(input: CreateRoundFromCupInput): Promis
         });
     }
 
-    // 7. Assign any orphan cup_matches to the new round so live results compute.
-    await supabase
-      .from('cup_matches')
-      .update({ round_id: roundId, status: 'active' } as any)
-      .eq('leaderboard_id', leaderboardId)
-      .is('round_id', null);
+    // 7. Assign cup_matches to the new round so live results compute.
+    // Multi-day cups: only the matches of the targeted day/session.
+    if (targetSlot) {
+      await supabase
+        .from('cup_matches')
+        .update({ round_id: roundId, status: 'active' } as any)
+        .eq('leaderboard_id', leaderboardId)
+        .eq('day_number', targetSlot.day)
+        .eq('session_number', targetSlot.session);
+    } else {
+      await supabase
+        .from('cup_matches')
+        .update({ round_id: roundId, status: 'active' } as any)
+        .eq('leaderboard_id', leaderboardId)
+        .is('round_id', null);
+    }
 
     return roundId;
   } catch (err) {

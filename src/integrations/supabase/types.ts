@@ -326,6 +326,7 @@ export type Database = {
         Row: {
           advantage_side: string
           created_at: string
+          day_number: number
           format: string
           id: string
           leaderboard_id: string
@@ -339,6 +340,7 @@ export type Database = {
           result_override: boolean
           result_type: string | null
           round_id: string | null
+          session_number: number
           status: string
           stroke_receiver_player_id: string | null
           strokes_advantage: number
@@ -347,6 +349,7 @@ export type Database = {
         Insert: {
           advantage_side?: string
           created_at?: string
+          day_number?: number
           format?: string
           id?: string
           leaderboard_id: string
@@ -360,6 +363,7 @@ export type Database = {
           result_override?: boolean
           result_type?: string | null
           round_id?: string | null
+          session_number?: number
           status?: string
           stroke_receiver_player_id?: string | null
           strokes_advantage?: number
@@ -368,6 +372,7 @@ export type Database = {
         Update: {
           advantage_side?: string
           created_at?: string
+          day_number?: number
           format?: string
           id?: string
           leaderboard_id?: string
@@ -381,6 +386,7 @@ export type Database = {
           result_override?: boolean
           result_type?: string | null
           round_id?: string | null
+          session_number?: number
           status?: string
           stroke_receiver_player_id?: string | null
           strokes_advantage?: number

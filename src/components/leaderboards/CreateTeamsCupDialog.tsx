@@ -9,13 +9,18 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
 import { Loader2, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
-import type { CupFormat } from '@/hooks/useTeamsCup';
+
 import { AddCupParticipantsDialog } from '@/components/leaderboards/AddCupParticipantsDialog';
+import { CupDaysEditor } from '@/components/leaderboards/CupDaysEditor';
+import type { CupDay } from '@/types/leaderboard';
+
+const todayISO = () => new Date().toISOString().split('T')[0];
+
+const defaultDays = (): CupDay[] => ([
+  { day_number: 1, date: todayISO(), label: '', sessions: [{ session_number: 1, format: 'match_individual' }] },
+]);
 
 const TEAM_COLORS = [
   { hex: '#ef4444', label: 'Rojo' },
@@ -43,7 +48,7 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
   // Step 1
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [format, setFormat] = useState<CupFormat>('match_individual');
+  const [days, setDays] = useState<CupDay[]>(defaultDays);
 
   // Step 2
   const [teamAName, setTeamAName] = useState('Equipo A');
@@ -55,7 +60,7 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
     setStep(1);
     setName('');
     setDescription('');
-    setFormat('match_individual');
+    setDays(defaultDays());
     setTeamAName('Equipo A');
     setTeamAColor('#3B82F6');
     setTeamBName('Equipo B');
@@ -68,21 +73,25 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
     if (!profile) return;
     setCreating(true);
     try {
+      const sortedDates = days.map(d => d.date).filter(Boolean).sort() as string[];
       const { data: ev, error: evErr } = await supabase
         .from('leaderboard_events')
         .insert({
           name: name.trim(),
           description: description.trim() || null,
           competition_type: 'teams_cup',
-          cup_format: format,
+          cup_format: days[0]?.sessions[0]?.format ?? 'match_individual',
           type: 'tournament',
           scoring_modes: ['gross', 'net'],
-          start_date: new Date().toISOString().split('T')[0],
+          start_date: sortedDates[0] ?? todayISO(),
+          end_date: sortedDates[sortedDates.length - 1] ?? null,
+          rules_json: { cup_days: days } as any,
           created_by: profile.id,
         } as any)
         .select()
         .single();
       if (evErr) throw evErr;
+
 
       const { data: createdTeams, error: teamsErr } = await supabase.from('cup_teams').insert([
         { leaderboard_id: ev.id, name: teamAName.trim() || 'Equipo A', color: teamAColor },
@@ -138,16 +147,11 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
                 onChange={e => setDescription(e.target.value)}
               />
             </div>
-            <div>
-              <Label>Formato</Label>
-              <Select value={format} onValueChange={v => setFormat(v as CupFormat)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="match_individual">Individual Match Play</SelectItem>
-                  <SelectItem value="fourball">Fourball (Best Ball)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <CupDaysEditor days={days} onChange={setDays} />
+            <p className="text-[11px] text-muted-foreground -mt-2">
+              Los puntos de cada día/sesión se acumulan en el marcador general.
+            </p>
+
             <Button
               className="w-full"
               disabled={!name.trim()}

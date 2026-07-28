@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { calculateCourseHandicap } from '@/lib/usgaHandicap';
+import { computeCupPoints, totalPointsAvailable, type CupPoints } from '@/lib/teamsCupAggregation';
+import { getCupDays, cupSlotKey, type CupDay, type CupRulesJson } from '@/types/leaderboard';
 
 export type CupFormat = 'match_individual' | 'fourball';
 
@@ -31,7 +33,10 @@ export interface CupMatch {
   match_order: number;
   points_per_match: number;
   stroke_receiver_player_id: string | null;
+  day_number: number;
+  session_number: number;
 }
+
 
 export interface CupHoleBreakdown {
   hole: number;
@@ -67,14 +72,16 @@ export interface CupParticipant {
   tee_color: TeeColor | null;
 }
 
-export interface CupStandings {
+export interface CupStandings extends CupPoints {
   team_a: CupTeam | null;
   team_b: CupTeam | null;
-  points_a: number;
-  points_b: number;
-  matches_total: number;
-  matches_completed: number;
-  has_in_progress: boolean;
+}
+
+export interface CupSlotStandings extends CupPoints {
+  day_number: number;
+  session_number: number;
+  round_id: string | null;
+  points_available: number;
 }
 
 export function useTeamsCup(leaderboardId: string | null) {
@@ -83,14 +90,15 @@ export function useTeamsCup(leaderboardId: string | null) {
   const [matches, setMatches] = useState<CupMatch[]>([]);
   const [participants, setParticipants] = useState<CupParticipant[]>([]);
   const [matchResults, setMatchResults] = useState<Map<string, CupMatchResult>>(new Map());
-  const [standings, setStandings] = useState<CupStandings | null>(null);
+  const [days, setDays] = useState<CupDay[]>([]);
+  const [hcpByRound, setHcpByRound] = useState<Map<string, Map<string, { hcp: number; tee: TeeColor | null }>>>(new Map());
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
     if (!leaderboardId) return;
     setLoading(true);
     try {
-      const [teamsRes, matchesRes, partRes, linkedRoundsRes] = await Promise.all([
+      const [teamsRes, matchesRes, partRes, linkedRoundsRes, eventRes] = await Promise.all([
         supabase.from('cup_teams').select('*')
           .eq('leaderboard_id', leaderboardId).order('created_at'),
         supabase.from('cup_matches').select('*')
@@ -102,8 +110,11 @@ export function useTeamsCup(leaderboardId: string | null) {
         supabase.from('leaderboard_rounds')
           .select('round_id, added_at')
           .eq('leaderboard_id', leaderboardId)
-          .order('added_at', { ascending: false })
-          .limit(1),
+          .order('added_at', { ascending: false }),
+        supabase.from('leaderboard_events')
+          .select('rules_json, cup_format, start_date')
+          .eq('id', leaderboardId)
+          .maybeSingle(),
       ]);
 
       if (teamsRes.error) throw teamsRes.error;
@@ -114,50 +125,74 @@ export function useTeamsCup(leaderboardId: string | null) {
       let matchData = (matchesRes.data as any[]).map(m => ({
         ...m,
         points_per_match: m.points_per_match ?? 1,
+        day_number: m.day_number ?? 1,
+        session_number: m.session_number ?? 1,
       })) as CupMatch[];
       const rawParts = partRes.data || [];
 
-      // ── Backfill: if a round is linked to this leaderboard and any
-      // matches have no round_id, auto-assign so live results can compute.
-      const linkedRoundId = linkedRoundsRes.data?.[0]?.round_id ?? null;
-      if (linkedRoundId) {
+      // ── Day / session configuration
+      const ev: any = eventRes.data ?? null;
+      const cupDays = getCupDays(
+        (ev?.rules_json ?? null) as CupRulesJson | null,
+        (ev?.cup_format as CupFormat) || 'match_individual',
+        ev?.start_date ?? null,
+      );
+      const slotCount = cupDays.reduce((s, d) => s + d.sessions.length, 0);
+      const isSingleSlot = slotCount <= 1;
+      setDays(cupDays);
+
+      // ── Backfill (legacy single-session cups only): assign the linked round
+      // to matches without a round so live results can compute. For multi-day
+      // or multi-session cups each slot owns its own round, so we never
+      // auto-assign across slots.
+      const latestRoundId = linkedRoundsRes.data?.[0]?.round_id ?? null;
+      if (isSingleSlot && latestRoundId) {
         const orphanIds = matchData.filter(m => !m.round_id).map(m => m.id);
         if (orphanIds.length > 0) {
           await supabase
             .from('cup_matches')
-            .update({ round_id: linkedRoundId, status: 'active' } as any)
+            .update({ round_id: latestRoundId, status: 'active' } as any)
             .in('id', orphanIds);
           matchData = matchData.map(m =>
-            orphanIds.includes(m.id) ? { ...m, round_id: linkedRoundId, status: 'active' as const } : m
+            orphanIds.includes(m.id) ? { ...m, round_id: latestRoundId, status: 'active' as const } : m
           );
         }
       }
 
-      // ── Course HCP from linked round (overrides leaderboard Index when present)
-      // For each participant, look up the Course Handicap stored in round_players
-      // for the linked round. This is the HCP the player actually plays from,
-      // given the course + tee chosen at round creation. It supersedes the
-      // leaderboard Index for all match calcs and displays.
-      const courseHcpByPart = new Map<string, { hcp: number; tee: TeeColor | null }>();
-      if (linkedRoundId) {
+      // ── Course HCP per linked round.
+      // Each round (i.e. each day/session) can be played on a different course
+      // or tees, so we index the Course Handicap by round and resolve it per
+      // match instead of overwriting a single global value.
+      const roundIdsToLoad = Array.from(new Set([
+        ...matchData.map(m => m.round_id).filter(Boolean) as string[],
+        ...(latestRoundId ? [latestRoundId] : []),
+      ]));
+      const hcpMap = new Map<string, Map<string, { hcp: number; tee: TeeColor | null }>>();
+      if (roundIdsToLoad.length > 0) {
         const { data: rps } = await supabase
           .from('round_players')
-          .select('profile_id, guest_name, handicap_for_round, tee_color')
-          .eq('round_id', linkedRoundId);
-        if (rps) {
-          rawParts.forEach(p => {
-            const m = p.profile_id
-              ? rps.find(r => r.profile_id === p.profile_id)
-              : rps.find(r => !!r.guest_name && r.guest_name === p.guest_name);
-            if (m) {
-              courseHcpByPart.set(p.id, {
-                hcp: Number(m.handicap_for_round ?? 0),
-                tee: (m.tee_color as TeeColor | null) ?? null,
-              });
-            }
-          });
-        }
+          .select('round_id, profile_id, guest_name, handicap_for_round, tee_color')
+          .in('round_id', roundIdsToLoad);
+        (rps ?? []).forEach(r => {
+          const rid = r.round_id as string;
+          if (!hcpMap.has(rid)) hcpMap.set(rid, new Map());
+          const part = r.profile_id
+            ? rawParts.find(p => p.profile_id === r.profile_id)
+            : rawParts.find(p => !!p.guest_name && p.guest_name === r.guest_name);
+          if (part) {
+            hcpMap.get(rid)!.set(part.id, {
+              hcp: Number(r.handicap_for_round ?? 0),
+              tee: (r.tee_color as TeeColor | null) ?? null,
+            });
+          }
+        });
       }
+      setHcpByRound(hcpMap);
+
+      // Default (display) Course HCP = most recent linked round.
+      const courseHcpByPart = latestRoundId
+        ? (hcpMap.get(latestRoundId) ?? new Map())
+        : new Map<string, { hcp: number; tee: TeeColor | null }>();
 
       // Enrich participants with profile data
       const profileIds = rawParts.filter(p => p.profile_id).map(p => p.profile_id!);
@@ -196,26 +231,28 @@ export function useTeamsCup(leaderboardId: string | null) {
       });
 
       // Persist match_handicap whenever the effective value differs from what's
-      // stored. This keeps Course-HCP-driven match calcs consistent across all
-      // users without forcing every render to depend on the linked round.
-      const toSync = rawParts.filter(p => {
-        const courseInfo = courseHcpByPart.get(p.id);
-        const target = courseInfo
-          ? courseInfo.hcp
-          : ((p.match_handicap ?? 0) === 0 && (p.handicap_for_leaderboard ?? 0) !== 0
-              ? p.handicap_for_leaderboard
-              : null);
-        return target !== null && target !== (p.match_handicap ?? 0);
-      });
-      if (toSync.length > 0) {
-        Promise.all(toSync.map(p => {
+      // stored. Only for single-slot cups: with several days/sessions the HCP
+      // is resolved per round and must not be flattened into one column.
+      if (isSingleSlot) {
+        const toSync = rawParts.filter(p => {
           const courseInfo = courseHcpByPart.get(p.id);
-          const target = courseInfo ? courseInfo.hcp : p.handicap_for_leaderboard;
-          return supabase
-            .from('leaderboard_participants')
-            .update({ match_handicap: target })
-            .eq('id', p.id);
-        })).catch(err => console.warn('match_handicap sync failed:', err));
+          const target = courseInfo
+            ? courseInfo.hcp
+            : ((p.match_handicap ?? 0) === 0 && (p.handicap_for_leaderboard ?? 0) !== 0
+                ? p.handicap_for_leaderboard
+                : null);
+          return target !== null && target !== (p.match_handicap ?? 0);
+        });
+        if (toSync.length > 0) {
+          Promise.all(toSync.map(p => {
+            const courseInfo = courseHcpByPart.get(p.id);
+            const target = courseInfo ? courseInfo.hcp : p.handicap_for_leaderboard;
+            return supabase
+              .from('leaderboard_participants')
+              .update({ match_handicap: target })
+              .eq('id', p.id);
+          })).catch(err => console.warn('match_handicap sync failed:', err));
+        }
       }
 
       setTeams(teamData);
@@ -247,45 +284,69 @@ export function useTeamsCup(leaderboardId: string | null) {
         })
       );
       setMatchResults(resultsMap);
-
-      // Calculate global standings (closed + in-progress provisional)
-      if (teamData.length === 2) {
-        let pointsA = 0, pointsB = 0, completed = 0, hasInProgress = false;
-        for (const m of matchData) {
-          const pts = m.points_per_match ?? 1;
-          const live = resultsMap.get(m.id);
-          // Final result if closed (or manual override)
-          const closed = live?.match_closed ?? false;
-          const rtype = closed ? live!.result_type : m.result_type;
-
-          if (rtype === 'a_wins')  { pointsA += pts; completed++; }
-          else if (rtype === 'b_wins') { pointsB += pts; completed++; }
-          else if (rtype === 'halved') { pointsA += pts / 2; pointsB += pts / 2; completed++; }
-          else if (live && live.holes_played > 0 && live.result_type === 'in_progress') {
-            // Provisional: leader gets full pts, AS = half each
-            hasInProgress = true;
-            const diff = live.side_a_holes_won - live.side_b_holes_won;
-            if (diff > 0) pointsA += pts;
-            else if (diff < 0) pointsB += pts;
-            else { pointsA += pts / 2; pointsB += pts / 2; }
-          }
-        }
-        setStandings({
-          team_a: teamData[0] ?? null,
-          team_b: teamData[1] ?? null,
-          points_a: pointsA,
-          points_b: pointsB,
-          matches_total: matchData.length,
-          matches_completed: completed,
-          has_in_progress: hasInProgress,
-        });
-      }
     } catch (err: any) {
       console.error('useTeamsCup fetchAll error:', err);
     } finally {
       setLoading(false);
     }
   }, [leaderboardId]);
+
+  /** Accumulated standings across the whole cup (closed + live provisional). */
+  const standings: CupStandings | null = useMemo(() => {
+    if (teams.length !== 2) return null;
+    return {
+      ...computeCupPoints(matches, matchResults),
+      team_a: teams[0] ?? null,
+      team_b: teams[1] ?? null,
+    };
+  }, [teams, matches, matchResults]);
+
+  /** Standings per day/session slot, keyed by `${day}-${session}`. */
+  const standingsBySlot: Map<string, CupSlotStandings> = useMemo(() => {
+    const map = new Map<string, CupSlotStandings>();
+    for (const d of days) {
+      for (const s of d.sessions) {
+        const key = cupSlotKey(d.day_number, s.session_number);
+        const slotMatches = matches.filter(
+          m => m.day_number === d.day_number && m.session_number === s.session_number,
+        );
+        map.set(key, {
+          ...computeCupPoints(slotMatches, matchResults),
+          day_number: d.day_number,
+          session_number: s.session_number,
+          round_id: slotMatches.find(m => m.round_id)?.round_id ?? null,
+          points_available: totalPointsAvailable(slotMatches),
+        });
+      }
+    }
+    return map;
+  }, [days, matches, matchResults]);
+
+  /** Standings per day (all its sessions combined). */
+  const standingsByDay: Map<number, CupPoints> = useMemo(() => {
+    const map = new Map<number, CupPoints>();
+    for (const d of days) {
+      map.set(d.day_number, computeCupPoints(
+        matches.filter(m => m.day_number === d.day_number), matchResults,
+      ));
+    }
+    return map;
+  }, [days, matches, matchResults]);
+
+  /**
+   * Participants with the Course HCP of a specific round (day/session).
+   * Falls back to the default participant HCP when the round has no data.
+   */
+  const participantsForRound = useCallback((roundId: string | null | undefined): CupParticipant[] => {
+    if (!roundId) return participants;
+    const m = hcpByRound.get(roundId);
+    if (!m || m.size === 0) return participants;
+    return participants.map(p => {
+      const info = m.get(p.id);
+      return info ? { ...p, match_handicap: info.hcp, tee_color: info.tee ?? p.tee_color } : p;
+    });
+  }, [participants, hcpByRound]);
+
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
@@ -513,6 +574,7 @@ export function useTeamsCup(leaderboardId: string | null) {
 
   return {
     teams, matches, participants, matchResults, standings,
+    days, standingsBySlot, standingsByDay, participantsForRound,
     loading, fetchAll,
     assignTeam, updateMatchHandicap, updateTeam, batchUpdateParticipants,
     createMatch, updateMatch, deleteMatch,
