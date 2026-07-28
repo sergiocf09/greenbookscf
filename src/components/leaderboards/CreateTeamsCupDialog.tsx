@@ -138,16 +138,11 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
                 onChange={e => setDescription(e.target.value)}
               />
             </div>
-            <div>
-              <Label>Formato</Label>
-              <Select value={format} onValueChange={v => setFormat(v as CupFormat)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="match_individual">Individual Match Play</SelectItem>
-                  <SelectItem value="fourball">Fourball (Best Ball)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <CupDaysEditor days={days} onChange={setDays} />
+            <p className="text-[11px] text-muted-foreground -mt-2">
+              Los puntos de cada día/sesión se acumulan en el marcador general.
+            </p>
+
             <Button
               className="w-full"
               disabled={!name.trim()}
