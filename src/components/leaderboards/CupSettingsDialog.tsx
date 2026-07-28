@@ -12,7 +12,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Loader2, Trash2, Save } from 'lucide-react';
-import type { CupFormat, CupTeam } from '@/hooks/useTeamsCup';
+import type { CupFormat, CupTeam, CupMatch } from '@/hooks/useTeamsCup';
+import { CupDaysEditor } from '@/components/leaderboards/CupDaysEditor';
+import { getCupDays, cupSlotKey, type CupDay } from '@/types/leaderboard';
 
 const TEAM_COLORS = [
   { hex: '#ef4444', label: 'Rojo' },
