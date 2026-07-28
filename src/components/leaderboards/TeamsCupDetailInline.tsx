@@ -1520,6 +1520,9 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           participants={cup.participants}
           teams={cup.teams}
           matches={cup.matches}
+          days={cup.days}
+          defaultDay={activeSlotOption?.day_number ?? 1}
+          defaultSession={activeSlotOption?.session_number ?? 1}
           existingRoundId={linkedRoundInfo.roundId}
           onCreated={async () => {
             await cup.fetchAll();
