@@ -193,21 +193,15 @@ export const CupSettingsDialog: React.FC<Props> = ({
             />
           </div>
 
-          {/* Formato + Puntos por match en una sola línea (formato más ancho) */}
+          {/* Días, sesiones y formato por sesión */}
+          <CupDaysEditor days={days} onChange={setDays} lockedSlots={lockedSlots} />
+
           <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
-            <div className="min-w-0">
-              <Label>Formato de juego</Label>
-              <Select value={format} onValueChange={(v) => setFormat(v as CupFormat)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="match_individual">Match Play Individual</SelectItem>
-                  <SelectItem value="fourball">Fourball (Best Ball)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Cada sesión define su propio formato; los puntos se acumulan en el marcador general.
+            </p>
             <div className="w-20">
+
               <Label className="whitespace-nowrap">Pts P/Match</Label>
               <Input
                 type="number"
