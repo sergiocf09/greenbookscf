@@ -35,8 +35,11 @@ interface Props {
     description: string | null;
     cup_format?: string | null;
     rules_json?: any;
+    start_date?: string | null;
   };
   teams: CupTeam[];
+  /** Used to prevent deleting days/sessions that already have matches. */
+  matches?: CupMatch[];
   onUpdateTeam: (
     teamId: string,
     updates: Partial<Pick<CupTeam, 'name' | 'color'>>,
@@ -46,7 +49,7 @@ interface Props {
 }
 
 export const CupSettingsDialog: React.FC<Props> = ({
-  open, onOpenChange, event, teams, onUpdateTeam, onSaved, onDeleteRequest,
+  open, onOpenChange, event, teams, matches = [], onUpdateTeam, onSaved, onDeleteRequest,
 }) => {
   const [name, setName] = useState(event.name);
   const [description, setDescription] = useState(event.description || '');
