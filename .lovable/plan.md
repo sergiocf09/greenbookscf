@@ -1,73 +1,59 @@
-## Contexto de impacto
+## Dictamen (estado actual, verificado en código)
 
-**Datos actuales de "Club de Golf Juriquilla" (`252ee05a-…`):** 160 rondas (156 cerradas, 3 en curso, 1 en setup), 61 perfiles distintos. Es un campo core de la app.
+- `leaderboard_events` (competition_type `teams_cup`) guarda un solo `cup_format` y `start_date`; no hay noción de días.
+- `cup_matches` **no tiene columna de día**: sus columnas son `format`, `players`, `strokes_advantage`, `status`, `result_type`, `points_per_match`, `round_id`, `match_order`.
+- En `useTeamsCup.fetchAll` hay un backfill que toma **la última ronda vinculada** (`leaderboard_rounds` ordenado por `added_at desc limit 1`) y la asigna a todos los matches sin `round_id`. Con dos o tres días esto **reasignaría matches del día 1 a la ronda del día 2** y rompería resultados.
+- El Course HCP de participantes también se sincroniza contra esa única ronda (`match_handicap` se sobreescribe), así que un segundo día con otro campo/tee pisaría los HCP del día anterior.
+- Standings: `points_a/points_b` se calculan sumando **todos** los matches del evento (cerrados + provisionales en vivo). O sea, la suma ya es acumulativa por naturaleza — lo que falta es **segmentar por día** y evitar la contaminación del backfill.
 
-**Duplicado "Golf Juriquilla" (`0eb889c9-…`):** 5 rondas cerradas (mayo/junio/julio 2026). Ya no se puede borrar sin remapear.
+Conclusión: la base ya soporta sumar puntos de muchos matches; el trabajo real es (1) introducir el concepto de "día/jornada", (2) atar cada match a su día y a la ronda de ese día, (3) UI de acumulado + consulta por día.
 
-## ¿Qué se afecta al cambiar ratings/slopes?
+## Propuesta
 
-**No se afecta (queda intacto):**
+### 1. Modelo de datos (migración)
 
-- Scores por hoyo, apuestas, balances económicos, resultados de partido — no dependen de rating/slope.
-- Snapshots históricos (`round_snapshots.snapshot_json`) — congelados al cierre.
-- `round_players.handicap_for_round` — es el HCP de cancha ya usado en cada ronda; no se recalcula.
-- Filas ya escritas en `handicap_history` — cada una guarda su propio `course_rating`, `slope_rating`, `differential`, `adjusted_gross_score`. No cambian retroactivamente.
+- `leaderboard_events.rules_json` guarda la config de días para Teams Cup:
+  ```json
+  { "cup_days": [ { "day_number": 1, "date": "2026-08-01", "label": "Día 1 - Fourball", "default_format": "fourball" } ] }
+  ```
+- `cup_matches`: nueva columna `day_number int not null default 1` (+ índice `(leaderboard_id, day_number, match_order)`).
+- Los matches existentes quedan en día 1 → sin ruptura.
+- Sin cambios en `get_cup_match_result` (opera por match).
 
-**Sí se afecta (y esto es lo importante):**
+### 2. Vinculación de rondas por día
 
-- El **próximo cálculo** del Hcp Index USGA cuando se cierre una nueva ronda: la función `calculateHandicapIndexForProfile` (src/lib/usgaHandicap.ts) **re-lee `course_tees` en vivo** y recalcula el diferencial de las últimas 20 rondas usando el rating/slope actual. Es decir, para las rondas históricas en Juriquilla, el diferencial se recomputará con los nuevos 72.3/137 (Blue), 69.9/127 (White), etc.
-- Efecto neto: el Hcp Index de los 61 usuarios se moverá la próxima vez que jueguen. La dirección del movimiento depende del tee y del score, pero al ser Blue de 130→137 (más difícil) y White de 125→127, los diferenciales bajarán ligeramente para quienes juegan esos tees (índices más bajos). Red pasa de 115→128 (más difícil), lo cual reduce diferenciales para damas.
+- `leaderboard_rounds` ya permite N rondas por evento. Se resuelve la ronda de cada día por la **fecha de la ronda** contra `cup_days[].date` (mismo patrón que ya usa `getDayForRoundDate` en multi-día).
+- Se elimina el backfill "última ronda a todos los matches": pasa a ser "ronda del día X → matches con `day_number = X` y sin `round_id`".
+- El sync de Course HCP se hace **por día** (usando la ronda de ese día) y ya no pisa `match_handicap` global: el HCP efectivo se calcula por match según su día.
 
-## Riesgos
+### 3. Cálculo de puntos
 
-1. **Cambio "silencioso" de índice de todos los usuarios** la próxima ronda. No es un bug — es la corrección de un error de origen — pero sin aviso puede confundir.
-2. **Rondas en curso (3) y setup (1)** en Juriquilla: si ya cargaron HCP de cancha con el slope viejo, al recalcularse podrían mostrar strokes/hoyo distintos si algún hook re-lee slope. Bajo riesgo (el HCP de cancha se congela en `handicap_for_round` una vez que se une el jugador), pero conviene cerrarlas o dejarlas terminar antes del cambio.
-3. **Duplicado con 5 rondas cerradas**: si lo eliminamos rompemos FKs y los 5 snapshots huérfanos (aunque el snapshot json es autónomo). Mejor **no borrarlo**; en su lugar ocultarlo de la búsqueda para nuevas rondas.
+Nuevo módulo `src/lib/teamsCupAggregation.ts`:
 
-## Plan recomendado (conservador y consistente)
+- `computeDayStandings(matches, results, dayNumber)` → puntos A/B del día (cerrados + provisionales en vivo, misma regla actual: líder = punto completo, AS = ½).
+- `computeCupStandings(days)` → acumulado del torneo, con desglose `perDay[]`, matches en juego, y puntos "asegurados" vs "provisionales".
+- `useTeamsCup` expone `standingsByDay`, `standings` (acumulado) y `days`.
 
-### Paso 1 — Migración de datos (una sola)
+### 4. UI
 
-Sobre `Club de Golf Juriquilla` (`252ee05a-…`):
+- **Creación** (`CreateTeamsCupDialog`): en el paso 1, selector "Días del evento (1 / 2 / 3)" con fecha, etiqueta y formato por defecto de cada día. Por defecto 1 día → flujo actual intacto.
+- **Detalle** (`TeamsCupDetailInline`):
+  - Marcador superior permanente con el **acumulado en vivo** (Equipo A x.5 — y.5) + mini barra de progreso, y leyenda "incluye N matches en juego".
+  - Debajo, tira de chips por día: `Día 1 · 3–1 (final)`, `Día 2 · 1.5–0.5 (en vivo)`, `Día 3 · pendiente`. Tap en un chip filtra la lista de matches a ese día.
+  - Chip "Total" para ver todos los matches agrupados por día.
+  - Crear/editar match incluye su día; `CreateRoundFromCupDialog` crea la ronda del día seleccionado y la vincula con esa fecha.
+- **Ajustes** (`CupSettingsDialog`): editar días (agregar/quitar/renombrar/fecha), con la misma protección que multi-día: no permitir borrar un día con rondas o matches vinculados.
 
-- UPDATE `course_tees`: Blue 72.3/137, White 69.9/127, Yellow 69.1/125, Red 69.3/128.
-- UPDATE `course_holes` con los yardajes exactos de la tarjeta Grint (18 hoyos × 4 tees).
-- **Pars y stroke_index no cambian** (ya coinciden).
+### 5. Compatibilidad
 
-Sobre `Golf Juriquilla` duplicado (`0eb889c9-…`):
+- Cups existentes: 1 día, chips ocultos si `cup_days.length <= 1` → la pantalla se ve igual que hoy.
 
-- **No se elimina** (tiene 5 rondas cerradas).
-- Se marca oculto en `course_visibility` para que no aparezca en el buscador de campos al crear nuevas rondas. Las 5 rondas cerradas siguen consultables desde historial.
+## Decisiones que necesito confirmes
 
-### Paso 2 — Reetiquetado UI: "Amarillas" → "Doradas"
+1. **Puntos provisionales en el acumulado:** hoy un match en juego ya aporta punto completo al líder. ¿Lo mantengo así en el total (con etiqueta "provisional"), o el total muestra solo puntos cerrados y los provisionales aparte?    Siempre mostrar el total con cerrados y en progreso 
+2. **Formato por día:** ¿cada día puede mezclar formatos (p.ej. fourball en la mañana e individuales en la tarde, es decir 2 sesiones el mismo día), o basta un conjunto de matches por día con formato libre por match? ... De acuerdo que pueda haber sesión matutina y vespertina, con diferencia de formatos entre cada día o sesión, se define para cada una de ellas por el organizador 
+3. **Máximo de días:** ¿fijo 1–3 como mencionaste, o dejo libre hasta 4–5 por si crece? ... Dejalo libre el # de días y sesiones
 
-Cambio puramente de presentación. Clave interna sigue siendo `yellow` en BD y tipos (para no tocar rondas/enums existentes). Archivos a revisar:
+## Detalles técnicos
 
-- `src/components/setup/TeePicker.tsx` / `PlayerSetup.tsx` / cualquier `Select` de tee.
-- `src/components/courses/CourseInfoStep.tsx` (label del toggle amarillo).
-- Componentes de scorecard/leaderboard que muestren "Amarillas".
-- Un helper único (ej. `teeLabel(color)`) para no dispersar el string.
-
-### Paso 3 — Backfill opcional del Hcp Index (recomendado)
-
-Ejecutar la Edge Function existente `backfill-handicap-index` para los 61 perfiles con rondas en Juriquilla, así el Hcp Index mostrado se alinea con los nuevos ratings **antes** de que cierren una nueva ronda (evita el "salto silencioso"). Esto solo actualiza el índice actual/último; no reescribe filas históricas de `handicap_history`.
-
-### Paso 4 — Nota informativa (opcional)
-
-Mensaje corto en el próximo email/UI: "Corregimos rating/slope de Juriquilla; tu Hcp Index se recalculó con datos oficiales."
-
-## Alternativa más ligera (si prefieres mínimo impacto)
-
-Solo Paso 1 + Paso 2, **sin backfill**. El índice se corrige naturalmente cuando cada usuario cierre su próxima ronda. Más simple, con la desventaja de que durante días el índice mostrado usa datos viejos hasta que la fórmula lo refresque.
-
-## Recomendación final
-
-Ejecutar **Pasos 1, 2 y 3** en la misma sesión. Es una corrección de un dato base incorrecto desde el inicio; la fórmula USGA está pensada precisamente para ajustarse a los ratings correctos. No hay riesgo a scores, apuestas, balances ni snapshots históricos.
-
-## Pregunta
-
-¿Procedo con la ruta recomendada (1+2+3), o prefieres la alternativa ligera (1+2) y dejar que el índice se acomode solo?
-
-&nbsp;
-
-Haz los pasos 1,2 y3 ... no mandemos ningun email, hoy todavía NO usan este handicap index de manera oficial los usuarios, siguen con su Ghin o el sliding que ignora esto, así que evitamos ruido de esta actualización 
+Archivos afectados: migración SQL (columna `day_number`), `src/hooks/useTeamsCup.ts` (fetch por día, fin del backfill global, HCP por día), nuevo `src/lib/teamsCupAggregation.ts`, `src/types/leaderboard.ts` (tipo `CupDay`), `CreateTeamsCupDialog.tsx`, `TeamsCupDetailInline.tsx`, `CupSettingsDialog.tsx`, `CupMatchEditorDialog.tsx`, `CreateRoundFromCupDialog.tsx`, `teamsCupRoundBuilder.ts`.
