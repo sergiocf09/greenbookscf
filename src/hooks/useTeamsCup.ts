@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { calculateCourseHandicap } from '@/lib/usgaHandicap';
+import { computeCupPoints, totalPointsAvailable, type CupPoints } from '@/lib/teamsCupAggregation';
+import { getCupDays, cupSlotKey, type CupDay, type CupRulesJson } from '@/types/leaderboard';
 
 export type CupFormat = 'match_individual' | 'fourball';
 
@@ -31,7 +33,10 @@ export interface CupMatch {
   match_order: number;
   points_per_match: number;
   stroke_receiver_player_id: string | null;
+  day_number: number;
+  session_number: number;
 }
+
 
 export interface CupHoleBreakdown {
   hole: number;
