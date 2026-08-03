@@ -2494,6 +2494,7 @@ export type Database = {
         Args: { p_round_player_id: string }
         Returns: undefined
       }
+      backfill_handicap_history_from_rounds: { Args: never; Returns: Json }
       begin_round_close_attempt: {
         Args: { p_lock_seconds?: number; p_round_id: string }
         Returns: Json
@@ -2971,6 +2972,7 @@ export type Database = {
         }
         Returns: number
       }
+      normalize_tee_color: { Args: { c: string }; Returns: string }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
@@ -3030,6 +3032,14 @@ export type Database = {
       update_round_bet_config: {
         Args: { p_bet_config: Json; p_round_id: string }
         Returns: string
+      }
+      usga_index_from_differentials: {
+        Args: { diffs: number[] }
+        Returns: number
+      }
+      usga_num_differentials: {
+        Args: { total_rounds: number }
+        Returns: number
       }
     }
     Enums: {
