@@ -184,7 +184,9 @@ Deno.serve(async (req) => {
           country: country || "Unknown",
           is_manual: false,
           source: "golfcourseapi",
-          source_course_id: apiId,
+          source_course_id: numericApiId,
+          source_course_key: apiId,
+
           last_synced_at: new Date().toISOString(),
           course_rating: referenceTee?.course_rating || null,
           slope_rating: referenceTee?.slope_rating || null,
