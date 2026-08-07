@@ -91,22 +91,23 @@ Deno.serve(async (req) => {
 
     // ─── IMPORT ───
     if (action === "import") {
-      const apiIdStr = url.searchParams.get("id");
-      const apiId = apiIdStr ? parseInt(apiIdStr, 10) : null;
+      const apiId = (url.searchParams.get("id") || "").trim();
       if (!apiId) {
         return new Response(JSON.stringify({ error: "Missing course id" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      const numericApiId = /^\d+$/.test(apiId) ? parseInt(apiId, 10) : null;
 
       // Check if already imported
       const { data: existing } = await supabase
         .from("golf_courses")
         .select("id")
-        .eq("source_course_id", apiId)
+        .eq("source_course_key", apiId)
         .eq("source", "golfcourseapi")
         .maybeSingle();
+
 
       if (existing) {
         return new Response(
