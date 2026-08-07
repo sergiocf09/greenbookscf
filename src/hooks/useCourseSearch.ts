@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { devError } from '@/lib/logger';
 
 export interface CourseSearchResult {
-  apiId: number;
+  apiId: string | number;
   clubName: string;
   courseName: string;
   location: string;
@@ -60,7 +60,7 @@ export const useCourseSearch = () => {
     }
   }, []);
 
-  const importCourse = useCallback(async (apiId: number): Promise<string | null> => {
+  const importCourse = useCallback(async (apiId: string | number): Promise<string | null> => {
     setImporting(true);
     setError(null);
 
@@ -73,7 +73,7 @@ export const useCourseSearch = () => {
       }
 
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const url = `https://${projectId}.supabase.co/functions/v1/golf-course-proxy?action=import&id=${apiId}`;
+      const url = `https://${projectId}.supabase.co/functions/v1/golf-course-proxy?action=import&id=${encodeURIComponent(String(apiId))}`;
 
       const res = await fetch(url, {
         headers: {
