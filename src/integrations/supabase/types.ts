@@ -616,6 +616,7 @@ export type Database = {
           slope_rating: number | null
           source: string
           source_course_id: number | null
+          source_course_key: string | null
         }
         Insert: {
           country?: string
@@ -630,6 +631,7 @@ export type Database = {
           slope_rating?: number | null
           source?: string
           source_course_id?: number | null
+          source_course_key?: string | null
         }
         Update: {
           country?: string
@@ -644,6 +646,7 @@ export type Database = {
           slope_rating?: number | null
           source?: string
           source_course_id?: number | null
+          source_course_key?: string | null
         }
         Relationships: [
           {
