@@ -153,8 +153,11 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
               useHandicap={sixesConfig.useHandicap}
               title="Sixes — Hándicaps"
               modalityLine={`${sixesScoringLabel} · ${sixesCobroLabel}`}
-              note="Las parejas rotan por set (1–6, 7–12, 13–18); los golpes de cada jugador se mantienen iguales en los tres sets."
+              course={course}
+              segments={hcpSegments}
+              note="El total de golpes de cada jugador es el mismo en los tres tramos, pero los golpes caen en los hoyos según el índice del campo, por lo que cada tramo puede tener ventajas distintas."
             />
+
           </span>
 
           <div className="flex items-center gap-2">
