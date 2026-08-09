@@ -2800,11 +2800,25 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           <Card key={`team-pressure-${idx}`} className={cn('border-accent/50', pressureDisabled && 'opacity-50')}>
             <CardHeader className="py-3">
               <CardTitle className="text-sm flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   <Users className="h-4 w-4" />
                   Foursome {idx + 1}
+                  <TeamBetHandicapInfo
+                    players={[...displayTeamAPlayers, ...displayTeamBPlayers]}
+                    effectiveHandicaps={bet.teamHandicaps}
+                    handicapConfig={bet.handicapConfig}
+                    title={`Foursome ${idx + 1} — Hándicaps`}
+                    modalityLine={[
+                      bet.scoringType === 'lowBall' ? 'Low Ball'
+                        : bet.scoringType === 'highBall' ? 'High Ball'
+                        : bet.scoringType === 'combined' ? 'Combinado (suma)'
+                        : 'Match Play',
+                      bet.continua && bet.scoringType === 'matchOnly' ? 'Match 18 continuo' : `Presión al ${bet.openingThreshold}`,
+                    ].join(' · ')}
+                  />
                 </div>
                 <div className="flex items-center gap-2">
+
                   {pressureDisabled ? (
                     <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
                   ) : (
