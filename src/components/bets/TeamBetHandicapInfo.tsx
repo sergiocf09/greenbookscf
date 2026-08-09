@@ -201,29 +201,55 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
             {useHandicap ? HANDICAP_MODE_LABELS[mode] : 'Sin hándicap (gross)'}
           </div>
 
-          <div className="rounded-md border border-border overflow-hidden">
-            <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 px-2 py-1 bg-muted/60 text-[9px] uppercase tracking-wide text-muted-foreground">
-              <span>Jugador</span>
-              <span className="text-center">Tee</span>
-              <span className="text-right">HCP campo</span>
-              <span className="text-right">Golpes</span>
-            </div>
-            {rows.map(({ player, courseHcp, strokes }) => (
-              <div
-                key={player.id}
-                className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 px-2 py-1 text-[11px] tabular-nums border-t border-border/50"
-              >
-                <span className="truncate">{getName(player)}</span>
-                <span className="text-center text-muted-foreground">
-                  {player.teeColor ? (TEE_LABELS[player.teeColor] ?? player.teeColor) : '—'}
-                </span>
-                <span className="text-right">{fmtHcp(courseHcp)}</span>
-                <span className={cn('text-right font-semibold', strokes > 0 ? 'text-primary' : 'text-muted-foreground')}>
-                  {strokes > 0 ? `+${fmtHcp(strokes)}` : '0'}
-                </span>
+          {grouped ? (
+            <div className="space-y-1.5">
+              <div className="rounded-md border border-border overflow-hidden grid grid-cols-2 divide-x divide-border">
+                <TeamColumn label={teamALabel} teamRows={rowsA} align="left" />
+                <TeamColumn label={teamBLabel} teamRows={rowsB} align="right" />
               </div>
-            ))}
-          </div>
+              <div className="text-[10px] text-center text-muted-foreground">
+                Cada línea: <span className="text-foreground">jugador · HCP campo · golpes</span>
+              </div>
+              {useHandicap && (
+                <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5 text-[10px] tabular-nums flex items-center justify-between">
+                  <span className="text-muted-foreground">
+                    {fmtHcp(sumA)} <span className="text-foreground/70">({teamALabel})</span> vs{' '}
+                    {fmtHcp(sumB)} <span className="text-foreground/70">({teamBLabel})</span>
+                  </span>
+                  <span className="font-semibold">
+                    {higherTeam
+                      ? `Δ ${fmtHcp(diffTeams)} → ${higherTeam === 'A' ? teamALabel : teamBLabel}`
+                      : 'Δ 0 (parejo)'}
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-md border border-border overflow-hidden">
+              <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 px-2 py-1 bg-muted/60 text-[9px] uppercase tracking-wide text-muted-foreground">
+                <span>Jugador</span>
+                <span className="text-center">Tee</span>
+                <span className="text-right">HCP campo</span>
+                <span className="text-right">Golpes</span>
+              </div>
+              {rows.map(({ player, courseHcp, strokes }) => (
+                <div
+                  key={player.id}
+                  className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 px-2 py-1 text-[11px] tabular-nums border-t border-border/50"
+                >
+                  <span className="truncate">{getName(player)}</span>
+                  <span className="text-center text-muted-foreground">
+                    {player.teeColor ? (TEE_LABELS[player.teeColor] ?? player.teeColor) : '—'}
+                  </span>
+                  <span className="text-right">{fmtHcp(courseHcp)}</span>
+                  <span className={cn('text-right font-semibold', strokes > 0 ? 'text-primary' : 'text-muted-foreground')}>
+                    {strokes > 0 ? `+${fmtHcp(strokes)}` : '0'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
 
           <p className="text-[10px] text-muted-foreground leading-snug">{calcText}</p>
           {note && <p className="text-[10px] text-muted-foreground leading-snug">{note}</p>}
