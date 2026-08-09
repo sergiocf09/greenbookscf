@@ -2463,6 +2463,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           const allTeamMembers = [...result.teamA, ...result.teamB];
           const hasGroupMember = allTeamMembers.some(id => displayPlayerIds.has(id));
           if (hasMultipleGroups && !hasGroupMember) return null;
+          const carritosTeamCfg = result.id
+            ? effectiveBetConfig.carritosTeams?.find(t => t.id === result.id)
+            : undefined;
           return (
             <CarritosResultsCard 
               key={carritosId}
@@ -2472,9 +2475,12 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               title={`Carritos ${idx + 1}`}
               roundHoles={(betConfig.roundHoles ?? 18) as 9 | 18}
               isDisabled={disabled}
+              teamHandicaps={carritosTeamCfg?.teamHandicaps ?? effectiveBetConfig.carritos.teamHandicaps}
+              handicapConfig={carritosTeamCfg?.handicapConfig ?? effectiveBetConfig.carritos.handicapConfig}
               onToggleDisabled={onBetConfigChange ? () => toggleTeamBetDisabled(carritosId) : undefined}
             />
           );
+
         });
       })()}
 
