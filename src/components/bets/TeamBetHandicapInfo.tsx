@@ -28,6 +28,13 @@ const fmtHcp = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 export interface TeamBetHandicapInfoProps {
   /** Players participating in this bet (order used for display). */
   players: Player[];
+  /** Optional: Team A players (shown on the LEFT column). Base pair goes here. */
+  teamA?: Player[];
+  /** Optional: Team B players (shown on the RIGHT column). */
+  teamB?: Player[];
+  /** Optional labels for each team column. */
+  teamALabel?: string;
+  teamBLabel?: string;
   /** Effective strokes used by the engine, keyed by player.id (or profileId). */
   effectiveHandicaps?: Record<string, number>;
   handicapConfig?: TeamHandicapConfig;
@@ -41,6 +48,7 @@ export interface TeamBetHandicapInfoProps {
   note?: string;
   className?: string;
 }
+
 
 /**
  * Small ℹ️ trigger for the header of team-bet result cards.
