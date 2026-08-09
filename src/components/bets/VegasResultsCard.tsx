@@ -177,7 +177,13 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
               useHandicap={vegasConfig.useHandicap}
               title="Las Vegas — Hándicaps"
               modalityLine={vegasSummary}
+              course={course}
+              segments={hcpSegments}
+              note={vegasConfig.variant === 'fixed'
+                ? 'Las parejas son fijas las 18 hoyos; los golpes caen según el índice del campo, por eso cada vuelta puede tener ventajas distintas.'
+                : 'Las parejas rotan por tramo de 6 hoyos. El total de golpes de cada jugador no cambia, pero los golpes caen según el índice del campo, por lo que cada tramo puede tener ventajas distintas.'}
             />
+
           </div>
 
           <div className="flex items-center gap-2">
