@@ -28,6 +28,13 @@ const fmtHcp = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 export interface TeamBetHandicapInfoProps {
   /** Players participating in this bet (order used for display). */
   players: Player[];
+  /** Optional: Team A players (shown on the LEFT column). Base pair goes here. */
+  teamA?: Player[];
+  /** Optional: Team B players (shown on the RIGHT column). */
+  teamB?: Player[];
+  /** Optional labels for each team column. */
+  teamALabel?: string;
+  teamBLabel?: string;
   /** Effective strokes used by the engine, keyed by player.id (or profileId). */
   effectiveHandicaps?: Record<string, number>;
   handicapConfig?: TeamHandicapConfig;
@@ -42,6 +49,7 @@ export interface TeamBetHandicapInfoProps {
   className?: string;
 }
 
+
 /**
  * Small ℹ️ trigger for the header of team-bet result cards.
  * Shows, for audit purposes: how the bet is played, which handicap modality was
@@ -50,6 +58,10 @@ export interface TeamBetHandicapInfoProps {
  */
 export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
   players,
+  teamA,
+  teamB,
+  teamALabel = 'Equipo A',
+  teamBLabel = 'Equipo B',
   effectiveHandicaps,
   handicapConfig,
   modalityLine,
@@ -58,6 +70,7 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
   note,
   className,
 }) => {
+
   const shortNames = useMemo(() => disambiguateShortNames(players), [players]);
   const getName = (p: Player) => shortNames.get(p.id) || formatPlayerName(p.name).split(' ')[0];
 
@@ -79,6 +92,60 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
 
   const minHcp = rows.length ? Math.min(...rows.map(r => r.courseHcp)) : 0;
   const receivers = rows.filter(r => r.strokes > 0);
+
+  const rowById = new Map(rows.map(r => [r.player.id, r]));
+  const pickRows = (list?: Player[]) =>
+    (list ?? []).map(p => rowById.get(p.id)).filter((r): r is typeof rows[number] => !!r);
+  const rowsA = pickRows(teamA);
+  const rowsB = pickRows(teamB);
+  const grouped = rowsA.length > 0 && rowsB.length > 0;
+  const sum = (list: typeof rows) => list.reduce((s, r) => s + r.courseHcp, 0);
+  const sumStrokes = (list: typeof rows) => list.reduce((s, r) => s + r.strokes, 0);
+  const sumA = sum(rowsA);
+  const sumB = sum(rowsB);
+  const diffTeams = Math.abs(sumA - sumB);
+  const higherTeam = sumA === sumB ? null : sumA > sumB ? 'A' : 'B';
+
+  const TeamColumn = ({ label, teamRows, align }: { label: string; teamRows: typeof rows; align: 'left' | 'right' }) => (
+    <div className="min-w-0">
+      <div
+        className={cn(
+          'px-2 py-1 bg-muted/60 text-[9px] uppercase tracking-wide text-muted-foreground font-semibold',
+          align === 'right' ? 'text-right' : 'text-left',
+        )}
+      >
+        {label}
+      </div>
+      {teamRows.map(({ player, courseHcp, strokes }) => (
+        <div
+          key={player.id}
+          className={cn(
+            'px-2 py-1 border-t border-border/50 text-[11px] tabular-nums flex items-baseline gap-1.5',
+            align === 'right' ? 'flex-row-reverse text-right' : 'text-left',
+          )}
+        >
+          <span className="truncate flex-1 min-w-0">{getName(player)}</span>
+          <span className="text-muted-foreground shrink-0">{fmtHcp(courseHcp)}</span>
+          <span className={cn('font-semibold shrink-0 w-9', strokes > 0 ? 'text-primary' : 'text-muted-foreground', align === 'right' ? 'text-left' : 'text-right')}>
+            {strokes > 0 ? `+${fmtHcp(strokes)}` : '0'}
+          </span>
+        </div>
+      ))}
+      <div
+        className={cn(
+          'px-2 py-1 border-t border-border bg-muted/30 text-[10px] tabular-nums flex items-baseline gap-1.5 font-semibold',
+          align === 'right' ? 'flex-row-reverse text-right' : 'text-left',
+        )}
+      >
+        <span className="flex-1 min-w-0 text-muted-foreground uppercase text-[9px]">Suma</span>
+        <span className="shrink-0">{fmtHcp(sum(teamRows))}</span>
+        <span className={cn('shrink-0 w-9 text-primary', align === 'right' ? 'text-left' : 'text-right')}>
+          {sumStrokes(teamRows) > 0 ? `+${fmtHcp(sumStrokes(teamRows))}` : '0'}
+        </span>
+      </div>
+    </div>
+  );
+
 
   const calcText = useMemo(() => {
     if (!useHandicap) {
@@ -117,7 +184,7 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
           <span className="sr-only">Ver hándicaps y modalidad</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent side="top" align="end" className="w-[320px] max-h-[70vh] overflow-y-auto p-3">
+      <PopoverContent side="top" align="end" className="w-[360px] max-h-[70vh] overflow-y-auto p-3">
         <div className="space-y-2">
           <div className="font-semibold text-xs flex items-center gap-1.5">
             <Info className="h-3.5 w-3.5 text-primary" />
@@ -134,29 +201,55 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
             {useHandicap ? HANDICAP_MODE_LABELS[mode] : 'Sin hándicap (gross)'}
           </div>
 
-          <div className="rounded-md border border-border overflow-hidden">
-            <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 px-2 py-1 bg-muted/60 text-[9px] uppercase tracking-wide text-muted-foreground">
-              <span>Jugador</span>
-              <span className="text-center">Tee</span>
-              <span className="text-right">HCP campo</span>
-              <span className="text-right">Golpes</span>
-            </div>
-            {rows.map(({ player, courseHcp, strokes }) => (
-              <div
-                key={player.id}
-                className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 px-2 py-1 text-[11px] tabular-nums border-t border-border/50"
-              >
-                <span className="truncate">{getName(player)}</span>
-                <span className="text-center text-muted-foreground">
-                  {player.teeColor ? (TEE_LABELS[player.teeColor] ?? player.teeColor) : '—'}
-                </span>
-                <span className="text-right">{fmtHcp(courseHcp)}</span>
-                <span className={cn('text-right font-semibold', strokes > 0 ? 'text-primary' : 'text-muted-foreground')}>
-                  {strokes > 0 ? `+${fmtHcp(strokes)}` : '0'}
-                </span>
+          {grouped ? (
+            <div className="space-y-1.5">
+              <div className="rounded-md border border-border overflow-hidden grid grid-cols-2 divide-x divide-border">
+                <TeamColumn label={teamALabel} teamRows={rowsA} align="left" />
+                <TeamColumn label={teamBLabel} teamRows={rowsB} align="right" />
               </div>
-            ))}
-          </div>
+              <div className="text-[10px] text-center text-muted-foreground">
+                Cada línea: <span className="text-foreground">jugador · HCP campo · golpes</span>
+              </div>
+              {useHandicap && (
+                <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5 text-[10px] tabular-nums flex items-center justify-between">
+                  <span className="text-muted-foreground">
+                    {fmtHcp(sumA)} <span className="text-foreground/70">({teamALabel})</span> vs{' '}
+                    {fmtHcp(sumB)} <span className="text-foreground/70">({teamBLabel})</span>
+                  </span>
+                  <span className="font-semibold">
+                    {higherTeam
+                      ? `Δ ${fmtHcp(diffTeams)} → ${higherTeam === 'A' ? teamALabel : teamBLabel}`
+                      : 'Δ 0 (parejo)'}
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-md border border-border overflow-hidden">
+              <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 px-2 py-1 bg-muted/60 text-[9px] uppercase tracking-wide text-muted-foreground">
+                <span>Jugador</span>
+                <span className="text-center">Tee</span>
+                <span className="text-right">HCP campo</span>
+                <span className="text-right">Golpes</span>
+              </div>
+              {rows.map(({ player, courseHcp, strokes }) => (
+                <div
+                  key={player.id}
+                  className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 px-2 py-1 text-[11px] tabular-nums border-t border-border/50"
+                >
+                  <span className="truncate">{getName(player)}</span>
+                  <span className="text-center text-muted-foreground">
+                    {player.teeColor ? (TEE_LABELS[player.teeColor] ?? player.teeColor) : '—'}
+                  </span>
+                  <span className="text-right">{fmtHcp(courseHcp)}</span>
+                  <span className={cn('text-right font-semibold', strokes > 0 ? 'text-primary' : 'text-muted-foreground')}>
+                    {strokes > 0 ? `+${fmtHcp(strokes)}` : '0'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
 
           <p className="text-[10px] text-muted-foreground leading-snug">{calcText}</p>
           {note && <p className="text-[10px] text-muted-foreground leading-snug">{note}</p>}
