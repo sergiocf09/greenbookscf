@@ -25,6 +25,17 @@ const HANDICAP_MODE_LABELS: Record<TeamHandicapMode, string> = {
 
 const fmtHcp = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 
+export interface TeamBetSegment {
+  /** e.g. "Tramo 1" */
+  label: string;
+  /** Holes belonging to this segment (physical hole numbers, in play order). */
+  holes: number[];
+  teamA: Player[];
+  teamB: Player[];
+  teamALabel?: string;
+  teamBLabel?: string;
+}
+
 export interface TeamBetHandicapInfoProps {
   /** Players participating in this bet (order used for display). */
   players: Player[];
@@ -46,8 +57,13 @@ export interface TeamBetHandicapInfoProps {
   useHandicap?: boolean;
   /** Optional note appended at the bottom (bet-specific rule). */
   note?: string;
+  /** Course, required to show where each stroke falls per segment. */
+  course?: GolfCourse;
+  /** Segment-by-segment breakdown (Sixes / Vegas dynamic pairings). */
+  segments?: TeamBetSegment[];
   className?: string;
 }
+
 
 
 /**
