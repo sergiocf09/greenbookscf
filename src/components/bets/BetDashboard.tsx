@@ -81,6 +81,7 @@ import { WolfResultsCard } from './WolfResultsCard';
 import { SixesResultsCard } from './SixesResultsCard';
 import { VegasResultsCard } from './VegasResultsCard';
 import { NinesResultsCard } from './NinesResultsCard';
+import { TeamBetHandicapInfo } from './TeamBetHandicapInfo';
 import { useWolf } from '@/hooks/useWolf';
 import { useSixes } from '@/hooks/useSixes';
 import { useVegas } from '@/hooks/useVegas';
@@ -2462,6 +2463,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           const allTeamMembers = [...result.teamA, ...result.teamB];
           const hasGroupMember = allTeamMembers.some(id => displayPlayerIds.has(id));
           if (hasMultipleGroups && !hasGroupMember) return null;
+          const carritosTeamCfg = result.id
+            ? effectiveBetConfig.carritosTeams?.find(t => t.id === result.id)
+            : undefined;
           return (
             <CarritosResultsCard 
               key={carritosId}
@@ -2471,9 +2475,12 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               title={`Carritos ${idx + 1}`}
               roundHoles={(betConfig.roundHoles ?? 18) as 9 | 18}
               isDisabled={disabled}
+              teamHandicaps={carritosTeamCfg?.teamHandicaps ?? effectiveBetConfig.carritos.teamHandicaps}
+              handicapConfig={carritosTeamCfg?.handicapConfig ?? effectiveBetConfig.carritos.handicapConfig}
               onToggleDisabled={onBetConfigChange ? () => toggleTeamBetDisabled(carritosId) : undefined}
             />
           );
+
         });
       })()}
 
@@ -2799,11 +2806,25 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           <Card key={`team-pressure-${idx}`} className={cn('border-accent/50', pressureDisabled && 'opacity-50')}>
             <CardHeader className="py-3">
               <CardTitle className="text-sm flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   <Users className="h-4 w-4" />
                   Foursome {idx + 1}
+                  <TeamBetHandicapInfo
+                    players={[...displayTeamAPlayers, ...displayTeamBPlayers]}
+                    effectiveHandicaps={bet.teamHandicaps}
+                    handicapConfig={bet.handicapConfig}
+                    title={`Foursome ${idx + 1} — Hándicaps`}
+                    modalityLine={[
+                      bet.scoringType === 'lowBall' ? 'Low Ball'
+                        : bet.scoringType === 'highBall' ? 'High Ball'
+                        : bet.scoringType === 'combined' ? 'Combinado (suma)'
+                        : 'Match Play',
+                      bet.continua && bet.scoringType === 'matchOnly' ? 'Match 18 continuo' : `Presión al ${bet.openingThreshold}`,
+                    ].join(' · ')}
+                  />
                 </div>
                 <div className="flex items-center gap-2">
+
                   {pressureDisabled ? (
                     <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
                   ) : (

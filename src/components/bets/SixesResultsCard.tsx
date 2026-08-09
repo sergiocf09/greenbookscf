@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, XCircle, CheckCircle } from 'lucide-react';
+import { TeamBetHandicapInfo } from './TeamBetHandicapInfo';
+
 
 interface SixesResultsCardProps {
   players: Player[];
@@ -48,6 +50,12 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
   const bets = useMemo(() => missingPlayerIds.length > 0 ? [] : calculateSixesBets(players, scores, sixesConfig, course, sixesConfig.teamHandicaps), [players, scores, sixesConfig, course, missingPlayerIds]);
 
   const shortNames = useMemo(() => disambiguateShortNames(players), [players]);
+  const sixesParticipants = useMemo(() => {
+    const ids = new Set<string>();
+    (sixesConfig.sets ?? []).forEach(s => [...s.team1, ...s.team2].forEach(id => { if (id) ids.add(id); }));
+    return players.filter(p => ids.has(p.id));
+  }, [players, sixesConfig.sets]);
+
   const getShortName = (id: string) => shortNames.get(id) ?? players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
   const getFullName = (id: string) => formatPlayerName(players.find(p => p.id === id)?.name ?? '?');
   const disambiguated = useMemo(() => disambiguateInitials(players), [players]);
@@ -118,7 +126,19 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
     <Card className={cn('border-accent/50', isDisabled && 'opacity-50')}>
       <CardHeader className="py-3">
         <CardTitle className="text-sm flex items-center justify-between">
-          <span>Sixes</span>
+          <span className="flex items-center gap-1">
+            Sixes
+            <TeamBetHandicapInfo
+              players={sixesParticipants}
+              effectiveHandicaps={sixesConfig.teamHandicaps}
+              handicapConfig={sixesConfig.handicapConfig}
+              useHandicap={sixesConfig.useHandicap}
+              title="Sixes — Hándicaps"
+              modalityLine={`${sixesScoringLabel} · ${sixesCobroLabel}`}
+              note="Las parejas rotan por set (1–6, 7–12, 13–18); los golpes de cada jugador se mantienen iguales en los tres sets."
+            />
+          </span>
+
           <div className="flex items-center gap-2">
             {isDisabled ? (
               <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>

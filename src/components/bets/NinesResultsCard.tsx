@@ -10,6 +10,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Badge } from '@/components/ui/badge';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { AlertTriangle, Trophy, Star } from 'lucide-react';
+import { TeamBetHandicapInfo } from './TeamBetHandicapInfo';
+
 
 interface NinesResultsCardProps {
   players: Player[];
@@ -207,7 +209,17 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm">Nines (5-3-1)</CardTitle>
+        <CardTitle className="text-sm flex items-center gap-1">
+          Nines (5-3-1)
+          <TeamBetHandicapInfo
+            players={activePlayers}
+            effectiveHandicaps={ninesConfig.playerHandicaps}
+            title="Nines — Hándicaps"
+            modalityLine={`Reparto 5-3-1 · $${fmtMoney(ninesConfig.valuePerPoint)}/pto`}
+            note="Nines reparte 9 puntos por hoyo entre los 3 jugadores según su score neto; cada jugador juega con sus propios golpes (no hay modalidades de equipo)."
+          />
+        </CardTitle>
+
       </CardHeader>
       <CardContent className="space-y-3">
         {/* Grid de tarjetas estilo Stableford */}

@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
-import { Player } from '@/types/golf';
+import { Player, TeamHandicapConfig } from '@/types/golf';
+import { TeamBetHandicapInfo } from './TeamBetHandicapInfo';
+
 import { fmtMoney } from '@/lib/formatMoney';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -124,9 +126,12 @@ interface CarritosResultsCardProps {
   onCancel?: () => void;
   isDisabled?: boolean;
   onToggleDisabled?: () => void;
+  teamHandicaps?: Record<string, number>;
+  handicapConfig?: TeamHandicapConfig;
 }
 
-const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, players, basePlayerId, title = 'Carritos (Equipos)', roundHoles = 18, onCancel, isDisabled, onToggleDisabled }) => {
+const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, players, basePlayerId, title = 'Carritos (Equipos)', roundHoles = 18, onCancel, isDisabled, onToggleDisabled, teamHandicaps, handicapConfig }) => {
+
   const isNineHole = roundHoles === 9;
 
   const getPlayer = (id: string) => players.find(p => p.id === id);
@@ -255,10 +260,18 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
     <Card className={cn('border-accent/50', isDisabled && 'opacity-50')}>
       <CardHeader className="py-3">
         <CardTitle className="text-sm flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Users className="h-4 w-4" />
             {title}
+            <TeamBetHandicapInfo
+              players={[...displayTeamAPlayers, ...displayTeamBPlayers]}
+              effectiveHandicaps={teamHandicaps}
+              handicapConfig={handicapConfig}
+              title={`${title} — Hándicaps`}
+              modalityLine={scoringLabel}
+            />
           </div>
+
           <div className="flex items-center gap-2">
             {isDisabled ? (
               <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
