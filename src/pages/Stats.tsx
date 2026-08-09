@@ -338,13 +338,13 @@ function HoleByHoleChart({ holeAvgs, courseName }: { holeAvgs: HoleAvg[]; course
   );
 }
 /* ═══════════════ MILESTONES ═══════════════ */
-function Milestones({ milestones: m, roundsPlayed }: { milestones: PlayerMilestone; roundsPlayed: number }) {
+function Milestones({ milestones: m, roundsPlayed, courseName }: { milestones: PlayerMilestone; roundsPlayed: number; courseName?: string | null }) {
   const items = [
     { emoji: '🦅', label: 'Águilas', value: m.eagles_total, zero: true },
     { emoji: '🐦', label: 'Birdies', value: m.birdies_total, zero: true },
     { emoji: '🏆', label: 'Mejor ronda', value: m.best_round_score != null ? `${m.best_round_score}` : '—', sub: m.best_round_course ?? undefined },
     { emoji: '🔥', label: 'Mejor racha', value: `${m.birdie_streak_best}`, sub: 'Birdies seguidos', zero: true },
-    { emoji: '📍', label: 'Campos jugados', value: m.unique_courses },
+    ...(courseName ? [] : [{ emoji: '📍', label: 'Campos jugados', value: m.unique_courses }]),
     { emoji: '🏌️', label: 'Rondas jugadas', value: roundsPlayed },
     { emoji: '👥', label: 'Contrincantes', value: m.unique_opponents },
     { emoji: '⛳', label: 'Hoyos jugados', value: m.total_holes },
@@ -354,7 +354,8 @@ function Milestones({ milestones: m, roundsPlayed }: { milestones: PlayerMilesto
     { emoji: '__arrow_right_amber', label: '\n', value: m.rounds_sub_90 - m.rounds_sub_80, sub: 'Rondas 80–89', zero: true },
     { emoji: '__arrow_up_red', label: '\n', value: m.rounds_sub_100 - m.rounds_sub_90, sub: 'Rondas 90–99', zero: true },
     { emoji: '💯', label: '> 100', value: Math.max(0, roundsPlayed - m.rounds_sub_100), zero: true },
-  ];
+  ] as Array<{ emoji: string; label: string; value: string | number; sub?: string; zero?: boolean; special?: boolean }>;
+
 
   return (
     <section>
