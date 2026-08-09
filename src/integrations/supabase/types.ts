@@ -2808,39 +2808,74 @@ export type Database = {
           rounds_played: number
         }[]
       }
-      get_player_milestones: {
-        Args: never
-        Returns: {
-          best_round_course: string
-          best_round_date: string
-          best_round_score: number
-          birdie_streak_best: number
-          birdies_total: number
-          eagles_total: number
-          handicap_delta: number
-          holes_in_one: number
-          organizer_rounds: number
-          rounds_no_bogey: number
-          rounds_sub_100: number
-          rounds_sub_70: number
-          rounds_sub_80: number
-          rounds_sub_90: number
-          total_holes: number
-          unique_courses: number
-          unique_opponents: number
-        }[]
-      }
-      get_player_recent_rounds: {
-        Args: never
-        Returns: {
-          course_name: string
-          holes_played: number
-          round_date: string
-          total_putts: number
-          total_strokes: number
-          vs_par: number
-        }[]
-      }
+      get_player_milestones:
+        | {
+            Args: never
+            Returns: {
+              best_round_course: string
+              best_round_date: string
+              best_round_score: number
+              birdie_streak_best: number
+              birdies_total: number
+              eagles_total: number
+              handicap_delta: number
+              holes_in_one: number
+              organizer_rounds: number
+              rounds_no_bogey: number
+              rounds_sub_100: number
+              rounds_sub_70: number
+              rounds_sub_80: number
+              rounds_sub_90: number
+              total_holes: number
+              unique_courses: number
+              unique_opponents: number
+            }[]
+          }
+        | {
+            Args: { p_course_id?: string }
+            Returns: {
+              best_round_course: string
+              best_round_date: string
+              best_round_score: number
+              birdie_streak_best: number
+              birdies_total: number
+              eagles_total: number
+              handicap_delta: number
+              holes_in_one: number
+              organizer_rounds: number
+              rounds_no_bogey: number
+              rounds_sub_100: number
+              rounds_sub_70: number
+              rounds_sub_80: number
+              rounds_sub_90: number
+              total_holes: number
+              unique_courses: number
+              unique_opponents: number
+            }[]
+          }
+      get_player_recent_rounds:
+        | {
+            Args: never
+            Returns: {
+              course_name: string
+              holes_played: number
+              round_date: string
+              total_putts: number
+              total_strokes: number
+              vs_par: number
+            }[]
+          }
+        | {
+            Args: { p_course_id?: string }
+            Returns: {
+              course_name: string
+              holes_played: number
+              round_date: string
+              total_putts: number
+              total_strokes: number
+              vs_par: number
+            }[]
+          }
       get_player_score_by_hole: {
         Args: { p_course_id: string }
         Returns: {

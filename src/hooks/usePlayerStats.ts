@@ -93,9 +93,10 @@ export function usePlayerStats(courseId: string | null) {
       try {
         const [statsRes, milestonesRes, coursesRes, recentRes] = await Promise.all([
           supabase.rpc('get_player_stats', { p_course_id: courseId ?? undefined } as any),
-          supabase.rpc('get_player_milestones' as any),
+          supabase.rpc('get_player_milestones' as any, { p_course_id: courseId ?? undefined } as any),
           supabase.rpc('get_player_courses_summary' as any),
-          supabase.rpc('get_player_recent_rounds' as any),
+          supabase.rpc('get_player_recent_rounds' as any, { p_course_id: courseId ?? undefined } as any),
+
         ]);
         if (cancelled) return;
         if (statsRes.error) throw statsRes.error;

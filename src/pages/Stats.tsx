@@ -114,8 +114,9 @@ export const StatsInlineView: React.FC = () => {
               {courseId && holeAvgs.length > 0 && (
                 <HoleByHoleChart holeAvgs={holeAvgs} courseName={selectedCourse?.course_name ?? ''} />
               )}
-              {milestones && <Milestones milestones={milestones} roundsPlayed={stats.rounds_played} />}
-              {recentRounds.length > 0 && <RecentRoundsSection rounds={recentRounds} />}
+              {milestones && <Milestones milestones={milestones} roundsPlayed={stats.rounds_played} courseName={courseId ? (selectedCourse?.course_name ?? null) : null} />}
+              {recentRounds.length > 0 && <RecentRoundsSection rounds={recentRounds} courseName={courseId ? (selectedCourse?.course_name ?? null) : null} />}
+
             </>
           )}
         </>
@@ -337,13 +338,13 @@ function HoleByHoleChart({ holeAvgs, courseName }: { holeAvgs: HoleAvg[]; course
   );
 }
 /* ═══════════════ MILESTONES ═══════════════ */
-function Milestones({ milestones: m, roundsPlayed }: { milestones: PlayerMilestone; roundsPlayed: number }) {
+function Milestones({ milestones: m, roundsPlayed, courseName }: { milestones: PlayerMilestone; roundsPlayed: number; courseName?: string | null }) {
   const items = [
     { emoji: '🦅', label: 'Águilas', value: m.eagles_total, zero: true },
     { emoji: '🐦', label: 'Birdies', value: m.birdies_total, zero: true },
     { emoji: '🏆', label: 'Mejor ronda', value: m.best_round_score != null ? `${m.best_round_score}` : '—', sub: m.best_round_course ?? undefined },
     { emoji: '🔥', label: 'Mejor racha', value: `${m.birdie_streak_best}`, sub: 'Birdies seguidos', zero: true },
-    { emoji: '📍', label: 'Campos jugados', value: m.unique_courses },
+    ...(courseName ? [] : [{ emoji: '📍', label: 'Campos jugados', value: m.unique_courses }]),
     { emoji: '🏌️', label: 'Rondas jugadas', value: roundsPlayed },
     { emoji: '👥', label: 'Contrincantes', value: m.unique_opponents },
     { emoji: '⛳', label: 'Hoyos jugados', value: m.total_holes },
@@ -353,11 +354,12 @@ function Milestones({ milestones: m, roundsPlayed }: { milestones: PlayerMilesto
     { emoji: '__arrow_right_amber', label: '\n', value: m.rounds_sub_90 - m.rounds_sub_80, sub: 'Rondas 80–89', zero: true },
     { emoji: '__arrow_up_red', label: '\n', value: m.rounds_sub_100 - m.rounds_sub_90, sub: 'Rondas 90–99', zero: true },
     { emoji: '💯', label: '> 100', value: Math.max(0, roundsPlayed - m.rounds_sub_100), zero: true },
-  ];
+  ] as Array<{ emoji: string; label: string; value: string | number; sub?: string; zero?: boolean; special?: boolean }>;
+
 
   return (
     <section>
-      <h2 className="text-sm font-semibold text-foreground mb-3">Logros</h2>
+      <h2 className="text-sm font-semibold text-foreground mb-3">{courseName ? `Logros · ${courseName}` : 'Logros'}</h2>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
         {items.map((it, i) => {
           const isZero = (it.zero && (it.value === 0 || it.value === '0'));
@@ -393,7 +395,7 @@ function Milestones({ milestones: m, roundsPlayed }: { milestones: PlayerMilesto
 }
 
 /* ═══════════════ RECENT ROUNDS ═══════════════ */
-function RecentRoundsSection({ rounds }: { rounds: RecentRound[] }) {
+function RecentRoundsSection({ rounds, courseName }: { rounds: RecentRound[]; courseName?: string | null }) {
   const borderColor = (vsPar: number) => {
     if (vsPar < 0) return 'border-l-emerald-500';
     if (vsPar <= 5) return 'border-l-yellow-500';
@@ -410,7 +412,7 @@ function RecentRoundsSection({ rounds }: { rounds: RecentRound[] }) {
 
   return (
     <section>
-      <h2 className="text-sm font-semibold text-foreground mb-3">Últimas Rondas</h2>
+      <h2 className="text-sm font-semibold text-foreground mb-3">{courseName ? `Últimas Rondas · ${courseName}` : 'Últimas Rondas'}</h2>
       <div className="space-y-1.5">
         {rounds.map((r, i) => (
           <div key={i} className={cn("flex items-center gap-2 px-3 py-2 rounded-lg bg-card border border-l-4", borderColor(r.vs_par))}>
