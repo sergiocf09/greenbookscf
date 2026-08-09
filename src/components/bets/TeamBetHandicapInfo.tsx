@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
-import { Player, TeamHandicapConfig, TeamHandicapMode } from '@/types/golf';
+import { Player, TeamHandicapConfig, TeamHandicapMode, GolfCourse } from '@/types/golf';
+import { calculateStrokesPerHole, calculateStrokesPerHoleWithHalf } from '@/lib/handicapUtils';
+
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Info } from 'lucide-react';
