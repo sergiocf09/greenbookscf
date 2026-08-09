@@ -93,6 +93,60 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
   const minHcp = rows.length ? Math.min(...rows.map(r => r.courseHcp)) : 0;
   const receivers = rows.filter(r => r.strokes > 0);
 
+  const rowById = new Map(rows.map(r => [r.player.id, r]));
+  const pickRows = (list?: Player[]) =>
+    (list ?? []).map(p => rowById.get(p.id)).filter((r): r is typeof rows[number] => !!r);
+  const rowsA = pickRows(teamA);
+  const rowsB = pickRows(teamB);
+  const grouped = rowsA.length > 0 && rowsB.length > 0;
+  const sum = (list: typeof rows) => list.reduce((s, r) => s + r.courseHcp, 0);
+  const sumStrokes = (list: typeof rows) => list.reduce((s, r) => s + r.strokes, 0);
+  const sumA = sum(rowsA);
+  const sumB = sum(rowsB);
+  const diffTeams = Math.abs(sumA - sumB);
+  const higherTeam = sumA === sumB ? null : sumA > sumB ? 'A' : 'B';
+
+  const TeamColumn = ({ label, teamRows, align }: { label: string; teamRows: typeof rows; align: 'left' | 'right' }) => (
+    <div className="min-w-0">
+      <div
+        className={cn(
+          'px-2 py-1 bg-muted/60 text-[9px] uppercase tracking-wide text-muted-foreground font-semibold',
+          align === 'right' ? 'text-right' : 'text-left',
+        )}
+      >
+        {label}
+      </div>
+      {teamRows.map(({ player, courseHcp, strokes }) => (
+        <div
+          key={player.id}
+          className={cn(
+            'px-2 py-1 border-t border-border/50 text-[11px] tabular-nums flex items-baseline gap-1.5',
+            align === 'right' ? 'flex-row-reverse text-right' : 'text-left',
+          )}
+        >
+          <span className="truncate flex-1 min-w-0">{getName(player)}</span>
+          <span className="text-muted-foreground shrink-0">{fmtHcp(courseHcp)}</span>
+          <span className={cn('font-semibold shrink-0 w-9', strokes > 0 ? 'text-primary' : 'text-muted-foreground', align === 'right' ? 'text-left' : 'text-right')}>
+            {strokes > 0 ? `+${fmtHcp(strokes)}` : '0'}
+          </span>
+        </div>
+      ))}
+      <div
+        className={cn(
+          'px-2 py-1 border-t border-border bg-muted/30 text-[10px] tabular-nums flex items-baseline gap-1.5 font-semibold',
+          align === 'right' ? 'flex-row-reverse text-right' : 'text-left',
+        )}
+      >
+        <span className="flex-1 min-w-0 text-muted-foreground uppercase text-[9px]">Suma</span>
+        <span className="shrink-0">{fmtHcp(sum(teamRows))}</span>
+        <span className={cn('shrink-0 w-9 text-primary', align === 'right' ? 'text-left' : 'text-right')}>
+          {sumStrokes(teamRows) > 0 ? `+${fmtHcp(sumStrokes(teamRows))}` : '0'}
+        </span>
+      </div>
+    </div>
+  );
+
+
   const calcText = useMemo(() => {
     if (!useHandicap) {
       return 'Esta apuesta se juega a score gross: nadie recibe golpes.';
