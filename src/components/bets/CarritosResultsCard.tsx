@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
-import { Player } from '@/types/golf';
+import { Player, TeamHandicapConfig } from '@/types/golf';
+import { TeamBetHandicapInfo } from './TeamBetHandicapInfo';
+
 import { fmtMoney } from '@/lib/formatMoney';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
