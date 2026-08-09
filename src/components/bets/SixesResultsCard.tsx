@@ -118,7 +118,19 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
     <Card className={cn('border-accent/50', isDisabled && 'opacity-50')}>
       <CardHeader className="py-3">
         <CardTitle className="text-sm flex items-center justify-between">
-          <span>Sixes</span>
+          <span className="flex items-center gap-1">
+            Sixes
+            <TeamBetHandicapInfo
+              players={sixesParticipants}
+              effectiveHandicaps={sixesConfig.teamHandicaps}
+              handicapConfig={sixesConfig.handicapConfig}
+              useHandicap={sixesConfig.useHandicap}
+              title="Sixes — Hándicaps"
+              modalityLine={`${sixesScoringLabel} · ${sixesCobroLabel}`}
+              note="Las parejas rotan por set (1–6, 7–12, 13–18); los golpes de cada jugador se mantienen iguales en los tres sets."
+            />
+          </span>
+
           <div className="flex items-center gap-2">
             {isDisabled ? (
               <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
