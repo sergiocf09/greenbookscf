@@ -22,6 +22,8 @@ import { ScoringView } from '@/components/scoring/ScoringView';
 import { Scorecard } from '@/components/scorecard/Scorecard';
 import { LeaderboardDialog } from '@/components/LeaderboardDialog';
 import { BetDashboard } from '@/components/bets/BetDashboard';
+import { DeleteRoundButton } from '@/components/round/DeleteRoundButton';
+
 import { Player, PlayerScore, BetConfig, GolfCourse, PlayerGroup, SideBet, ZooEvent } from '@/types/golf';
 import { useWolf } from '@/hooks/useWolf';
 import { useSixes } from '@/hooks/useSixes';
