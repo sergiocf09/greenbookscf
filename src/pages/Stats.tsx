@@ -359,7 +359,7 @@ function Milestones({ milestones: m, roundsPlayed, courseName }: { milestones: P
 
   return (
     <section>
-      <h2 className="text-sm font-semibold text-foreground mb-3">Logros</h2>
+      <h2 className="text-sm font-semibold text-foreground mb-3">{courseName ? `Logros · ${courseName}` : 'Logros'}</h2>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
         {items.map((it, i) => {
           const isZero = (it.zero && (it.value === 0 || it.value === '0'));
@@ -395,7 +395,7 @@ function Milestones({ milestones: m, roundsPlayed, courseName }: { milestones: P
 }
 
 /* ═══════════════ RECENT ROUNDS ═══════════════ */
-function RecentRoundsSection({ rounds }: { rounds: RecentRound[] }) {
+function RecentRoundsSection({ rounds, courseName }: { rounds: RecentRound[]; courseName?: string | null }) {
   const borderColor = (vsPar: number) => {
     if (vsPar < 0) return 'border-l-emerald-500';
     if (vsPar <= 5) return 'border-l-yellow-500';
@@ -412,7 +412,7 @@ function RecentRoundsSection({ rounds }: { rounds: RecentRound[] }) {
 
   return (
     <section>
-      <h2 className="text-sm font-semibold text-foreground mb-3">Últimas Rondas</h2>
+      <h2 className="text-sm font-semibold text-foreground mb-3">{courseName ? `Últimas Rondas · ${courseName}` : 'Últimas Rondas'}</h2>
       <div className="space-y-1.5">
         {rounds.map((r, i) => (
           <div key={i} className={cn("flex items-center gap-2 px-3 py-2 rounded-lg bg-card border border-l-4", borderColor(r.vs_par))}>
