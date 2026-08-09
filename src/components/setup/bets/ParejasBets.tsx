@@ -15,6 +15,12 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ParejasParticipationMatrix } from './ParejasParticipationMatrix';
+import { BasePairSelector } from './BasePairSelector';
+import {
+  buildBasePairTeamPressures,
+  buildBasePairCarritosTeams,
+  dropExistingMatches,
+} from './basePairGenerator';
 import {
   AlertDialog,
   AlertDialogAction,
