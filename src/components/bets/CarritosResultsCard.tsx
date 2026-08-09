@@ -265,6 +265,8 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
             {title}
             <TeamBetHandicapInfo
               players={[...displayTeamAPlayers, ...displayTeamBPlayers]}
+              teamA={displayTeamAPlayers}
+              teamB={displayTeamBPlayers}
               effectiveHandicaps={teamHandicaps}
               handicapConfig={handicapConfig}
               title={`${title} — Hándicaps`}

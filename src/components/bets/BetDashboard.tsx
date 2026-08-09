@@ -2811,13 +2811,15 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   Foursome {idx + 1}
                   <TeamBetHandicapInfo
                     players={[...displayTeamAPlayers, ...displayTeamBPlayers]}
+                    teamA={displayTeamAPlayers}
+                    teamB={displayTeamBPlayers}
                     effectiveHandicaps={bet.teamHandicaps}
                     handicapConfig={bet.handicapConfig}
                     title={`Foursome ${idx + 1} — Hándicaps`}
                     modalityLine={[
                       bet.scoringType === 'lowBall' ? 'Low Ball'
                         : bet.scoringType === 'highBall' ? 'High Ball'
-                        : bet.scoringType === 'combined' ? 'Combinado (suma)'
+                        : bet.scoringType === 'combined' ? 'Bola Baja + Bola Alta'
                         : 'Match Play',
                       bet.continua && bet.scoringType === 'matchOnly' ? 'Match 18 continuo' : `Presión al ${bet.openingThreshold}`,
                     ].join(' · ')}
