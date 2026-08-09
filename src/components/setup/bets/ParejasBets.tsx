@@ -188,14 +188,70 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
   );
 
   // ===== Base pair (5 players) generators =====
+  /** Strokes player A gives to player B (matrix first, then handicap difference). */
+  const getBasePairStrokes = (aId: string, bId: string): number => {
+    if (getStrokesForLocalPair) {
+      const pairState = getLocalPairStrokeState?.(aId, bId);
+      if (pairState?.hasExplicitOverride) return pairState.strokes;
+      const persisted = getStrokesForLocalPair(aId, bId);
+      if (persisted !== 0) return persisted;
+    }
+    const hcpA = players.find((p) => p.id === aId)?.handicap ?? 0;
+    const hcpB = players.find((p) => p.id === bId)?.handicap ?? 0;
+    return Math.round(hcpB - hcpA);
+  };
+
+  const resolveTeamHandicaps: TeamHandicapResolver = (mode, teamA, teamB) => {
+    const allIds = [...teamA, ...teamB].filter(Boolean);
+    const hcpMap: Record<string, number> = {};
+    allIds.forEach((id) => {
+      hcpMap[id] = players.find((p) => p.id === id)?.handicap ?? 0;
+    });
+
+    if (mode === 'individual') {
+      return { teamHandicaps: { ...hcpMap } };
+    }
+    if (mode === 'baseCero') {
+      const minHcp = Math.min(...allIds.map((id) => hcpMap[id]));
+      const out: Record<string, number> = {};
+      allIds.forEach((id) => { out[id] = Math.round(hcpMap[id] - minHcp); });
+      return { teamHandicaps: out };
+    }
+    if (mode === 'diferencialEquipo') {
+      const { teamHandicaps } = calcTeamDifferentialFn(teamA, teamB, hcpMap);
+      return { teamHandicaps };
+    }
+    if (mode === 'slidingEquipo') {
+      const slidings = {
+        ac: getBasePairStrokes(teamA[0], teamB[0]),
+        ad: getBasePairStrokes(teamA[0], teamB[1]),
+        bc: getBasePairStrokes(teamA[1], teamB[0]),
+        bd: getBasePairStrokes(teamA[1], teamB[1]),
+      };
+      const result = calcSlidingTeamDifferentialFn(slidings, teamA, teamB, hcpMap, 'halfPoint');
+      return {
+        teamHandicaps: result.teamHandicaps,
+        ...(result.hasHalf ? { slidingHalfPointMode: 'halfPoint' as const } : {}),
+      };
+    }
+    return { teamHandicaps: { ...hcpMap } };
+  };
+
   const generateFoursomesFromBase = (
     base: [string, string],
     others: string[],
-    mode: 'replace' | 'add'
+    mode: 'replace' | 'add',
+    defaults: BasePairDefaults
   ) => {
     const existing = config.teamPressures.bets;
     const template = existing[0];
-    let generated = buildBasePairTeamPressures(base, others, template);
+    let generated = buildBasePairTeamPressures(
+      base,
+      others,
+      template,
+      defaults,
+      resolveTeamHandicaps
+    );
     const keptBets = mode === 'replace' ? [] : existing;
     if (mode === 'add') generated = dropExistingMatches(generated, existing);
     onUpdateConfig({
@@ -212,14 +268,21 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
   const generateCarritosFromBase = (
     base: [string, string],
     others: string[],
-    mode: 'replace' | 'add'
+    mode: 'replace' | 'add',
+    defaults: BasePairDefaults
   ) => {
     const existingTeams = config.carritosTeams || [];
     const primary = hasPrimaryCarritos
       ? [{ teamA: config.carritos.teamA, teamB: config.carritos.teamB }]
       : [];
     const template = existingTeams[0] ?? (hasPrimaryCarritos ? config.carritos : undefined);
-    let generated = buildBasePairCarritosTeams(base, others, template as Partial<CarritosTeamBet>);
+    let generated = buildBasePairCarritosTeams(
+      base,
+      others,
+      template as Partial<CarritosTeamBet>,
+      defaults,
+      resolveTeamHandicaps
+    );
     if (mode === 'add') {
       generated = dropExistingMatches(generated, [...primary, ...existingTeams]);
     }
