@@ -184,7 +184,7 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
           <span className="sr-only">Ver hándicaps y modalidad</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent side="top" align="end" className="w-[320px] max-h-[70vh] overflow-y-auto p-3">
+      <PopoverContent side="top" align="end" className="w-[360px] max-h-[70vh] overflow-y-auto p-3">
         <div className="space-y-2">
           <div className="font-semibold text-xs flex items-center gap-1.5">
             <Info className="h-3.5 w-3.5 text-primary" />

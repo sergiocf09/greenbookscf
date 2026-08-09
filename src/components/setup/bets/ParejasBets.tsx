@@ -1001,7 +1001,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
           <SelectContent>
             <SelectItem value="lowBall">Bola Baja</SelectItem>
             <SelectItem value="highBall">Bola Alta</SelectItem>
-            <SelectItem value="combined">Combinado</SelectItem>
+            <SelectItem value="combined">Bola Baja + Bola Alta</SelectItem>
             <SelectItem value="matchOnly">Sin presiones</SelectItem>
           </SelectContent>
         </Select>
@@ -1368,7 +1368,7 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
           <SelectContent>
             <SelectItem value="lowBall">Low Ball</SelectItem>
             <SelectItem value="highBall">High Ball</SelectItem>
-            <SelectItem value="combined">Combinado</SelectItem>
+            <SelectItem value="combined">Bola Baja + Bola Alta</SelectItem>
             <SelectItem value="all">Todos</SelectItem>
           </SelectContent>
         </Select>
