@@ -114,8 +114,9 @@ export const StatsInlineView: React.FC = () => {
               {courseId && holeAvgs.length > 0 && (
                 <HoleByHoleChart holeAvgs={holeAvgs} courseName={selectedCourse?.course_name ?? ''} />
               )}
-              {milestones && <Milestones milestones={milestones} roundsPlayed={stats.rounds_played} />}
-              {recentRounds.length > 0 && <RecentRoundsSection rounds={recentRounds} />}
+              {milestones && <Milestones milestones={milestones} roundsPlayed={stats.rounds_played} courseName={courseId ? (selectedCourse?.course_name ?? null) : null} />}
+              {recentRounds.length > 0 && <RecentRoundsSection rounds={recentRounds} courseName={courseId ? (selectedCourse?.course_name ?? null) : null} />}
+
             </>
           )}
         </>
