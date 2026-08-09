@@ -56,6 +56,24 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
     return players.filter(p => ids.has(p.id));
   }, [players, sixesConfig.sets]);
 
+  const SET_HOLE_RANGES: Record<number, [number, number]> = { 1: [1, 6], 2: [7, 12], 3: [13, 18] };
+  const hcpSegments = useMemo(() => {
+    return ([1, 2, 3] as const)
+      .map(setNum => {
+        const s = (sixesConfig.sets ?? []).find(x => x.setNumber === setNum);
+        if (!s) return null;
+        const [start, end] = SET_HOLE_RANGES[setNum];
+        const holes = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+        const pick = (ids: string[]) => ids.map(id => players.find(p => p.id === id)).filter((p): p is typeof players[number] => !!p);
+        const teamA = pick([...s.team1]);
+        const teamB = pick([...s.team2]);
+        if (teamA.length === 0 || teamB.length === 0) return null;
+        return { label: `Tramo ${setNum}`, holes, teamA, teamB, teamALabel: 'Equipo 1', teamBLabel: 'Equipo 2' };
+      })
+      .filter((s): s is NonNullable<typeof s> => s !== null);
+  }, [players, sixesConfig.sets]);
+
+
   const getShortName = (id: string) => shortNames.get(id) ?? players.find(p => p.id === id)?.name?.split(' ')[0] ?? '?';
   const getFullName = (id: string) => formatPlayerName(players.find(p => p.id === id)?.name ?? '?');
   const disambiguated = useMemo(() => disambiguateInitials(players), [players]);
