@@ -15,6 +15,12 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ParejasParticipationMatrix } from './ParejasParticipationMatrix';
+import { BasePairSelector } from './BasePairSelector';
+import {
+  buildBasePairTeamPressures,
+  buildBasePairCarritosTeams,
+  dropExistingMatches,
+} from './basePairGenerator';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -167,6 +173,9 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
     });
   };
 
+
+
+
   // For carritos primary - just delegate to addCarritosTeam
   const addCarritosPrimary = () => {
     addCarritosTeam();
@@ -177,6 +186,61 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
     config.carritos.teamA[0] || config.carritos.teamA[1] ||
     config.carritos.teamB[0] || config.carritos.teamB[1]
   );
+
+  // ===== Base pair (5 players) generators =====
+  const generateFoursomesFromBase = (
+    base: [string, string],
+    others: string[],
+    mode: 'replace' | 'add'
+  ) => {
+    const existing = config.teamPressures.bets;
+    const template = existing[0];
+    let generated = buildBasePairTeamPressures(base, others, template);
+    const keptBets = mode === 'replace' ? [] : existing;
+    if (mode === 'add') generated = dropExistingMatches(generated, existing);
+    onUpdateConfig({
+      ...config,
+      basePairTeamPressures: base,
+      teamPressures: {
+        ...config.teamPressures,
+        enabled: true,
+        bets: [...keptBets, ...generated],
+      },
+    });
+  };
+
+  const generateCarritosFromBase = (
+    base: [string, string],
+    others: string[],
+    mode: 'replace' | 'add'
+  ) => {
+    const existingTeams = config.carritosTeams || [];
+    const primary = hasPrimaryCarritos
+      ? [{ teamA: config.carritos.teamA, teamB: config.carritos.teamB }]
+      : [];
+    const template = existingTeams[0] ?? (hasPrimaryCarritos ? config.carritos : undefined);
+    let generated = buildBasePairCarritosTeams(base, others, template as Partial<CarritosTeamBet>);
+    if (mode === 'add') {
+      generated = dropExistingMatches(generated, [...primary, ...existingTeams]);
+    }
+    onUpdateConfig({
+      ...config,
+      basePairCarritos: base,
+      carritos: {
+        ...config.carritos,
+        enabled: true,
+        ...(mode === 'replace'
+          ? { teamA: ['', ''] as [string, string], teamB: ['', ''] as [string, string] }
+          : {}),
+      },
+      carritosTeams: mode === 'replace' ? generated : [...existingTeams, ...generated],
+    });
+  };
+
+  const carritosMatchCount =
+    (config.carritosTeams || []).length + (hasPrimaryCarritos ? 1 : 0);
+
+
 
   if (players.length < 4) {
     return (
@@ -220,6 +284,15 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         onExpandChange={(open) => onToggleSection('teamPressures', open)}
         helpText="Match play por equipos de 2 vs 2. Se compara el score neto de cada equipo (según modalidad: Bola Baja, Bola Alta o Combinado). Se abre una nueva presión cuando un equipo va arriba por el umbral configurado."
       >
+        {foursomesOptions.length === 5 && (
+          <BasePairSelector
+            playerOptions={foursomesOptions}
+            basePair={config.basePairTeamPressures}
+            onChangeBasePair={(pair) => onUpdateConfig({ ...config, basePairTeamPressures: pair })}
+            existingCount={config.teamPressures.bets.length}
+            onGenerate={generateFoursomesFromBase}
+          />
+        )}
         {config.teamPressures.bets.length === 0 ? (
           <div className="text-center py-4">
             <p className="text-xs text-muted-foreground mb-2">No hay foursomes configurados</p>
@@ -280,6 +353,15 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         helpText="Medal por equipos de 2 vs 2. Se suma el score neto del equipo según la modalidad (Bola Baja, Bola Alta o Combinado) y se compara Front 9, Back 9 y Total 18. El equipo con menor total gana cada segmento."
       >
         {/* Show add button if no carritos configured yet */}
+        {carritosOptions.length === 5 && (
+          <BasePairSelector
+            playerOptions={carritosOptions}
+            basePair={config.basePairCarritos}
+            onChangeBasePair={(pair) => onUpdateConfig({ ...config, basePairCarritos: pair })}
+            existingCount={carritosMatchCount}
+            onGenerate={generateCarritosFromBase}
+          />
+        )}
         {!hasPrimaryCarritos && (config.carritosTeams || []).length === 0 ? (
           <div className="text-center py-4">
             <p className="text-xs text-muted-foreground mb-2">No hay apuestas de carritos configuradas</p>

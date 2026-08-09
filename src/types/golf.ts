@@ -499,6 +499,9 @@ export interface BetConfig {
   girGeneral?: GIRGeneralBetConfig; // Group bet - most GIRs wins
   coneja: ConejaBetConfig; // Group bet - patas system per set of 6 holes
   carritosTeams?: CarritosTeamBet[]; // Multiple team bets
+  // Base pair (5-player round robin) selections per bet type
+  basePairTeamPressures?: [string, string];
+  basePairCarritos?: [string, string];
   betOverrides?: BetOverride[]; // Individual bet overrides
   disabledTeamBetIds?: string[]; // Team bet IDs (carritos/pressures) disabled from dashboard (override, not delete)
   bilateralHandicaps?: BilateralHandicap[]; // Handicap overrides per player pair
