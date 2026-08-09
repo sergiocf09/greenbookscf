@@ -14,7 +14,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { devError } from '@/lib/devLog';
+import { devError } from '@/lib/logger';
 
 interface DeleteRoundButtonProps {
   roundId: string | null;
