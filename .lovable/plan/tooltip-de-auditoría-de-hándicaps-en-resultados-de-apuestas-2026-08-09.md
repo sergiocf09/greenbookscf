@@ -59,3 +59,5 @@ diferencia redondeada frente a él.
   - `src/components/bets/SixesResultsCard.tsx`, `NinesResultsCard.tsx`, `VegasResultsCard.tsx`: header con el mismo componente y sus hándicaps por jugador.
 - Solo presentación: no se cambia ninguna lógica de cálculo ni persistencia.
 - Ayuda contextual (`ContextualHelp.tsx`): una línea nueva en la sección de resultados mencionando el ícono ℹ️ de auditoría de hándicaps.
+
+No se muestran los handicaps index, se muestran los handicaps course resulta tés del campo, y Tee box de cada jugador y de ahí se hace la matemática que correspnda
