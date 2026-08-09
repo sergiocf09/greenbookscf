@@ -77,9 +77,11 @@ const helpContent: Record<string, { icon: React.ReactNode; title: string; items:
     icon: <CoinDollarIcon className="h-5 w-5 text-primary" />,
     title: '💰 Balance General',
     items: [
-      'El Balance General muestra el saldo neto de cada jugador — lo que ganó o perdió contra todos los demás combinado.',
-      'Para ver el detalle: toca un jugador para seleccionarlo como base, luego toca a su rival. Verás el desglose completo de todas las apuestas entre esos dos.',
-      'El desglose está organizado en tres secciones: Individuales (Medal, Skins, Presiones, Coneja, etc.), Parejas (Carritos, Presiones Parejas) y Grupales (Medal General, Stableford, Nines, Wolf, Sixes, Las Vegas, etc.).',
+      'SECCIÓN SUPERIOR — Balance General: el saldo neto de cada jugador, es decir lo que ganó o perdió contra todos los demás en conjunto. Al desplegar un jugador ves su resultado contra cada rival, ya con todo incluido: sus apuestas individuales más la parte que le corresponde de las apuestas de parejas y grupales.',
+      'SEGUNDA SECCIÓN — detalle bilateral: toca un jugador para fijarlo como base y luego toca al rival contra quien quieres comparar. Se despliegan todas las apuestas que están jugando entre ellos, organizadas en Individuales (Medal, Skins, Presiones, Rayas, Unidades, Manchas, Oyeses, Coneja...), Parejas (Carritos, Presiones Parejas, Loba, Sixes, Vegas) y Grupales (Medal General, Stableford, Nines, Culebras, Pingüinos...).',
+      'CAPAS Y TOOLTIPS: dentro del desglose puedes abrir cada apuesta para ver hoyo por hoyo cómo se resolvió, y los tooltips ℹ️ explican de dónde salió cada cantidad (quién ganó el hoyo, strokes de hándicap aplicados, carries acumulados, presiones abiertas). Es la vista donde se audita todo el resultado deportivo y económico de la ronda.',
+      'OVERRIDE DE MONTO POR PAR: si dos jugadores acordaron un importe distinto al configurado de manera general, aquí mismo —en el desglose de ese par— editas el monto de esa apuesta. Ese valor manda sobre el monto global y solo afecta a esa bilateralidad.',
+      'CANCELAR UNA APUESTA EN UN PAR: con la ✕ eliminas esa apuesta únicamente para ese par. Así el setup general se hace una sola vez para todos y aquí vas quitando las que algún par no juega entre sí — queda claro y rápido, sin tocar la configuración de los demás.',
     ],
   },
   leaderboards: {
