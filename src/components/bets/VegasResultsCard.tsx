@@ -128,10 +128,19 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
     <Card className={cn('border-accent/50', isDisabled && 'opacity-50')}>
       <CardHeader className="py-3">
         <CardTitle className="text-sm flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Users className="h-4 w-4" />
             Las Vegas
+            <TeamBetHandicapInfo
+              players={players.filter(p => [vegasConfig.playerAId, vegasConfig.playerBId, vegasConfig.playerCId, vegasConfig.playerDId].includes(p.id))}
+              effectiveHandicaps={vegasConfig.teamHandicaps}
+              handicapConfig={vegasConfig.handicapConfig}
+              useHandicap={vegasConfig.useHandicap}
+              title="Las Vegas — Hándicaps"
+              modalityLine={vegasSummary}
+            />
           </div>
+
           <div className="flex items-center gap-2">
           {isDisabled ? (
               <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
