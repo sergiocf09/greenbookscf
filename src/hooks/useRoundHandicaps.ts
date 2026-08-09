@@ -396,9 +396,10 @@ export const useRoundHandicaps = ({
 
         const existingHcp = existingPlayerHandicaps.get(existingId) ?? 0;
         
-        // Calculate strokes: positive = player A gives strokes to B
-        // The player with higher handicap receives strokes
-        const strokeDiff = Math.round(newPlayerHandicap - existingHcp);
+        // Convention: strokes_given_by_a > 0 means A GIVES strokes to B.
+        // The LOWER handicap gives; the HIGHER handicap receives.
+        // So strokes the new player gives = existingHcp - newPlayerHandicap
+        const strokeDiff = Math.round(existingHcp - newPlayerHandicap);
         
         // Normalize the pair (alphabetically smaller ID first)
         const [normA, normB] = newPlayerId < existingId 
