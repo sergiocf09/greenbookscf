@@ -10,6 +10,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Users, XCircle, CheckCircle, ChevronDown, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { TeamBetHandicapInfo } from './TeamBetHandicapInfo';
+
 
 interface VegasResultsCardProps {
   players: Player[];
