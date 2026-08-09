@@ -1,7 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Users, Wand2 } from 'lucide-react';
+import { AmountInput } from './AmountInput';
+import { TeamHandicapMode } from '@/types/golf';
 import {
   Select,
   SelectContent,
@@ -19,6 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import type { BasePairDefaults } from './basePairGenerator';
 
 interface BasePairSelectorProps {
   /** Player options already filtered by the participation matrix (must be 5) */
@@ -27,8 +31,16 @@ interface BasePairSelectorProps {
   onChangeBasePair: (pair: [string, string]) => void;
   /** Number of matches already configured for this bet */
   existingCount: number;
+  /** Which bet family we are generating for */
+  variant: 'foursomes' | 'carritos';
+  isNineHole?: boolean;
   /** Generate the 3 matches. mode 'replace' clears existing ones first */
-  onGenerate: (base: [string, string], others: string[], mode: 'replace' | 'add') => void;
+  onGenerate: (
+    base: [string, string],
+    others: string[],
+    mode: 'replace' | 'add',
+    defaults: BasePairDefaults
+  ) => void;
 }
 
 export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
@@ -36,9 +48,28 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
   basePair,
   onChangeBasePair,
   existingCount,
+  variant,
+  isNineHole,
   onGenerate,
 }) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const isFoursomes = variant === 'foursomes';
+
+  const [scoringType, setScoringType] = useState<BasePairDefaults['scoringType']>(
+    isFoursomes ? 'lowBall' : 'all'
+  );
+  const [handicapMode, setHandicapMode] = useState<TeamHandicapMode>('individual');
+  const [frontAmount, setFrontAmount] = useState(100);
+  const [backAmount, setBackAmount] = useState(100);
+  const [totalAmount, setTotalAmount] = useState(100);
+  const [continua, setContinua] = useState(false);
+  const [unitsEnabled, setUnitsEnabled] = useState(false);
+  const [unitsValue, setUnitsValue] = useState(25);
+  const [oyesesEnabled, setOyesesEnabled] = useState(false);
+  const [oyesesValue, setOyesesValue] = useState(25);
+  const [oyesesModality, setOyesesModality] =
+    useState<'acumulados' | 'sangron'>('acumulados');
+
   const p1 = basePair?.[0] ?? '';
   const p2 = basePair?.[1] ?? '';
 
@@ -48,10 +79,27 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
   );
 
   const isValid = !!p1 && !!p2 && p1 !== p2 && others.length === 3;
+  const matchOnly18 = isFoursomes && scoringType === 'matchOnly' && continua;
 
   const run = (mode: 'replace' | 'add') => {
     if (!isValid) return;
-    onGenerate([p1, p2], others, mode);
+    onGenerate([p1, p2], others, mode, {
+      scoringType,
+      handicapMode,
+      frontAmount,
+      backAmount,
+      totalAmount,
+      ...(isFoursomes
+        ? {
+            continua: scoringType === 'matchOnly' ? continua : false,
+            unitsEnabled,
+            unitsValue,
+            oyesesEnabled,
+            oyesesValue,
+            oyesesModality,
+          }
+        : {}),
+    });
   };
 
   const handleClick = () => {
@@ -66,8 +114,9 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
         <p className="text-xs font-medium text-foreground">Pareja base (5 jugadores)</p>
       </div>
       <p className="text-[10px] text-muted-foreground leading-tight">
-        Elige los 2 jugadores que se mantienen juntos y genera los 3 matches contra
-        todas las combinaciones de los otros 3. Después puedes editar o eliminar cada match.
+        Elige los 2 jugadores que se mantienen juntos, define la configuración común y
+        genera los 3 matches contra todas las combinaciones de los otros 3. Después
+        puedes editar o eliminar cada match.
       </p>
 
       <div className="grid grid-cols-2 gap-2">
@@ -97,6 +146,144 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
             </Select>
           </div>
         ))}
+      </div>
+
+      {/* ── Configuración común de los 3 matches ── */}
+      <div className="space-y-2 pt-2 border-t border-primary/15">
+        <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+          Configuración para los 3 matches
+        </Label>
+
+        <div className="flex items-center justify-between">
+          <Label className="text-[10px] font-semibold text-primary">Modalidad Juego</Label>
+          <Select
+            value={scoringType}
+            onValueChange={(v) => setScoringType(v as BasePairDefaults['scoringType'])}
+          >
+            <SelectTrigger className="h-7 w-40 text-[11px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="lowBall">Bola Baja</SelectItem>
+              <SelectItem value="highBall">Bola Alta</SelectItem>
+              <SelectItem value="combined">Bola Baja + Bola Alta</SelectItem>
+              {isFoursomes ? (
+                <SelectItem value="matchOnly">Match Play</SelectItem>
+              ) : (
+                <SelectItem value="all">Suma Total (Todos)</SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <Label className="text-[10px] font-semibold text-primary">Modalidad HCP</Label>
+          <Select
+            value={handicapMode}
+            onValueChange={(v) => setHandicapMode(v as TeamHandicapMode)}
+          >
+            <SelectTrigger className="h-7 w-40 text-[11px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="individual">Full Hándicap</SelectItem>
+              <SelectItem value="baseCero">Base Cero</SelectItem>
+              <SelectItem value="diferencialEquipo">Diferencial Equipo</SelectItem>
+              <SelectItem value="slidingEquipo">Sliding Equipo</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {isFoursomes && scoringType === 'matchOnly' && (
+          <div className="flex items-center justify-between">
+            <Label className="text-[10px] text-muted-foreground">
+              Match Play por 18 hoyos
+            </Label>
+            <Switch checked={continua} onCheckedChange={setContinua} className="scale-75" />
+          </div>
+        )}
+
+        {matchOnly18 ? (
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground text-center block">
+              Match 18 (único)
+            </Label>
+            <AmountInput label="" value={totalAmount} onChange={setTotalAmount} />
+          </div>
+        ) : isNineHole ? (
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground text-center block">
+              Front 9
+            </Label>
+            <AmountInput label="" value={frontAmount} onChange={setFrontAmount} />
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-2">
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground text-center block">
+                Front 9
+              </Label>
+              <AmountInput label="" value={frontAmount} onChange={setFrontAmount} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground text-center block">
+                Back 9
+              </Label>
+              <AmountInput label="" value={backAmount} onChange={setBackAmount} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground text-center block">
+                Total 18
+              </Label>
+              <AmountInput label="" value={totalAmount} onChange={setTotalAmount} />
+            </div>
+          </div>
+        )}
+
+        {isFoursomes && (
+          <>
+            <div className="flex items-center justify-between pt-1">
+              <Label className="text-[10px] text-muted-foreground">⭐ Unidades</Label>
+              <Switch
+                checked={unitsEnabled}
+                onCheckedChange={setUnitsEnabled}
+                className="scale-75"
+              />
+            </div>
+            {unitsEnabled && (
+              <AmountInput label="" value={unitsValue} onChange={setUnitsValue} />
+            )}
+
+            <div className="flex items-center justify-between">
+              <Label className="text-[10px] text-muted-foreground">Oyeses</Label>
+              <Switch
+                checked={oyesesEnabled}
+                onCheckedChange={setOyesesEnabled}
+                className="scale-75"
+              />
+            </div>
+            {oyesesEnabled && (
+              <div className="space-y-2">
+                <AmountInput label="" value={oyesesValue} onChange={setOyesesValue} />
+                <div className="flex items-center justify-between">
+                  <Label className="text-[10px] text-muted-foreground">Modalidad Oyeses</Label>
+                  <Select
+                    value={oyesesModality}
+                    onValueChange={(v) => setOyesesModality(v as 'acumulados' | 'sangron')}
+                  >
+                    <SelectTrigger className="h-7 w-32 text-[11px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="acumulados">Acumulados</SelectItem>
+                      <SelectItem value="sangron">Sangrón</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       <Button

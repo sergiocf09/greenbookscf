@@ -5,7 +5,40 @@
  * for 2 of them to stay together as the "base pair" and play 3 matches against
  * every combination of the remaining 3 players (A+B, A+C, B+C).
  */
-import { CarritosTeamBet, TeamPressuresBet } from '@/types/golf';
+import {
+  CarritosTeamBet,
+  TeamPressuresBet,
+  TeamHandicapMode,
+  MarkerState,
+} from '@/types/golf';
+
+/** Shared configuration applied to every generated match. */
+export interface BasePairDefaults {
+  /** Play modality (Modalidad Juego) */
+  scoringType: 'lowBall' | 'highBall' | 'combined' | 'matchOnly' | 'all';
+  /** Handicap modality (Modalidad HCP) */
+  handicapMode: TeamHandicapMode;
+  frontAmount: number;
+  backAmount: number;
+  totalAmount: number;
+  /** Foursomes only */
+  openingThreshold?: number;
+  continua?: boolean;
+  unitsEnabled?: boolean;
+  unitsValue?: number;
+  oyesesEnabled?: boolean;
+  oyesesValue?: number;
+  oyesesModality?: 'acumulados' | 'sangron';
+}
+
+const DEFAULT_MARKERS: (keyof MarkerState)[] = [
+  'birdie',
+  'eagle',
+  'albatross',
+  'sandyPar',
+  'aquaPar',
+  'holeOut',
+];
 
 /** All 2-player combinations from a list of ids (order-independent). */
 export const getPairCombinations = (ids: string[]): Array<[string, string]> => {
@@ -31,49 +64,121 @@ export const matchKey = (
 const uid = (prefix: string, idx: number) =>
   `${prefix}-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`;
 
+/** Resolves per-match team handicaps for a handicap modality. */
+export type TeamHandicapResolver = (
+  mode: TeamHandicapMode,
+  teamA: [string, string],
+  teamB: [string, string]
+) => { teamHandicaps: Record<string, number>; slidingHalfPointMode?: 'halfPoint' | 'roundDown' };
+
 export const buildBasePairTeamPressures = (
   base: [string, string],
   others: string[],
-  template?: TeamPressuresBet
+  template?: TeamPressuresBet,
+  defaults?: BasePairDefaults,
+  resolveHandicaps?: TeamHandicapResolver
 ): TeamPressuresBet[] =>
-  getPairCombinations(others).map((teamB, idx) => ({
-    id: uid('team-pressure', idx),
-    teamA: [...base] as [string, string],
-    teamB,
-    frontAmount: template?.frontAmount ?? 100,
-    backAmount: template?.backAmount ?? 100,
-    totalAmount: template?.totalAmount ?? 100,
-    openingThreshold: template?.openingThreshold ?? 3,
-    teamHandicaps: { ...(template?.teamHandicaps ?? {}) },
-    scoringType: template?.scoringType ?? 'lowBall',
-    enabled: true,
-    continua: template?.continua,
-    handicapConfig: template?.handicapConfig
-      ? { ...template.handicapConfig }
-      : undefined,
-    unitsConfig: template?.unitsConfig ? { ...template.unitsConfig } : undefined,
-    oyesesConfig: template?.oyesesConfig ? { ...template.oyesesConfig } : undefined,
-  }));
+  getPairCombinations(others).map((teamB, idx) => {
+    const teamA = [...base] as [string, string];
+    const hcp = defaults && resolveHandicaps
+      ? resolveHandicaps(defaults.handicapMode, teamA, teamB)
+      : undefined;
+    const scoringType = (defaults?.scoringType ?? template?.scoringType ?? 'lowBall') as
+      TeamPressuresBet['scoringType'];
+
+    return {
+      id: uid('team-pressure', idx),
+      teamA,
+      teamB,
+      frontAmount: defaults?.frontAmount ?? template?.frontAmount ?? 100,
+      backAmount: defaults?.backAmount ?? template?.backAmount ?? 100,
+      totalAmount: defaults?.totalAmount ?? template?.totalAmount ?? 100,
+      openingThreshold:
+        defaults?.openingThreshold ?? template?.openingThreshold ?? 3,
+      teamHandicaps: hcp?.teamHandicaps ?? { ...(template?.teamHandicaps ?? {}) },
+      scoringType,
+      enabled: true,
+      continua:
+        scoringType === 'matchOnly'
+          ? defaults?.continua ?? template?.continua
+          : template?.continua,
+      handicapConfig: defaults
+        ? {
+            ...(template?.handicapConfig ?? {}),
+            mode: defaults.handicapMode,
+            ...(hcp?.slidingHalfPointMode
+              ? { slidingHalfPointMode: hcp.slidingHalfPointMode }
+              : {}),
+          }
+        : template?.handicapConfig
+        ? { ...template.handicapConfig }
+        : undefined,
+      unitsConfig: defaults
+        ? {
+            ...(template?.unitsConfig ?? {}),
+            enabled: !!defaults.unitsEnabled,
+            valuePerUnit:
+              defaults.unitsValue ?? template?.unitsConfig?.valuePerUnit ?? 25,
+            enabledMarkers:
+              template?.unitsConfig?.enabledMarkers ?? DEFAULT_MARKERS,
+          }
+        : template?.unitsConfig
+        ? { ...template.unitsConfig }
+        : undefined,
+      oyesesConfig: defaults
+        ? {
+            ...(template?.oyesesConfig ?? {}),
+            enabled: !!defaults.oyesesEnabled,
+            valuePerOyes:
+              defaults.oyesesValue ?? template?.oyesesConfig?.valuePerOyes ?? 25,
+            modality:
+              defaults.oyesesModality ??
+              template?.oyesesConfig?.modality ??
+              'acumulados',
+          }
+        : template?.oyesesConfig
+        ? { ...template.oyesesConfig }
+        : undefined,
+    } as TeamPressuresBet;
+  });
 
 export const buildBasePairCarritosTeams = (
   base: [string, string],
   others: string[],
-  template?: Partial<CarritosTeamBet>
+  template?: Partial<CarritosTeamBet>,
+  defaults?: BasePairDefaults,
+  resolveHandicaps?: TeamHandicapResolver
 ): CarritosTeamBet[] =>
-  getPairCombinations(others).map((teamB, idx) => ({
-    id: uid('carritos', idx),
-    teamA: [...base] as [string, string],
-    teamB,
-    frontAmount: template?.frontAmount ?? 100,
-    backAmount: template?.backAmount ?? 100,
-    totalAmount: template?.totalAmount ?? 100,
-    scoringType: template?.scoringType ?? 'all',
-    teamHandicaps: { ...(template?.teamHandicaps ?? {}) },
-    handicapConfig: template?.handicapConfig
-      ? { ...template.handicapConfig }
-      : undefined,
-    enabled: true,
-  }));
+  getPairCombinations(others).map((teamB, idx) => {
+    const teamA = [...base] as [string, string];
+    const hcp = defaults && resolveHandicaps
+      ? resolveHandicaps(defaults.handicapMode, teamA, teamB)
+      : undefined;
+
+    return {
+      id: uid('carritos', idx),
+      teamA,
+      teamB,
+      frontAmount: defaults?.frontAmount ?? template?.frontAmount ?? 100,
+      backAmount: defaults?.backAmount ?? template?.backAmount ?? 100,
+      totalAmount: defaults?.totalAmount ?? template?.totalAmount ?? 100,
+      scoringType: (defaults?.scoringType ?? template?.scoringType ?? 'all') as
+        CarritosTeamBet['scoringType'],
+      teamHandicaps: hcp?.teamHandicaps ?? { ...(template?.teamHandicaps ?? {}) },
+      handicapConfig: defaults
+        ? {
+            ...(template?.handicapConfig ?? {}),
+            mode: defaults.handicapMode,
+            ...(hcp?.slidingHalfPointMode
+              ? { slidingHalfPointMode: hcp.slidingHalfPointMode }
+              : {}),
+          }
+        : template?.handicapConfig
+        ? { ...template.handicapConfig }
+        : undefined,
+      enabled: true,
+    } as CarritosTeamBet;
+  });
 
 /** Filters generated matches, dropping any whose 4-player set already exists. */
 export const dropExistingMatches = <
