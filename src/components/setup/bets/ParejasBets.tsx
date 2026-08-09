@@ -166,6 +166,58 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       carritosTeams: teams.filter(t => t.id !== teamId),
     });
   };
+  // ===== Base pair (5 players) generators =====
+  const generateFoursomesFromBase = (
+    base: [string, string],
+    others: string[],
+    mode: 'replace' | 'add'
+  ) => {
+    const existing = config.teamPressures.bets;
+    const template = existing[0];
+    let generated = buildBasePairTeamPressures(base, others, template);
+    const keptBets = mode === 'replace' ? [] : existing;
+    if (mode === 'add') generated = dropExistingMatches(generated, existing);
+    onUpdateConfig({
+      ...config,
+      basePairTeamPressures: base,
+      teamPressures: {
+        ...config.teamPressures,
+        enabled: true,
+        bets: [...keptBets, ...generated],
+      },
+    });
+  };
+
+  const generateCarritosFromBase = (
+    base: [string, string],
+    others: string[],
+    mode: 'replace' | 'add'
+  ) => {
+    const existingTeams = config.carritosTeams || [];
+    const primary = hasPrimaryCarritos
+      ? [{ teamA: config.carritos.teamA, teamB: config.carritos.teamB }]
+      : [];
+    const template = existingTeams[0] ?? (hasPrimaryCarritos ? config.carritos : undefined);
+    let generated = buildBasePairCarritosTeams(base, others, template as any);
+    if (mode === 'add') {
+      generated = dropExistingMatches(generated, [...primary, ...existingTeams] as any);
+    }
+    onUpdateConfig({
+      ...config,
+      basePairCarritos: base,
+      carritos: {
+        ...config.carritos,
+        enabled: true,
+        ...(mode === 'replace'
+          ? { teamA: ['', ''] as [string, string], teamB: ['', ''] as [string, string] }
+          : {}),
+      },
+      carritosTeams: mode === 'replace' ? generated : [...existingTeams, ...generated],
+    });
+  };
+
+  const carritosMatchCount = (config.carritosTeams || []).length + (hasPrimaryCarritos ? 1 : 0);
+
 
   // For carritos primary - just delegate to addCarritosTeam
   const addCarritosPrimary = () => {
