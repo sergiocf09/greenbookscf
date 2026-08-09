@@ -27,7 +27,7 @@ const helpContent: Record<string, { icon: React.ReactNode; title: string; items:
       'PASO 1 — Campo y tee: selecciona el campo de golf y el color de tee (Azul, Blanco, Dorado, Rojo). El tee define rating y slope, base del cálculo de hándicaps, así que verifícalo antes de iniciar. Si no encuentras tu campo, usa la búsqueda y si aun así no aparece, agrégalo manualmente con sus pares y handicaps por hoyo.',
       'PASO 2 — Hoyos y salida: define si la ronda es de 18 o 9 hoyos y el hoyo de salida (1 o 10). Si salen del 10, la app remapea automáticamente Front y Back para que los segmentos se calculen correctamente.',
       'PASO 3 — Jugadores: agrega hasta 6 jugadores por grupo. Usa el botón de amigos (👥) para traer compañeros frecuentes con su hándicap ya guardado, o escribe el nombre para agregarlos como invitados. A cada jugador puedes cambiarle el tee individualmente si juega desde otro color.',
-      'PASO 4 — Hándicaps: cada jugador tiene su Índice; con "Definir Hándicaps entre Jugadores" revisas la matriz de strokes que se dan entre cada par. Si ya han jugado juntos, el sliding automático propone el ajuste según el historial; puedes corregir cualquier valor a mano.',
+      'PASO 4 — Hándicaps (referencia): aquí solo se define el Índice de cada jugador. Si el jugador tiene cuenta, la app propone su Índice USGA ya calculado con su historial; si es invitado, el creador de la ronda lo captura a mano. Este número es la base de referencia, no el ajuste final: los strokes que se dan entre jugadores se revisan y ajustan en la pantalla de Hándicaps (ícono 🔄).',
       'PASO 5 — Crear e invitar: toca "Crear Ronda y Obtener Link, QR & Código" para guardar la ronda y compartirla. Quien entre con el link o el código queda vinculado a la misma ronda y ve los scores en tiempo real. Los invitados sin cuenta entran en modo lectura.',
       'PASO 6 — Grupos adicionales: ¿son más de 6 jugadores o quieren jugar por equipos? Usa el botón \'+\' para crear más grupos dentro de la misma ronda. El grupo 1 (organizador) define las reglas base; los demás grupos las heredan y pueden ajustar sus propios montos. Solo el organizador puede cerrar la ronda.',
       'PASO 7 — Iniciar: cuando el campo, el tee y los jugadores estén listos, toca "Iniciar Ronda". Después de iniciar aún puedes agregar jugadores o ajustar apuestas, pero conviene dejar la configuración cerrada antes del primer hoyo.',
@@ -40,7 +40,7 @@ const helpContent: Record<string, { icon: React.ReactNode; title: string; items:
     items: [
       'CÓMO CONFIGURAR: cada apuesta tiene un switch para activarla. Al activarla (o al tocar su nombre) la tarjeta se expande hacia abajo y ahí aparecen todos sus campos: montos por Front 9, Back 9 y Total 18, uso de hándicap, modalidades y la matriz de participación. Si no expandes la tarjeta, la apuesta queda con los montos por defecto — ábrela siempre para ajustar los importes.',
       'MATRIZ DE PARTICIPACIÓN: dentro de cada apuesta puedes decidir quién juega contra quién. Las matrices inician colapsadas; ábrelas para desactivar pares o jugadores que no entran en esa apuesta. Lo que quede marcado en la matriz es lo que se cobra, sin excepción.',
-      'MONTOS POR PAR: en las apuestas individuales puedes fijar un importe distinto para un par específico (override). Ese monto manda sobre el monto global de la apuesta.',
+      'MONTOS POR PAR (override): el monto global de la apuesta aplica a todos. Si un par específico juega por otro importe, el override se hace en el Balance General: selecciona a los dos jugadores, abre el desglose de esa apuesta y edita ahí el monto de ese par. Ese valor manda sobre el global.',
       'Las apuestas se dividen en 3 categorías: navega entre Individuales, Parejas y Grupales con los tabs superiores.',
       'INDIVIDUALES — entre cada par de jugadores: Medal (menor neto gana Front, Back o Total), Skins (gana el hoyo quien hace menos; se acumula en empate), Presiones (match play con apuestas en cascada al ir arriba por 2), Match Play 18, Bloques, Rayas (contador de eventos ganados: Skins + Oyeses + Unidades + Medal), Unidades ⭐ (premios por birdie, águila, albatros, sandy par, hole out, aqua par), Manchas ⬛ (cobros por errores: doble OB, trampa, pinkies, paloma, retruje, moreliana...), Oyeses (par 3: quien queda más cerca al pin gana), Putts y Caros (match en los últimos hoyos, configurable).',
       'PAREJAS — entre equipos de 2 vs 2: Carritos (lowball, highball o combined), Presiones Parejas, Loba 🐺 (el lobo elige compañero o va solo cada hoyo), Sixes (rotación de parejas cada 6 hoyos) y Las Vegas (puntaje combinado tipo dado). En Sixes y Vegas debes asignar las parejas de cada set antes de iniciar.',
@@ -55,9 +55,11 @@ const helpContent: Record<string, { icon: React.ReactNode; title: string; items:
     icon: <RefreshCw className="h-5 w-5 text-primary" />,
     title: '🔄 Matriz de Hándicaps',
     items: [
-      'Muestra los strokes que se dan entre cada par de jugadores para emparejar el juego.',
-      'Cómo leerla: encuentra tu nombre en las filas (lado izquierdo) y el de tu rival en las columnas. El número en esa celda son los strokes que tú le das a él. Positivo = tú das strokes. Negativo = él te los da a ti.',
-      'Sliding automático: si ya jugaron rondas juntos anteriormente, el sistema ajusta los strokes según el historial de resultados. Puedes verificar o corregir cualquier valor manualmente.',
+      'Esta es la pantalla donde se decide, de verdad, cuántos strokes se dan entre jugadores. El Índice capturado en el Setup solo sirve como punto de partida.',
+      'CÓMO LEERLA: busca tu nombre en las filas (izquierda) y el de tu rival en las columnas. El número de esa celda son los strokes que TÚ le das a él: positivo = tú los das, negativo = él te los da a ti, 0 = juegan parejo (scratch).',
+      'SLIDING AUTOMÁTICO: si ya jugaron rondas juntos, la app propone el ajuste según el historial de resultados de ese par (si le has ganado, sube lo que le das; si te ha ganado, baja). Es una propuesta, no una regla obligatoria.',
+      'AJUSTE MANUAL: toca cualquier celda y escribe el número acordado. Tu valor manda sobre el sliding automático y es el que se usa en todas las apuestas con hándicap de la ronda.',
+      'Puedes volver a esta pantalla y corregir valores incluso con la ronda en curso; los cálculos se recalculan al instante.',
     ],
   },
   scorecard: {
