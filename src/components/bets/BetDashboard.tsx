@@ -81,6 +81,7 @@ import { WolfResultsCard } from './WolfResultsCard';
 import { SixesResultsCard } from './SixesResultsCard';
 import { VegasResultsCard } from './VegasResultsCard';
 import { NinesResultsCard } from './NinesResultsCard';
+import { TeamBetHandicapInfo } from './TeamBetHandicapInfo';
 import { useWolf } from '@/hooks/useWolf';
 import { useSixes } from '@/hooks/useSixes';
 import { useVegas } from '@/hooks/useVegas';
