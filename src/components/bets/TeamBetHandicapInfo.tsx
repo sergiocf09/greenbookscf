@@ -58,6 +58,10 @@ export interface TeamBetHandicapInfoProps {
  */
 export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
   players,
+  teamA,
+  teamB,
+  teamALabel = 'Equipo A',
+  teamBLabel = 'Equipo B',
   effectiveHandicaps,
   handicapConfig,
   modalityLine,
@@ -66,6 +70,7 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
   note,
   className,
 }) => {
+
   const shortNames = useMemo(() => disambiguateShortNames(players), [players]);
   const getName = (p: Player) => shortNames.get(p.id) || formatPlayerName(p.name).split(' ')[0];
 
