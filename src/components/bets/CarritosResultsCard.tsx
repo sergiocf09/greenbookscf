@@ -124,9 +124,12 @@ interface CarritosResultsCardProps {
   onCancel?: () => void;
   isDisabled?: boolean;
   onToggleDisabled?: () => void;
+  teamHandicaps?: Record<string, number>;
+  handicapConfig?: TeamHandicapConfig;
 }
 
-const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, players, basePlayerId, title = 'Carritos (Equipos)', roundHoles = 18, onCancel, isDisabled, onToggleDisabled }) => {
+const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, players, basePlayerId, title = 'Carritos (Equipos)', roundHoles = 18, onCancel, isDisabled, onToggleDisabled, teamHandicaps, handicapConfig }) => {
+
   const isNineHole = roundHoles === 9;
 
   const getPlayer = (id: string) => players.find(p => p.id === id);
