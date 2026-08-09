@@ -83,6 +83,8 @@ const helpContent: Record<string, { icon: React.ReactNode; title: string; items:
       'CAPAS Y TOOLTIPS: dentro del desglose puedes abrir cada apuesta para ver hoyo por hoyo cómo se resolvió, y los tooltips ℹ️ explican de dónde salió cada cantidad (quién ganó el hoyo, strokes de hándicap aplicados, carries acumulados, presiones abiertas). Es la vista donde se audita todo el resultado deportivo y económico de la ronda.',
       'OVERRIDE DE MONTO POR PAR: si dos jugadores acordaron un importe distinto al configurado de manera general, aquí mismo —en el desglose de ese par— editas el monto de esa apuesta. Ese valor manda sobre el monto global y solo afecta a esa bilateralidad.',
       'CANCELAR UNA APUESTA EN UN PAR: con la ✕ eliminas esa apuesta únicamente para ese par. Así el setup general se hace una sola vez para todos y aquí vas quitando las que algún par no juega entre sí — queda claro y rápido, sin tocar la configuración de los demás.',
+      'AUDITORÍA DE HÁNDICAPS POR APUESTA: en el encabezado de cada tarjeta de Foursomes, Carritos, Sixes, Vegas y Nines hay un ícono ℹ️. Al tocarlo se muestra cómo se está jugando esa apuesta (Low Ball, High Ball, Combinado o Match Play, umbral de presión) y la modalidad de hándicap aplicada (Full Hándicap, Base Cero, Diferencial Equipo o Sliding Equipo, con medio punto si aplica), junto al tee y el hándicap de campo de cada jugador y los golpes exactos que recibe en esa apuesta. Son los mismos valores que usa el motor de cálculo, así que sirve para verificar las ventajas acordadas.',
+
     ],
   },
   leaderboards: {
