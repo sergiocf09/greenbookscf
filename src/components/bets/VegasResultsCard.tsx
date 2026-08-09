@@ -54,6 +54,45 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
 
   const isTeam1 = (sr: typeof setResults[0]) => sr.team1.includes(basePlayerId);
 
+  const hcpSegments = useMemo(() => {
+    const pick = (ids: string[]) => ids.map(id => players.find(p => p.id === id)).filter((p): p is typeof players[number] => !!p);
+    const order = startingHole === 10
+      ? [10, 11, 12, 13, 14, 15, 16, 17, 18, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+      : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+    const ids = [vegasConfig.playerAId, vegasConfig.playerBId, vegasConfig.playerCId, vegasConfig.playerDId];
+    if (ids.some(id => !id)) return [];
+    if (vegasConfig.variant === 'fixed') {
+      const teamA = pick([ids[0]!, ids[1]!]);
+      const teamB = pick([ids[2]!, ids[3]!]);
+      if (!teamA.length || !teamB.length) return [];
+      return [
+        { label: 'Primera vuelta', holes: order.slice(0, 9), teamA, teamB, teamALabel: 'Equipo 1', teamBLabel: 'Equipo 2' },
+        { label: 'Segunda vuelta', holes: order.slice(9, 18), teamA, teamB, teamALabel: 'Equipo 1', teamBLabel: 'Equipo 2' },
+      ];
+    }
+    const rotation: Array<[[number, number], [number, number]]> = [
+      [[0, 1], [2, 3]],
+      [[0, 2], [1, 3]],
+      [[0, 3], [1, 2]],
+    ];
+    return rotation
+      .map(([a, b], i) => {
+        const teamA = pick([ids[a[0]]!, ids[a[1]]!]);
+        const teamB = pick([ids[b[0]]!, ids[b[1]]!]);
+        if (!teamA.length || !teamB.length) return null;
+        return {
+          label: `Tramo ${i + 1}`,
+          holes: order.slice(i * 6, i * 6 + 6),
+          teamA,
+          teamB,
+          teamALabel: 'Equipo 1',
+          teamBLabel: 'Equipo 2',
+        };
+      })
+      .filter((s): s is NonNullable<typeof s> => s !== null);
+  }, [players, vegasConfig, startingHole]);
+
+
   if (missingPlayerIds.length > 0 || hasEmptyPlayerIds) {
     return (
       <Card>
@@ -138,7 +177,13 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
               useHandicap={vegasConfig.useHandicap}
               title="Las Vegas — Hándicaps"
               modalityLine={vegasSummary}
+              course={course}
+              segments={hcpSegments}
+              note={vegasConfig.variant === 'fixed'
+                ? 'Las parejas son fijas las 18 hoyos; los golpes caen según el índice del campo, por eso cada vuelta puede tener ventajas distintas.'
+                : 'Las parejas rotan por tramo de 6 hoyos. El total de golpes de cada jugador no cambia, pero los golpes caen según el índice del campo, por lo que cada tramo puede tener ventajas distintas.'}
             />
+
           </div>
 
           <div className="flex items-center gap-2">

@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
-import { Player, TeamHandicapConfig, TeamHandicapMode } from '@/types/golf';
+import { Player, TeamHandicapConfig, TeamHandicapMode, GolfCourse } from '@/types/golf';
+import { calculateStrokesPerHole, calculateStrokesPerHoleWithHalf } from '@/lib/handicapUtils';
+
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Info } from 'lucide-react';
@@ -25,6 +27,17 @@ const HANDICAP_MODE_LABELS: Record<TeamHandicapMode, string> = {
 
 const fmtHcp = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 
+export interface TeamBetSegment {
+  /** e.g. "Tramo 1" */
+  label: string;
+  /** Holes belonging to this segment (physical hole numbers, in play order). */
+  holes: number[];
+  teamA: Player[];
+  teamB: Player[];
+  teamALabel?: string;
+  teamBLabel?: string;
+}
+
 export interface TeamBetHandicapInfoProps {
   /** Players participating in this bet (order used for display). */
   players: Player[];
@@ -46,8 +59,13 @@ export interface TeamBetHandicapInfoProps {
   useHandicap?: boolean;
   /** Optional note appended at the bottom (bet-specific rule). */
   note?: string;
+  /** Course, required to show where each stroke falls per segment. */
+  course?: GolfCourse;
+  /** Segment-by-segment breakdown (Sixes / Vegas dynamic pairings). */
+  segments?: TeamBetSegment[];
   className?: string;
 }
+
 
 
 /**
@@ -68,7 +86,10 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
   title = 'Hándicaps de la apuesta',
   useHandicap = true,
   note,
+  course,
+  segments,
   className,
+
 }) => {
 
   const shortNames = useMemo(() => disambiguateShortNames(players), [players]);
@@ -146,6 +167,111 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
     </div>
   );
 
+  const halfPointMode = handicapConfig?.slidingHalfPointMode === 'halfPoint';
+
+  /** Per-player stroke allocation across the 18 holes, same math the engine uses. */
+  const allocation = useMemo(() => {
+    const map = new Map<string, { perHole: number[]; halfHole: number | null; total: number }>();
+    if (!course || !useHandicap) return map;
+    rows.forEach(({ player, strokes }) => {
+      const perHole = calculateStrokesPerHole(Math.floor(strokes), course);
+      let halfHole: number | null = null;
+      if (halfPointMode && strokes % 1 !== 0) {
+        halfHole = calculateStrokesPerHoleWithHalf(strokes, true, course).halfStrokeHole;
+      }
+      map.set(player.id, { perHole, halfHole, total: strokes });
+    });
+    return map;
+  }, [rows, course, useHandicap, halfPointMode]);
+
+  const segmentData = useMemo(() => {
+    if (!segments?.length) return [];
+    const build = (list: Player[]) =>
+      list.map(p => {
+        const row = rowById.get(p.id);
+        return {
+          player: p,
+          courseHcp: row?.courseHcp ?? p.handicap ?? 0,
+          total: row?.strokes ?? 0,
+          alloc: allocation.get(p.id),
+        };
+      });
+    return segments.map(seg => {
+      const holeSet = new Set(seg.holes);
+      const withSeg = (list: Player[]) =>
+        build(list).map(r => {
+          const holes = r.alloc ? seg.holes.filter(h => (r.alloc!.perHole[h - 1] ?? 0) > 0) : [];
+          let segStrokes = r.alloc
+            ? seg.holes.reduce((s, h) => s + (r.alloc!.perHole[h - 1] ?? 0), 0)
+            : 0;
+          const halfInSeg = !!(r.alloc?.halfHole && holeSet.has(r.alloc.halfHole));
+          if (halfInSeg) segStrokes += 0.5;
+          return { ...r, segHoles: holes, segStrokes, halfHole: halfInSeg ? r.alloc!.halfHole : null };
+        });
+      const a = withSeg(seg.teamA);
+      const b = withSeg(seg.teamB);
+      const sumA = a.reduce((s, r) => s + r.segStrokes, 0);
+      const sumB = b.reduce((s, r) => s + r.segStrokes, 0);
+      return { seg, a, b, sumA, sumB };
+    });
+  }, [segments, rowById, allocation]);
+
+  type SegRow = { player: Player; courseHcp: number; total: number; segStrokes: number; segHoles: number[]; halfHole: number | null };
+
+  const SegmentColumn = ({
+    label, segRows, align, segTotal,
+  }: { label: string; segRows: SegRow[]; align: 'left' | 'right'; segTotal: number }) => (
+    <div className="min-w-0">
+      <div
+        className={cn(
+          'px-2 py-1 bg-muted/60 text-[9px] uppercase tracking-wide text-muted-foreground font-semibold',
+          align === 'right' ? 'text-right' : 'text-left',
+        )}
+      >
+        {label}
+      </div>
+      {segRows.map(r => (
+        <div key={r.player.id} className="px-2 py-1 border-t border-border/50">
+          <div
+            className={cn(
+              'text-[11px] tabular-nums flex items-baseline gap-1.5',
+              align === 'right' ? 'flex-row-reverse text-right' : 'text-left',
+            )}
+          >
+            <span className="truncate flex-1 min-w-0">{getName(r.player)}</span>
+            <span className="text-muted-foreground shrink-0">{fmtHcp(r.courseHcp)}</span>
+            <span
+              className={cn(
+                'font-semibold shrink-0 w-9',
+                r.segStrokes > 0 ? 'text-primary' : 'text-muted-foreground',
+                align === 'right' ? 'text-left' : 'text-right',
+              )}
+            >
+              {r.segStrokes > 0 ? `+${fmtHcp(r.segStrokes)}` : '0'}
+            </span>
+          </div>
+          <div className={cn('text-[9px] text-muted-foreground', align === 'right' ? 'text-right' : 'text-left')}>
+            {r.segStrokes > 0
+              ? `hoyos ${r.segHoles.join(', ')}${r.halfHole ? ` · ½ en ${r.halfHole}` : ''}`
+              : 'sin golpes en este tramo'}
+            {` · total ${fmtHcp(r.total)}`}
+          </div>
+        </div>
+      ))}
+      <div
+        className={cn(
+          'px-2 py-1 border-t border-border bg-muted/30 text-[10px] tabular-nums flex items-baseline gap-1.5 font-semibold',
+          align === 'right' ? 'flex-row-reverse text-right' : 'text-left',
+        )}
+      >
+        <span className="flex-1 min-w-0 text-muted-foreground uppercase text-[9px]">Tramo</span>
+        <span className={cn('shrink-0 w-9 text-primary', align === 'right' ? 'text-left' : 'text-right')}>
+          {segTotal > 0 ? `+${fmtHcp(segTotal)}` : '0'}
+        </span>
+      </div>
+    </div>
+  );
+
 
   const calcText = useMemo(() => {
     if (!useHandicap) {
@@ -201,7 +327,46 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
             {useHandicap ? HANDICAP_MODE_LABELS[mode] : 'Sin hándicap (gross)'}
           </div>
 
-          {grouped ? (
+          {segmentData.length > 0 ? (
+            <div className="space-y-2">
+              {segmentData.map(({ seg, a, b, sumA: sA, sumB: sB }) => {
+                const first = seg.holes[0];
+                const last = seg.holes[seg.holes.length - 1];
+                const diff = Math.abs(sA - sB);
+                const advantage = sA === sB ? null : sA > sB ? 'A' : 'B';
+                const labelA = seg.teamALabel ?? 'Equipo 1';
+                const labelB = seg.teamBLabel ?? 'Equipo 2';
+                return (
+                  <div key={seg.label} className="space-y-1">
+                    <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground">
+                      {seg.label}
+                      <span className="ml-1 font-normal normal-case text-muted-foreground">
+                        · Hoyos {first}–{last}
+                      </span>
+                    </div>
+                    <div className="rounded-md border border-border overflow-hidden grid grid-cols-2 divide-x divide-border">
+                      <SegmentColumn label={labelA} segRows={a} align="left" segTotal={sA} />
+                      <SegmentColumn label={labelB} segRows={b} align="right" segTotal={sB} />
+                    </div>
+                    {useHandicap && (
+                      <div className="text-[10px] text-muted-foreground tabular-nums px-0.5">
+                        Ventaja del tramo:{' '}
+                        <span className="font-semibold text-foreground">
+                          {advantage
+                            ? `${advantage === 'A' ? labelA : labelB} +${fmtHcp(diff)}`
+                            : 'parejo (0)'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <div className="text-[10px] text-center text-muted-foreground">
+                Cada línea: <span className="text-foreground">jugador · HCP campo · golpes en el tramo</span>
+              </div>
+            </div>
+          ) : grouped ? (
+
             <div className="space-y-1.5">
               <div className="rounded-md border border-border overflow-hidden grid grid-cols-2 divide-x divide-border">
                 <TeamColumn label={teamALabel} teamRows={rowsA} align="left" />
