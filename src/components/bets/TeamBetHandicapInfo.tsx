@@ -86,7 +86,10 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
   title = 'Hándicaps de la apuesta',
   useHandicap = true,
   note,
+  course,
+  segments,
   className,
+
 }) => {
 
   const shortNames = useMemo(() => disambiguateShortNames(players), [players]);
