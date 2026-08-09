@@ -327,7 +327,46 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
             {useHandicap ? HANDICAP_MODE_LABELS[mode] : 'Sin hándicap (gross)'}
           </div>
 
-          {grouped ? (
+          {segmentData.length > 0 ? (
+            <div className="space-y-2">
+              {segmentData.map(({ seg, a, b, sumA: sA, sumB: sB }) => {
+                const first = seg.holes[0];
+                const last = seg.holes[seg.holes.length - 1];
+                const diff = Math.abs(sA - sB);
+                const advantage = sA === sB ? null : sA > sB ? 'A' : 'B';
+                const labelA = seg.teamALabel ?? 'Equipo 1';
+                const labelB = seg.teamBLabel ?? 'Equipo 2';
+                return (
+                  <div key={seg.label} className="space-y-1">
+                    <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground">
+                      {seg.label}
+                      <span className="ml-1 font-normal normal-case text-muted-foreground">
+                        · Hoyos {first}–{last}
+                      </span>
+                    </div>
+                    <div className="rounded-md border border-border overflow-hidden grid grid-cols-2 divide-x divide-border">
+                      <SegmentColumn label={labelA} segRows={a} align="left" segTotal={sA} />
+                      <SegmentColumn label={labelB} segRows={b} align="right" segTotal={sB} />
+                    </div>
+                    {useHandicap && (
+                      <div className="text-[10px] text-muted-foreground tabular-nums px-0.5">
+                        Ventaja del tramo:{' '}
+                        <span className="font-semibold text-foreground">
+                          {advantage
+                            ? `${advantage === 'A' ? labelA : labelB} +${fmtHcp(diff)}`
+                            : 'parejo (0)'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <div className="text-[10px] text-center text-muted-foreground">
+                Cada línea: <span className="text-foreground">jugador · HCP campo · golpes en el tramo</span>
+              </div>
+            </div>
+          ) : grouped ? (
+
             <div className="space-y-1.5">
               <div className="rounded-md border border-border overflow-hidden grid grid-cols-2 divide-x divide-border">
                 <TeamColumn label={teamALabel} teamRows={rowsA} align="left" />
