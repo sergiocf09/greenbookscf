@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, XCircle, CheckCircle } from 'lucide-react';
+import { TeamBetHandicapInfo } from './TeamBetHandicapInfo';
+
 
 interface SixesResultsCardProps {
   players: Player[];
