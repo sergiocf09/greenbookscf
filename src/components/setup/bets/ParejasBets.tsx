@@ -353,6 +353,15 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         helpText="Medal por equipos de 2 vs 2. Se suma el score neto del equipo según la modalidad (Bola Baja, Bola Alta o Combinado) y se compara Front 9, Back 9 y Total 18. El equipo con menor total gana cada segmento."
       >
         {/* Show add button if no carritos configured yet */}
+        {carritosOptions.length === 5 && (
+          <BasePairSelector
+            playerOptions={carritosOptions}
+            basePair={config.basePairCarritos}
+            onChangeBasePair={(pair) => onUpdateConfig({ ...config, basePairCarritos: pair })}
+            existingCount={carritosMatchCount}
+            onGenerate={generateCarritosFromBase}
+          />
+        )}
         {!hasPrimaryCarritos && (config.carritosTeams || []).length === 0 ? (
           <div className="text-center py-4">
             <p className="text-xs text-muted-foreground mb-2">No hay apuestas de carritos configuradas</p>
