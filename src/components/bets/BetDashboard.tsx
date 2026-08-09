@@ -3156,7 +3156,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   <p className="text-[10px] text-muted-foreground">
                     {bet.scoringType === 'lowBall' ? 'Bola Baja' :
                      bet.scoringType === 'highBall' ? 'Bola Alta' :
-                     bet.scoringType === 'matchOnly' ? 'Sin presiones' : 'Bola Baja + Bola Alta'}
+                     bet.scoringType === 'matchOnly' ? 'Match Play' : 'Bola Baja + Bola Alta'}
                   </p>
                 </div>
 

@@ -1002,7 +1002,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
             <SelectItem value="lowBall">Bola Baja</SelectItem>
             <SelectItem value="highBall">Bola Alta</SelectItem>
             <SelectItem value="combined">Bola Baja + Bola Alta</SelectItem>
-            <SelectItem value="matchOnly">Sin presiones</SelectItem>
+            <SelectItem value="matchOnly">Match Play</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -1239,9 +1239,9 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
       {/* Info note */}
       <div className="text-[10px] text-muted-foreground bg-muted/50 rounded p-1.5">
         {bet.scoringType === 'matchOnly' && bet.continua
-          ? '💡 Solo Match Continuo: corre del 1 al 18, se define cuando la ventaja supera los hoyos restantes'
+          ? '💡 Match Play continuo: corre del 1 al 18, solo cuenta la bola baja, se define cuando la ventaja supera los hoyos restantes'
           : bet.scoringType === 'matchOnly'
-          ? '💡 Solo Match: sin apertura de presiones'
+          ? '💡 Match Play: solo cuenta la bola baja del equipo, sin apertura de presiones'
           : bet.scoringType === 'combined'
           ? '💡 Combinado: abre presión cuando diferencia > 2'
           : `💡 ${bet.scoringType === 'lowBall' ? 'Bola Baja' : 'Bola Alta'}: abre presión cuando diferencia = 2`}
