@@ -335,12 +335,22 @@ export function PlayViews(props: PlayViewsProps) {
           {isRoundStarted && roundState.status !== 'completed' && (
             <>
               {profile?.id === roundState.organizerProfileId ? (
-                <CloseRoundSection
-                  onOpenDialog={() => onOpenDialog('closeConfirm')}
-                  isLoading={isLoading}
-                  isClosing={isClosing}
-                />
+                <>
+                  <CloseRoundSection
+                    onOpenDialog={() => onOpenDialog('closeConfirm')}
+                    isLoading={isLoading}
+                    isClosing={isClosing}
+                  />
+                  <div className="mt-2">
+                    <DeleteRoundButton
+                      roundId={roundState.id}
+                      onDeleted={onStartNewRound}
+                      disabled={isLoading || isClosing}
+                    />
+                  </div>
+                </>
               ) : (
+
                 <div className="text-center text-muted-foreground text-sm py-4 bg-muted rounded-lg mt-4">
                   Solo el organizador puede cerrar la tarjeta
                 </div>
