@@ -21,6 +21,7 @@ import {
   buildBasePairCarritosTeams,
   dropExistingMatches,
 } from './basePairGenerator';
+import type { BasePairDefaults, TeamHandicapResolver } from './basePairGenerator';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -350,6 +351,8 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         {foursomesOptions.length === 5 && (
           <BasePairSelector
             playerOptions={foursomesOptions}
+            variant="foursomes"
+            isNineHole={(config.roundHoles ?? 18) === 9}
             basePair={config.basePairTeamPressures}
             onChangeBasePair={(pair) => onUpdateConfig({ ...config, basePairTeamPressures: pair })}
             existingCount={config.teamPressures.bets.length}
@@ -419,6 +422,8 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         {carritosOptions.length === 5 && (
           <BasePairSelector
             playerOptions={carritosOptions}
+            variant="carritos"
+            isNineHole={(config.roundHoles ?? 18) === 9}
             basePair={config.basePairCarritos}
             onChangeBasePair={(pair) => onUpdateConfig({ ...config, basePairCarritos: pair })}
             existingCount={carritosMatchCount}
@@ -1053,7 +1058,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
 
       {/* Scoring type */}
       <div className="flex items-center justify-between">
-        <Label className="text-[10px] font-semibold text-primary">Modalidad</Label>
+        <Label className="text-[10px] font-semibold text-primary">Modalidad Juego</Label>
         <Select
           value={bet.scoringType}
           onValueChange={(v: 'lowBall' | 'highBall' | 'combined' | 'matchOnly') => onUpdate({ scoringType: v })}
@@ -1420,7 +1425,7 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
 
       {/* Scoring Type - after players, consistent with Presiones */}
       <div className="flex items-center justify-between">
-        <Label className="text-[10px] font-semibold text-primary">Modalidad</Label>
+        <Label className="text-[10px] font-semibold text-primary">Modalidad Juego</Label>
         <Select
           value={scoringType}
           onValueChange={(v: 'lowBall' | 'highBall' | 'combined' | 'all') => onUpdate({ scoringType: v })}
