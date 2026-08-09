@@ -284,6 +284,15 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         onExpandChange={(open) => onToggleSection('teamPressures', open)}
         helpText="Match play por equipos de 2 vs 2. Se compara el score neto de cada equipo (según modalidad: Bola Baja, Bola Alta o Combinado). Se abre una nueva presión cuando un equipo va arriba por el umbral configurado."
       >
+        {foursomesOptions.length === 5 && (
+          <BasePairSelector
+            playerOptions={foursomesOptions}
+            basePair={config.basePairTeamPressures}
+            onChangeBasePair={(pair) => onUpdateConfig({ ...config, basePairTeamPressures: pair })}
+            existingCount={config.teamPressures.bets.length}
+            onGenerate={generateFoursomesFromBase}
+          />
+        )}
         {config.teamPressures.bets.length === 0 ? (
           <div className="text-center py-4">
             <p className="text-xs text-muted-foreground mb-2">No hay foursomes configurados</p>
