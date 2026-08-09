@@ -10,6 +10,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Badge } from '@/components/ui/badge';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { AlertTriangle, Trophy, Star } from 'lucide-react';
+import { TeamBetHandicapInfo } from './TeamBetHandicapInfo';
+
 
 interface NinesResultsCardProps {
   players: Player[];
