@@ -260,10 +260,18 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
     <Card className={cn('border-accent/50', isDisabled && 'opacity-50')}>
       <CardHeader className="py-3">
         <CardTitle className="text-sm flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Users className="h-4 w-4" />
             {title}
+            <TeamBetHandicapInfo
+              players={[...displayTeamAPlayers, ...displayTeamBPlayers]}
+              effectiveHandicaps={teamHandicaps}
+              handicapConfig={handicapConfig}
+              title={`${title} — Hándicaps`}
+              modalityLine={scoringLabel}
+            />
           </div>
+
           <div className="flex items-center gap-2">
             {isDisabled ? (
               <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
