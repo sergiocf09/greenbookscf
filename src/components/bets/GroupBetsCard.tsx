@@ -3342,7 +3342,7 @@ const computeMedalBilateralForPool = (
     segAmount: number,
     holeFilter: (h: number) => boolean,
   ): { amount: number; playerNet: number; rivalNet: number } | null => {
-    if (segAmount <= 0) return null;
+    const payAmount = segAmount > 0 ? segAmount : 0;
 
     const netTotals: Array<{ playerId: string; netTotal: number }> = [];
     pool.forEach((p) => {
