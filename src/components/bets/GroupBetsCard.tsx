@@ -3371,7 +3371,7 @@ const computeMedalBilateralForPool = (
 
     const isPlayerWinner = winnerIds.has(player.id);
     const isRivalWinner = winnerIds.has(rival.id);
-    const per = segAmount / winnersCount;
+    const per = payAmount / winnersCount;
     const bilateralAmount =
       isPlayerWinner && !isRivalWinner
         ? per
