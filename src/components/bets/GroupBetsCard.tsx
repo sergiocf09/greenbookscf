@@ -3383,10 +3383,11 @@ const computeMedalBilateralForPool = (
   };
 
   const totalAmount = betConfig.medalGeneral?.amount ?? 100;
+  // Nets are always computed over the full 18 (amount-agnostic) so the bilateral
+  // row still renders when Total 18 is configured at $0 and only F9/B9 pay.
   const totalResult = computeForSegment(totalAmount, () => true);
-  if (!totalResult) return null;
 
-  let aggregatedAmount = totalResult.amount;
+  let aggregatedAmount = totalResult?.amount ?? 0;
 
   if (segmentMode === 'segments') {
     const ranges = getSegmentHoleRanges(startingHole, betConfig.roundHoles ?? 18);
@@ -3398,6 +3399,8 @@ const computeMedalBilateralForPool = (
     const backResult = computeForSegment(backAmount, (h) => h >= bs && h <= be);
     aggregatedAmount += (frontResult?.amount ?? 0) + (backResult?.amount ?? 0);
   }
+
+  if (!totalResult) return null;
 
   return {
     isWinner: totalResult.playerNet < totalResult.rivalNet,
