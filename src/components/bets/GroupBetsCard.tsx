@@ -3370,6 +3370,21 @@ const computeMedalBilateralForPool = (
   ): { amount: number; playerNet: number; rivalNet: number } | null => {
     const payAmount = segAmount > 0 ? segAmount : 0;
 
+    // ── Sliding (bilateral) mode ──
+    if (betConfig.medalGeneral?.handicapMode === 'bilateral') {
+      const nets = getMedalPairNets(player, rival, scores, betConfig, course, holeFilter, startingHole);
+      if (!nets) return null;
+      const absolute = getMedalSlidingAbsoluteWinner(pool, scores, betConfig, course, holeFilter, startingHole);
+      let amount = 0;
+      if (absolute) {
+        if (absolute.winner.id === player.id && absolute.rivals.some((r) => r.id === rival.id)) amount = payAmount;
+        else if (absolute.winner.id === rival.id && absolute.rivals.some((r) => r.id === player.id)) amount = -payAmount;
+      }
+      return { amount, playerNet: nets.playerNet, rivalNet: nets.rivalNet };
+    }
+
+
+
     const netTotals: Array<{ playerId: string; netTotal: number }> = [];
     pool.forEach((p) => {
       const pScores = scores.get(p.id) || [];
