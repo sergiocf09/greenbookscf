@@ -1814,7 +1814,37 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     pool: Player[]
   ): AuditEntry[] => {
     if (betKey === 'medalGeneral') {
+      // ── Sliding (bilateral) mode: show how many rivals each player beats ──
+      if (betConfig.medalGeneral?.handicapMode === 'bilateral') {
+        const absolute = getMedalSlidingAbsoluteWinner(pool, scores, betConfig, course, holeFilter, startingHole);
+        const rows = pool.map(p => {
+          const comparisons = pool
+            .filter(r => r.id !== p.id)
+            .map(r => getMedalPairNets(p, r, scores, betConfig, course, holeFilter, startingHole))
+            .filter((x): x is NonNullable<typeof x> => !!x);
+          const beaten = comparisons.filter(c => c.playerNet < c.rivalNet).length;
+          return { player: p, beaten, total: comparisons.length };
+        }).filter(r => r.total > 0);
+        if (rows.length < 2) return [];
+        return rows.map(r => {
+          const isWinner = absolute?.winner.id === r.player.id;
+          const isLoser = !!absolute && absolute.rivals.some(x => x.id === r.player.id);
+          const netAmount = isWinner ? segAmount * (absolute?.rivals.length ?? 0) : isLoser ? -segAmount : 0;
+          return {
+            playerId: r.player.id,
+            name: r.player.name,
+            initials: r.player.initials,
+            color: r.player.color,
+            value: r.beaten,
+            valueLabel: `Vence ${r.beaten}/${r.total} (sliding)`,
+            netAmount,
+            isWinner,
+          };
+        });
+      }
+
       const playerHandicaps = betConfig.medalGeneral?.playerHandicaps || [];
+
       const rows: { playerId: string; value: number }[] = [];
       pool.forEach(player => {
         const ps = scores.get(player.id) || [];
