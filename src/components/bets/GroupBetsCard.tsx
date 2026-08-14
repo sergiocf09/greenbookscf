@@ -3359,9 +3359,11 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       }
       sections.push(buildSection('total', 'Total 18', totalAmount, () => true));
 
-      const sheetTitle = segmentMode === 'segments'
+      const medalSliding = isMedal && betConfig.medalGeneral?.handicapMode === 'bilateral';
+      const modeSuffix = medalSliding ? ' · Sliding' : isMedal ? ' · USGA' : '';
+      const sheetTitle = (segmentMode === 'segments'
         ? `${betLabel} — Por tramo`
-        : `${betLabel} — Total 18`;
+        : `${betLabel} — Total 18`) + modeSuffix;
 
       return (
         <GroupBetAuditSheet
@@ -3370,7 +3372,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           title={sheetTitle}
           sections={sections}
           basePlayerId={basePlayerId}
-          higherIsBetter={isGIR}
+          higherIsBetter={isGIR || (isMedal && betConfig.medalGeneral?.handicapMode === 'bilateral')}
         />
       );
     })()}
