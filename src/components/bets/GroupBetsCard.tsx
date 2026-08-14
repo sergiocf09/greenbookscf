@@ -1086,6 +1086,32 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     const playerHandicaps = betConfig.medalGeneral.playerHandicaps || [];
     const amount = amountOverride ?? betConfig.medalGeneral.amount ?? 100;
 
+    // ── Sliding (bilateral) mode: winner must beat EVERY rival pair-by-pair ──
+    if (betConfig.medalGeneral.handicapMode === 'bilateral') {
+      const absolute = getMedalSlidingAbsoluteWinner(pool, scores, betConfig, course, holeFilter, startingHole);
+      if (!absolute) {
+        const anyScores = pool.some(p => (scores.get(p.id) || []).some(s => s.confirmed && s.strokes > 0 && holeFilter(s.holeNumber)));
+        return { enabled: true, amount, winners: [], hasValidScores: anyScores };
+      }
+      const w = absolute.winner;
+      const winnerNet = absolute.comparisons[0]?.playerNet ?? 0;
+      return {
+        enabled: true,
+        amount,
+        winners: [{
+          playerId: w.id,
+          name: w.name,
+          initials: w.initials,
+          color: w.color,
+          netScore: winnerNet,
+          groupId: w.groupId,
+          amountWon: amount * absolute.rivals.length,
+        }],
+        hasValidScores: true,
+      };
+    }
+
+
     const playerNetScores: Array<{ playerId: string; name: string; initials: string; color: string; netScore: number; groupId?: string }> = [];
 
     pool.forEach(player => {
