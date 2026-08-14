@@ -35,6 +35,7 @@ import { NinesResultsCard } from '@/components/bets/NinesResultsCard';
 import { getOyesModalityForPair } from '@/lib/rayasCalculations';
 import { resolveConfigForGroup } from '@/lib/groupBetOverrides';
 import { playOrderIndex, sortHolesByPlayOrder } from '@/lib/bets/shared';
+import { getMedalSlidingAbsoluteWinner, getMedalPairNets } from '@/lib/bets/medalGeneralSliding';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
@@ -1104,7 +1105,6 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
           initials: w.initials,
           color: w.color,
           netScore: winnerNet,
-          groupId: w.groupId,
           amountWon: amount * absolute.rivals.length,
         }],
         hasValidScores: true,
