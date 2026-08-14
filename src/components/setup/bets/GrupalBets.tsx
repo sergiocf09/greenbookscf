@@ -288,7 +288,39 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
               onChange={(scope) => onUpdateBet('medalGeneral', { scope })}
             />
           )}
+
+          {/* Handicap mode: USGA (individual) vs Sliding (bilateral matrix) */}
+          <div className="space-y-1">
+            <Label className="text-[10px] font-semibold text-primary">Modalidad Hándicap</Label>
+            <div className="flex gap-2">
+              <button type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateBet('medalGeneral', { handicapMode: 'individual' }); }}
+                className={cn("flex-1 px-3 py-2 text-xs rounded transition-colors border",
+                  (config.medalGeneral?.handicapMode ?? 'individual') === 'individual'
+                    ? "bg-golf-gold text-golf-dark font-medium border-golf-gold"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80 border-border"
+                )}>
+                USGA Hándicap
+              </button>
+              <button type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateBet('medalGeneral', { handicapMode: 'bilateral' }); }}
+                className={cn("flex-1 px-3 py-2 text-xs rounded transition-colors border",
+                  config.medalGeneral?.handicapMode === 'bilateral'
+                    ? "bg-primary text-primary-foreground font-medium border-primary"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80 border-border"
+                )}>
+                Sliding (Bilateral)
+              </button>
+            </div>
+            <p className="text-[9px] text-muted-foreground">
+              {config.medalGeneral?.handicapMode === 'bilateral'
+                ? 'Se usan las ventajas par por par de la matriz de hándicaps. Para ganar, un jugador debe vencer a TODOS sus rivales en su comparación bilateral; si no, el tramo no paga.'
+                : 'Cada jugador recibe golpes según su propio hándicap y se compara un solo neto contra el grupo (empates se dividen).'}
+            </p>
+          </div>
+
           <CollapsibleSubSection label="Configuración" summary="Handicaps por jugador">
+
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Handicaps para Medal General</Label>
               {players.map(player => {
