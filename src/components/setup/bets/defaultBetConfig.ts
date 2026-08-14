@@ -24,7 +24,7 @@ export const defaultBetConfig: BetConfig = {
     scoringType: 'all',
     teamHandicaps: {},
   },
-  medalGeneral: { enabled: false, amount: 100, playerHandicaps: [], segmentMode: 'total' },
+  medalGeneral: { enabled: false, amount: 100, playerHandicaps: [], segmentMode: 'total', handicapMode: 'individual' },
   puttsGeneral: { enabled: false, amount: 100, segmentMode: 'total' },
   girGeneral: { enabled: false, amount: 100, segmentMode: 'total' },
   coneja: { enabled: false, amount: 50, handicapMode: 'individual' },

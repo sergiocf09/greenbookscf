@@ -1,10 +1,12 @@
 /**
  * Medal General Bet Calculator — group pool, lowest net wins
  * Supports segments: total-only or front/back/total
+ * Supports handicap modes: 'individual' (USGA) or 'bilateral' (Sliding matrix)
  */
 import { Player, PlayerScore, BetConfig, GolfCourse } from '@/types/golf';
 import { calculateStrokesPerHole, getSegmentHoleRanges } from '../handicapUtils';
 import { BetSummary } from './shared';
+import { getMedalSlidingAbsoluteWinner } from './medalGeneralSliding';
 
 type Segment = 'front' | 'back' | 'total';
 
@@ -20,6 +22,30 @@ const computeForSegment = (
 ): BetSummary[] => {
   const summaries: BetSummary[] = [];
   if (amount <= 0 || players.length < 2) return summaries;
+
+  const segmentLabelBase = segment === 'front' ? 'F9' : segment === 'back' ? 'B9' : 'Total';
+
+  // ── Sliding (bilateral) mode: absolute winner must beat every rival ──
+  if (config.medalGeneral?.handicapMode === 'bilateral') {
+    const absolute = getMedalSlidingAbsoluteWinner(
+      players,
+      scores,
+      config,
+      course,
+      holeFilter,
+      startingHole
+    );
+    if (!absolute) return summaries;
+
+    absolute.comparisons.forEach((cmp) => {
+      const desc = `${segmentLabelBase} Neto bilateral ${cmp.playerNet} vs ${cmp.rivalNet} (sliding)`;
+      summaries.push({ playerId: absolute.winner.id, vsPlayer: cmp.rivalId, betType: 'Medal General', amount, segment, description: desc });
+      summaries.push({ playerId: cmp.rivalId, vsPlayer: absolute.winner.id, betType: 'Medal General', amount: -amount, segment, description: `${segmentLabelBase} Neto bilateral ${cmp.rivalNet} vs ${cmp.playerNet} (sliding)` });
+    });
+
+    return summaries;
+  }
+
 
   const playerHandicaps = config.medalGeneral?.playerHandicaps || [];
   const playerNetTotals: { playerId: string; netTotal: number }[] = [];

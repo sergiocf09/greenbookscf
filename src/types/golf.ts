@@ -273,6 +273,8 @@ export interface MedalGeneralBetConfig {
   playerHandicaps: MedalGeneralPlayerConfig[]; // Per-player handicaps for this bet
   participantIds?: string[];
   scope?: GroupBetScope; // Multi-group scope (default: 'global')
+  handicapMode?: 'individual' | 'bilateral'; // 'individual' = USGA, 'bilateral' = Sliding matrix
+
 }
 
 // Putts General - Group bet for lowest putt total
