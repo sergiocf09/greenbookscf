@@ -29,6 +29,8 @@ interface PlayerScoreData {
   initials: string;
   color: string;
   handicap: number;
+  profileId?: string | null;
+  teeColor?: string;
   scores: { holeNumber: number; strokes: number; putts: number; oyesProximity?: number | null }[];
   totalStrokes: number;
 }
