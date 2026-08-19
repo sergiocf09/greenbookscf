@@ -540,20 +540,28 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
 
   const displayData = useMemo(() => {
     const base = hasSnapshot && snapshot
-      ? { courseName: snapshot.courseName, teeColor: snapshot.teeColor, date: snapshot.date }
-      : { courseName: course.name, teeColor, date };
+      ? { courseName: snapshot.courseName, date: snapshot.date, roundTee: snapshot.teeColor }
+      : { courseName: course.name, date, roundTee: teeColor };
 
-    // Prefer the tee of the logged-in player as recorded per player
+    // Prefer the tee of the logged-in player as recorded per player.
+    // Priority: snapshot per-player tee → per-player tee from the DB (round_players,
+    // passed in as `teeColor` by the history list) → round default tee.
     const ownTee =
       (currentUserProfileId
         ? (allSnapshotPlayers.find((p: any) => p.profileId === currentUserProfileId) as any)?.teeColor
         : undefined) ??
       (currentUserProfileId
         ? (fallbackPlayers as any[]).find((p: any) => p.profileId === currentUserProfileId)?.teeColor
-        : undefined);
+        : undefined) ??
+      teeColor;
 
-    const rawTee = ownTee || base.teeColor;
-    return { ...base, teeColor: rawTee, teeLabel: TEE_LABEL_ES[rawTee] ?? rawTee };
+    const rawTee = ownTee || base.roundTee;
+    return {
+      courseName: base.courseName,
+      date: base.date,
+      teeColor: rawTee,
+      teeLabel: TEE_LABEL_ES[rawTee] ?? rawTee,
+    };
   }, [hasSnapshot, snapshot, course.name, teeColor, date, allSnapshotPlayers, fallbackPlayers, currentUserProfileId]);
 
 
