@@ -33,7 +33,8 @@ interface RoundHistoryItem {
   courseName: string;
   courseLocation: string;
   courseId: string;
-  teeColor: string;
+  teeColor: string;      // tee actually used by the logged-in player
+  roundTeeColor: string; // round default tee (used for cloning)
   totalStrokes: number;
   handicapUsed: number;
   playersCount: number;
@@ -50,6 +51,8 @@ interface PlayerScoreData {
   initials: string;
   color: string;
   handicap: number;
+  profileId?: string | null;
+  teeColor?: string;
   scores: { holeNumber: number; strokes: number; putts: number; oyesProximity?: number | null }[];
   totalStrokes: number;
 }
@@ -118,6 +121,8 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
           round_id,
           is_organizer,
           is_admin,
+          tee_color,
+
           rounds!inner(
             id,
             date,
@@ -169,7 +174,8 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
             courseName: course?.name || 'Campo desconocido',
             courseLocation: course?.location || '',
             courseId: round.course_id,
-            teeColor: round.tee_color,
+            teeColor: (rp as any).tee_color || round.tee_color,
+            roundTeeColor: round.tee_color,
             totalStrokes,
             handicapUsed: Number(rp.handicap_for_round) || 0,
             playersCount: countResult.count || 1,
@@ -213,6 +219,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
               courseLocation: course?.location || '',
               courseId: r.course_id,
               teeColor: r.tee_color,
+              roundTeeColor: r.tee_color,
               totalStrokes: 0,
               handicapUsed: 0,
               playersCount: count || 0,
@@ -301,6 +308,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
           guest_name,
           guest_initials,
           guest_color,
+          tee_color,
           profiles!round_players_profile_id_fkey(display_name, initials, avatar_color)
         `)
         .eq('round_id', round.id);
@@ -330,6 +338,8 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
             playerName,
             initials,
             color,
+            profileId: rp.profile_id,
+            teeColor: (rp as any).tee_color || round.roundTeeColor,
             handicap: Number(rp.handicap_for_round) || 0,
             scores: (scores || []).map(s => ({
               holeNumber: s.hole_number,
@@ -415,7 +425,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
 
       onCloneRound({
         courseId: round.courseId,
-        teeColor: round.teeColor,
+        teeColor: round.roundTeeColor,
         startingHole: (roundData?.starting_hole === 10 ? 10 : 1) as 1 | 10,
         betConfig: roundData?.bet_config || {},
         players: clonePlayers,
@@ -490,7 +500,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
 
       onCloneFullRound({
         courseId: round.courseId,
-        teeColor: round.teeColor,
+        teeColor: round.roundTeeColor,
         startingHole: (snapshot.startingHole === 10 ? 10 : 1) as 1 | 10,
         betConfig: snapshot.betConfig || {},
         players: clonePlayers,
