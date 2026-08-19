@@ -118,6 +118,8 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
           round_id,
           is_organizer,
           is_admin,
+          tee_color,
+
           rounds!inner(
             id,
             date,
