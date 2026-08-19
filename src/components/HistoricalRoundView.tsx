@@ -530,13 +530,30 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
     return new Set(Array.from({ length: 18 }, (_, i) => i + 1));
   }, []);
 
-  // Display data
+  // Display data — the tee shown is the VIEWER's own tee (not the round default),
+  // falling back to the round tee when the viewer didn't play the round.
+  const TEE_LABEL_ES: Record<string, string> = {
+    blue: 'Azul', white: 'Blanco', yellow: 'Dorado', red: 'Rojo', black: 'Negro', gold: 'Dorado',
+  };
+
   const displayData = useMemo(() => {
-    if (hasSnapshot && snapshot) {
-      return { courseName: snapshot.courseName, teeColor: snapshot.teeColor, date: snapshot.date };
-    }
-    return { courseName: course.name, teeColor, date };
-  }, [hasSnapshot, snapshot, course.name, teeColor, date]);
+    const base = hasSnapshot && snapshot
+      ? { courseName: snapshot.courseName, teeColor: snapshot.teeColor, date: snapshot.date }
+      : { courseName: course.name, teeColor, date };
+
+    // Prefer the tee of the logged-in player as recorded per player
+    const ownTee =
+      (currentUserProfileId
+        ? (allSnapshotPlayers.find((p: any) => p.profileId === currentUserProfileId) as any)?.teeColor
+        : undefined) ??
+      (currentUserProfileId
+        ? (fallbackPlayers as any[]).find((p: any) => p.profileId === currentUserProfileId)?.teeColor
+        : undefined);
+
+    const rawTee = ownTee || base.teeColor;
+    return { ...base, teeColor: rawTee, teeLabel: TEE_LABEL_ES[rawTee] ?? rawTee };
+  }, [hasSnapshot, snapshot, course.name, teeColor, date, allSnapshotPlayers, fallbackPlayers, currentUserProfileId]);
+
 
   if (loading) {
     return (
