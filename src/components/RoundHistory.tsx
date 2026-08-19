@@ -171,7 +171,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
             courseName: course?.name || 'Campo desconocido',
             courseLocation: course?.location || '',
             courseId: round.course_id,
-            teeColor: round.tee_color,
+            teeColor: (rp as any).tee_color || round.tee_color,
             totalStrokes,
             handicapUsed: Number(rp.handicap_for_round) || 0,
             playersCount: countResult.count || 1,
