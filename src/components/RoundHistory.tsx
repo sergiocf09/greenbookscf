@@ -33,7 +33,8 @@ interface RoundHistoryItem {
   courseName: string;
   courseLocation: string;
   courseId: string;
-  teeColor: string;
+  teeColor: string;      // tee actually used by the logged-in player
+  roundTeeColor: string; // round default tee (used for cloning)
   totalStrokes: number;
   handicapUsed: number;
   playersCount: number;
@@ -172,6 +173,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
             courseLocation: course?.location || '',
             courseId: round.course_id,
             teeColor: (rp as any).tee_color || round.tee_color,
+            roundTeeColor: round.tee_color,
             totalStrokes,
             handicapUsed: Number(rp.handicap_for_round) || 0,
             playersCount: countResult.count || 1,
@@ -215,6 +217,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
               courseLocation: course?.location || '',
               courseId: r.course_id,
               teeColor: r.tee_color,
+              roundTeeColor: r.tee_color,
               totalStrokes: 0,
               handicapUsed: 0,
               playersCount: count || 0,
@@ -417,7 +420,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
 
       onCloneRound({
         courseId: round.courseId,
-        teeColor: round.teeColor,
+        teeColor: round.roundTeeColor,
         startingHole: (roundData?.starting_hole === 10 ? 10 : 1) as 1 | 10,
         betConfig: roundData?.bet_config || {},
         players: clonePlayers,
@@ -492,7 +495,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
 
       onCloneFullRound({
         courseId: round.courseId,
-        teeColor: round.teeColor,
+        teeColor: round.roundTeeColor,
         startingHole: (snapshot.startingHole === 10 ? 10 : 1) as 1 | 10,
         betConfig: snapshot.betConfig || {},
         players: clonePlayers,
