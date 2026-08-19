@@ -569,7 +569,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
       <div className="text-center pb-2 border-b border-border">
         <h3 className="font-semibold text-lg text-primary">{displayData.courseName}</h3>
         <p className="text-sm text-muted-foreground">
-          {format(parseLocalDate(displayData.date), "d 'de' MMMM, yyyy", { locale: es })} • Tee {displayData.teeColor}
+          {format(parseLocalDate(displayData.date), "d 'de' MMMM, yyyy", { locale: es })} • Tee {displayData.teeLabel}
         </p>
         {hasSnapshot && (
           <div className="flex items-center justify-center gap-2 mt-1">
