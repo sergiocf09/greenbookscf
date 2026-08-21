@@ -70,6 +70,19 @@ const getEffectiveOyesesPlayerConfig = (
  * Falls back to the global config.oyeses.amount when no override exists.
  * Matches overrides stored with either player.id or player.profileId.
  */
+/**
+ * In 9-hole rounds only the played nine counts for Oyeses (and therefore for
+ * the Zapato 100% rule). 18-hole rounds keep every Par 3.
+ */
+const isHoleInPlayedRound = (
+  holeNumber: number,
+  config: BetConfig,
+  startingHole: 1 | 10 = 1
+): boolean => {
+  if ((config.roundHoles ?? 18) !== 9) return true;
+  return startingHole === 10 ? holeNumber >= 10 : holeNumber <= 9;
+};
+
 export const getOyesesPairAmount = (
   config: BetConfig,
   playerAId: string,
@@ -131,7 +144,8 @@ export const getOyesesPairResult = (
   // Find Par 3 holes
   const par3Holes = course.holes
     .filter(h => h.par === 3)
-    .map(h => h.number);
+    .map(h => h.number)
+    .filter(n => isHoleInPlayedRound(n, config, startingHole));
   const orderedPar3Holes = sortHolesByPlayOrder(par3Holes, startingHole);
   
   const cfgA = getEffectiveOyesesPlayerConfig(playerAId, config);
@@ -284,7 +298,8 @@ export const getOyesesDisplayData = (
   // Find Par 3 holes
   const par3Holes = course.holes
     .filter(h => h.par === 3)
-    .map(h => h.number);
+    .map(h => h.number)
+    .filter(n => isHoleInPlayedRound(n, config, startingHole));
   const orderedPar3Holes = sortHolesByPlayOrder(par3Holes, startingHole);
   
   let pairModality: OyesModality;
@@ -433,7 +448,8 @@ export const calculateOyesesBets = (
   // Find all Par 3 holes
   const par3Holes = course.holes
     .filter(h => h.par === 3)
-    .map(h => h.number);
+    .map(h => h.number)
+    .filter(n => isHoleInPlayedRound(n, config, startingHole));
   const orderedPar3Holes = sortHolesByPlayOrder(par3Holes, startingHole);
   
   const getPlayerModality = (playerId: string): OyesModality | null => {
