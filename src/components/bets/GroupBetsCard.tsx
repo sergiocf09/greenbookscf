@@ -378,7 +378,9 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
                           {setDescriptions}
                         </span>
                       </div>
-                      <span className="text-green-600 font-bold">+${fmtMoney(totalAmount)}</span>
+                      {totalAmount > 0 && (
+                        <span className="text-green-600 font-bold">+${fmtMoney(totalAmount)}</span>
+                      )}
                     </div>
                   </div>
                 );
