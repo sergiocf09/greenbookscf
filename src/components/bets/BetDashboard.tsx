@@ -2804,12 +2804,17 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         
                     // ── Build Units detail ──
                     const unitsDetail = (() => {
-                      if (!bet.unitsConfig?.enabled || !bet.unitsConfig.enabledMarkers?.length) return null;
-                      const enabledMarkersSet = new Set(bet.unitsConfig.enabledMarkers);
+                      if (!bet.unitsConfig?.enabled) return null;
+                      const includeGeneric = !!bet.unitsConfig.includeGenericUnit;
+                      if (!bet.unitsConfig.enabledMarkers?.length && !includeGeneric) return null;
+                      const enabledMarkersSet = new Set(bet.unitsConfig.enabledMarkers ?? []);
+                      const valuePerGeneric = bet.unitsConfig.valuePerGenericUnit ?? bet.unitsConfig.valuePerUnit;
                       type UnitHit = { holeNumber: number; playerId: string; marker: string };
                       const hitsA: UnitHit[] = [];
                       const hitsB: UnitHit[] = [];
-                      const countForTeam = (teamIds: string[], hits: UnitHit[]) => {
+                      let genA = 0;
+                      let genB = 0;
+                      const countForTeam = (teamIds: string[], hits: UnitHit[], isTeamA: boolean) => {
                         teamIds.forEach(pid => {
                           const playerScores = confirmedScores.get(pid) || [];
                           playerScores.forEach(s => {
@@ -2822,11 +2827,18 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                 hits.push({ holeNumber: s.holeNumber, playerId: pid, marker });
                               }
                             });
+                            if (includeGeneric) {
+                              const count = s.markers?.unidadGenerica ?? 0;
+                              for (let i = 0; i < count; i++) {
+                                hits.push({ holeNumber: s.holeNumber, playerId: pid, marker: 'unidadGenerica' });
+                              }
+                              if (isTeamA) genA += count; else genB += count;
+                            }
                           });
                         });
                       };
-                      countForTeam(resolvedTeamA, hitsA);
-                      countForTeam(resolvedTeamB, hitsB);
+                      countForTeam(resolvedTeamA, hitsA, true);
+                      countForTeam(resolvedTeamB, hitsB, false);
                       hitsA.sort((a, b) => a.holeNumber - b.holeNumber);
                       hitsB.sort((a, b) => a.holeNumber - b.holeNumber);
                       const unitsAdv = bet.unitsConfig?.unitsAdvantage ?? 0;
@@ -2834,11 +2846,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       const netAdvantage = unitsAdvTeam === 'a' ? -unitsAdv
                                          : unitsAdvTeam === 'b' ?  unitsAdv
                                          : 0;
+                      // Standard-only counts (generic units are valued separately)
+                      const stdA = hitsA.length - genA;
+                      const stdB = hitsB.length - genB;
                       const diff = hitsA.length - hitsB.length;
-                      const adjustedDiff = diff + netAdvantage;
-                      const money = adjustedDiff * (bet.unitsConfig.valuePerUnit || 0);
+                      const adjustedDiff = (stdA - stdB) + netAdvantage;
+                      const money = adjustedDiff * (bet.unitsConfig.valuePerUnit || 0)
+                        + (includeGeneric ? (genA - genB) * (valuePerGeneric || 0) : 0);
                       return { hitsA, hitsB, totalA: hitsA.length, totalB: hitsB.length, diff, adjustedDiff, money, unitsAdv, unitsAdvTeam, netAdvantage };
                     })();
+
 
                     // ── Build Oyeses detail ──
                     const oyesesDetail = (() => {
