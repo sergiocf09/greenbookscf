@@ -524,7 +524,12 @@ const Index = () => {
     players: allPlayersForBets,
     roundPlayerIds,
     logEvent,
+    // Persist the matrix defaults automatically while the round is open, so all
+    // bets (bilateral, coneja, etc.) read confirmed handicaps even if the
+    // organizer never edits the matrix.
+    autoSeed: roundState.status !== 'completed',
   });
+
 
   // Ensure betConfig is loaded at least once for this round so debounced saves are enabled.
   useEffect(() => {

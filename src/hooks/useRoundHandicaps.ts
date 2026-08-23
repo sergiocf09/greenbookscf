@@ -33,6 +33,8 @@ interface UseRoundHandicapsProps {
   players: Player[];
   roundPlayerIds: Map<string, string>; // Local player ID -> round_player ID
   logEvent?: (eventType: string, payload: Record<string, any>, targetPlayerId?: string | null) => void | Promise<void>;
+  /** When true, default matrix values are persisted automatically (open rounds only). */
+  autoSeed?: boolean;
 }
 
 /**
@@ -51,7 +53,9 @@ export const useRoundHandicaps = ({
   players,
   roundPlayerIds,
   logEvent,
+  autoSeed = false,
 }: UseRoundHandicapsProps) => {
+
   const [handicaps, setHandicaps] = useState<Map<string, RoundHandicap>>(new Map());
   const [isLoading, setIsLoading] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -446,6 +450,84 @@ export const useRoundHandicaps = ({
     },
     [roundId, handicaps]
   );
+
+  /**
+   * AUTO-SEED: materialize the handicap matrix defaults into round_handicaps.
+   *
+   * The matrix UI shows a default (rounded handicap difference) for pairs that have
+   * no DB record yet, but the betting engine only receives persisted pairs. When the
+   * organizer never touches the matrix (very common with guests), those advantages
+   * were effectively ignored by some bets (bilateral, coneja, ...).
+   *
+   * This effect persists the defaults once per round/player-set, so the matrix is
+   * always "confirmed". Existing rows are never overwritten, so any manual edit,
+   * USGA apply, or sliding apply keeps precedence.
+   */
+  const seededSignatureRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!roundId || !autoSeed || !isLoaded) return;
+    if (players.length < 2 || roundPlayerIds.size === 0) return;
+
+    // Only players that already have a round_player row can be seeded
+    const seedable = players
+      .map(p => ({ localId: p.id, rpId: toRoundPlayerId(p.id), handicap: p.handicap ?? 0 }))
+      .filter((p): p is { localId: string; rpId: string; handicap: number } => !!p.rpId);
+
+    if (seedable.length < 2) return;
+
+    const signature = `${roundId}|${seedable.map(p => `${p.rpId}:${Math.round(p.handicap * 10)}`).sort().join(',')}`;
+    if (seededSignatureRef.current === signature) return;
+    seededSignatureRef.current = signature;
+
+    const insertRecords: {
+      round_id: string;
+      player_a_id: string;
+      player_b_id: string;
+      strokes_given_by_a: number;
+    }[] = [];
+
+    for (let i = 0; i < seedable.length; i++) {
+      for (let j = i + 1; j < seedable.length; j++) {
+        const a = seedable[i];
+        const b = seedable[j];
+        if (a.rpId === b.rpId) continue;
+
+        const [normA, normB] = normalizePair(a.rpId, b.rpId);
+        const key = `${normA}-${normB}`;
+        if (handicaps.has(key)) continue; // already explicit → respect it
+
+        // Lower handicap gives strokes to the higher handicap.
+        const first = normA === a.rpId ? a : b;
+        const second = normA === a.rpId ? b : a;
+        const strokesGivenByA = Math.round(second.handicap - first.handicap);
+
+        insertRecords.push({
+          round_id: roundId,
+          player_a_id: normA,
+          player_b_id: normB,
+          strokes_given_by_a: strokesGivenByA,
+        });
+      }
+    }
+
+    if (insertRecords.length === 0) return;
+
+    void (async () => {
+      try {
+        const { error } = await supabase
+          .from('round_handicaps')
+          .insert(insertRecords);
+        if (error) throw error;
+        devLog('Auto-seeded', insertRecords.length, 'default bilateral handicap(s)');
+        await loadHandicaps();
+      } catch (err) {
+        devError('Error auto-seeding round handicaps:', err);
+        seededSignatureRef.current = null; // allow retry
+      }
+    })();
+  }, [roundId, autoSeed, isLoaded, players, roundPlayerIds, handicaps, toRoundPlayerId, loadHandicaps]);
+
 
   /**
    * Convert round_handicaps data to BilateralHandicap[] format for the calculation engine.
