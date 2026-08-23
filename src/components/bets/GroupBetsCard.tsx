@@ -328,7 +328,9 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
               {betConfig.coneja?.handicapMode === 'bilateral' ? 'Sliding' : 'USGA'}
             </span>
           </div>
-          <span className="text-xs text-muted-foreground">${conejaResult.amount} c/set</span>
+          <span className="text-xs text-muted-foreground">
+            {conejaResult.amount > 0 ? `$${fmtMoney(conejaResult.amount)} c/set` : 'Sin importe'}
+          </span>
         </div>
         
         {/* Toolkit visual - holes grid */}
