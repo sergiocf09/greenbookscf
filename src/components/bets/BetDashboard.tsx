@@ -3264,6 +3264,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           </Popover>
                         )}
                       </div>
+                      <div className="flex justify-between text-[11px] w-full border-t border-border/40 pt-0.5">
+                        <span className="text-muted-foreground">Total foursome</span>
+                        <span className={cn('font-semibold tabular-nums', moneyColor(grandTotalBase))}>
+                          {signed(grandTotalBase)}
+                        </span>
+                      </div>
+                      </div>
                     );
                   })()}
                   <p className="text-[10px] text-muted-foreground">
