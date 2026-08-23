@@ -7,6 +7,52 @@ import {
   BetSummary, groupPlayersByGroup, resolveParticipantsWithOneVsAll, shouldCalculatePair,
 } from './shared';
 
+/**
+ * Shared mancha counting helpers (used by the individual Manchas bet, the
+ * foursome sub-modality and the Bet Dashboard breakdown).
+ */
+export const MANCHA_MANUAL_MARKERS = [
+  'ladies', 'swingBlanco', 'retruje', 'trampa',
+  'dobleAgua', 'dobleOB', 'par3GirMas3', 'moreliana',
+] as const;
+
+export interface ManchaHit {
+  holeNumber: number;
+  playerId: string;
+  reason: string;
+}
+
+/** Standard manchas (manual markers + 10 strokes + 4 putts/cuatriput) with detail. */
+export const collectStandardManchaHits = (
+  playerId: string,
+  scores: Map<string, PlayerScore[]>
+): ManchaHit[] => {
+  const hits: ManchaHit[] = [];
+  (scores.get(playerId) || []).filter(s => s.confirmed).forEach(score => {
+    MANCHA_MANUAL_MARKERS.forEach(marker => {
+      if (score.markers?.[marker]) hits.push({ holeNumber: score.holeNumber, playerId, reason: marker });
+    });
+    if (score.strokes >= 10) hits.push({ holeNumber: score.holeNumber, playerId, reason: 'dobleDigito' });
+    if (score.putts >= 4 || score.markers?.cuatriput) hits.push({ holeNumber: score.holeNumber, playerId, reason: 'cuatriput' });
+  });
+  return hits.sort((a, b) => a.holeNumber - b.holeNumber);
+};
+
+/** Generic incremental manchas (⬛) with detail (one entry per occurrence). */
+export const collectGenericManchaHits = (
+  playerId: string,
+  scores: Map<string, PlayerScore[]>
+): ManchaHit[] => {
+  const hits: ManchaHit[] = [];
+  (scores.get(playerId) || []).filter(s => s.confirmed).forEach(score => {
+    const count = score.markers?.manchaGenerica ?? 0;
+    for (let i = 0; i < count; i++) {
+      hits.push({ holeNumber: score.holeNumber, playerId, reason: 'manchaGenerica' });
+    }
+  });
+  return hits.sort((a, b) => a.holeNumber - b.holeNumber);
+};
+
 export const calculateManchasBets = (
   players: Player[],
   scores: Map<string, PlayerScore[]>,
@@ -16,28 +62,11 @@ export const calculateManchasBets = (
 
   const summaries: BetSummary[] = [];
 
-  const manualManchaMarkers = [
-    'ladies', 'swingBlanco', 'retruje', 'trampa',
-    'dobleAgua', 'dobleOB', 'par3GirMas3', 'moreliana',
-  ] as const;
+  const countStandardManchas = (playerId: string): number =>
+    collectStandardManchaHits(playerId, scores).length;
 
-  const countStandardManchas = (playerId: string): number => {
-    const playerScores = (scores.get(playerId) || []).filter(s => s.confirmed);
-    let manchas = 0;
-    playerScores.forEach(score => {
-      manualManchaMarkers.forEach(marker => {
-        if (score.markers[marker]) manchas += 1;
-      });
-      if (score.strokes >= 10) manchas += 1;
-      if (score.putts >= 4 || score.markers.cuatriput) manchas += 1;
-    });
-    return manchas;
-  };
-
-  const countGenericManchas = (playerId: string): number => {
-    const playerScores = (scores.get(playerId) || []).filter(s => s.confirmed);
-    return playerScores.reduce((sum, score) => sum + (score.markers.manchaGenerica ?? 0), 0);
-  };
+  const countGenericManchas = (playerId: string): number =>
+    collectGenericManchaHits(playerId, scores).length;
 
   const playersByGroup = groupPlayersByGroup(players);
 
