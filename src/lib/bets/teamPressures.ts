@@ -7,6 +7,36 @@ import { detectScoreBasedMarkers, mergeMarkers } from '../scoreDetection';
 import { devLog } from '../logger';
 import { fmtMoney } from '../formatMoney';
 import { BetSummary } from './shared';
+import { collectStandardManchaHits, collectGenericManchaHits } from './manchas';
+
+/**
+ * Manchas sub-modality for foursomes: the team with MORE manchas pays.
+ * Returns money from Team A's perspective (positive = Team A wins).
+ * Uses the same mechanics as the individual Manchas bet (manual markers,
+ * double digit, 4 putts) plus the optional generic ⬛ incremental mancha.
+ */
+export const computeTeamManchasMoney = (
+  cfg: NonNullable<import('@/types/golf').TeamPressuresBet['manchasConfig']>,
+  teamA: string[],
+  teamB: string[],
+  scores: Map<string, PlayerScore[]>
+): number => {
+  const valueStd = cfg.valuePerMancha || 0;
+  const valueGen = cfg.valuePerGenericMancha ?? valueStd;
+  const countStd = (ids: string[]) => ids.reduce((sum, pid) => sum + collectStandardManchaHits(pid, scores).length, 0);
+  const countGen = (ids: string[]) => ids.reduce((sum, pid) => sum + collectGenericManchaHits(pid, scores).length, 0);
+
+  const stdA = countStd(teamA);
+  const stdB = countStd(teamB);
+  let money = (stdB - stdA) * valueStd;
+
+  if (cfg.includeGenericMancha) {
+    const genA = countGen(teamA);
+    const genB = countGen(teamB);
+    money += (genB - genA) * valueGen;
+  }
+  return money;
+};
 
 export const calculateTeamPressuresBets = (
   players: Player[],
