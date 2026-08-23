@@ -328,7 +328,9 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
               {betConfig.coneja?.handicapMode === 'bilateral' ? 'Sliding' : 'USGA'}
             </span>
           </div>
-          <span className="text-xs text-muted-foreground">${conejaResult.amount} c/set</span>
+          <span className="text-xs text-muted-foreground">
+            {conejaResult.amount > 0 ? `$${fmtMoney(conejaResult.amount)} c/set` : 'Sin importe'}
+          </span>
         </div>
         
         {/* Toolkit visual - holes grid */}
@@ -376,7 +378,9 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
                           {setDescriptions}
                         </span>
                       </div>
-                      <span className="text-green-600 font-bold">+${fmtMoney(totalAmount)}</span>
+                      {totalAmount > 0 && (
+                        <span className="text-green-600 font-bold">+${fmtMoney(totalAmount)}</span>
+                      )}
                     </div>
                   </div>
                 );
@@ -1060,7 +1064,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
     const setResults = calculateConejaSetResults(conejaParticipants, scores, course, betConfig, confirmedHoles);
     const holeDisplays = getConejaHoleDisplays(conejaParticipants, scores, course, betConfig, confirmedHoles);
-    const amount = betConfig.coneja.amount || 50;
+    const amount = betConfig.coneja.amount ?? 50;
     
     const winners = setResults
       .filter(sr => sr.winnerId)
