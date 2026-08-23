@@ -3040,8 +3040,34 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     const oyesesMoneyBase = oyesesDetail ? (isBaseInTeamA ? oyesesDetail.money : -oyesesDetail.money) : 0;
                     const manchasMoneyBase = manchasDetail ? (isBaseInTeamA ? manchasDetail.money : -manchasDetail.money) : 0;
 
+                    // ── Presiones money (same formula as the engine, base perspective) ──
+                    const isNineHoleRound = (effectiveBetConfig.roundHoles ?? 18) === 9;
+                    const pressureMoneyBase = (() => {
+                      if (bet.continua && bet.scoringType === 'matchOnly') {
+                        const allDetails = [...displayFrontDetails, ...displayBackDetails];
+                        const cum = allDetails.reduce((s, d) => s + (d ? d.net : 0), 0);
+                        return (cum > 0 ? 1 : cum < 0 ? -1 : 0) * bet.totalAmount;
+                      }
+                      const frontMainTied = displayFrontBets[0] === 0;
+                      const netBets = (bets: number[]) => bets.filter(b => b > 0).length - bets.filter(b => b < 0).length;
+                      const frontMoney = netBets(displayFrontBets) * bet.frontAmount;
+                      const effectiveBackAmount = frontMainTied ? (2 * bet.frontAmount + bet.totalAmount) : bet.backAmount;
+                      const backMoney = isNineHoleRound ? 0 : netBets(displayBackBets) * effectiveBackAmount;
+                      const matchMoney = isNineHoleRound || frontMainTied
+                        ? 0
+                        : (total18 > 0 ? 1 : total18 < 0 ? -1 : 0) * bet.totalAmount;
+                      return frontMoney + backMoney + matchMoney;
+                    })();
+                    const grandTotalBase = pressureMoneyBase + unitsMoneyBase + oyesesMoneyBase + manchasMoneyBase;
+                    const signed = (v: number) => `${v >= 0 ? '+' : '-'}$${fmtMoney(Math.abs(v))}`;
+                    const moneyColor = (v: number) => v > 0 ? 'text-green-600' : v < 0 ? 'text-destructive' : 'text-muted-foreground';
+
                     return (
+                      <div className="space-y-0.5 w-full">
                       <div className="flex justify-between gap-y-0.5 text-[11px] text-muted-foreground w-full">
+                        <span className={cn(moneyColor(pressureMoneyBase))}>
+                          Presiones: {signed(pressureMoneyBase)}
+                        </span>
                         {unitsDetail && (
                           <Popover>
                             <PopoverTrigger asChild>
