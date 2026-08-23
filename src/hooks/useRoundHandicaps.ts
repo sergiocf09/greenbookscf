@@ -33,6 +33,8 @@ interface UseRoundHandicapsProps {
   players: Player[];
   roundPlayerIds: Map<string, string>; // Local player ID -> round_player ID
   logEvent?: (eventType: string, payload: Record<string, any>, targetPlayerId?: string | null) => void | Promise<void>;
+  /** When true, default matrix values are persisted automatically (open rounds only). */
+  autoSeed?: boolean;
 }
 
 /**
@@ -51,7 +53,9 @@ export const useRoundHandicaps = ({
   players,
   roundPlayerIds,
   logEvent,
+  autoSeed = false,
 }: UseRoundHandicapsProps) => {
+
   const [handicaps, setHandicaps] = useState<Map<string, RoundHandicap>>(new Map());
   const [isLoading, setIsLoading] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
