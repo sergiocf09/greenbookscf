@@ -91,6 +91,8 @@ import { calculateNinesBets } from '@/lib/bets/nines';
 import { calculateWolfBets } from '@/lib/bets/wolf';
 import { calculateSixesBets } from '@/lib/bets/sixes';
 import { calculateVegasBets } from '@/lib/bets/vegas';
+import { collectStandardManchaHits, collectGenericManchaHits } from '@/lib/bets/manchas';
+
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
