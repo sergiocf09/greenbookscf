@@ -1060,7 +1060,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
     const setResults = calculateConejaSetResults(conejaParticipants, scores, course, betConfig, confirmedHoles);
     const holeDisplays = getConejaHoleDisplays(conejaParticipants, scores, course, betConfig, confirmedHoles);
-    const amount = betConfig.coneja.amount || 50;
+    const amount = betConfig.coneja.amount ?? 50;
     
     const winners = setResults
       .filter(sr => sr.winnerId)
