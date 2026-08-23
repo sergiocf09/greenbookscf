@@ -2802,129 +2802,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         // Calculate Total 18 (sum of FIRST bet from each nine)
         const total18 = displayFrontBets[0] + displayBackBets[0];
         
-        const pressureDisabled = isTeamBetDisabled(bet.id);
-        
-        return (
-          <Card key={`team-pressure-${idx}`} className={cn('border-accent/50', pressureDisabled && 'opacity-50')}>
-            <CardHeader className="py-3">
-              <CardTitle className="text-sm flex items-center justify-between">
-                <div className="flex items-center gap-1">
-                  <Users className="h-4 w-4" />
-                  Foursome {idx + 1}
-                  <TeamBetHandicapInfo
-                    players={[...displayTeamAPlayers, ...displayTeamBPlayers]}
-                    teamA={displayTeamAPlayers}
-                    teamB={displayTeamBPlayers}
-                    effectiveHandicaps={bet.teamHandicaps}
-                    handicapConfig={bet.handicapConfig}
-                    title={`Foursome ${idx + 1} — Hándicaps`}
-                    modalityLine={[
-                      bet.scoringType === 'lowBall' ? 'Low Ball'
-                        : bet.scoringType === 'highBall' ? 'High Ball'
-                        : bet.scoringType === 'combined' ? 'Bola Baja + Bola Alta'
-                        : 'Match Play',
-                      bet.continua && bet.scoringType === 'matchOnly' ? 'Match 18 continuo' : `Presión al ${bet.openingThreshold}`,
-                    ].join(' · ')}
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-
-                  {pressureDisabled ? (
-                    <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
-                  ) : (
-                    <span className={cn('text-base font-bold tabular-nums', baseTeamBalance > 0 ? 'text-green-600' : baseTeamBalance < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                      {baseTeamBalance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(baseTeamBalance))}
-                    </span>
-                  )}
-                  {onBetConfigChange && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn('h-6 w-6', pressureDisabled ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-destructive')}
-                      onClick={() => toggleTeamBetDisabled(bet.id)}
-                      title={pressureDisabled ? 'Reactivar Foursome' : 'No considerar Foursome'}
-                    >
-                      {pressureDisabled ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-                    </Button>
-                  )}
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <Collapsible open={foursomeOpenId === bet.id} onOpenChange={(open) => setFoursomeOpenId(open ? bet.id : null)}>
-                <div className="space-y-1">
-                  {/* Names row */}
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium truncate">
-                      {displayTeamAPlayers.map(p => disambiguatedNames.get(p.id) || formatPlayerName(p.name).split(' ')[0]).join(' / ')}
-                    </span>
-                    <span className="text-muted-foreground text-xs mx-2">vs</span>
-                    <span className="font-medium truncate text-right">
-                      {displayTeamBPlayers.map(p => disambiguatedNames.get(p.id) || formatPlayerName(p.name).split(' ')[0]).join(' / ')}
-                    </span>
-                  </div>
-                  {/* Results row */}
-                  <div className="flex items-center gap-2">
-                    {bet.continua && bet.scoringType === 'matchOnly' ? (() => {
-                      // Match-play 18-hole cumulative status
-                      const allDetails = [...displayFrontDetails, ...displayBackDetails];
-                      let cumBal = 0;
-                      let matchOver = false;
-                      let matchResult = '';
-                      let scoredCount = 0;
-                      for (let i = 0; i < allDetails.length; i++) {
-                        const d = allDetails[i];
-                        if (!d) break; // Stop at first unscored hole
-                        cumBal += d.net;
-                        scoredCount++;
-                        const remaining = allDetails.length - scoredCount;
-                        if (Math.abs(cumBal) > remaining && remaining > 0) {
-                          matchOver = true;
-                          matchResult = `${Math.abs(cumBal)} & ${remaining}`;
-                          break;
-                        }
-                      }
-                      if (!matchOver && scoredCount === allDetails.length) {
-                        matchResult = cumBal === 0 ? 'E' : `${Math.abs(cumBal)} Up`;
-                      }
-                      const statusLabel = matchOver ? matchResult :
-                        cumBal === 0 ? 'E' :
-                        cumBal > 0 ? `${cumBal} Up` : `${Math.abs(cumBal)} Dn`;
-                      const statusColor = cumBal > 0 ? 'text-green-600' : cumBal < 0 ? 'text-destructive' : 'text-muted-foreground';
-                      return (
-                        <div className="flex-1 text-center">
-                          <span className={cn('text-sm font-bold', statusColor)}>
-                            {matchOver ? `🏁 ${matchResult}` : statusLabel}
-                          </span>
-                          {matchOver && (
-                            <span className={cn('ml-2 text-xs', cumBal > 0 ? 'text-green-600' : 'text-destructive')}>
-                              {cumBal > 0 ? 'Ganaste' : 'Perdiste'}
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })() : (
-                      <div className="flex-1 grid grid-cols-3 gap-1 text-center text-sm tabular-nums">
-                        <span className={cn('font-semibold', frontTotal > 0 ? 'text-green-600' : frontTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                          F9 {frontBetsDisplay}
-                        </span>
-                        <span className={cn('font-semibold', backTotal > 0 ? 'text-green-600' : backTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                          B9 {backBetsDisplay}
-                        </span>
-                        <span className={cn('font-bold', total18 > 0 ? 'text-green-600' : total18 < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                          T {total18 >= 0 ? '+' : ''}{total18}
-                        </span>
-                      </div>
-                    )}
-                    <CollapsibleTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
-                        <ChevronDown className="h-4 w-4" />
-                        <span className="sr-only">Ver detalle</span>
-                      </Button>
-                    </CollapsibleTrigger>
-                  </div>
-                  {/* Sub-modality breakdown (Unidades / Oyeses) with detail popovers */}
-                  {(bet.unitsConfig?.enabled || bet.oyesesConfig?.enabled || bet.manchasConfig?.enabled) && (() => {
                     // ── Build Units detail ──
                     const unitsDetail = (() => {
                       if (!bet.unitsConfig?.enabled || !bet.unitsConfig.enabledMarkers?.length) return null;
@@ -3061,6 +2938,129 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     const grandTotalBase = pressureMoneyBase + unitsMoneyBase + oyesesMoneyBase + manchasMoneyBase;
                     const signed = (v: number) => `${v >= 0 ? '+' : '-'}$${fmtMoney(Math.abs(v))}`;
                     const moneyColor = (v: number) => v > 0 ? 'text-green-600' : v < 0 ? 'text-destructive' : 'text-muted-foreground';
+        const pressureDisabled = isTeamBetDisabled(bet.id);
+        
+        return (
+          <Card key={`team-pressure-${idx}`} className={cn('border-accent/50', pressureDisabled && 'opacity-50')}>
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <Users className="h-4 w-4" />
+                  Foursome {idx + 1}
+                  <TeamBetHandicapInfo
+                    players={[...displayTeamAPlayers, ...displayTeamBPlayers]}
+                    teamA={displayTeamAPlayers}
+                    teamB={displayTeamBPlayers}
+                    effectiveHandicaps={bet.teamHandicaps}
+                    handicapConfig={bet.handicapConfig}
+                    title={`Foursome ${idx + 1} — Hándicaps`}
+                    modalityLine={[
+                      bet.scoringType === 'lowBall' ? 'Low Ball'
+                        : bet.scoringType === 'highBall' ? 'High Ball'
+                        : bet.scoringType === 'combined' ? 'Bola Baja + Bola Alta'
+                        : 'Match Play',
+                      bet.continua && bet.scoringType === 'matchOnly' ? 'Match 18 continuo' : `Presión al ${bet.openingThreshold}`,
+                    ].join(' · ')}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+
+                  {pressureDisabled ? (
+                    <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
+                  ) : (
+                    <span className={cn('text-base font-bold tabular-nums', baseTeamBalance > 0 ? 'text-green-600' : baseTeamBalance < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                      {baseTeamBalance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(baseTeamBalance))}
+                    </span>
+                  )}
+                  {onBetConfigChange && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn('h-6 w-6', pressureDisabled ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-destructive')}
+                      onClick={() => toggleTeamBetDisabled(bet.id)}
+                      title={pressureDisabled ? 'Reactivar Foursome' : 'No considerar Foursome'}
+                    >
+                      {pressureDisabled ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                    </Button>
+                  )}
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <Collapsible open={foursomeOpenId === bet.id} onOpenChange={(open) => setFoursomeOpenId(open ? bet.id : null)}>
+                <div className="space-y-1">
+                  {/* Names row */}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium truncate">
+                      {displayTeamAPlayers.map(p => disambiguatedNames.get(p.id) || formatPlayerName(p.name).split(' ')[0]).join(' / ')}
+                    </span>
+                    <span className="text-muted-foreground text-xs mx-2">vs</span>
+                    <span className="font-medium truncate text-right">
+                      {displayTeamBPlayers.map(p => disambiguatedNames.get(p.id) || formatPlayerName(p.name).split(' ')[0]).join(' / ')}
+                    </span>
+                  </div>
+                  {/* Results row */}
+                  <div className="flex items-center gap-2">
+                    {bet.continua && bet.scoringType === 'matchOnly' ? (() => {
+                      // Match-play 18-hole cumulative status
+                      const allDetails = [...displayFrontDetails, ...displayBackDetails];
+                      let cumBal = 0;
+                      let matchOver = false;
+                      let matchResult = '';
+                      let scoredCount = 0;
+                      for (let i = 0; i < allDetails.length; i++) {
+                        const d = allDetails[i];
+                        if (!d) break; // Stop at first unscored hole
+                        cumBal += d.net;
+                        scoredCount++;
+                        const remaining = allDetails.length - scoredCount;
+                        if (Math.abs(cumBal) > remaining && remaining > 0) {
+                          matchOver = true;
+                          matchResult = `${Math.abs(cumBal)} & ${remaining}`;
+                          break;
+                        }
+                      }
+                      if (!matchOver && scoredCount === allDetails.length) {
+                        matchResult = cumBal === 0 ? 'E' : `${Math.abs(cumBal)} Up`;
+                      }
+                      const statusLabel = matchOver ? matchResult :
+                        cumBal === 0 ? 'E' :
+                        cumBal > 0 ? `${cumBal} Up` : `${Math.abs(cumBal)} Dn`;
+                      const statusColor = cumBal > 0 ? 'text-green-600' : cumBal < 0 ? 'text-destructive' : 'text-muted-foreground';
+                      return (
+                        <div className="flex-1 text-center">
+                          <span className={cn('text-sm font-bold', statusColor)}>
+                            {matchOver ? `🏁 ${matchResult}` : statusLabel}
+                          </span>
+                          {matchOver && (
+                            <span className={cn('ml-2 text-xs', cumBal > 0 ? 'text-green-600' : 'text-destructive')}>
+                              {cumBal > 0 ? 'Ganaste' : 'Perdiste'}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })() : (
+                      <div className="flex-1 grid grid-cols-3 gap-1 text-center text-sm tabular-nums">
+                        <span className={cn('font-semibold', frontTotal > 0 ? 'text-green-600' : frontTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                          F9 {frontBetsDisplay}
+                        </span>
+                        <span className={cn('font-semibold', backTotal > 0 ? 'text-green-600' : backTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                          B9 {backBetsDisplay}
+                        </span>
+                        <span className={cn('font-bold', total18 > 0 ? 'text-green-600' : total18 < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                          T {total18 >= 0 ? '+' : ''}{total18}
+                        </span>
+                      </div>
+                    )}
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+                        <ChevronDown className="h-4 w-4" />
+                        <span className="sr-only">Ver detalle</span>
+                      </Button>
+                    </CollapsibleTrigger>
+                  </div>
+                  {/* Sub-modality breakdown (Unidades / Oyeses) with detail popovers */}
+                  {(bet.unitsConfig?.enabled || bet.oyesesConfig?.enabled || bet.manchasConfig?.enabled) && (() => {
 
                     return (
                       <div className="space-y-0.5 w-full">
