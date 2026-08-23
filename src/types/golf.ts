@@ -405,6 +405,14 @@ export interface TeamPressureOyesesConfig {
   valuePerOyes: number;
 }
 
+// Team Pressure Manchas sub-modality config
+export interface TeamPressureManchasConfig {
+  enabled: boolean;
+  valuePerMancha: number;
+  includeGenericMancha?: boolean; // Whether the incremental generic ⬛ marker counts
+  valuePerGenericMancha?: number; // Value per generic mancha (defaults to valuePerMancha)
+}
+
 // Presiones por Parejas - Team pressures
 export interface TeamPressuresBet {
   id: string;
@@ -422,6 +430,7 @@ export interface TeamPressuresBet {
   // Optional sub-modalities
   unitsConfig?: TeamPressureUnitsConfig;
   oyesesConfig?: TeamPressureOyesesConfig;
+  manchasConfig?: TeamPressureManchasConfig;
 }
 
 export interface TeamPressuresBetConfig {

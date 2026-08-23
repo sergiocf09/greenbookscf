@@ -178,7 +178,13 @@ export const calculateTeamPressuresBets = (
         oyesesMoney = (oyesWinsA - oyesWinsB) * valuePerOyes;
       }
 
-      const grandTotal = totalMoney + unitsMoney + oyesesMoney;
+
+      let manchasMoney = 0;
+      if (bet.manchasConfig?.enabled) {
+        manchasMoney = computeTeamManchasMoney(bet.manchasConfig, teamA, teamB, scores);
+      }
+
+      const grandTotal = totalMoney + unitsMoney + oyesesMoney + manchasMoney;
       if (grandTotal !== 0) {
         const perPairAmount = grandTotal / 2;
         teamA.forEach(aId => {
@@ -287,14 +293,20 @@ export const calculateTeamPressuresBets = (
       devLog(`[TeamPressures:Oyeses] bet=${bet.id} winsA=${oyesWinsA} winsB=${oyesWinsB} money=${oyesesMoney}`);
     }
 
-    const totalMoney = pressureMoney + unitsMoney + oyesesMoney;
-    devLog(`[TeamPressures] bet=${bet.id} presiones=${pressureMoney} units=${unitsMoney} oyes=${oyesesMoney} totalMoney=${totalMoney}`);
+    let manchasMoney = 0;
+    if (bet.manchasConfig?.enabled) {
+      manchasMoney = computeTeamManchasMoney(bet.manchasConfig, teamA, teamB, scores);
+    }
+
+    const totalMoney = pressureMoney + unitsMoney + oyesesMoney + manchasMoney;
+    devLog(`[TeamPressures] bet=${bet.id} presiones=${pressureMoney} units=${unitsMoney} oyes=${oyesesMoney} manchas=${manchasMoney} totalMoney=${totalMoney}`);
 
     if (totalMoney !== 0) {
       const perPairAmount = totalMoney / 2;
       const descParts = [`Presiones: ${pressureMoney >= 0 ? '+' : '-'}$${fmtMoney(Math.abs(pressureMoney))}`];
       if (unitsMoney !== 0) descParts.push(`Unidades: ${unitsMoney >= 0 ? '+' : '-'}$${fmtMoney(Math.abs(unitsMoney))}`);
       if (oyesesMoney !== 0) descParts.push(`Oyeses: ${oyesesMoney >= 0 ? '+' : '-'}$${fmtMoney(Math.abs(oyesesMoney))}`);
+      if (manchasMoney !== 0) descParts.push(`Manchas: ${manchasMoney >= 0 ? '+' : '-'}$${fmtMoney(Math.abs(manchasMoney))}`);
       const descA = descParts.join(' | ');
       const descB = descParts.map(p => p.replace(/[+-]\$/g, (m) => m === '+$' ? '-$' : '+$')).join(' | ');
 
