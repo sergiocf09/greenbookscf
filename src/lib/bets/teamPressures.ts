@@ -7,6 +7,36 @@ import { detectScoreBasedMarkers, mergeMarkers } from '../scoreDetection';
 import { devLog } from '../logger';
 import { fmtMoney } from '../formatMoney';
 import { BetSummary } from './shared';
+import { collectStandardManchaHits, collectGenericManchaHits } from './manchas';
+
+/**
+ * Manchas sub-modality for foursomes: the team with MORE manchas pays.
+ * Returns money from Team A's perspective (positive = Team A wins).
+ * Uses the same mechanics as the individual Manchas bet (manual markers,
+ * double digit, 4 putts) plus the optional generic ⬛ incremental mancha.
+ */
+export const computeTeamManchasMoney = (
+  cfg: NonNullable<import('@/types/golf').TeamPressuresBet['manchasConfig']>,
+  teamA: string[],
+  teamB: string[],
+  scores: Map<string, PlayerScore[]>
+): number => {
+  const valueStd = cfg.valuePerMancha || 0;
+  const valueGen = cfg.valuePerGenericMancha ?? valueStd;
+  const countStd = (ids: string[]) => ids.reduce((sum, pid) => sum + collectStandardManchaHits(pid, scores).length, 0);
+  const countGen = (ids: string[]) => ids.reduce((sum, pid) => sum + collectGenericManchaHits(pid, scores).length, 0);
+
+  const stdA = countStd(teamA);
+  const stdB = countStd(teamB);
+  let money = (stdB - stdA) * valueStd;
+
+  if (cfg.includeGenericMancha) {
+    const genA = countGen(teamA);
+    const genB = countGen(teamB);
+    money += (genB - genA) * valueGen;
+  }
+  return money;
+};
 
 export const calculateTeamPressuresBets = (
   players: Player[],
@@ -178,7 +208,13 @@ export const calculateTeamPressuresBets = (
         oyesesMoney = (oyesWinsA - oyesWinsB) * valuePerOyes;
       }
 
-      const grandTotal = totalMoney + unitsMoney + oyesesMoney;
+
+      let manchasMoney = 0;
+      if (bet.manchasConfig?.enabled) {
+        manchasMoney = computeTeamManchasMoney(bet.manchasConfig, teamA, teamB, scores);
+      }
+
+      const grandTotal = totalMoney + unitsMoney + oyesesMoney + manchasMoney;
       if (grandTotal !== 0) {
         const perPairAmount = grandTotal / 2;
         teamA.forEach(aId => {
@@ -287,14 +323,20 @@ export const calculateTeamPressuresBets = (
       devLog(`[TeamPressures:Oyeses] bet=${bet.id} winsA=${oyesWinsA} winsB=${oyesWinsB} money=${oyesesMoney}`);
     }
 
-    const totalMoney = pressureMoney + unitsMoney + oyesesMoney;
-    devLog(`[TeamPressures] bet=${bet.id} presiones=${pressureMoney} units=${unitsMoney} oyes=${oyesesMoney} totalMoney=${totalMoney}`);
+    let manchasMoney = 0;
+    if (bet.manchasConfig?.enabled) {
+      manchasMoney = computeTeamManchasMoney(bet.manchasConfig, teamA, teamB, scores);
+    }
+
+    const totalMoney = pressureMoney + unitsMoney + oyesesMoney + manchasMoney;
+    devLog(`[TeamPressures] bet=${bet.id} presiones=${pressureMoney} units=${unitsMoney} oyes=${oyesesMoney} manchas=${manchasMoney} totalMoney=${totalMoney}`);
 
     if (totalMoney !== 0) {
       const perPairAmount = totalMoney / 2;
       const descParts = [`Presiones: ${pressureMoney >= 0 ? '+' : '-'}$${fmtMoney(Math.abs(pressureMoney))}`];
       if (unitsMoney !== 0) descParts.push(`Unidades: ${unitsMoney >= 0 ? '+' : '-'}$${fmtMoney(Math.abs(unitsMoney))}`);
       if (oyesesMoney !== 0) descParts.push(`Oyeses: ${oyesesMoney >= 0 ? '+' : '-'}$${fmtMoney(Math.abs(oyesesMoney))}`);
+      if (manchasMoney !== 0) descParts.push(`Manchas: ${manchasMoney >= 0 ? '+' : '-'}$${fmtMoney(Math.abs(manchasMoney))}`);
       const descA = descParts.join(' | ');
       const descB = descParts.map(p => p.replace(/[+-]\$/g, (m) => m === '+$' ? '-$' : '+$')).join(' | ');
 

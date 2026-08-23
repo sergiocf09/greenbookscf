@@ -1302,7 +1302,63 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
             </div>
           )}
         </div>
+
+        {/* Manchas Toggle & Config */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">⬛ Manchas</Label>
+            <Switch
+              checked={bet.manchasConfig?.enabled ?? false}
+              onCheckedChange={(enabled) => onUpdate({
+                manchasConfig: {
+                  ...(bet.manchasConfig ?? { enabled: false, valuePerMancha: 25, includeGenericMancha: false }),
+                  enabled,
+                },
+              })}
+            />
+          </div>
+          {bet.manchasConfig?.enabled && (
+            <div className="space-y-2 pl-2 border-l-2 border-primary/20">
+              <div className="flex items-center justify-between">
+                <Label className="text-[10px] text-muted-foreground">Valor por Mancha</Label>
+                <AmountInput label="" value={bet.manchasConfig.valuePerMancha} onChange={(v) => onUpdate({
+                  manchasConfig: { ...bet.manchasConfig!, valuePerMancha: v },
+                })} />
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Cuentan las manchas de siempre: marcadores manuales (Ladies, Retruje, Trampa, Doble Agua, Doble OB, Par3 GIR+3, Moreliana, Swing Blanco), doble dígito y 4 putts. El equipo con más manchas paga la diferencia.
+              </p>
+
+              {/* Generic Mancha (incremental ⬛) */}
+              <div className="space-y-1 pt-2 border-t border-border/30">
+                <label className="flex items-center gap-2 text-[11px] cursor-pointer">
+                  <Checkbox
+                    checked={bet.manchasConfig?.includeGenericMancha ?? false}
+                    onCheckedChange={(checked) => onUpdate({
+                      manchasConfig: { ...bet.manchasConfig!, includeGenericMancha: !!checked },
+                    })}
+                    className="h-3.5 w-3.5"
+                  />
+                  <span>⬛ Incluir Mancha genérica (incremental)</span>
+                </label>
+                {bet.manchasConfig?.includeGenericMancha && (
+                  <div className="flex items-center justify-between pl-5">
+                    <Label className="text-[10px] text-muted-foreground">Valor por Mancha genérica</Label>
+                    <AmountInput
+                      label=""
+                      value={bet.manchasConfig?.valuePerGenericMancha ?? bet.manchasConfig!.valuePerMancha}
+                      onChange={(v) => onUpdate({
+                        manchasConfig: { ...bet.manchasConfig!, valuePerGenericMancha: v },
+                      })}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
 
       {/* Info note */}
       <div className="text-[10px] text-muted-foreground bg-muted/50 rounded p-1.5">

@@ -139,7 +139,11 @@ export const buildBasePairTeamPressures = (
         : template?.oyesesConfig
         ? { ...template.oyesesConfig }
         : undefined,
+      manchasConfig: template?.manchasConfig
+        ? { ...template.manchasConfig }
+        : undefined,
     } as TeamPressuresBet;
+
   });
 
 export const buildBasePairCarritosTeams = (

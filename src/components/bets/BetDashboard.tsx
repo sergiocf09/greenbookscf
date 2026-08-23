@@ -91,6 +91,8 @@ import { calculateNinesBets } from '@/lib/bets/nines';
 import { calculateWolfBets } from '@/lib/bets/wolf';
 import { calculateSixesBets } from '@/lib/bets/sixes';
 import { calculateVegasBets } from '@/lib/bets/vegas';
+import { collectStandardManchaHits, collectGenericManchaHits } from '@/lib/bets/manchas';
+
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
@@ -2922,7 +2924,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     </CollapsibleTrigger>
                   </div>
                   {/* Sub-modality breakdown (Unidades / Oyeses) with detail popovers */}
-                  {(bet.unitsConfig?.enabled || bet.oyesesConfig?.enabled) && (() => {
+                  {(bet.unitsConfig?.enabled || bet.oyesesConfig?.enabled || bet.manchasConfig?.enabled) && (() => {
                     // ── Build Units detail ──
                     const unitsDetail = (() => {
                       if (!bet.unitsConfig?.enabled || !bet.unitsConfig.enabledMarkers?.length) return null;
@@ -2999,6 +3001,31 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       return { wins, winsA, winsB, diff, money: diff * valuePerOyes, valuePerOyes, modality, par3Holes };
                     })();
 
+                    // ── Build Manchas detail ──
+                    const manchasDetail = (() => {
+                      if (!bet.manchasConfig?.enabled) return null;
+                      const valueStd = bet.manchasConfig.valuePerMancha || 0;
+                      const includeGeneric = !!bet.manchasConfig.includeGenericMancha;
+                      const valueGen = bet.manchasConfig.valuePerGenericMancha ?? valueStd;
+                      const collect = (teamIds: string[]) => {
+                        const std = teamIds.flatMap(pid => collectStandardManchaHits(pid, confirmedScores));
+                        const gen = includeGeneric ? teamIds.flatMap(pid => collectGenericManchaHits(pid, confirmedScores)) : [];
+                        return { std, gen };
+                      };
+                      const a = collect(resolvedTeamA);
+                      const b = collect(resolvedTeamB);
+                      const diffStd = b.std.length - a.std.length;
+                      const diffGen = b.gen.length - a.gen.length;
+                      const money = diffStd * valueStd + (includeGeneric ? diffGen * valueGen : 0);
+                      const hitsA = [...a.std, ...a.gen].sort((x, y) => x.holeNumber - y.holeNumber);
+                      const hitsB = [...b.std, ...b.gen].sort((x, y) => x.holeNumber - y.holeNumber);
+                      return {
+                        hitsA, hitsB,
+                        totalA: hitsA.length, totalB: hitsB.length,
+                        diffStd, diffGen, includeGeneric, valueStd, valueGen, money,
+                      };
+                    })();
+
                     const getPlayerInitial = (pid: string) => {
                       const p = allPlayersForCalculations.find(pl => pl.id === pid);
                       return p ? (disambiguatedAbbrs.get(p.id) || p.initials) : '?';
@@ -3011,6 +3038,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     // Compute perspective-aware money values (positive = base team wins)
                     const unitsMoneyBase = unitsDetail ? (isBaseInTeamA ? unitsDetail.money : -unitsDetail.money) : 0;
                     const oyesesMoneyBase = oyesesDetail ? (isBaseInTeamA ? oyesesDetail.money : -oyesesDetail.money) : 0;
+                    const manchasMoneyBase = manchasDetail ? (isBaseInTeamA ? manchasDetail.money : -manchasDetail.money) : 0;
 
                     return (
                       <div className="flex justify-between gap-y-0.5 text-[11px] text-muted-foreground w-full">
@@ -3145,6 +3173,65 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                       {oyesesMoneyBase >= 0 ? '+' : '-'}${fmtMoney(Math.abs(oyesesMoneyBase))}
                                     </span>
                                   </p>
+                                </div>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        )}
+                        {manchasDetail && (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <span className={cn(
+                                'underline decoration-dotted cursor-pointer',
+                                manchasMoneyBase > 0 ? 'text-green-600' : manchasMoneyBase < 0 ? 'text-destructive' : 'text-muted-foreground'
+                              )}>
+                                ⬛ Manchas: {manchasMoneyBase >= 0 ? '+' : '-'}${fmtMoney(Math.abs(manchasMoneyBase))}
+                              </span>
+                            </PopoverTrigger>
+                            <PopoverContent side="top" className="w-80 p-3">
+                              <div className="text-xs space-y-2">
+                                <p className="font-semibold text-sm">Manchas — Detalle</p>
+                                <div className="grid grid-cols-[1fr_auto_1fr] gap-x-3">
+                                  <div>
+                                    <p className="font-medium text-destructive mb-1">Tu equipo ({manchasDetail.totalA})</p>
+                                    {manchasDetail.hitsA.length === 0 && <p className="text-muted-foreground italic text-[10px]">—</p>}
+                                    {manchasDetail.hitsA.map((h, hi) => (
+                                      <p key={hi} className="text-[10px] flex items-center gap-1">
+                                        <span className="tabular-nums">H{h.holeNumber}</span>
+                                        <span>{getPlayerInitial(h.playerId)}</span>
+                                        <span className="text-muted-foreground ml-auto">{getMarkerLabel(h.reason)}</span>
+                                      </p>
+                                    ))}
+                                  </div>
+                                  <div className="w-px bg-border" />
+                                  <div>
+                                    <p className="font-medium text-destructive mb-1">Rival ({manchasDetail.totalB})</p>
+                                    {manchasDetail.hitsB.length === 0 && <p className="text-muted-foreground italic text-[10px]">—</p>}
+                                    {manchasDetail.hitsB.map((h, hi) => (
+                                      <p key={hi} className="text-[10px] flex items-center gap-1">
+                                        <span className="tabular-nums">H{h.holeNumber}</span>
+                                        <span>{getPlayerInitial(h.playerId)}</span>
+                                        <span className="text-muted-foreground ml-auto">{getMarkerLabel(h.reason)}</span>
+                                      </p>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div className="border-t border-border pt-1 space-y-0.5">
+                                  <p className="flex justify-between"><span>Diferencial manchas</span><span className="tabular-nums font-semibold">{manchasDetail.diffStd >= 0 ? `+${manchasDetail.diffStd}` : manchasDetail.diffStd}</span></p>
+                                  <p className="flex justify-between"><span>Valor mancha</span><span className="tabular-nums">${manchasDetail.valueStd}</span></p>
+                                  {manchasDetail.includeGeneric && (
+                                    <>
+                                      <p className="flex justify-between"><span>Diferencial genéricas</span><span className="tabular-nums font-semibold">{manchasDetail.diffGen >= 0 ? `+${manchasDetail.diffGen}` : manchasDetail.diffGen}</span></p>
+                                      <p className="flex justify-between"><span>Valor genérica</span><span className="tabular-nums">${manchasDetail.valueGen}</span></p>
+                                    </>
+                                  )}
+                                  <p className="flex justify-between font-semibold">
+                                    <span>Resultado</span>
+                                    <span className={cn('tabular-nums', manchasMoneyBase > 0 ? 'text-green-600' : manchasMoneyBase < 0 ? 'text-destructive' : '')}>
+                                      {manchasMoneyBase >= 0 ? '+' : '-'}${fmtMoney(Math.abs(manchasMoneyBase))}
+                                    </span>
+                                  </p>
+                                  <p className="text-[10px] text-muted-foreground pt-1">El equipo con más manchas paga la diferencia.</p>
                                 </div>
                               </div>
                             </PopoverContent>
