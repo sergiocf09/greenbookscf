@@ -2968,8 +2968,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   {pressureDisabled ? (
                     <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
                   ) : (
-                    <span className={cn('text-base font-bold tabular-nums', baseTeamBalance > 0 ? 'text-green-600' : baseTeamBalance < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                      {baseTeamBalance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(baseTeamBalance))}
+                    <span className={cn('text-base font-bold tabular-nums', grandTotalBase > 0 ? 'text-green-600' : grandTotalBase < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                      {grandTotalBase >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(grandTotalBase))}
+
                     </span>
                   )}
                   {onBetConfigChange && (
