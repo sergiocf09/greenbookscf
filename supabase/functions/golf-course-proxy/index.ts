@@ -89,16 +89,22 @@ Deno.serve(async (req) => {
       }
 
       const apiData = await apiRes.json();
-      // Normalize results
-      const courses = (apiData.courses || []).map((c: any) => ({
-        apiId: c.id,
-        clubName: c.club_name || "",
-        courseName: c.course_name || "",
-        location: c.location?.address || "",
-        city: c.location?.city || "",
-        state: c.location?.state || "",
-        country: c.location?.country || "",
-      }));
+      // Normalize results (ocultando campos bloqueados por datos incorrectos)
+      const courses = (apiData.courses || [])
+        .filter((c: any) => {
+          if (BLOCKED_API_COURSE_IDS[String(c.id)]) return false;
+          const label = `${c.club_name || ""} ${c.course_name || ""}`;
+          return !findCanonicalOverride(label);
+        })
+        .map((c: any) => ({
+          apiId: c.id,
+          clubName: c.club_name || "",
+          courseName: c.course_name || "",
+          location: c.location?.address || "",
+          city: c.location?.city || "",
+          state: c.location?.state || "",
+          country: c.location?.country || "",
+        }));
 
       return new Response(JSON.stringify({ courses }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -114,6 +120,16 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
+      // Redirige al campo canónico si el id externo está bloqueado
+      const blockedCanonical = BLOCKED_API_COURSE_IDS[apiId];
+      if (blockedCanonical) {
+        return new Response(
+          JSON.stringify({ courseId: blockedCanonical, cached: true, redirected: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       const numericApiId = /^\d+$/.test(apiId) ? parseInt(apiId, 10) : null;
 
       // Check if already imported
