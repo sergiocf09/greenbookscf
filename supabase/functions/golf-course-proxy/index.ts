@@ -8,6 +8,22 @@ const corsHeaders = {
 
 const API_BASE = "https://api.golfcourseapi.com/v1";
 
+// Campos de la API externa con datos incorrectos (rating/slope) que ya existen
+// correctamente cargados en la base local. La búsqueda los oculta y el import
+// redirige al campo canónico.
+const BLOCKED_API_COURSE_IDS: Record<string, string> = {
+  // "Golf Juriquilla" (rating/slope incorrectos) -> Club de Golf Juriquilla
+  "15335": "252ee05a-50e6-4404-a08c-0150b7f3e155",
+};
+const BLOCKED_NAME_PATTERNS: { pattern: RegExp; canonicalId: string }[] = [
+  { pattern: /juriquilla/i, canonicalId: "252ee05a-50e6-4404-a08c-0150b7f3e155" },
+];
+
+const findCanonicalOverride = (name: string): string | null => {
+  const match = BLOCKED_NAME_PATTERNS.find((b) => b.pattern.test(name));
+  return match ? match.canonicalId : null;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
