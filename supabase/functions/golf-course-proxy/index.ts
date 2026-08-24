@@ -176,6 +176,17 @@ Deno.serve(async (req) => {
 
       // Determine name and location
       const courseName = courseData.course_name || courseData.club_name || "Unknown";
+
+      // Si el nombre coincide con un campo ya cargado correctamente, no duplicar
+      const nameCanonical = findCanonicalOverride(
+        `${courseData.club_name || ""} ${courseData.course_name || ""}`
+      );
+      if (nameCanonical) {
+        return new Response(
+          JSON.stringify({ courseId: nameCanonical, cached: true, redirected: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       const city = courseData.location?.city || "";
       const state = courseData.location?.state || "";
       const country = courseData.location?.country || "";
