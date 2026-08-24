@@ -8,6 +8,22 @@ const corsHeaders = {
 
 const API_BASE = "https://api.golfcourseapi.com/v1";
 
+// Campos de la API externa con datos incorrectos (rating/slope) que ya existen
+// correctamente cargados en la base local. La búsqueda los oculta y el import
+// redirige al campo canónico.
+const BLOCKED_API_COURSE_IDS: Record<string, string> = {
+  // "Golf Juriquilla" (rating/slope incorrectos) -> Club de Golf Juriquilla
+  "15335": "252ee05a-50e6-4404-a08c-0150b7f3e155",
+};
+const BLOCKED_NAME_PATTERNS: { pattern: RegExp; canonicalId: string }[] = [
+  { pattern: /juriquilla/i, canonicalId: "252ee05a-50e6-4404-a08c-0150b7f3e155" },
+];
+
+const findCanonicalOverride = (name: string): string | null => {
+  const match = BLOCKED_NAME_PATTERNS.find((b) => b.pattern.test(name));
+  return match ? match.canonicalId : null;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -73,16 +89,22 @@ Deno.serve(async (req) => {
       }
 
       const apiData = await apiRes.json();
-      // Normalize results
-      const courses = (apiData.courses || []).map((c: any) => ({
-        apiId: c.id,
-        clubName: c.club_name || "",
-        courseName: c.course_name || "",
-        location: c.location?.address || "",
-        city: c.location?.city || "",
-        state: c.location?.state || "",
-        country: c.location?.country || "",
-      }));
+      // Normalize results (ocultando campos bloqueados por datos incorrectos)
+      const courses = (apiData.courses || [])
+        .filter((c: any) => {
+          if (BLOCKED_API_COURSE_IDS[String(c.id)]) return false;
+          const label = `${c.club_name || ""} ${c.course_name || ""}`;
+          return !findCanonicalOverride(label);
+        })
+        .map((c: any) => ({
+          apiId: c.id,
+          clubName: c.club_name || "",
+          courseName: c.course_name || "",
+          location: c.location?.address || "",
+          city: c.location?.city || "",
+          state: c.location?.state || "",
+          country: c.location?.country || "",
+        }));
 
       return new Response(JSON.stringify({ courses }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -98,6 +120,16 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
+      // Redirige al campo canónico si el id externo está bloqueado
+      const blockedCanonical = BLOCKED_API_COURSE_IDS[apiId];
+      if (blockedCanonical) {
+        return new Response(
+          JSON.stringify({ courseId: blockedCanonical, cached: true, redirected: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       const numericApiId = /^\d+$/.test(apiId) ? parseInt(apiId, 10) : null;
 
       // Check if already imported
@@ -144,6 +176,17 @@ Deno.serve(async (req) => {
 
       // Determine name and location
       const courseName = courseData.course_name || courseData.club_name || "Unknown";
+
+      // Si el nombre coincide con un campo ya cargado correctamente, no duplicar
+      const nameCanonical = findCanonicalOverride(
+        `${courseData.club_name || ""} ${courseData.course_name || ""}`
+      );
+      if (nameCanonical) {
+        return new Response(
+          JSON.stringify({ courseId: nameCanonical, cached: true, redirected: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       const city = courseData.location?.city || "";
       const state = courseData.location?.state || "";
       const country = courseData.location?.country || "";
