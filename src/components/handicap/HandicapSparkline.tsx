@@ -44,8 +44,10 @@ export const HandicapSparkline: React.FC<Props> = ({ points, trend, currentHandi
   const maxOffset = midY - pad;
   const normalizedMagnitude = Math.min(Math.abs(trend), 2.5) / 2.5;
   const offset = maxOffset * Math.max(0.55, normalizedMagnitude);
-  const startY = isStable ? midY : trend > 0 ? midY - offset : midY + offset;
-  const endY = isStable ? midY : trend > 0 ? midY + offset : midY - offset;
+  // Eje directo: el HCP se dibuja tal cual. Si mejora (trend < 0) la línea baja;
+  // si empeora (trend > 0) la línea sube.
+  const startY = isStable ? midY : trend > 0 ? midY + offset : midY - offset;
+  const endY = isStable ? midY : trend > 0 ? midY - offset : midY + offset;
   const referenceHandicap = currentHandicap - trend;
   const latestPointLabel = points.length > 0 ? `, ${points.length} registros` : '';
 
