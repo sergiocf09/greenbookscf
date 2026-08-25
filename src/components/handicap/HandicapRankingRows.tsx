@@ -21,7 +21,10 @@ interface Props {
 }
 
 
-export const HandicapRankingRows: React.FC<Props> = ({ entries, currentProfileId }) => (
+export const HandicapRankingRows: React.FC<Props> = ({ entries, currentProfileId }) => {
+  const { series } = useHandicapTrendSeries(entries.map(e => e.profile_id), 30);
+
+  return (
   <>
     {entries.map((entry, idx) => (
       <React.Fragment key={entry.profile_id}>
@@ -42,6 +45,12 @@ export const HandicapRankingRows: React.FC<Props> = ({ entries, currentProfileId
             </p>
           </div>
           <div className="flex items-center shrink-0">
+            <span className="w-[34px] flex justify-center">
+              <HandicapSparkline
+                points={series[entry.profile_id] ?? []}
+                trend={entry.handicap_trend}
+              />
+            </span>
             <span className={cn('text-xs font-semibold w-[44px] text-center', getHcpColor(entry.handicap_trend))}>
               {entry.current_handicap.toFixed(1)}
             </span>
@@ -53,6 +62,12 @@ export const HandicapRankingRows: React.FC<Props> = ({ entries, currentProfileId
             </span>
           </div>
         </div>
+      </React.Fragment>
+    ))}
+  </>
+  );
+};
+
       </React.Fragment>
     ))}
   </>
