@@ -2,6 +2,8 @@ import React from 'react';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import type { HandicapRankingEntry } from '@/hooks/useHandicapRanking';
+import { useHandicapTrendSeries } from '@/hooks/useHandicapTrendSeries';
+import { HandicapSparkline } from '@/components/handicap/HandicapSparkline';
 
 const toTitleCase = (name: string) =>
   name.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
@@ -17,6 +19,7 @@ interface Props {
   entries: HandicapRankingEntry[];
   currentProfileId?: string | null;
 }
+
 
 export const HandicapRankingRows: React.FC<Props> = ({ entries, currentProfileId }) => (
   <>
