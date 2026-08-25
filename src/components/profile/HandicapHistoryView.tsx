@@ -1,11 +1,20 @@
 import React from 'react';
 import { useHandicapHistory, HandicapHistoryEntry } from '@/hooks/useHandicapHistory';
-import { Loader2, AlertCircle, CheckCircle2, Flag, Calendar, TrendingDown, TrendingUp, Check, Clock } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle2, Flag, Calendar, Check, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine } from 'recharts';
+import { useHandicapTrendSeries } from '@/hooks/useHandicapTrendSeries';
+import { HandicapSparkline } from '@/components/handicap/HandicapSparkline';
+import {
+  computeHandicapTrend,
+  handicapTrendColorClass,
+  handicapTrendLabel,
+  HANDICAP_TREND_WINDOW_DAYS,
+} from '@/lib/handicapTrend';
+
 
 const RechartsLine = Line as unknown as React.ComponentType<any>;
 const RechartsXAxis = XAxis as unknown as React.ComponentType<any>;
