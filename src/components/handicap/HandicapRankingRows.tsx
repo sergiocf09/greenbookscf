@@ -49,6 +49,7 @@ export const HandicapRankingRows: React.FC<Props> = ({ entries, currentProfileId
               <HandicapSparkline
                 points={series[entry.profile_id] ?? []}
                 trend={entry.handicap_trend}
+                currentHandicap={entry.current_handicap}
               />
             </span>
             <span className={cn('text-xs font-semibold w-[44px] text-center', getHcpColor(entry.handicap_trend))}>
