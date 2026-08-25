@@ -46,6 +46,11 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
     attestationStats,
   } = useHandicapHistory(profileId);
 
+  const { series } = useHandicapTrendSeries(profileId ? [profileId] : [], HANDICAP_TREND_WINDOW_DAYS);
+  const trendInfo = computeHandicapTrend(profileId ? series[profileId] : undefined, handicapIndex);
+
+
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
