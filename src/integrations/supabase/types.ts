@@ -2677,6 +2677,14 @@ export type Database = {
           round_id: string
         }[]
       }
+      get_handicap_trend_series: {
+        Args: { p_days?: number; p_profile_ids: string[] }
+        Returns: {
+          handicap: number
+          profile_id: string
+          recorded_at: string
+        }[]
+      }
       get_league_accumulated_standings: {
         Args: { p_leaderboard_id: string }
         Returns: {

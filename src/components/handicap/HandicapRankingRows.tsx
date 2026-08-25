@@ -2,6 +2,8 @@ import React from 'react';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import type { HandicapRankingEntry } from '@/hooks/useHandicapRanking';
+import { useHandicapTrendSeries } from '@/hooks/useHandicapTrendSeries';
+import { HandicapSparkline } from '@/components/handicap/HandicapSparkline';
 
 const toTitleCase = (name: string) =>
   name.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
@@ -18,7 +20,11 @@ interface Props {
   currentProfileId?: string | null;
 }
 
-export const HandicapRankingRows: React.FC<Props> = ({ entries, currentProfileId }) => (
+
+export const HandicapRankingRows: React.FC<Props> = ({ entries, currentProfileId }) => {
+  const { series } = useHandicapTrendSeries(entries.map(e => e.profile_id), 30);
+
+  return (
   <>
     {entries.map((entry, idx) => (
       <React.Fragment key={entry.profile_id}>
@@ -39,6 +45,12 @@ export const HandicapRankingRows: React.FC<Props> = ({ entries, currentProfileId
             </p>
           </div>
           <div className="flex items-center shrink-0">
+            <span className="w-[34px] flex justify-center">
+              <HandicapSparkline
+                points={series[entry.profile_id] ?? []}
+                trend={entry.handicap_trend}
+              />
+            </span>
             <span className={cn('text-xs font-semibold w-[44px] text-center', getHcpColor(entry.handicap_trend))}>
               {entry.current_handicap.toFixed(1)}
             </span>
@@ -53,4 +65,5 @@ export const HandicapRankingRows: React.FC<Props> = ({ entries, currentProfileId
       </React.Fragment>
     ))}
   </>
-);
+  );
+};
