@@ -158,6 +158,18 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   const [balanceBasePlayerId, setBalanceBasePlayerId] = useState<string | null>(null);
   const [showCrossGroupPicker, setShowCrossGroupPicker] = useState(false);
   const [foursomeOpenId, setFoursomeOpenId] = useState<string | null>(null);
+  const [amountsHidden, setAmountsHidden] = useState<boolean>(() => {
+    try { return localStorage.getItem('greenbook_amounts_hidden') === 'true'; }
+    catch { return false; }
+  });
+  const toggleAmountsHidden = () => {
+    setAmountsHidden(prev => {
+      const next = !prev;
+      try { localStorage.setItem('greenbook_amounts_hidden', String(next)); } catch { /* noop */ }
+      return next;
+    });
+  };
+
   // Auto-detect user's group for default selection
   const userGroupIndex = useMemo(() => {
     if (!basePlayerId || (playerGroups ?? []).length === 0) return 0;
