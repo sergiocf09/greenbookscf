@@ -4,16 +4,10 @@ import { cn } from '@/lib/utils';
 import type { HandicapRankingEntry } from '@/hooks/useHandicapRanking';
 import { useHandicapTrendSeries } from '@/hooks/useHandicapTrendSeries';
 import { HandicapSparkline } from '@/components/handicap/HandicapSparkline';
+import { computeHandicapTrend, handicapTrendColorClass, HANDICAP_TREND_WINDOW_DAYS } from '@/lib/handicapTrend';
 
 const toTitleCase = (name: string) =>
   name.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
-
-const getHcpColor = (trend: number | null) => {
-  if (trend === null) return 'text-foreground';
-  if (trend < -0.4) return 'text-green-600 dark:text-green-400';
-  if (trend > 0.4) return 'text-red-600 dark:text-red-400';
-  return 'text-foreground';
-};
 
 interface Props {
   entries: HandicapRankingEntry[];
@@ -22,7 +16,8 @@ interface Props {
 
 
 export const HandicapRankingRows: React.FC<Props> = ({ entries, currentProfileId }) => {
-  const { series } = useHandicapTrendSeries(entries.map(e => e.profile_id), 30);
+  const { series } = useHandicapTrendSeries(entries.map(e => e.profile_id), HANDICAP_TREND_WINDOW_DAYS);
+
 
   return (
   <>
