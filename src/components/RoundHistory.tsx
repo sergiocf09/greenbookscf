@@ -622,6 +622,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
             {rounds.map((round) => (
               <div
                 key={round.id}
+                id={`history-round-${round.id}`}
                 className="bg-card border border-border rounded-lg overflow-hidden"
               >
                 <button
