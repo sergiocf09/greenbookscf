@@ -614,7 +614,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
             onClick={() => navigate('/import-scorecard')}
           >
             <ImagePlus className="h-4 w-4 mr-2" />
-            Importar tarjeta manual
+            Importar Tarjeta
           </Button>
         </div>
         <ScrollArea className="h-[400px]">
