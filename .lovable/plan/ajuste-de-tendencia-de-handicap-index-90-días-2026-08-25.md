@@ -1,6 +1,8 @@
 # Ajuste de tendencia de Handicap Index 90 días
 
-## Objetivo
+## Objetivo ... Cambiar todo en lugar de 90 días será de 30 días, práctica xoninnse revisar tendencias cada mes en los clubes
+
+&nbsp;
 
 Dejar una lectura consistente de la tendencia de Handicap Index a 90 días, pero con dos presentaciones distintas:
 
