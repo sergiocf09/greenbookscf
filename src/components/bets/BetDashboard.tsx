@@ -2506,7 +2506,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               teamHandicaps={carritosTeamCfg?.teamHandicaps ?? effectiveBetConfig.carritos.teamHandicaps}
               handicapConfig={carritosTeamCfg?.handicapConfig ?? effectiveBetConfig.carritos.handicapConfig}
               onToggleDisabled={onBetConfigChange ? () => toggleTeamBetDisabled(carritosId) : undefined}
-              amountsHidden={amountsHidden}
+              amountsHidden={false}
             />
           );
 
