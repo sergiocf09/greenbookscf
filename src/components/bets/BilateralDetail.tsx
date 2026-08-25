@@ -101,8 +101,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   onComputedBalance,
   amountsHidden = false,
 }) => {
-  const showAmt = (value: number): string =>
-    amountsHidden ? '••••' : fmtMoney(Math.abs(value));
+  const showAmtSigned = (value: number): string =>
   const showAmtSigned = (value: number): string =>
     amountsHidden ? '••••' : `${value >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(value))}`;
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
