@@ -44,8 +44,8 @@ export const HandicapSparkline: React.FC<Props> = ({ points, trend, currentHandi
   const maxOffset = midY - pad;
   const normalizedMagnitude = Math.min(Math.abs(trend), 2.5) / 2.5;
   const offset = maxOffset * Math.max(0.55, normalizedMagnitude);
-  const startY = isStable ? midY : trend > 0 ? midY + offset : midY - offset;
-  const endY = isStable ? midY : trend > 0 ? midY - offset : midY + offset;
+  const startY = isStable ? midY : trend > 0 ? midY - offset : midY + offset;
+  const endY = isStable ? midY : trend > 0 ? midY + offset : midY - offset;
   const referenceHandicap = currentHandicap - trend;
   const latestPointLabel = points.length > 0 ? `, ${points.length} registros` : '';
 
