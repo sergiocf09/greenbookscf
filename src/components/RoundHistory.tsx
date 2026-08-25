@@ -247,6 +247,22 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
     fetchRounds();
   }, [profile]);
 
+  // Enfocar (expandir + scroll) una ronda concreta, p.ej. tras importar una tarjeta
+  useEffect(() => {
+    if (loading || rounds.length === 0) return;
+    const focusId = sessionStorage.getItem('focus_history_round_id');
+    if (!focusId) return;
+    sessionStorage.removeItem('focus_history_round_id');
+    if (!rounds.some(r => r.id === focusId)) return;
+    setExpandedRound(focusId);
+    setTimeout(() => {
+      document
+        .getElementById(`history-round-${focusId}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 250);
+  }, [loading, rounds]);
+
+
   const getTeeColorClass = (tee: string) => {
     switch (tee) {
       case 'blue': return 'bg-blue-500';
@@ -606,6 +622,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
             {rounds.map((round) => (
               <div
                 key={round.id}
+                id={`history-round-${round.id}`}
                 className="bg-card border border-border rounded-lg overflow-hidden"
               >
                 <button

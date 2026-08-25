@@ -133,14 +133,14 @@ export default function ScorecardImporterPage() {
               // Reset before leaving so importer is fresh next time
               const rid = progress.createdRoundId;
               reset();
-              if (rid) {
-                // Historial view is inside Index; deep link is the safest fallback.
-                navigate('/');
-              } else {
-                navigate('/');
-              }
+              if (rid) sessionStorage.setItem('focus_history_round_id', rid);
+              // El historial vive dentro de Index: se abre con ?history=1
+              navigate('/?history=1', { replace: true });
             }}
-            onStartOver={() => reset()}
+            onStartOver={() => {
+              reset();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
           />
         )}
       </main>
