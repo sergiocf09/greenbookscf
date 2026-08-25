@@ -3,8 +3,7 @@ import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import type { HandicapRankingEntry } from '@/hooks/useHandicapRanking';
 import { useHandicapTrendSeries } from '@/hooks/useHandicapTrendSeries';
-import { HandicapSparkline } from '@/components/handicap/HandicapSparkline';
-import { computeHandicapTrend, handicapTrendColorClass, HANDICAP_TREND_WINDOW_DAYS } from '@/lib/handicapTrend';
+import { computeHandicapTrend, formatHandicapTrendDelta, handicapTrendColorClass, HANDICAP_TREND_WINDOW_DAYS } from '@/lib/handicapTrend';
 
 const toTitleCase = (name: string) =>
   name.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
@@ -42,12 +41,16 @@ export const HandicapRankingRows: React.FC<Props> = ({ entries, currentProfileId
             </p>
           </div>
           <div className="flex items-center shrink-0">
-            <span className="w-[40px] flex justify-center">
-              <HandicapSparkline
-                trend={trendInfo.trend}
-                currentHandicap={entry.current_handicap}
-                referenceHandicap={trendInfo.referenceHandicap}
-              />
+            <span
+              className={cn(
+                'w-[40px] text-center text-[10px] font-semibold tabular-nums leading-tight',
+                handicapTrendColorClass(trendInfo.status),
+              )}
+              title={trendInfo.referenceHandicap === null
+                ? 'Sin referencia 30d'
+                : `Δ30d: ${trendInfo.referenceHandicap.toFixed(1)} → ${entry.current_handicap.toFixed(1)}`}
+            >
+              {formatHandicapTrendDelta(trendInfo.trend)}
             </span>
             <span className={cn('text-xs font-semibold w-[44px] text-center', handicapTrendColorClass(trendInfo.status))}>
               {entry.current_handicap.toFixed(1)}
