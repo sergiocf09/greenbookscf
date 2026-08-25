@@ -23,7 +23,7 @@ interface Props {
 
 /**
  * Mini gráfica de la única comparación que define el color:
- * Handicap Index de referencia (ventana de 90 días) vs. Handicap Index actual.
+ * Handicap Index de referencia (ventana mensual) vs. Handicap Index actual.
  * Eje directo: si el HCP baja (mejora) la línea baja.
  */
 export const HandicapSparkline: React.FC<Props> = ({
