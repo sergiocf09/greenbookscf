@@ -1,32 +1,36 @@
 import React from 'react';
-import type { HandicapTrendPoint } from '@/hooks/useHandicapTrendSeries';
+import {
+  HANDICAP_TREND_THRESHOLD,
+  HANDICAP_TREND_WINDOW_DAYS,
+  classifyHandicapTrend,
+  handicapTrendColorClass,
+} from '@/lib/handicapTrend';
 
 interface Props {
-  points: HandicapTrendPoint[];
-  /** Tendencia (actual - referencia). Define el color, igual que el número de HCP. */
+  /** Tendencia (actual - referencia). Define el color y la pendiente. */
   trend: number | null;
   /** Hándicap actual mostrado en la misma fila. */
   currentHandicap: number;
+  /** Hándicap de referencia (inicio de la ventana), si se conoce. */
+  referenceHandicap?: number | null;
   width?: number;
   height?: number;
 }
 
-const TREND_THRESHOLD = 0.4;
-
-const colorClassForTrend = (trend: number | null) => {
-  if (trend === null) return 'text-muted-foreground';
-  if (trend < -TREND_THRESHOLD) return 'text-green-600 dark:text-green-400';
-  if (trend > TREND_THRESHOLD) return 'text-red-600 dark:text-red-400';
-  return 'text-muted-foreground';
-};
-
 /**
- * Mini gráfica de la misma comparación que colorea el HCP:
- * referencia de hace 30+ días vs. HCP actual. Si el cambio no rebasa el umbral,
- * se muestra plana para no sugerir una tendencia que el color no está usando.
+ * Mini gráfica de la única comparación que define el color:
+ * Handicap Index de referencia (ventana de 90 días) vs. Handicap Index actual.
+ * Eje directo: si el HCP baja (mejora) la línea baja.
  */
-export const HandicapSparkline: React.FC<Props> = ({ points, trend, currentHandicap, width = 34, height = 14 }) => {
-  const colorClass = colorClassForTrend(trend);
+export const HandicapSparkline: React.FC<Props> = ({
+  trend,
+  currentHandicap,
+  referenceHandicap,
+  width = 40,
+  height = 14,
+}) => {
+  const status = classifyHandicapTrend(trend);
+  const colorClass = status === 'stable' ? 'text-muted-foreground' : handicapTrendColorClass(status);
   const pad = 2;
   const midY = height / 2;
   const startX = pad;
@@ -40,16 +44,14 @@ export const HandicapSparkline: React.FC<Props> = ({ points, trend, currentHandi
     );
   }
 
-  const isStable = Math.abs(trend) <= TREND_THRESHOLD;
+  const isStable = Math.abs(trend) <= HANDICAP_TREND_THRESHOLD;
   const maxOffset = midY - pad;
   const normalizedMagnitude = Math.min(Math.abs(trend), 2.5) / 2.5;
   const offset = maxOffset * Math.max(0.55, normalizedMagnitude);
-  // Eje directo: el HCP se dibuja tal cual. Si mejora (trend < 0) la línea baja;
-  // si empeora (trend > 0) la línea sube.
-  const startY = isStable ? midY : trend > 0 ? midY + offset : midY - offset;
-  const endY = isStable ? midY : trend > 0 ? midY - offset : midY + offset;
-  const referenceHandicap = currentHandicap - trend;
-  const latestPointLabel = points.length > 0 ? `, ${points.length} registros` : '';
+  const startY = isStable ? midY : trend > 0 ? midY - offset : midY + offset;
+  const endY = isStable ? midY : trend > 0 ? midY + offset : midY - offset;
+  const reference = referenceHandicap ?? currentHandicap - trend;
+  const label = `Tendencia ${HANDICAP_TREND_WINDOW_DAYS}d: ${reference.toFixed(1)} → ${currentHandicap.toFixed(1)}`;
 
   return (
     <svg
@@ -58,14 +60,14 @@ export const HandicapSparkline: React.FC<Props> = ({ points, trend, currentHandi
       viewBox={`0 0 ${width} ${height}`}
       className={`shrink-0 ${colorClass}`}
       role="img"
-      aria-label={`Tendencia de hándicap 30 días: ${referenceHandicap.toFixed(1)} a ${currentHandicap.toFixed(1)}${latestPointLabel}`}
+      aria-label={label}
     >
-      <title>{`Referencia 30d: ${referenceHandicap.toFixed(1)} → actual: ${currentHandicap.toFixed(1)}`}</title>
+      <title>{label}</title>
       <line x1={startX} y1={midY} x2={endX} y2={midY} stroke="currentColor" strokeWidth={0.75} opacity={0.22} />
-      {/* Marcador vertical del punto de referencia (hace 30+ días) */}
+      {/* Marcador vertical del punto de referencia */}
       <line x1={startX} y1={pad * 0.5} x2={startX} y2={height - pad * 0.5} stroke="currentColor" strokeWidth={0.75} opacity={0.35} strokeDasharray="1.5 1.5" />
       <line x1={startX} y1={startY} x2={endX} y2={endY} stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
-      {/* Punto de referencia: círculo hueco */}
+      {/* Referencia: círculo hueco. Actual: punto sólido. */}
       <circle cx={startX} cy={startY} r={1.6} fill="hsl(var(--background))" stroke="currentColor" strokeWidth={0.9} />
       <circle cx={endX} cy={endY} r={1.6} fill="currentColor" />
     </svg>
