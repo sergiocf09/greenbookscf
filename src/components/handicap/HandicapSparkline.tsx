@@ -60,8 +60,13 @@ export const HandicapSparkline: React.FC<Props> = ({ points, trend, currentHandi
       role="img"
       aria-label={`Tendencia de hándicap 30 días: ${referenceHandicap.toFixed(1)} a ${currentHandicap.toFixed(1)}${latestPointLabel}`}
     >
+      <title>{`Referencia 30d: ${referenceHandicap.toFixed(1)} → actual: ${currentHandicap.toFixed(1)}`}</title>
       <line x1={startX} y1={midY} x2={endX} y2={midY} stroke="currentColor" strokeWidth={0.75} opacity={0.22} />
+      {/* Marcador vertical del punto de referencia (hace 30+ días) */}
+      <line x1={startX} y1={pad * 0.5} x2={startX} y2={height - pad * 0.5} stroke="currentColor" strokeWidth={0.75} opacity={0.35} strokeDasharray="1.5 1.5" />
       <line x1={startX} y1={startY} x2={endX} y2={endY} stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
+      {/* Punto de referencia: círculo hueco */}
+      <circle cx={startX} cy={startY} r={1.6} fill="hsl(var(--background))" stroke="currentColor" strokeWidth={0.9} />
       <circle cx={endX} cy={endY} r={1.6} fill="currentColor" />
     </svg>
   );
