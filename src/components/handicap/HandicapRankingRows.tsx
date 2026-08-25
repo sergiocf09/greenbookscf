@@ -67,8 +67,3 @@ export const HandicapRankingRows: React.FC<Props> = ({ entries, currentProfileId
   </>
   );
 };
-
-      </React.Fragment>
-    ))}
-  </>
-);
