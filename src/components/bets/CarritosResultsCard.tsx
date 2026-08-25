@@ -128,9 +128,13 @@ interface CarritosResultsCardProps {
   onToggleDisabled?: () => void;
   teamHandicaps?: Record<string, number>;
   handicapConfig?: TeamHandicapConfig;
+  amountsHidden?: boolean;
 }
 
-const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, players, basePlayerId, title = 'Carritos (Equipos)', roundHoles = 18, onCancel, isDisabled, onToggleDisabled, teamHandicaps, handicapConfig }) => {
+const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, players, basePlayerId, title = 'Carritos (Equipos)', roundHoles = 18, onCancel, isDisabled, onToggleDisabled, teamHandicaps, handicapConfig, amountsHidden = false }) => {
+
+  const showAmtSigned = (value: number): string =>
+    amountsHidden ? '••••' : `${value >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(value))}`;
 
   const isNineHole = roundHoles === 9;
 
@@ -279,7 +283,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
               <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
             ) : (
               <span className={cn('text-base font-bold tabular-nums', getNetTone(baseTeamMoney))}>
-                {baseTeamMoney >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(baseTeamMoney))}
+                {showAmtSigned(baseTeamMoney)}
               </span>
             )}
             {onToggleDisabled && (
@@ -372,7 +376,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                   return (
                     <span className={cn('text-xs font-bold tabular-nums',
                       frontMoney > 0 ? 'text-green-600' : 'text-destructive')}>
-                      {frontMoney >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(frontMoney))}
+                      {showAmtSigned(frontMoney)}
                     </span>
                   );
                 })()}
@@ -449,7 +453,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                   return (
                     <span className={cn('text-xs font-bold tabular-nums',
                       backMoney > 0 ? 'text-green-600' : 'text-destructive')}>
-                      {backMoney >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(backMoney))}
+                      {showAmtSigned(backMoney)}
                     </span>
                   );
                 })()}
@@ -524,7 +528,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                     return (
                       <span className={cn('text-sm font-bold tabular-nums',
                         totalMoney > 0 ? 'text-green-600' : 'text-destructive')}>
-                        {totalMoney >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(totalMoney))}
+                        {showAmtSigned(totalMoney)}
                       </span>
                     );
                   })()}
