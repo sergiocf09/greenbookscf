@@ -69,6 +69,7 @@ interface BilateralDetailProps {
   isHistorical?: boolean;
   /** Called with the computed bilateral total so the parent can use it for avatars/table. */
   onComputedBalance?: (playerId: string, rivalId: string, balance: number) => void;
+  amountsHidden?: boolean;
 }
 
 const BilateralDetail: React.FC<BilateralDetailProps> = ({
@@ -98,7 +99,10 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   snapshotPairSegmentResults,
   isHistorical = false,
   onComputedBalance,
+  amountsHidden = false,
 }) => {
+  const showAmtSigned = (value: number): string =>
+    amountsHidden ? '••••' : `${value >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(value))}`;
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
   const [oyesTab, setOyesTab] = useState<'acumulados' | 'sangron'>('acumulados');
   const [pressuresCarryConfirm, setPressuresCarryConfirm] = useState<
@@ -1783,7 +1787,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 : `Rival da ${Math.abs(activeAdvantage)} unidad${Math.abs(activeAdvantage) !== 1 ? 'es' : ''}`}
             </span>
             <span className="ml-auto font-bold tabular-nums">
-              × ${standardValue} = {activeAdvantage > 0 ? '-' : '+'}${fmtMoney(Math.abs(activeAdvantage * standardValue))}
+              × ${standardValue} = {amountsHidden ? '••••' : `${activeAdvantage > 0 ? '-' : '+'}$${fmtMoney(Math.abs(activeAdvantage * standardValue))}`}
             </span>
           </div>
         )}
@@ -1841,7 +1845,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           )}>
             {computedTotalBalance > 0 && <TrendingUp className="h-5 w-5" />}
             {computedTotalBalance < 0 && <TrendingDown className="h-5 w-5" />}
-            ${fmtMoney(Math.abs(computedTotalBalance))}
+            {amountsHidden ? '••••' : `$${fmtMoney(Math.abs(computedTotalBalance))}`}
           </div>
         </div>
         
@@ -1993,7 +1997,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         isDisabled ? 'text-muted-foreground' :
                         total > 0 ? 'text-green-600' : total < 0 ? 'text-destructive' : 'text-muted-foreground'
                       )}>
-                        {isDisabled ? '$0' : `${total >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(total))}`}
+                        {isDisabled ? '$0' : showAmtSigned(total)}
                       </span>
                     )}
                   </div>
@@ -2155,7 +2159,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               <div className="flex items-center gap-2">
                                 {hasZapato && <span className="text-sm">🥾</span>}
                                 <span className={cn('text-sm font-bold', data.amount > 0 ? 'text-green-600' : data.amount < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                                  {data.amount >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(data.amount))}
+                                  {showAmtSigned(data.amount)}
                                 </span>
                               </div>
                             </div>
@@ -2477,7 +2481,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   oyesTotal < 0 ? 'bg-destructive/20 text-destructive' :
                                   'bg-muted/30 text-muted-foreground'
                                 )}>
-                                  ${fmtMoney(Math.abs(oyesTotal))}
+                                  {amountsHidden ? '••••' : `$${fmtMoney(Math.abs(oyesTotal))}`}
                                 </div>
                               </div>
                             </div>
@@ -2512,7 +2516,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   oyesTotal > 0 ? 'bg-destructive/20 text-destructive' :
                                   'bg-muted/30 text-muted-foreground'
                                 )}>
-                                  ${fmtMoney(Math.abs(oyesTotal))}
+                                  {amountsHidden ? '••••' : `$${fmtMoney(Math.abs(oyesTotal))}`}
                                 </div>
                               </div>
                             </div>
@@ -2842,7 +2846,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                 <span className="text-muted-foreground">× ${frontValue} =</span>
                               </div>
                               <span className={cn('font-bold', frontTotalAmount > 0 ? 'text-green-600' : frontTotalAmount < 0 ? 'text-destructive' : '')}>
-                                {frontTotalAmount >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(frontTotalAmount))}
+                                {showAmtSigned(frontTotalAmount)}
                               </span>
                             </div>
 
@@ -2887,7 +2891,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                 <span className="text-muted-foreground">× ${backValue} =</span>
                               </div>
                               <span className={cn('font-bold', backTotalAmount > 0 ? 'text-green-600' : backTotalAmount < 0 ? 'text-destructive' : '')}>
-                                {backTotalAmount >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(backTotalAmount))}
+                                {showAmtSigned(backTotalAmount)}
                               </span>
                             </div>
 
@@ -2917,7 +2921,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     </span>
                                   </div>
                                   <span className={cn('font-bold', medalTotalAmount > 0 ? 'text-green-600' : medalTotalAmount < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                                    {medalTotalAmount >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(medalTotalAmount))}
+                                    {showAmtSigned(medalTotalAmount)}
                                   </span>
                                 </div>
                               );
@@ -2927,7 +2931,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             <div className="flex items-center justify-between text-base font-bold border-t border-border/50 pt-2 mt-2">
                               <span>TOTAL RAYAS</span>
                               <span className={cn(grandTotal > 0 ? 'text-green-600' : grandTotal < 0 ? 'text-destructive' : '')}>
-                                {grandTotal >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(grandTotal))}
+                                {showAmtSigned(grandTotal)}
                               </span>
                             </div>
                             
@@ -3448,7 +3452,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     : 'text-muted-foreground'
                               )}
                             >
-                              {`${data.amount >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(data.amount))}`}
+                              {showAmtSigned(data.amount)}
                             </span>
 
                             {showSkinsShoe && (

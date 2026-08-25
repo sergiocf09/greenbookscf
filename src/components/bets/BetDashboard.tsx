@@ -45,6 +45,8 @@ import {
   Minus,
   UserPlus,
   Swords,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -156,6 +158,18 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   const [balanceBasePlayerId, setBalanceBasePlayerId] = useState<string | null>(null);
   const [showCrossGroupPicker, setShowCrossGroupPicker] = useState(false);
   const [foursomeOpenId, setFoursomeOpenId] = useState<string | null>(null);
+  const [amountsHidden, setAmountsHidden] = useState<boolean>(() => {
+    try { return localStorage.getItem('greenbook_amounts_hidden') === 'true'; }
+    catch { return false; }
+  });
+  const toggleAmountsHidden = () => {
+    setAmountsHidden(prev => {
+      const next = !prev;
+      try { localStorage.setItem('greenbook_amounts_hidden', String(next)); } catch { /* noop */ }
+      return next;
+    });
+  };
+
   // Auto-detect user's group for default selection
   const userGroupIndex = useMemo(() => {
     if (!basePlayerId || (playerGroups ?? []).length === 0) return 0;
@@ -1843,11 +1857,22 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               Balance General
               <RoundHolesBadge holes={betConfig.roundHoles as 9 | 18 | undefined} />
             </span>
-            {hasMultipleGroups && tablaGeneralMode === 'group' && displayGroupIndex > 0 && (
-              <span className="text-xs font-normal text-muted-foreground">
-                {playerGroups[displayGroupIndex - 1]?.name || `Grupo ${displayGroupIndex + 1}`}
-              </span>
-            )}
+            <span className="flex items-center gap-1">
+              {hasMultipleGroups && tablaGeneralMode === 'group' && displayGroupIndex > 0 && (
+                <span className="text-xs font-normal text-muted-foreground">
+                  {playerGroups[displayGroupIndex - 1]?.name || `Grupo ${displayGroupIndex + 1}`}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={toggleAmountsHidden}
+                className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded"
+                title={amountsHidden ? 'Mostrar importes' : 'Ocultar importes'}
+                aria-label={amountsHidden ? 'Mostrar importes' : 'Ocultar importes'}
+              >
+                {amountsHidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </span>
           </CardTitle>
           
           {/* Mode toggle + Group selector controls */}
@@ -2029,7 +2054,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         'text-lg font-bold',
                         displayBalance > 0 ? 'text-green-600' : displayBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
                       )}>
-                        {displayBalance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(displayBalance))}
+                        {amountsHidden ? '••••' : `${displayBalance >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(displayBalance))}`}
                       </div>
                       {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                       {player.isFounder ? (
@@ -2124,7 +2149,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                               'font-bold',
                               vsTotalBalance > 0 ? 'text-green-600' : vsTotalBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
                             )}>
-                              {(() => { const r = roundToNearest5(vsTotalBalance); return `${r >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(r))}`; })()}
+                              {(() => { const r = roundToNearest5(vsTotalBalance); return amountsHidden ? '••••' : `${r >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(r))}`; })()}
                             </span>
                           </div>
                       ))}
@@ -2138,7 +2163,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           
           {/* Verification — usa los totales redondeados (mismo algoritmo que las filas) para mantener Σ = $0 exacto. */}
           <div className="bg-muted/30 px-3 py-2 text-center text-xs text-muted-foreground border-t mt-3">
-            Σ = ${(() => {
+            Σ = {amountsHidden ? '••••' : `$${(() => {
               const raws = new Map<string, number>();
               tablaGeneralPlayers.forEach((p) => {
                 const snap = isHistorical ? getSnapshotTotalBalance(p.id) : null;
@@ -2149,7 +2174,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               });
               const rounded = roundGroupToNearest5Map(raws);
               return Array.from(rounded.values()).reduce((s, v) => s + v, 0);
-            })()}
+            })()}`}
             <span className="ml-1">(debe ser $0)</span>
           </div>
           {tablaGeneralPlayers.some(p => p.isFounder) && (
@@ -2427,6 +2452,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               snapshotPairSegmentResults={snapshotPairSegmentResults}
               isHistorical={isHistorical}
               onComputedBalance={handleComputedBalance}
+              amountsHidden={amountsHidden}
             />
           </div>
         );
@@ -2480,6 +2506,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               teamHandicaps={carritosTeamCfg?.teamHandicaps ?? effectiveBetConfig.carritos.teamHandicaps}
               handicapConfig={carritosTeamCfg?.handicapConfig ?? effectiveBetConfig.carritos.handicapConfig}
               onToggleDisabled={onBetConfigChange ? () => toggleTeamBetDisabled(carritosId) : undefined}
+              amountsHidden={amountsHidden}
             />
           );
 
