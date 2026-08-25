@@ -415,6 +415,18 @@ const Index = () => {
     }
   }, [profile]);
 
+  // Deep link: abrir historial (p.ej. al volver del importador de tarjetas)
+  useEffect(() => {
+    if (!profile) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('history') === '1') {
+      window.history.replaceState({}, '', '/');
+      setHasInitialNavigated(true);
+      openDialog('history');
+    }
+  }, [profile]);
+
+
   // Retomar join de leaderboard pendiente si venía de un link compartido
   useEffect(() => {
     const pendingCode = sessionStorage.getItem('pendingLeaderboardCode');
