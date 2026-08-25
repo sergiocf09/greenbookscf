@@ -2149,7 +2149,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                               'font-bold',
                               vsTotalBalance > 0 ? 'text-green-600' : vsTotalBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
                             )}>
-                              {(() => { const r = roundToNearest5(vsTotalBalance); return `${r >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(r))}`; })()}
+                              {(() => { const r = roundToNearest5(vsTotalBalance); return amountsHidden ? '••••' : `${r >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(r))}`; })()}
                             </span>
                           </div>
                       ))}
