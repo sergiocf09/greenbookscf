@@ -19,6 +19,7 @@ export const HandicapRankingHeader = ({ sortKey, sortDirection, onSortChange, ti
   <div className="flex items-center justify-between">
     <span className="text-xs font-medium text-muted-foreground">{title}</span>
     <div className="flex items-center shrink-0">
+      <span className="w-[34px] text-center text-[9px] font-medium text-muted-foreground leading-tight">30d</span>
       {options.map((option) => {
         const isActive = sortKey === option.key;
         return (
