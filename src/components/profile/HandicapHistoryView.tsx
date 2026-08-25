@@ -10,6 +10,7 @@ import { useHandicapTrendSeries } from '@/hooks/useHandicapTrendSeries';
 import { HandicapSparkline } from '@/components/handicap/HandicapSparkline';
 import {
   computeHandicapTrend,
+  formatHandicapTrendDelta,
   handicapTrendColorClass,
   handicapTrendLabel,
   HANDICAP_TREND_WINDOW_DAYS,
@@ -121,6 +122,8 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
               trend={trendInfo.trend}
               currentHandicap={handicapIndex ?? 0}
               referenceHandicap={trendInfo.referenceHandicap}
+              points={profileId ? series[profileId] : undefined}
+              variant="series"
               width={48}
               height={16}
             />
@@ -128,6 +131,9 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
               {handicapTrendLabel(trendInfo.status)}
             </span>
           </div>
+          <p className={cn('text-xs font-semibold tabular-nums', handicapTrendColorClass(trendInfo.status))}>
+            Δ {formatHandicapTrendDelta(trendInfo.trend)}
+          </p>
           <p className="text-xs text-muted-foreground">
             {roundsUsed}/{totalRounds} diferenciales
           </p>

@@ -1,7 +1,7 @@
 import type { HandicapTrendPoint } from '@/hooks/useHandicapTrendSeries';
 
 /** Ventana única de tendencia de Handicap Index usada en ranking e historial. */
-export const HANDICAP_TREND_WINDOW_DAYS = 90;
+export const HANDICAP_TREND_WINDOW_DAYS = 30;
 /** Umbral de estabilidad: cambios menores no se consideran tendencia. */
 export const HANDICAP_TREND_THRESHOLD = 0.4;
 /** Antigüedad máxima aceptada para la referencia (evita comparar contra datos muy viejos). */
@@ -61,6 +61,14 @@ export const handicapTrendLabel = (status: HandicapTrendStatus) => {
   if (status === 'worsening') return 'Empeorando';
   if (status === 'stable') return 'Estable';
   return 'Sin referencia';
+};
+
+export const formatHandicapTrendDelta = (trend: number | null) => {
+  if (trend === null) return '—';
+
+  const rounded = Number(trend.toFixed(1));
+  if (Object.is(rounded, -0) || rounded === 0) return '0.0';
+  return `${rounded > 0 ? '+' : ''}${rounded.toFixed(1)}`;
 };
 
 export const handicapTrendColorClass = (status: HandicapTrendStatus) => {
