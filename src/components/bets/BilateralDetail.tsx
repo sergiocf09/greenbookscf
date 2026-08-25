@@ -102,7 +102,6 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
   amountsHidden = false,
 }) => {
   const showAmtSigned = (value: number): string =>
-  const showAmtSigned = (value: number): string =>
     amountsHidden ? '••••' : `${value >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(value))}`;
   const [editingBetType, setEditingBetType] = useState<string | null>(null);
   const [oyesTab, setOyesTab] = useState<'acumulados' | 'sangron'>('acumulados');
