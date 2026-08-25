@@ -1857,11 +1857,22 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               Balance General
               <RoundHolesBadge holes={betConfig.roundHoles as 9 | 18 | undefined} />
             </span>
-            {hasMultipleGroups && tablaGeneralMode === 'group' && displayGroupIndex > 0 && (
-              <span className="text-xs font-normal text-muted-foreground">
-                {playerGroups[displayGroupIndex - 1]?.name || `Grupo ${displayGroupIndex + 1}`}
-              </span>
-            )}
+            <span className="flex items-center gap-1">
+              {hasMultipleGroups && tablaGeneralMode === 'group' && displayGroupIndex > 0 && (
+                <span className="text-xs font-normal text-muted-foreground">
+                  {playerGroups[displayGroupIndex - 1]?.name || `Grupo ${displayGroupIndex + 1}`}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={toggleAmountsHidden}
+                className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded"
+                title={amountsHidden ? 'Mostrar importes' : 'Ocultar importes'}
+                aria-label={amountsHidden ? 'Mostrar importes' : 'Ocultar importes'}
+              >
+                {amountsHidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </span>
           </CardTitle>
           
           {/* Mode toggle + Group selector controls */}
