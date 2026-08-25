@@ -4,16 +4,10 @@ import { cn } from '@/lib/utils';
 import type { HandicapRankingEntry } from '@/hooks/useHandicapRanking';
 import { useHandicapTrendSeries } from '@/hooks/useHandicapTrendSeries';
 import { HandicapSparkline } from '@/components/handicap/HandicapSparkline';
+import { computeHandicapTrend, handicapTrendColorClass, HANDICAP_TREND_WINDOW_DAYS } from '@/lib/handicapTrend';
 
 const toTitleCase = (name: string) =>
   name.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
-
-const getHcpColor = (trend: number | null) => {
-  if (trend === null) return 'text-foreground';
-  if (trend < -0.4) return 'text-green-600 dark:text-green-400';
-  if (trend > 0.4) return 'text-red-600 dark:text-red-400';
-  return 'text-foreground';
-};
 
 interface Props {
   entries: HandicapRankingEntry[];
@@ -22,11 +16,14 @@ interface Props {
 
 
 export const HandicapRankingRows: React.FC<Props> = ({ entries, currentProfileId }) => {
-  const { series } = useHandicapTrendSeries(entries.map(e => e.profile_id), 30);
+  const { series } = useHandicapTrendSeries(entries.map(e => e.profile_id), HANDICAP_TREND_WINDOW_DAYS);
+
 
   return (
   <>
-    {entries.map((entry, idx) => (
+    {entries.map((entry, idx) => {
+      const trendInfo = computeHandicapTrend(series[entry.profile_id], entry.current_handicap);
+      return (
       <React.Fragment key={entry.profile_id}>
         {idx > 0 && <Separator className="my-0.5" />}
         <div className="flex items-center gap-1 py-0.5">
@@ -45,16 +42,17 @@ export const HandicapRankingRows: React.FC<Props> = ({ entries, currentProfileId
             </p>
           </div>
           <div className="flex items-center shrink-0">
-            <span className="w-[34px] flex justify-center">
+            <span className="w-[40px] flex justify-center">
               <HandicapSparkline
-                points={series[entry.profile_id] ?? []}
-                trend={entry.handicap_trend}
+                trend={trendInfo.trend}
                 currentHandicap={entry.current_handicap}
+                referenceHandicap={trendInfo.referenceHandicap}
               />
             </span>
-            <span className={cn('text-xs font-semibold w-[44px] text-center', getHcpColor(entry.handicap_trend))}>
+            <span className={cn('text-xs font-semibold w-[44px] text-center', handicapTrendColorClass(trendInfo.status))}>
               {entry.current_handicap.toFixed(1)}
             </span>
+
             <span className="text-[11px] font-bold text-green-700 dark:text-green-400 w-[40px] text-center">
               {entry.avg_gross_score ?? '—'}
             </span>
@@ -64,7 +62,9 @@ export const HandicapRankingRows: React.FC<Props> = ({ entries, currentProfileId
           </div>
         </div>
       </React.Fragment>
-    ))}
+      );
+    })}
+
   </>
   );
 };

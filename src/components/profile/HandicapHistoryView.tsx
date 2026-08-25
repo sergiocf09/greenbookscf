@@ -1,11 +1,20 @@
 import React from 'react';
 import { useHandicapHistory, HandicapHistoryEntry } from '@/hooks/useHandicapHistory';
-import { Loader2, AlertCircle, CheckCircle2, Flag, Calendar, TrendingDown, TrendingUp, Check, Clock } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle2, Flag, Calendar, Check, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine } from 'recharts';
+import { useHandicapTrendSeries } from '@/hooks/useHandicapTrendSeries';
+import { HandicapSparkline } from '@/components/handicap/HandicapSparkline';
+import {
+  computeHandicapTrend,
+  handicapTrendColorClass,
+  handicapTrendLabel,
+  HANDICAP_TREND_WINDOW_DAYS,
+} from '@/lib/handicapTrend';
+
 
 const RechartsLine = Line as unknown as React.ComponentType<any>;
 const RechartsXAxis = XAxis as unknown as React.ComponentType<any>;
@@ -36,6 +45,11 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
     error,
     attestationStats,
   } = useHandicapHistory(profileId);
+
+  const { series } = useHandicapTrendSeries(profileId ? [profileId] : [], HANDICAP_TREND_WINDOW_DAYS);
+  const trendInfo = computeHandicapTrend(profileId ? series[profileId] : undefined, handicapIndex);
+
+
 
   if (isLoading) {
     return (
@@ -85,13 +99,6 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
       used: usedRoundIds.has(r.roundId),
     }));
 
-  // Trend
-  const recentDiffs = entries.slice(0, Math.min(3, entries.length));
-  const olderDiffs = entries.slice(Math.min(3, entries.length), Math.min(6, entries.length));
-  const recentAvg = recentDiffs.length ? recentDiffs.reduce((s, d) => s + d.differential, 0) / recentDiffs.length : 0;
-  const olderAvg = olderDiffs.length ? olderDiffs.reduce((s, d) => s + d.differential, 0) / olderDiffs.length : 0;
-  const trendDown = olderDiffs.length > 0 && recentAvg < olderAvg;
-
   return (
     <div className="space-y-4">
       {/* Header card */}
@@ -106,14 +113,19 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
           </p>
         </div>
         <div className="text-right space-y-1">
-          <div className="flex items-center gap-1 justify-end">
-            {trendDown ? (
-              <TrendingDown className="h-4 w-4 text-emerald-500" />
-            ) : (
-              <TrendingUp className="h-4 w-4 text-orange-500" />
-            )}
-            <span className={cn('text-xs font-medium', trendDown ? 'text-emerald-500' : 'text-orange-500')}>
-              {trendDown ? 'Mejorando' : 'Subiendo'}
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+            Tendencia {HANDICAP_TREND_WINDOW_DAYS}d
+          </p>
+          <div className="flex items-center gap-1.5 justify-end">
+            <HandicapSparkline
+              trend={trendInfo.trend}
+              currentHandicap={handicapIndex ?? 0}
+              referenceHandicap={trendInfo.referenceHandicap}
+              width={48}
+              height={16}
+            />
+            <span className={cn('text-xs font-medium', handicapTrendColorClass(trendInfo.status))}>
+              {handicapTrendLabel(trendInfo.status)}
             </span>
           </div>
           <p className="text-xs text-muted-foreground">
@@ -121,6 +133,7 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
           </p>
         </div>
       </div>
+
 
       {/* Attestation percentage line (over last 20 entries shown) */}
       {(() => {
