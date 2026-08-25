@@ -2054,7 +2054,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         'text-lg font-bold',
                         displayBalance > 0 ? 'text-green-600' : displayBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
                       )}>
-                        {displayBalance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(displayBalance))}
+                        {amountsHidden ? '••••' : `${displayBalance >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(displayBalance))}`}
                       </div>
                       {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                       {player.isFounder ? (
