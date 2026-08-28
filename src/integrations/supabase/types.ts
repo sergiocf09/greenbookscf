@@ -159,6 +159,7 @@ export type Database = {
           id: string
           par: number
           stroke_index: number
+          yards_black: number | null
           yards_blue: number | null
           yards_red: number | null
           yards_white: number | null
@@ -170,6 +171,7 @@ export type Database = {
           id?: string
           par: number
           stroke_index: number
+          yards_black?: number | null
           yards_blue?: number | null
           yards_red?: number | null
           yards_white?: number | null
@@ -181,6 +183,7 @@ export type Database = {
           id?: string
           par?: number
           stroke_index?: number
+          yards_black?: number | null
           yards_blue?: number | null
           yards_red?: number | null
           yards_white?: number | null
