@@ -1,0 +1,1 @@
+ALTER TABLE public.course_holes ADD COLUMN IF NOT EXISTS yards_black integer;
