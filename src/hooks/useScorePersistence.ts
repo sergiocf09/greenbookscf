@@ -162,7 +162,17 @@ export const useScorePersistence = ({
       if (Object.prototype.hasOwnProperty.call(score, 'strokesReceived')) payload.strokes_received = score.strokesReceived;
       if (Object.prototype.hasOwnProperty.call(score, 'oyesProximity')) payload.oyes_proximity = score.oyesProximity;
       if (Object.prototype.hasOwnProperty.call(score, 'oyesProximitySangron')) payload.oyes_proximity_sangron = score.oyesProximitySangron;
-      if (Object.prototype.hasOwnProperty.call(score, 'confirmed')) payload.confirmed = score.confirmed;
+      if (Object.prototype.hasOwnProperty.call(score, 'confirmed')) {
+        payload.confirmed = score.confirmed;
+      } else if (
+        Object.prototype.hasOwnProperty.call(score, 'strokes') &&
+        typeof score.strokes === 'number' &&
+        confirmedHoles.has(holeNumber)
+      ) {
+        // The hole is already confirmed for the round (e.g. player added mid-round):
+        // persist their score as confirmed so team/bilateral bets include them.
+        payload.confirmed = true;
+      }
 
       const { error } = await supabase
         .from('hole_scores')
