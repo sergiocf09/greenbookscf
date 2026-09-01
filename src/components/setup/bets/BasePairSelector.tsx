@@ -62,10 +62,14 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
   existingCount,
   variant,
   isNineHole,
+  mode: playersMode = 5,
+  sixPairs,
   onGenerate,
+  onGenerateSix,
 }) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const isFoursomes = variant === 'foursomes';
+  const isSix = playersMode === 6;
 
   const [scoringType, setScoringType] = useState<BasePairDefaults['scoringType']>(
     isFoursomes ? 'lowBall' : 'all'
@@ -90,12 +94,38 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
     [playerOptions, p1, p2]
   );
 
-  const isValid = !!p1 && !!p2 && p1 !== p2 && others.length === 3;
+  /* ── 6-player mode: pick the trio of pairs before generating ── */
+  const combos = useMemo(
+    () => (isSix ? getPairCombos(playerOptions.map((o) => o.value)) : []),
+    [isSix, playerOptions]
+  );
+  const detectedIdx =
+    isSix && sixPairs && sixPairs.length === 3
+      ? findPairComboIndex(combos, sixPairs[0], sixPairs[1], sixPairs[2])
+      : -1;
+  const [pickedIdx, setPickedIdx] = useState<number | null>(null);
+  const comboIdx = pickedIdx ?? (detectedIdx >= 0 ? detectedIdx : 0);
+  const activeCombo = combos[comboIdx];
+  const activePairs: Array<[string, string]> = activeCombo
+    ? [activeCombo.teamA, activeCombo.teamB, activeCombo.teamC!].filter(Boolean) as Array<[string, string]>
+    : [];
+
+  const cycle = (delta: number) => {
+    if (!combos.length) return;
+    setPickedIdx(((comboIdx + delta) % combos.length + combos.length) % combos.length);
+  };
+
+  const shortLabel = (id: string) =>
+    playerOptions.find((o) => o.value === id)?.label.split(' ')[0] ?? '—';
+
+  const isValid = isSix
+    ? activePairs.length === 3
+    : !!p1 && !!p2 && p1 !== p2 && others.length === 3;
   const matchOnly18 = isFoursomes && scoringType === 'matchOnly' && continua;
 
   const run = (mode: 'replace' | 'add') => {
     if (!isValid) return;
-    onGenerate([p1, p2], others, mode, {
+    const defaults: BasePairDefaults = {
       scoringType,
       handicapMode,
       frontAmount,
@@ -111,7 +141,9 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
             oyesesModality,
           }
         : {}),
-    });
+    };
+    if (isSix) onGenerateSix?.(activePairs, mode, defaults);
+    else onGenerate?.([p1, p2], others, mode, defaults);
   };
 
   const handleClick = () => {
@@ -123,42 +155,78 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
     <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2.5 mb-3">
       <div className="flex items-center gap-1.5">
         <Users className="h-3.5 w-3.5 text-primary shrink-0" />
-        <p className="text-xs font-medium text-foreground">Pareja base (5 jugadores)</p>
+        <p className="text-xs font-medium text-foreground">
+          {isSix ? 'Generar 3 partidos (6 jugadores)' : 'Pareja base (5 jugadores)'}
+        </p>
       </div>
       <p className="text-[10px] text-muted-foreground leading-tight">
-        Elige los 2 jugadores que se mantienen juntos, define la configuración común y
-        genera los 3 matches contra todas las combinaciones de los otros 3. Después
-        puedes editar o eliminar cada match.
+        {isSix
+          ? 'Elige la terna de parejas con el Shuffle, define la configuración común y genera los 3 partidos (todos contra todos). Después puedes editar cada partido.'
+          : 'Elige los 2 jugadores que se mantienen juntos, define la configuración común y genera los 3 matches contra todas las combinaciones de los otros 3. Después puedes editar o eliminar cada match.'}
       </p>
 
-      <div className="grid grid-cols-2 gap-2">
-        {[0, 1].map((slot) => (
-          <div key={slot} className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">
-              Jugador base {slot + 1}
-            </Label>
-            <Select
-              value={(slot === 0 ? p1 : p2) || undefined}
-              onValueChange={(v) =>
-                onChangeBasePair(
-                  slot === 0 ? [v, p2 === v ? '' : p2] : [p1 === v ? '' : p1, v]
-                )
-              }
-            >
-              <SelectTrigger className="h-9 text-xs">
-                <SelectValue placeholder="Seleccionar" />
-              </SelectTrigger>
-              <SelectContent>
-                {playerOptions.map((o) => (
-                  <SelectItem key={o.value} value={o.value} className="text-xs">
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      {isSix ? (
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label className="text-[10px] text-muted-foreground">Parejas</Label>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => cycle(-1)}
+                className="flex items-center text-[11px] text-primary border border-primary/30 rounded-md px-1.5 py-1 hover:bg-primary/5 transition-colors"
+                aria-label="Combinación anterior"
+              >
+                <ChevronLeft className="h-3 w-3" />
+              </button>
+              <button
+                type="button"
+                onClick={() => cycle(1)}
+                className="flex items-center gap-1 text-[11px] text-primary border border-primary/30 rounded-md px-2 py-1 hover:bg-primary/5 transition-colors"
+                title={`Ciclar combinaciones (${combos.length} opciones)`}
+              >
+                <Shuffle className="h-3 w-3" />
+                Shuffle
+                <span className="text-[9px] text-muted-foreground ml-0.5">
+                  {comboIdx + 1}/{combos.length}
+                </span>
+              </button>
+            </div>
           </div>
-        ))}
-      </div>
+          <p className="text-[10px] font-medium text-foreground">
+            {activePairs.map((pr) => pr.map(shortLabel).join('+')).join('  /  ')}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          {[0, 1].map((slot) => (
+            <div key={slot} className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground">
+                Jugador base {slot + 1}
+              </Label>
+              <Select
+                value={(slot === 0 ? p1 : p2) || undefined}
+                onValueChange={(v) =>
+                  onChangeBasePair?.(
+                    slot === 0 ? [v, p2 === v ? '' : p2] : [p1 === v ? '' : p1, v]
+                  )
+                }
+              >
+                <SelectTrigger className="h-9 text-xs">
+                  <SelectValue placeholder="Seleccionar" />
+                </SelectTrigger>
+                <SelectContent>
+                  {playerOptions.map((o) => (
+                    <SelectItem key={o.value} value={o.value} className="text-xs">
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ))}
+        </div>
+      )}
+
 
       {/* ── Configuración común de los 3 matches ── */}
       <div className="space-y-2 pt-2 border-t border-primary/15">
