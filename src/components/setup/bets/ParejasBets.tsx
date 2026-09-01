@@ -19,8 +19,11 @@ import { BasePairSelector } from './BasePairSelector';
 import {
   buildBasePairTeamPressures,
   buildBasePairCarritosTeams,
+  buildTeamPressuresFromPairs,
+  buildCarritosFromPairs,
   dropExistingMatches,
 } from './basePairGenerator';
+
 import type { BasePairDefaults, TeamHandicapResolver } from './basePairGenerator';
 import {
   AlertDialog,
@@ -301,8 +304,87 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
     });
   };
 
+  // ===== 6 players: 3 fixed pairs → 3 matches (round robin) =====
+  const defaultsFromTemplate = (
+    t: any,
+    fallbackScoring: BasePairDefaults['scoringType']
+  ): BasePairDefaults | undefined =>
+    t?.handicapConfig?.mode
+      ? {
+          scoringType: (t.scoringType ?? fallbackScoring) as BasePairDefaults['scoringType'],
+          handicapMode: t.handicapConfig.mode,
+          frontAmount: t.frontAmount ?? 100,
+          backAmount: t.backAmount ?? 100,
+          totalAmount: t.totalAmount ?? 100,
+          openingThreshold: t.openingThreshold,
+          continua: t.continua,
+          unitsEnabled: t.unitsConfig?.enabled,
+          unitsValue: t.unitsConfig?.valuePerUnit,
+          oyesesEnabled: t.oyesesConfig?.enabled,
+          oyesesValue: t.oyesesConfig?.valuePerOyes,
+          oyesesModality: t.oyesesConfig?.modality,
+        }
+      : undefined;
+
+  const applySixPairsFoursomes = (pairs: Array<[string, string]>) => {
+    const template = config.teamPressures.bets[0];
+    const generated = buildTeamPressuresFromPairs(
+      pairs,
+      template,
+      defaultsFromTemplate(template, 'lowBall'),
+      resolveTeamHandicaps
+    );
+    onUpdateConfig({
+      ...config,
+      teamPressures: { ...config.teamPressures, enabled: true, bets: generated },
+    });
+  };
+
+  const applySixPairsCarritos = (pairs: Array<[string, string]>) => {
+    const template = (config.carritosTeams || [])[0] ?? (hasPrimaryCarritos ? config.carritos : undefined);
+    const generated = buildCarritosFromPairs(
+      pairs,
+      template as Partial<CarritosTeamBet>,
+      defaultsFromTemplate(template, 'all'),
+      resolveTeamHandicaps
+    );
+    onUpdateConfig({
+      ...config,
+      carritos: {
+        ...config.carritos,
+        enabled: true,
+        teamA: ['', ''] as [string, string],
+        teamB: ['', ''] as [string, string],
+      },
+      carritosTeams: generated,
+    });
+  };
+
+  /** Unique pairs currently configured across matches (used to detect combo index). */
+  const uniquePairsOf = (
+    matches: Array<{ teamA: [string, string]; teamB: [string, string] }>
+  ): Array<[string, string]> => {
+    const seen = new Map<string, [string, string]>();
+    matches.forEach((m) => {
+      [m.teamA, m.teamB].forEach((t) => {
+        if (t?.[0] && t?.[1]) {
+          const key = [...t].sort().join('|');
+          if (!seen.has(key)) seen.set(key, [t[0], t[1]]);
+        }
+      });
+    });
+    return [...seen.values()];
+  };
+
+  const foursomesSixPairs = uniquePairsOf(config.teamPressures.bets);
+  const carritosSixPairs = uniquePairsOf([
+    ...(hasPrimaryCarritos ? [{ teamA: config.carritos.teamA, teamB: config.carritos.teamB }] : []),
+    ...(config.carritosTeams || []),
+  ] as Array<{ teamA: [string, string]; teamB: [string, string] }>);
+
   const carritosMatchCount =
     (config.carritosTeams || []).length + (hasPrimaryCarritos ? 1 : 0);
+
 
 
 
@@ -369,6 +451,20 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           </div>
         ) : (
           <>
+            {foursomesOptions.length === 6 && config.teamPressures.bets.length < 3 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full mb-3 gap-1"
+                onClick={() => {
+                  const combo = getPairCombos(foursomesOptions.map(o => o.value))[0];
+                  if (combo?.teamC) applySixPairsFoursomes([combo.teamA, combo.teamB, combo.teamC]);
+                }}
+              >
+                <Shuffle className="h-3.5 w-3.5" />
+                Generar los 3 foursomes (6 jugadores)
+              </Button>
+            )}
             {config.teamPressures.bets.map((bet, idx) => (
               <TeamPressureCard
                 key={bet.id}
@@ -382,8 +478,11 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 getStrokesForLocalPair={getStrokesForLocalPair}
                 getLocalPairStrokeState={getLocalPairStrokeState}
                 isNineHole={(config.roundHoles ?? 18) === 9}
+                sixPairs={foursomesSixPairs}
+                onApplySixPairs={idx === 0 ? applySixPairsFoursomes : undefined}
               />
             ))}
+
             <Button
               variant="outline"
               size="sm"
@@ -440,6 +539,20 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           </div>
         ) : (
           <>
+            {carritosOptions.length === 6 && carritosMatchCount < 3 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full mb-3 gap-1"
+                onClick={() => {
+                  const combo = getPairCombos(carritosOptions.map(o => o.value))[0];
+                  if (combo?.teamC) applySixPairsCarritos([combo.teamA, combo.teamB, combo.teamC]);
+                }}
+              >
+                <Shuffle className="h-3.5 w-3.5" />
+                Generar los 3 carritos (6 jugadores)
+              </Button>
+            )}
             {/* Primary carritos */}
             {hasPrimaryCarritos && (
               <CarritosCard
@@ -460,6 +573,8 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 getStrokesForLocalPair={getStrokesForLocalPair}
                 getLocalPairStrokeState={getLocalPairStrokeState}
                 isNineHole={(config.roundHoles ?? 18) === 9}
+                sixPairs={carritosSixPairs}
+                onApplySixPairs={applySixPairsCarritos}
               />
             )}
 
@@ -485,8 +600,11 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 getStrokesForLocalPair={getStrokesForLocalPair}
                 getLocalPairStrokeState={getLocalPairStrokeState}
                 isNineHole={(config.roundHoles ?? 18) === 9}
+                sixPairs={carritosSixPairs}
+                onApplySixPairs={!hasPrimaryCarritos && idx === 0 ? applySixPairsCarritos : undefined}
               />
             ))}
+
 
             <Button
               variant="outline"
@@ -964,6 +1082,10 @@ interface TeamColumnsProps {
   /** Optional third team for 6-player shuffles */
   teamC?: [string, string];
   onUpdateTeamC?: (team: [string, string]) => void;
+  /** 6 players: pairs currently configured across all matches (for combo detection) */
+  sixPairs?: Array<[string, string]>;
+  /** 6 players: regenerates the 3 round-robin matches for the chosen pairs */
+  onApplySixPairs?: (pairs: Array<[string, string]>) => void;
 }
 
 const TeamColumns: React.FC<TeamColumnsProps> = ({
@@ -979,6 +1101,8 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
   onShuffleTeams,
   teamC,
   onUpdateTeamC,
+  sixPairs,
+  onApplySixPairs,
 }) => {
   const getHcp = (pid: string) => {
     if (teamHandicaps[pid] !== undefined) return teamHandicaps[pid];
@@ -990,12 +1114,19 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
     onUpdateHandicaps({ ...teamHandicaps, [pid]: val });
   };
 
-  const shuffleEnabled = !!allPlayerOptions && (allPlayerOptions.length === 4 || allPlayerOptions.length === 6);
+  const isSix = !!allPlayerOptions && allPlayerOptions.length === 6;
+  const shuffleEnabled =
+    !!allPlayerOptions &&
+    (allPlayerOptions.length === 4 || (isSix && !!onApplySixPairs));
   const combos = useMemo(
     () => (shuffleEnabled ? getPairCombos(allPlayerOptions!.map(o => o.value)) : []),
     [shuffleEnabled, allPlayerOptions]
   );
-  const detectedIdx = shuffleEnabled ? findPairComboIndex(combos, teamA, teamB, teamC) : -1;
+  const detectedIdx = shuffleEnabled
+    ? isSix && sixPairs && sixPairs.length === 3
+      ? findPairComboIndex(combos, sixPairs[0], sixPairs[1], sixPairs[2])
+      : findPairComboIndex(combos, teamA, teamB, teamC)
+    : -1;
   // Local fallback index: keeps the cycle advancing even when the current state
   // matches no combo (e.g. manually edited teams).
   const [lastIdx, setLastIdx] = React.useState<number | null>(null);
@@ -1006,6 +1137,11 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
     const idx = ((rawIdx % combos.length) + combos.length) % combos.length;
     const combo = combos[idx];
     setLastIdx(idx);
+    if (combo.teamC && onApplySixPairs) {
+      // 6 players → regenerate the 3 round-robin matches
+      onApplySixPairs([combo.teamA, combo.teamB, combo.teamC]);
+      return;
+    }
     if (onShuffleTeams) {
       onShuffleTeams(combo.teamA, combo.teamB, combo.teamC);
     } else {
@@ -1014,6 +1150,7 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
       if (combo.teamC && onUpdateTeamC) onUpdateTeamC(combo.teamC);
     }
   };
+
 
   return (
     <div className="space-y-1">
@@ -1042,14 +1179,19 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
               </span>
             </button>
           </div>
-          {allPlayerOptions!.length === 6 && teamA[0] && teamA[1] && (
-            <p className="text-[9px] text-muted-foreground">
-              {allPlayerOptions![0].label.split(' ')[0]} fijo con{' '}
-              {(allPlayerOptions!.find(o => o.value === teamA[1] && o.value !== allPlayerOptions![0].value)
-                ?? allPlayerOptions!.find(o => o.value === teamA[0] && o.value !== allPlayerOptions![0].value))
-                ?.label.split(' ')[0] ?? '—'}
+          {isSix && sixPairs && sixPairs.length === 3 && (
+            <p className="text-[9px] text-muted-foreground text-right">
+              3 partidos:{' '}
+              {sixPairs
+                .map(pr =>
+                  pr
+                    .map(id => allPlayerOptions!.find(o => o.value === id)?.label.split(' ')[0] ?? '—')
+                    .join('+')
+                )
+                .join(' / ')}
             </p>
           )}
+
         </div>
       )}
 
@@ -1116,6 +1258,9 @@ interface TeamPressureCardProps {
   getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
   getLocalPairStrokeState?: (localIdA: string, localIdB: string) => { strokes: number; hasExplicitOverride: boolean };
   isNineHole?: boolean;
+  sixPairs?: Array<[string, string]>;
+  onApplySixPairs?: (pairs: Array<[string, string]>) => void;
+
 }
 
 const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
@@ -1129,6 +1274,8 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
   getStrokesForLocalPair,
   getLocalPairStrokeState,
   isNineHole,
+  sixPairs,
+  onApplySixPairs,
 }) => {
   return (
     <div className={cn(
@@ -1181,6 +1328,8 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
         teamC={playerOptions.length === 6 ? ((bet as any).teamC as [string, string] | undefined) : undefined}
         onUpdateTeamC={playerOptions.length === 6 ? (t) => onUpdate({ teamC: t } as any) : undefined}
         onShuffleTeams={(a, b, c) => onUpdate({ teamA: a, teamB: b, ...(c ? { teamC: c } : {}) } as any)}
+        sixPairs={sixPairs}
+        onApplySixPairs={onApplySixPairs}
       />
 
       {/* Handicap Mode Selector */}
@@ -1543,6 +1692,8 @@ interface CarritosCardProps {
   getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
   getLocalPairStrokeState?: (localIdA: string, localIdB: string) => { strokes: number; hasExplicitOverride: boolean };
   isNineHole?: boolean;
+  sixPairs?: Array<[string, string]>;
+  onApplySixPairs?: (pairs: Array<[string, string]>) => void;
 }
 
 const CarritosCard: React.FC<CarritosCardProps> = ({
@@ -1564,6 +1715,8 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
   getStrokesForLocalPair,
   getLocalPairStrokeState,
   isNineHole,
+  sixPairs,
+  onApplySixPairs,
 }) => {
   return (
     <div className="space-y-3 p-3 rounded-lg bg-muted/30 mb-3" onPointerDown={(e) => e.stopPropagation()}>
@@ -1610,6 +1763,8 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
         teamC={playerOptions.length === 6 ? (teamC as [string, string] | undefined) : undefined}
         onUpdateTeamC={playerOptions.length === 6 ? (t) => onUpdate({ teamC: t } as any) : undefined}
         onShuffleTeams={(a, b, c) => onUpdate({ teamA: a, teamB: b, ...(c ? { teamC: c } : {}) } as any)}
+        sixPairs={sixPairs}
+        onApplySixPairs={onApplySixPairs}
       />
 
       {/* Handicap Mode Selector */}
