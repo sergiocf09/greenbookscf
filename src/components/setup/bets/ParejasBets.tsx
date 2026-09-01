@@ -1508,6 +1508,7 @@ interface CarritosCardProps {
   label: string;
   teamA: [string, string];
   teamB: [string, string];
+  teamC?: [string, string];
   frontAmount: number;
   backAmount: number;
   totalAmount: number;
