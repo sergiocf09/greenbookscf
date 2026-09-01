@@ -1157,7 +1157,9 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
         onUpdateTeamA={(t) => onUpdate({ teamA: t })}
         onUpdateTeamB={(t) => onUpdate({ teamB: t })}
         onUpdateHandicaps={(h) => onUpdate({ teamHandicaps: h })}
-        allPlayerOptions={playerOptions.length === 4 ? playerOptions : undefined}
+        allPlayerOptions={(playerOptions.length === 4 || playerOptions.length === 6) ? playerOptions : undefined}
+        teamC={playerOptions.length === 6 ? ((bet as any).teamC as [string, string] | undefined) : undefined}
+        onUpdateTeamC={playerOptions.length === 6 ? (t) => onUpdate({ teamC: t } as any) : undefined}
         onShuffleTeams={(a, b) => onUpdate({ teamA: a, teamB: b })}
       />
 
