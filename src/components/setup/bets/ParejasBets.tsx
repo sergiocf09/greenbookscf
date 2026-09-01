@@ -1179,14 +1179,19 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
               </span>
             </button>
           </div>
-          {allPlayerOptions!.length === 6 && teamA[0] && teamA[1] && (
-            <p className="text-[9px] text-muted-foreground">
-              {allPlayerOptions![0].label.split(' ')[0]} fijo con{' '}
-              {(allPlayerOptions!.find(o => o.value === teamA[1] && o.value !== allPlayerOptions![0].value)
-                ?? allPlayerOptions!.find(o => o.value === teamA[0] && o.value !== allPlayerOptions![0].value))
-                ?.label.split(' ')[0] ?? '—'}
+          {isSix && sixPairs && sixPairs.length === 3 && (
+            <p className="text-[9px] text-muted-foreground text-right">
+              3 partidos:{' '}
+              {sixPairs
+                .map(pr =>
+                  pr
+                    .map(id => allPlayerOptions!.find(o => o.value === id)?.label.split(' ')[0] ?? '—')
+                    .join('+')
+                )
+                .join(' / ')}
             </p>
           )}
+
         </div>
       )}
 
