@@ -677,6 +677,49 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   const setDraftTee = (id: string, value: TeeColor) =>
     setDraftTees(prev => new Map(prev).set(id, value));
 
+  // Pull the latest Handicap Index from each player's profile into the drafts.
+  const [refreshingIndexes, setRefreshingIndexes] = useState(false);
+  const refreshIndexesFromProfiles = async () => {
+    const ids = cup.participants.map(p => p.profile_id).filter((v): v is string => !!v);
+    if (ids.length === 0) {
+      toast.info('No hay jugadores registrados para actualizar');
+      return;
+    }
+    setRefreshingIndexes(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, current_handicap')
+        .in('id', ids);
+      if (error) throw error;
+      const byProfile = new Map((data ?? []).map(r => [r.id, Number(r.current_handicap)]));
+      let changed = 0;
+      setDraftHcps(prev => {
+        const next = new Map(prev);
+        for (const p of cup.participants) {
+          if (!p.profile_id) continue;
+          const live = byProfile.get(p.profile_id);
+          if (live === undefined || !Number.isFinite(live)) continue;
+          const current = next.has(p.id) ? next.get(p.id)! : p.handicap_for_leaderboard;
+          if (Math.abs(live - current) < 0.05) continue;
+          next.set(p.id, live);
+          changed++;
+        }
+        return next;
+      });
+      toast.success(
+        changed > 0
+          ? `${changed} hándicap(s) actualizados — revisa y presiona Guardar`
+          : 'Todos los hándicaps ya están al día'
+      );
+    } catch (err) {
+      console.error('refreshIndexesFromProfiles', err);
+      toast.error('No se pudieron actualizar los hándicaps');
+    } finally {
+      setRefreshingIndexes(false);
+    }
+  };
+
   const flushAssignDrafts = async () => {
     const updates: Array<{
       id: string;
@@ -1276,7 +1319,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         }
         setShowAssignPanel(open);
       }}>
-        <DialogContent className="max-w-[95vw] sm:max-w-sm max-h-[85vh] overflow-y-auto overflow-x-hidden p-3 [&>button.absolute]:hidden">
+        <DialogContent className="w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] sm:w-full sm:max-w-sm max-h-[85vh] overflow-y-auto overflow-x-hidden p-2.5 [&>button.absolute]:hidden">
           {(() => {
             // Detect pending changes vs. saved state.
             const hasChanges = cup.participants.some(p => {
@@ -1379,19 +1422,34 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
 
             return (
               <div className="space-y-2">
-                <div className="sticky top-0 z-10 -mx-3 px-3 pt-1 pb-2 bg-background border-b space-y-2">
+                <div className="sticky top-0 z-10 -mx-2.5 px-2.5 pt-1 pb-2 bg-background border-b space-y-2">
                   <DialogTitle className="text-base">Asignar Equipos y Hándicaps</DialogTitle>
-                  <Button
-                    size="sm"
-                    variant={hasChanges ? 'default' : 'outline'}
-                    className="h-8 w-full text-xs"
-                    onClick={async () => {
-                      const saved = await flushAssignDrafts();
-                      if (saved) setShowAssignPanel(false);
-                    }}
-                  >
-                    Guardar
-                  </Button>
+                  <div className="flex gap-1.5">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 flex-1 text-xs min-w-0"
+                      disabled={refreshingIndexes}
+                      onClick={() => void refreshIndexesFromProfiles()}
+                      title="Traer el Hándicap Index actual de cada jugador"
+                    >
+                      {refreshingIndexes
+                        ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                        : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
+                      <span className="truncate">Actualizar Index</span>
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={hasChanges ? 'default' : 'outline'}
+                      className="h-8 flex-1 text-xs min-w-0"
+                      onClick={async () => {
+                        const saved = await flushAssignDrafts();
+                        if (saved) setShowAssignPanel(false);
+                      }}
+                    >
+                      Guardar
+                    </Button>
+                  </div>
                 </div>
                 {draftPartsNone.length > 0 && (
                   <div className="space-y-1">
