@@ -375,18 +375,20 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
         onClick={handleClick}
       >
         <Wand2 className="h-3.5 w-3.5" />
-        Generar 3 matches
+        {isSix ? 'Generar 3 partidos' : 'Generar 3 matches'}
       </Button>
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Ya hay matches configurados</AlertDialogTitle>
+            <AlertDialogTitle>Ya hay partidos configurados</AlertDialogTitle>
             <AlertDialogDescription>
-              Puedes reemplazar los {existingCount} matches existentes por los 3 de la
-              pareja base, o agregar únicamente los que falten sin borrar nada.
+              Puedes reemplazar los {existingCount} partidos existentes por los 3
+              generados con esta configuración, o agregar únicamente los que falten sin
+              borrar nada.
             </AlertDialogDescription>
           </AlertDialogHeader>
+
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">
             <AlertDialogCancel className="mt-0">Cancelar</AlertDialogCancel>
             <AlertDialogAction
