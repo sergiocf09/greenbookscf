@@ -19,8 +19,11 @@ import { BasePairSelector } from './BasePairSelector';
 import {
   buildBasePairTeamPressures,
   buildBasePairCarritosTeams,
+  buildTeamPressuresFromPairs,
+  buildCarritosFromPairs,
   dropExistingMatches,
 } from './basePairGenerator';
+
 import type { BasePairDefaults, TeamHandicapResolver } from './basePairGenerator';
 import {
   AlertDialog,
