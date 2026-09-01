@@ -874,6 +874,33 @@ const PlayerWithHcp: React.FC<PlayerWithHcpProps> = ({
   );
 };
 
+/**
+ * Cicla por las 3 combinaciones únicas de 4 jugadores en orden:
+ * combo 0: [A,B] vs [C,D] · combo 1: [A,C] vs [B,D] · combo 2: [A,D] vs [B,C]
+ */
+function getNextPairCombo(
+  playerIds: string[],
+  currentTeamA: [string, string],
+  currentTeamB: [string, string]
+): { teamA: [string, string]; teamB: [string, string] } {
+  if (playerIds.length < 4) return { teamA: currentTeamA, teamB: currentTeamB };
+
+  const [A, B, C, D] = playerIds;
+  const combos: Array<{ teamA: [string, string]; teamB: [string, string] }> = [
+    { teamA: [A, B], teamB: [C, D] },
+    { teamA: [A, C], teamB: [B, D] },
+    { teamA: [A, D], teamB: [B, C] },
+  ];
+
+  const key = (a: [string, string], b: [string, string]) =>
+    [[...a].sort().join('_'), [...b].sort().join('_')].sort().join('#');
+  const currentKey = key(currentTeamA, currentTeamB);
+  const currentIdx = combos.findIndex((c) => key(c.teamA, c.teamB) === currentKey);
+
+  const nextIdx = currentIdx === -1 ? 0 : (currentIdx + 1) % 3;
+  return combos[nextIdx];
+}
+
 /* ─── Compact two-column team layout ─── */
 interface TeamColumnsProps {
   teamA: [string, string];
