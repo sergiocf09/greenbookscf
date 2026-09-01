@@ -1,3 +1,4 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "../_shared/cors.ts";
 
 const SYSTEM_PROMPT = `Eres un experto en leer tarjetas de score (scorecards) de golf, tanto impresas como con anotaciones manuscritas.
