@@ -941,6 +941,28 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
 
   return (
     <div className="space-y-1">
+      {allPlayerOptions && allPlayerOptions.length === 4 && (
+        <div className="flex justify-end mb-1">
+          <button
+            type="button"
+            onClick={() => {
+              const ids = allPlayerOptions.map(o => o.value);
+              const next = getNextPairCombo(ids, teamA, teamB);
+              if (onShuffleTeams) {
+                onShuffleTeams(next.teamA, next.teamB);
+              } else {
+                onUpdateTeamA(next.teamA);
+                onUpdateTeamB(next.teamB);
+              }
+            }}
+            className="flex items-center gap-1 text-[11px] text-primary border border-primary/30 rounded-md px-2 py-1 hover:bg-primary/5 transition-colors"
+            title="Cambiar combinación de parejas"
+          >
+            <Shuffle className="h-3 w-3" />
+            Shuffle
+          </button>
+        </div>
+      )}
       {/* Header row */}
       <div className="grid grid-cols-2 gap-2">
         <Label className="text-[10px] text-muted-foreground font-medium leading-none">Equipo A</Label>
