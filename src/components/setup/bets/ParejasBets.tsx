@@ -1001,26 +1001,36 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
 
   return (
     <div className="space-y-1">
-      {allPlayerOptions && allPlayerOptions.length === 4 && (
-        <div className="flex justify-end mb-1">
+      {allPlayerOptions && (allPlayerOptions.length === 4 || allPlayerOptions.length === 6) && (
+        <div className="flex flex-col items-end mb-1 gap-0.5">
           <button
             type="button"
             onClick={() => {
               const ids = allPlayerOptions.map(o => o.value);
-              const next = getNextPairCombo(ids, teamA, teamB);
-              if (onShuffleTeams) {
-                onShuffleTeams(next.teamA, next.teamB);
-              } else {
-                onUpdateTeamA(next.teamA);
-                onUpdateTeamB(next.teamB);
-              }
+              const next = getNextPairCombo(ids, teamA, teamB, teamC);
+              onUpdateTeamA(next.teamA);
+              onUpdateTeamB(next.teamB);
+              if (next.teamC && onUpdateTeamC) onUpdateTeamC(next.teamC);
             }}
             className="flex items-center gap-1 text-[11px] text-primary border border-primary/30 rounded-md px-2 py-1 hover:bg-primary/5 transition-colors"
-            title="Cambiar combinación de parejas"
+            title={allPlayerOptions.length === 6
+              ? 'Ciclar combinaciones (15 opciones)'
+              : 'Ciclar combinaciones de parejas'}
           >
             <Shuffle className="h-3 w-3" />
             Shuffle
+            {allPlayerOptions.length === 6 && (
+              <span className="text-[9px] text-muted-foreground ml-0.5">×15</span>
+            )}
           </button>
+          {allPlayerOptions.length === 6 && teamA[0] && teamA[1] && (
+            <p className="text-[9px] text-muted-foreground">
+              {allPlayerOptions[0].label.split(' ')[0]} fijo con{' '}
+              {(allPlayerOptions.find(o => o.value === teamA[1] && o.value !== allPlayerOptions[0].value)
+                ?? allPlayerOptions.find(o => o.value === teamA[0] && o.value !== allPlayerOptions[0].value))
+                ?.label.split(' ')[0] ?? '—'}
+            </p>
+          )}
         </div>
       )}
       {/* Header row */}
