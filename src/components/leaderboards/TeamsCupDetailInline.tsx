@@ -677,6 +677,49 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   const setDraftTee = (id: string, value: TeeColor) =>
     setDraftTees(prev => new Map(prev).set(id, value));
 
+  // Pull the latest Handicap Index from each player's profile into the drafts.
+  const [refreshingIndexes, setRefreshingIndexes] = useState(false);
+  const refreshIndexesFromProfiles = async () => {
+    const ids = cup.participants.map(p => p.profile_id).filter((v): v is string => !!v);
+    if (ids.length === 0) {
+      toast.info('No hay jugadores registrados para actualizar');
+      return;
+    }
+    setRefreshingIndexes(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, current_handicap')
+        .in('id', ids);
+      if (error) throw error;
+      const byProfile = new Map((data ?? []).map(r => [r.id, Number(r.current_handicap)]));
+      let changed = 0;
+      setDraftHcps(prev => {
+        const next = new Map(prev);
+        for (const p of cup.participants) {
+          if (!p.profile_id) continue;
+          const live = byProfile.get(p.profile_id);
+          if (live === undefined || !Number.isFinite(live)) continue;
+          const current = next.has(p.id) ? next.get(p.id)! : p.handicap_for_leaderboard;
+          if (Math.abs(live - current) < 0.05) continue;
+          next.set(p.id, live);
+          changed++;
+        }
+        return next;
+      });
+      toast.success(
+        changed > 0
+          ? `${changed} hándicap(s) actualizados — revisa y presiona Guardar`
+          : 'Todos los hándicaps ya están al día'
+      );
+    } catch (err) {
+      devError?.('refreshIndexesFromProfiles', err);
+      toast.error('No se pudieron actualizar los hándicaps');
+    } finally {
+      setRefreshingIndexes(false);
+    }
+  };
+
   const flushAssignDrafts = async () => {
     const updates: Array<{
       id: string;
