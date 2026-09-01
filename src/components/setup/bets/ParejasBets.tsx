@@ -539,6 +539,20 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           </div>
         ) : (
           <>
+            {carritosOptions.length === 6 && carritosMatchCount < 3 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full mb-3 gap-1"
+                onClick={() => {
+                  const combo = getPairCombos(carritosOptions.map(o => o.value))[0];
+                  if (combo?.teamC) applySixPairsCarritos([combo.teamA, combo.teamB, combo.teamC]);
+                }}
+              >
+                <Shuffle className="h-3.5 w-3.5" />
+                Generar los 3 carritos (6 jugadores)
+              </Button>
+            )}
             {/* Primary carritos */}
             {hasPrimaryCarritos && (
               <CarritosCard
@@ -559,6 +573,8 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 getStrokesForLocalPair={getStrokesForLocalPair}
                 getLocalPairStrokeState={getLocalPairStrokeState}
                 isNineHole={(config.roundHoles ?? 18) === 9}
+                sixPairs={carritosSixPairs}
+                onApplySixPairs={applySixPairsCarritos}
               />
             )}
 
@@ -584,8 +600,11 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 getStrokesForLocalPair={getStrokesForLocalPair}
                 getLocalPairStrokeState={getLocalPairStrokeState}
                 isNineHole={(config.roundHoles ?? 18) === 9}
+                sixPairs={carritosSixPairs}
+                onApplySixPairs={!hasPrimaryCarritos && idx === 0 ? applySixPairsCarritos : undefined}
               />
             ))}
+
 
             <Button
               variant="outline"
