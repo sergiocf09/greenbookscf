@@ -22,9 +22,14 @@ import {
   buildTeamPressuresFromPairs,
   buildCarritosFromPairs,
   dropExistingMatches,
+  getPairCombos,
+  findPairComboIndex,
 } from './basePairGenerator';
+export { getPairCombos, findPairComboIndex } from './basePairGenerator';
+export type { PairCombo } from './basePairGenerator';
 
 import type { BasePairDefaults, TeamHandicapResolver } from './basePairGenerator';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -326,39 +331,73 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         }
       : undefined;
 
-  const applySixPairsFoursomes = (pairs: Array<[string, string]>) => {
-    const template = config.teamPressures.bets[0];
-    const generated = buildTeamPressuresFromPairs(
-      pairs,
-      template,
-      defaultsFromTemplate(template, 'lowBall'),
-      resolveTeamHandicaps
-    );
+  /** Last common config chosen in the 6-player generator panel (reused by shuffle). */
+  const [sixDefaultsFoursomes, setSixDefaultsFoursomes] = React.useState<BasePairDefaults | undefined>();
+  const [sixDefaultsCarritos, setSixDefaultsCarritos] = React.useState<BasePairDefaults | undefined>();
+
+  const applySixPairsFoursomes = (
+    pairs: Array<[string, string]>,
+    defaultsOverride?: BasePairDefaults,
+    mode: 'replace' | 'add' = 'replace'
+  ) => {
+    const existing = config.teamPressures.bets;
+    const template = existing[0];
+    const defaults =
+      defaultsOverride ?? sixDefaultsFoursomes ?? defaultsFromTemplate(template, 'lowBall');
+    if (defaultsOverride) setSixDefaultsFoursomes(defaultsOverride);
+    let generated = buildTeamPressuresFromPairs(pairs, template, defaults, resolveTeamHandicaps);
+    if (mode === 'add') generated = dropExistingMatches(generated, existing);
     onUpdateConfig({
       ...config,
-      teamPressures: { ...config.teamPressures, enabled: true, bets: generated },
+      teamPressures: {
+        ...config.teamPressures,
+        enabled: true,
+        bets: mode === 'replace' ? generated : [...existing, ...generated],
+      },
     });
   };
 
-  const applySixPairsCarritos = (pairs: Array<[string, string]>) => {
-    const template = (config.carritosTeams || [])[0] ?? (hasPrimaryCarritos ? config.carritos : undefined);
-    const generated = buildCarritosFromPairs(
+  const applySixPairsCarritos = (
+    pairs: Array<[string, string]>,
+    defaultsOverride?: BasePairDefaults,
+    mode: 'replace' | 'add' = 'replace'
+  ) => {
+    const existingTeams = config.carritosTeams || [];
+    const primary = hasPrimaryCarritos
+      ? [{ teamA: config.carritos.teamA, teamB: config.carritos.teamB }]
+      : [];
+    const template = existingTeams[0] ?? (hasPrimaryCarritos ? config.carritos : undefined);
+    const defaults =
+      defaultsOverride ?? sixDefaultsCarritos ?? defaultsFromTemplate(template, 'all');
+    if (defaultsOverride) setSixDefaultsCarritos(defaultsOverride);
+    let generated = buildCarritosFromPairs(
       pairs,
       template as Partial<CarritosTeamBet>,
-      defaultsFromTemplate(template, 'all'),
+      defaults,
       resolveTeamHandicaps
     );
+    if (mode === 'add') {
+      generated = dropExistingMatches(generated, [
+        ...primary,
+        ...existingTeams,
+      ] as Array<{ teamA: [string, string]; teamB: [string, string] }>);
+    }
     onUpdateConfig({
       ...config,
       carritos: {
         ...config.carritos,
         enabled: true,
-        teamA: ['', ''] as [string, string],
-        teamB: ['', ''] as [string, string],
+        ...(mode === 'replace'
+          ? {
+              teamA: ['', ''] as [string, string],
+              teamB: ['', ''] as [string, string],
+            }
+          : {}),
       },
-      carritosTeams: generated,
+      carritosTeams: mode === 'replace' ? generated : [...existingTeams, ...generated],
     });
   };
+
 
   /** Unique pairs currently configured across matches (used to detect combo index). */
   const uniquePairsOf = (
@@ -441,6 +480,19 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
             onGenerate={generateFoursomesFromBase}
           />
         )}
+        {foursomesOptions.length === 6 && (
+          <BasePairSelector
+            playerOptions={foursomesOptions}
+            variant="foursomes"
+            mode={6}
+            isNineHole={(config.roundHoles ?? 18) === 9}
+            sixPairs={foursomesSixPairs.length === 3 ? foursomesSixPairs : undefined}
+            existingCount={config.teamPressures.bets.length}
+            onGenerateSix={(pairs, mode, defaults) =>
+              applySixPairsFoursomes(pairs, defaults, mode)
+            }
+          />
+        )}
         {config.teamPressures.bets.length === 0 ? (
           <div className="text-center py-4">
             <p className="text-xs text-muted-foreground mb-2">No hay foursomes configurados</p>
@@ -451,20 +503,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           </div>
         ) : (
           <>
-            {foursomesOptions.length === 6 && config.teamPressures.bets.length < 3 && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full mb-3 gap-1"
-                onClick={() => {
-                  const combo = getPairCombos(foursomesOptions.map(o => o.value))[0];
-                  if (combo?.teamC) applySixPairsFoursomes([combo.teamA, combo.teamB, combo.teamC]);
-                }}
-              >
-                <Shuffle className="h-3.5 w-3.5" />
-                Generar los 3 foursomes (6 jugadores)
-              </Button>
-            )}
+
             {config.teamPressures.bets.map((bet, idx) => (
               <TeamPressureCard
                 key={bet.id}
@@ -529,6 +568,19 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
             onGenerate={generateCarritosFromBase}
           />
         )}
+        {carritosOptions.length === 6 && (
+          <BasePairSelector
+            playerOptions={carritosOptions}
+            variant="carritos"
+            mode={6}
+            isNineHole={(config.roundHoles ?? 18) === 9}
+            sixPairs={carritosSixPairs.length === 3 ? carritosSixPairs : undefined}
+            existingCount={carritosMatchCount}
+            onGenerateSix={(pairs, mode, defaults) =>
+              applySixPairsCarritos(pairs, defaults, mode)
+            }
+          />
+        )}
         {!hasPrimaryCarritos && (config.carritosTeams || []).length === 0 ? (
           <div className="text-center py-4">
             <p className="text-xs text-muted-foreground mb-2">No hay apuestas de carritos configuradas</p>
@@ -539,20 +591,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           </div>
         ) : (
           <>
-            {carritosOptions.length === 6 && carritosMatchCount < 3 && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full mb-3 gap-1"
-                onClick={() => {
-                  const combo = getPairCombos(carritosOptions.map(o => o.value))[0];
-                  if (combo?.teamC) applySixPairsCarritos([combo.teamA, combo.teamB, combo.teamC]);
-                }}
-              >
-                <Shuffle className="h-3.5 w-3.5" />
-                Generar los 3 carritos (6 jugadores)
-              </Button>
-            )}
+
             {/* Primary carritos */}
             {hasPrimaryCarritos && (
               <CarritosCard
@@ -994,75 +1033,6 @@ const PlayerWithHcp: React.FC<PlayerWithHcpProps> = ({
   );
 };
 
-export interface PairCombo {
-  teamA: [string, string];
-  teamB: [string, string];
-  teamC?: [string, string];
-}
-
-/** Full ordered list of pairing combinations: 3 for 4 players, 15 for 6 players. */
-export function getPairCombos(playerIds: string[]): PairCombo[] {
-  if (playerIds.length === 4) {
-    const [A, B, C, D] = playerIds;
-    return [
-      { teamA: [A, B], teamB: [C, D] },
-      { teamA: [A, C], teamB: [B, D] },
-      { teamA: [A, D], teamB: [B, C] },
-    ];
-  }
-
-  if (playerIds.length === 6) {
-    const [p1, p2, p3, p4, p5, p6] = playerIds;
-    return [
-      { teamA: [p1, p2], teamB: [p3, p4], teamC: [p5, p6] },
-      { teamA: [p1, p2], teamB: [p3, p5], teamC: [p4, p6] },
-      { teamA: [p1, p2], teamB: [p3, p6], teamC: [p4, p5] },
-      { teamA: [p1, p3], teamB: [p2, p4], teamC: [p5, p6] },
-      { teamA: [p1, p3], teamB: [p2, p5], teamC: [p4, p6] },
-      { teamA: [p1, p3], teamB: [p2, p6], teamC: [p4, p5] },
-      { teamA: [p1, p4], teamB: [p2, p3], teamC: [p5, p6] },
-      { teamA: [p1, p4], teamB: [p2, p5], teamC: [p3, p6] },
-      { teamA: [p1, p4], teamB: [p2, p6], teamC: [p3, p5] },
-      { teamA: [p1, p5], teamB: [p2, p3], teamC: [p4, p6] },
-      { teamA: [p1, p5], teamB: [p2, p4], teamC: [p3, p6] },
-      { teamA: [p1, p5], teamB: [p2, p6], teamC: [p3, p4] },
-      { teamA: [p1, p6], teamB: [p2, p3], teamC: [p4, p5] },
-      { teamA: [p1, p6], teamB: [p2, p4], teamC: [p3, p5] },
-      { teamA: [p1, p6], teamB: [p2, p5], teamC: [p3, p4] },
-    ];
-  }
-
-  return [];
-}
-
-const normalizePair = (a?: string, b?: string) => [a ?? '', b ?? ''].sort().join('_');
-
-/** Index of the combo that matches the current teams, or -1 when the state matches none. */
-export function findPairComboIndex(
-  combos: PairCombo[],
-  currentTeamA: [string, string],
-  currentTeamB: [string, string],
-  currentTeamC?: [string, string]
-): number {
-  const currentPairs = [
-    normalizePair(currentTeamA?.[0], currentTeamA?.[1]),
-    normalizePair(currentTeamB?.[0], currentTeamB?.[1]),
-  ];
-  const expectThree = combos.some((c) => !!c.teamC);
-  if (expectThree) currentPairs.push(normalizePair(currentTeamC?.[0], currentTeamC?.[1]));
-
-  const currentSet = new Set(currentPairs);
-  if (currentSet.size !== currentPairs.length) return -1;
-
-  return combos.findIndex((c) => {
-    const comboPairs = [
-      normalizePair(c.teamA[0], c.teamA[1]),
-      normalizePair(c.teamB[0], c.teamB[1]),
-    ];
-    if (c.teamC) comboPairs.push(normalizePair(c.teamC[0], c.teamC[1]));
-    return comboPairs.length === currentPairs.length && comboPairs.every((p) => currentSet.has(p));
-  });
-}
 
 
 /* ─── Compact two-column team layout ─── */
