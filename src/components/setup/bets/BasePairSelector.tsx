@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Users, Wand2 } from 'lucide-react';
+import { Users, Wand2, Shuffle, ChevronLeft } from 'lucide-react';
 import { AmountInput } from './AmountInput';
 import { TeamHandicapMode } from '@/types/golf';
 import {
@@ -23,25 +23,37 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import type { BasePairDefaults } from './basePairGenerator';
+import { getPairCombos, findPairComboIndex } from './basePairGenerator';
 
 interface BasePairSelectorProps {
-  /** Player options already filtered by the participation matrix (must be 5) */
+  /** Player options already filtered by the participation matrix (5 or 6) */
   playerOptions: Array<{ value: string; label: string }>;
   basePair?: [string, string];
-  onChangeBasePair: (pair: [string, string]) => void;
+  onChangeBasePair?: (pair: [string, string]) => void;
   /** Number of matches already configured for this bet */
   existingCount: number;
   /** Which bet family we are generating for */
   variant: 'foursomes' | 'carritos';
   isNineHole?: boolean;
-  /** Generate the 3 matches. mode 'replace' clears existing ones first */
-  onGenerate: (
+  /** 5 = base pair vs the other 3 · 6 = 3 fixed pairs round robin */
+  mode?: 5 | 6;
+  /** Current 3 pairs (6-player mode) so the shuffle can detect its position */
+  sixPairs?: Array<[string, string]>;
+  /** Generate the 3 matches. mode 'replace' clears existing ones first (5 players) */
+  onGenerate?: (
     base: [string, string],
     others: string[],
     mode: 'replace' | 'add',
     defaults: BasePairDefaults
   ) => void;
+  /** Generate the 3 round-robin matches from 3 fixed pairs (6 players) */
+  onGenerateSix?: (
+    pairs: Array<[string, string]>,
+    mode: 'replace' | 'add',
+    defaults: BasePairDefaults
+  ) => void;
 }
+
 
 export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
   playerOptions,
