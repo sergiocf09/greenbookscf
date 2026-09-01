@@ -480,6 +480,19 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
             onGenerate={generateFoursomesFromBase}
           />
         )}
+        {foursomesOptions.length === 6 && (
+          <BasePairSelector
+            playerOptions={foursomesOptions}
+            variant="foursomes"
+            mode={6}
+            isNineHole={(config.roundHoles ?? 18) === 9}
+            sixPairs={foursomesSixPairs.length === 3 ? foursomesSixPairs : undefined}
+            existingCount={config.teamPressures.bets.length}
+            onGenerateSix={(pairs, mode, defaults) =>
+              applySixPairsFoursomes(pairs, defaults, mode)
+            }
+          />
+        )}
         {config.teamPressures.bets.length === 0 ? (
           <div className="text-center py-4">
             <p className="text-xs text-muted-foreground mb-2">No hay foursomes configurados</p>
@@ -490,20 +503,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           </div>
         ) : (
           <>
-            {foursomesOptions.length === 6 && config.teamPressures.bets.length < 3 && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full mb-3 gap-1"
-                onClick={() => {
-                  const combo = getPairCombos(foursomesOptions.map(o => o.value))[0];
-                  if (combo?.teamC) applySixPairsFoursomes([combo.teamA, combo.teamB, combo.teamC]);
-                }}
-              >
-                <Shuffle className="h-3.5 w-3.5" />
-                Generar los 3 foursomes (6 jugadores)
-              </Button>
-            )}
+
             {config.teamPressures.bets.map((bet, idx) => (
               <TeamPressureCard
                 key={bet.id}
