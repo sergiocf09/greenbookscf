@@ -26,6 +26,10 @@ export const TeePicker: React.FC<Props> = ({ value, onChange, size = 'xs', class
     size === 'sm' ? 'w-6 h-6 text-[10px]' :
     size === 'xxs' ? 'w-4 h-4 text-[8px]' :
     'w-5 h-5 text-[9px]';
+  const activeCls =
+    size === 'xxs'
+      ? 'ring-1 ring-offset-0 ring-foreground/60'
+      : 'ring-2 ring-offset-1 ring-foreground/60';
   return (
     <div className={cn('flex gap-1 shrink-0', className)}>
       {(Object.keys(TEE_META) as TeeColor[]).map(c => {
@@ -39,7 +43,7 @@ export const TeePicker: React.FC<Props> = ({ value, onChange, size = 'xs', class
             className={cn(
               'rounded-full border-2 font-bold flex items-center justify-center transition-all',
               sizeCls,
-              active ? 'ring-2 ring-offset-1 ring-foreground/60' : 'opacity-70 hover:opacity-100',
+              active ? activeCls : 'opacity-70 hover:opacity-100',
             )}
             style={{
               backgroundColor: meta.bg,
