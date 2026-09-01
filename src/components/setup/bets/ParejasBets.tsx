@@ -451,6 +451,20 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           </div>
         ) : (
           <>
+            {foursomesOptions.length === 6 && config.teamPressures.bets.length < 3 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full mb-3 gap-1"
+                onClick={() => {
+                  const combo = getPairCombos(foursomesOptions.map(o => o.value))[0];
+                  if (combo?.teamC) applySixPairsFoursomes([combo.teamA, combo.teamB, combo.teamC]);
+                }}
+              >
+                <Shuffle className="h-3.5 w-3.5" />
+                Generar los 3 foursomes (6 jugadores)
+              </Button>
+            )}
             {config.teamPressures.bets.map((bet, idx) => (
               <TeamPressureCard
                 key={bet.id}
@@ -464,8 +478,11 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 getStrokesForLocalPair={getStrokesForLocalPair}
                 getLocalPairStrokeState={getLocalPairStrokeState}
                 isNineHole={(config.roundHoles ?? 18) === 9}
+                sixPairs={foursomesSixPairs}
+                onApplySixPairs={idx === 0 ? applySixPairsFoursomes : undefined}
               />
             ))}
+
             <Button
               variant="outline"
               size="sm"
