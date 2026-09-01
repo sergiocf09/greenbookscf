@@ -1885,6 +1885,15 @@ const SixesBetCard: React.FC<{
             <div className="space-y-2 p-2 rounded-lg bg-muted/30">
               <Label className="text-[10px] font-semibold text-primary">Set 1 · H1–6</Label>
               <TeamColumns teamA={set1?.team1 ?? ['', '']} teamB={set1?.team2 ?? ['', '']}
+                allPlayerOptions={playerOptions.length === 4 ? playerOptions : undefined}
+                onShuffleTeams={(a, b) => {
+                  const newSets: SixesSetAssignment[] = [
+                    { setNumber: 1, team1: a, team2: b },
+                    { setNumber: 2, team1: [a[0], b[0]], team2: [a[1], b[1]] },
+                    { setNumber: 3, team1: [a[0], b[1]], team2: [a[1], b[0]] },
+                  ];
+                  onUpdate({ sets: newSets });
+                }}
                 teamHandicaps={bet.useHandicap ? th : {}}
                 players={players} playerOptions={playerOptions}
                 onUpdateTeamA={(t) => {
