@@ -446,6 +446,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 label="Carritos 1"
                 teamA={config.carritos.teamA}
                 teamB={config.carritos.teamB}
+                teamC={(config.carritos as any).teamC}
                 frontAmount={config.carritos.frontAmount}
                 backAmount={config.carritos.backAmount}
                 totalAmount={config.carritos.totalAmount}
