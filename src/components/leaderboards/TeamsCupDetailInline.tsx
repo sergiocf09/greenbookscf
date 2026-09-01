@@ -713,7 +713,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           : 'Todos los hándicaps ya están al día'
       );
     } catch (err) {
-      devError?.('refreshIndexesFromProfiles', err);
+      console.error('refreshIndexesFromProfiles', err);
       toast.error('No se pudieron actualizar los hándicaps');
     } finally {
       setRefreshingIndexes(false);
