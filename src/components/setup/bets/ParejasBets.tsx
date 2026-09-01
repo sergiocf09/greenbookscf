@@ -1609,7 +1609,7 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
         allPlayerOptions={(playerOptions.length === 4 || playerOptions.length === 6) ? playerOptions : undefined}
         teamC={playerOptions.length === 6 ? (teamC as [string, string] | undefined) : undefined}
         onUpdateTeamC={playerOptions.length === 6 ? (t) => onUpdate({ teamC: t } as any) : undefined}
-        onShuffleTeams={(a, b) => onUpdate({ teamA: a, teamB: b })}
+        onShuffleTeams={(a, b, c) => onUpdate({ teamA: a, teamB: b, ...(c ? { teamC: c } : {}) } as any)}
       />
 
       {/* Handicap Mode Selector */}
