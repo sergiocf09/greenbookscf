@@ -1082,6 +1082,10 @@ interface TeamColumnsProps {
   /** Optional third team for 6-player shuffles */
   teamC?: [string, string];
   onUpdateTeamC?: (team: [string, string]) => void;
+  /** 6 players: pairs currently configured across all matches (for combo detection) */
+  sixPairs?: Array<[string, string]>;
+  /** 6 players: regenerates the 3 round-robin matches for the chosen pairs */
+  onApplySixPairs?: (pairs: Array<[string, string]>) => void;
 }
 
 const TeamColumns: React.FC<TeamColumnsProps> = ({
@@ -1097,6 +1101,8 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
   onShuffleTeams,
   teamC,
   onUpdateTeamC,
+  sixPairs,
+  onApplySixPairs,
 }) => {
   const getHcp = (pid: string) => {
     if (teamHandicaps[pid] !== undefined) return teamHandicaps[pid];
@@ -1108,12 +1114,19 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
     onUpdateHandicaps({ ...teamHandicaps, [pid]: val });
   };
 
-  const shuffleEnabled = !!allPlayerOptions && (allPlayerOptions.length === 4 || allPlayerOptions.length === 6);
+  const isSix = !!allPlayerOptions && allPlayerOptions.length === 6;
+  const shuffleEnabled =
+    !!allPlayerOptions &&
+    (allPlayerOptions.length === 4 || (isSix && !!onApplySixPairs));
   const combos = useMemo(
     () => (shuffleEnabled ? getPairCombos(allPlayerOptions!.map(o => o.value)) : []),
     [shuffleEnabled, allPlayerOptions]
   );
-  const detectedIdx = shuffleEnabled ? findPairComboIndex(combos, teamA, teamB, teamC) : -1;
+  const detectedIdx = shuffleEnabled
+    ? isSix && sixPairs && sixPairs.length === 3
+      ? findPairComboIndex(combos, sixPairs[0], sixPairs[1], sixPairs[2])
+      : findPairComboIndex(combos, teamA, teamB, teamC)
+    : -1;
   // Local fallback index: keeps the cycle advancing even when the current state
   // matches no combo (e.g. manually edited teams).
   const [lastIdx, setLastIdx] = React.useState<number | null>(null);
@@ -1124,6 +1137,11 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
     const idx = ((rawIdx % combos.length) + combos.length) % combos.length;
     const combo = combos[idx];
     setLastIdx(idx);
+    if (combo.teamC && onApplySixPairs) {
+      // 6 players → regenerate the 3 round-robin matches
+      onApplySixPairs([combo.teamA, combo.teamB, combo.teamC]);
+      return;
+    }
     if (onShuffleTeams) {
       onShuffleTeams(combo.teamA, combo.teamB, combo.teamC);
     } else {
@@ -1132,6 +1150,7 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
       if (combo.teamC && onUpdateTeamC) onUpdateTeamC(combo.teamC);
     }
   };
+
 
   return (
     <div className="space-y-1">
