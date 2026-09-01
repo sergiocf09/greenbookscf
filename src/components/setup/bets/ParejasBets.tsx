@@ -1529,6 +1529,7 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
   label,
   teamA,
   teamB,
+  teamC,
   frontAmount,
   backAmount,
   totalAmount,
