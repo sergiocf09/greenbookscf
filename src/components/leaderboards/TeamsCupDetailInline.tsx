@@ -1422,19 +1422,34 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
 
             return (
               <div className="space-y-2">
-                <div className="sticky top-0 z-10 -mx-3 px-3 pt-1 pb-2 bg-background border-b space-y-2">
+                <div className="sticky top-0 z-10 -mx-2.5 px-2.5 pt-1 pb-2 bg-background border-b space-y-2">
                   <DialogTitle className="text-base">Asignar Equipos y Hándicaps</DialogTitle>
-                  <Button
-                    size="sm"
-                    variant={hasChanges ? 'default' : 'outline'}
-                    className="h-8 w-full text-xs"
-                    onClick={async () => {
-                      const saved = await flushAssignDrafts();
-                      if (saved) setShowAssignPanel(false);
-                    }}
-                  >
-                    Guardar
-                  </Button>
+                  <div className="flex gap-1.5">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 flex-1 text-xs min-w-0"
+                      disabled={refreshingIndexes}
+                      onClick={() => void refreshIndexesFromProfiles()}
+                      title="Traer el Hándicap Index actual de cada jugador"
+                    >
+                      {refreshingIndexes
+                        ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                        : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
+                      <span className="truncate">Actualizar Index</span>
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={hasChanges ? 'default' : 'outline'}
+                      className="h-8 flex-1 text-xs min-w-0"
+                      onClick={async () => {
+                        const saved = await flushAssignDrafts();
+                        if (saved) setShowAssignPanel(false);
+                      }}
+                    >
+                      Guardar
+                    </Button>
+                  </div>
                 </div>
                 {draftPartsNone.length > 0 && (
                   <div className="space-y-1">
