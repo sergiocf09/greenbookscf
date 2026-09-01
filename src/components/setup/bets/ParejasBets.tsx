@@ -446,6 +446,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 label="Carritos 1"
                 teamA={config.carritos.teamA}
                 teamB={config.carritos.teamB}
+                teamC={(config.carritos as any).teamC}
                 frontAmount={config.carritos.frontAmount}
                 backAmount={config.carritos.backAmount}
                 totalAmount={config.carritos.totalAmount}
@@ -469,6 +470,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 label={`Carritos ${hasPrimaryCarritos ? idx + 2 : idx + 1}`}
                 teamA={team.teamA}
                 teamB={team.teamB}
+                teamC={(team as any).teamC}
                 frontAmount={team.frontAmount}
                 backAmount={team.backAmount}
                 totalAmount={team.totalAmount}
@@ -874,31 +876,86 @@ const PlayerWithHcp: React.FC<PlayerWithHcpProps> = ({
   );
 };
 
-/**
- * Cicla por las 3 combinaciones únicas de 4 jugadores en orden:
- * combo 0: [A,B] vs [C,D] · combo 1: [A,C] vs [B,D] · combo 2: [A,D] vs [B,C]
- */
 function getNextPairCombo(
   playerIds: string[],
   currentTeamA: [string, string],
-  currentTeamB: [string, string]
-): { teamA: [string, string]; teamB: [string, string] } {
-  if (playerIds.length < 4) return { teamA: currentTeamA, teamB: currentTeamB };
+  currentTeamB: [string, string],
+  currentTeamC?: [string, string]
+): {
+  teamA: [string, string];
+  teamB: [string, string];
+  teamC?: [string, string];
+} {
+  if (playerIds.length === 4) {
+    const [A, B, C, D] = playerIds;
+    const combos: Array<{ teamA: [string, string]; teamB: [string, string] }> = [
+      { teamA: [A, B], teamB: [C, D] },
+      { teamA: [A, C], teamB: [B, D] },
+      { teamA: [A, D], teamB: [B, C] },
+    ];
 
-  const [A, B, C, D] = playerIds;
-  const combos: Array<{ teamA: [string, string]; teamB: [string, string] }> = [
-    { teamA: [A, B], teamB: [C, D] },
-    { teamA: [A, C], teamB: [B, D] },
-    { teamA: [A, D], teamB: [B, C] },
-  ];
+    const currentKey = `${currentTeamA[0]}_${currentTeamA[1]}_${currentTeamB[0]}_${currentTeamB[1]}`;
+    const currentIdx = combos.findIndex((c) =>
+      [
+        `${c.teamA[0]}_${c.teamA[1]}_${c.teamB[0]}_${c.teamB[1]}`,
+        `${c.teamA[1]}_${c.teamA[0]}_${c.teamB[0]}_${c.teamB[1]}`,
+        `${c.teamA[0]}_${c.teamA[1]}_${c.teamB[1]}_${c.teamB[0]}`,
+        `${c.teamA[1]}_${c.teamA[0]}_${c.teamB[1]}_${c.teamB[0]}`,
+      ].includes(currentKey)
+    );
 
-  const key = (a: [string, string], b: [string, string]) =>
-    [[...a].sort().join('_'), [...b].sort().join('_')].sort().join('#');
-  const currentKey = key(currentTeamA, currentTeamB);
-  const currentIdx = combos.findIndex((c) => key(c.teamA, c.teamB) === currentKey);
+    const nextIdx = currentIdx === -1 ? 0 : (currentIdx + 1) % 3;
+    return combos[nextIdx];
+  }
 
-  const nextIdx = currentIdx === -1 ? 0 : (currentIdx + 1) % 3;
-  return combos[nextIdx];
+  if (playerIds.length === 6) {
+    const [p1, p2, p3, p4, p5, p6] = playerIds;
+    const combos: Array<{
+      teamA: [string, string];
+      teamB: [string, string];
+      teamC: [string, string];
+    }> = [
+      { teamA: [p1, p2], teamB: [p3, p4], teamC: [p5, p6] },
+      { teamA: [p1, p2], teamB: [p3, p5], teamC: [p4, p6] },
+      { teamA: [p1, p2], teamB: [p3, p6], teamC: [p4, p5] },
+      { teamA: [p1, p3], teamB: [p2, p4], teamC: [p5, p6] },
+      { teamA: [p1, p3], teamB: [p2, p5], teamC: [p4, p6] },
+      { teamA: [p1, p3], teamB: [p2, p6], teamC: [p4, p5] },
+      { teamA: [p1, p4], teamB: [p2, p3], teamC: [p5, p6] },
+      { teamA: [p1, p4], teamB: [p2, p5], teamC: [p3, p6] },
+      { teamA: [p1, p4], teamB: [p2, p6], teamC: [p3, p5] },
+      { teamA: [p1, p5], teamB: [p2, p3], teamC: [p4, p6] },
+      { teamA: [p1, p5], teamB: [p2, p4], teamC: [p3, p6] },
+      { teamA: [p1, p5], teamB: [p2, p6], teamC: [p3, p4] },
+      { teamA: [p1, p6], teamB: [p2, p3], teamC: [p4, p5] },
+      { teamA: [p1, p6], teamB: [p2, p4], teamC: [p3, p5] },
+      { teamA: [p1, p6], teamB: [p2, p5], teamC: [p3, p4] },
+    ];
+
+    const normalize = (a: string, b: string) => [a, b].sort().join('_');
+    const currentMatches = new Set([
+      normalize(currentTeamA[0], currentTeamA[1]),
+      normalize(currentTeamB[0], currentTeamB[1]),
+      normalize(currentTeamC?.[0] ?? '', currentTeamC?.[1] ?? ''),
+    ]);
+
+    const currentIdx = combos.findIndex((c) => {
+      const comboMatches = new Set([
+        normalize(c.teamA[0], c.teamA[1]),
+        normalize(c.teamB[0], c.teamB[1]),
+        normalize(c.teamC[0], c.teamC[1]),
+      ]);
+      return (
+        [...currentMatches].every((m) => comboMatches.has(m)) &&
+        [...comboMatches].every((m) => currentMatches.has(m))
+      );
+    });
+
+    const nextIdx = currentIdx === -1 ? 0 : (currentIdx + 1) % 15;
+    return combos[nextIdx];
+  }
+
+  return { teamA: currentTeamA, teamB: currentTeamB };
 }
 
 /* ─── Compact two-column team layout ─── */
@@ -911,10 +968,13 @@ interface TeamColumnsProps {
   onUpdateTeamA: (team: [string, string]) => void;
   onUpdateTeamB: (team: [string, string]) => void;
   onUpdateHandicaps: (hcps: Record<string, number>) => void;
-  /** Only provided when the bet has exactly 4 participants → enables Shuffle */
+  /** Only provided when the bet has exactly 4 or 6 participants → enables Shuffle */
   allPlayerOptions?: { value: string; label: string }[];
   /** Optional atomic setter used by Shuffle (avoids stale sequential updates) */
   onShuffleTeams?: (teamA: [string, string], teamB: [string, string]) => void;
+  /** Optional third team for 6-player shuffles */
+  teamC?: [string, string];
+  onUpdateTeamC?: (team: [string, string]) => void;
 }
 
 const TeamColumns: React.FC<TeamColumnsProps> = ({
@@ -928,6 +988,8 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
   onUpdateHandicaps,
   allPlayerOptions,
   onShuffleTeams,
+  teamC,
+  onUpdateTeamC,
 }) => {
   const getHcp = (pid: string) => {
     if (teamHandicaps[pid] !== undefined) return teamHandicaps[pid];
@@ -941,26 +1003,36 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
 
   return (
     <div className="space-y-1">
-      {allPlayerOptions && allPlayerOptions.length === 4 && (
-        <div className="flex justify-end mb-1">
+      {allPlayerOptions && (allPlayerOptions.length === 4 || allPlayerOptions.length === 6) && (
+        <div className="flex flex-col items-end mb-1 gap-0.5">
           <button
             type="button"
             onClick={() => {
               const ids = allPlayerOptions.map(o => o.value);
-              const next = getNextPairCombo(ids, teamA, teamB);
-              if (onShuffleTeams) {
-                onShuffleTeams(next.teamA, next.teamB);
-              } else {
-                onUpdateTeamA(next.teamA);
-                onUpdateTeamB(next.teamB);
-              }
+              const next = getNextPairCombo(ids, teamA, teamB, teamC);
+              onUpdateTeamA(next.teamA);
+              onUpdateTeamB(next.teamB);
+              if (next.teamC && onUpdateTeamC) onUpdateTeamC(next.teamC);
             }}
             className="flex items-center gap-1 text-[11px] text-primary border border-primary/30 rounded-md px-2 py-1 hover:bg-primary/5 transition-colors"
-            title="Cambiar combinación de parejas"
+            title={allPlayerOptions.length === 6
+              ? 'Ciclar combinaciones (15 opciones)'
+              : 'Ciclar combinaciones de parejas'}
           >
             <Shuffle className="h-3 w-3" />
             Shuffle
+            {allPlayerOptions.length === 6 && (
+              <span className="text-[9px] text-muted-foreground ml-0.5">×15</span>
+            )}
           </button>
+          {allPlayerOptions.length === 6 && teamA[0] && teamA[1] && (
+            <p className="text-[9px] text-muted-foreground">
+              {allPlayerOptions[0].label.split(' ')[0]} fijo con{' '}
+              {(allPlayerOptions.find(o => o.value === teamA[1] && o.value !== allPlayerOptions[0].value)
+                ?? allPlayerOptions.find(o => o.value === teamA[0] && o.value !== allPlayerOptions[0].value))
+                ?.label.split(' ')[0] ?? '—'}
+            </p>
+          )}
         </div>
       )}
       {/* Header row */}
@@ -1087,7 +1159,9 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
         onUpdateTeamA={(t) => onUpdate({ teamA: t })}
         onUpdateTeamB={(t) => onUpdate({ teamB: t })}
         onUpdateHandicaps={(h) => onUpdate({ teamHandicaps: h })}
-        allPlayerOptions={playerOptions.length === 4 ? playerOptions : undefined}
+        allPlayerOptions={(playerOptions.length === 4 || playerOptions.length === 6) ? playerOptions : undefined}
+        teamC={playerOptions.length === 6 ? ((bet as any).teamC as [string, string] | undefined) : undefined}
+        onUpdateTeamC={playerOptions.length === 6 ? (t) => onUpdate({ teamC: t } as any) : undefined}
         onShuffleTeams={(a, b) => onUpdate({ teamA: a, teamB: b })}
       />
 
@@ -1436,6 +1510,7 @@ interface CarritosCardProps {
   label: string;
   teamA: [string, string];
   teamB: [string, string];
+  teamC?: [string, string];
   frontAmount: number;
   backAmount: number;
   totalAmount: number;
@@ -1456,6 +1531,7 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
   label,
   teamA,
   teamB,
+  teamC,
   frontAmount,
   backAmount,
   totalAmount,
@@ -1512,7 +1588,9 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
         onUpdateTeamA={(t) => onUpdate({ teamA: t })}
         onUpdateTeamB={(t) => onUpdate({ teamB: t })}
         onUpdateHandicaps={(h) => onUpdate({ teamHandicaps: h })}
-        allPlayerOptions={playerOptions.length === 4 ? playerOptions : undefined}
+        allPlayerOptions={(playerOptions.length === 4 || playerOptions.length === 6) ? playerOptions : undefined}
+        teamC={playerOptions.length === 6 ? (teamC as [string, string] | undefined) : undefined}
+        onUpdateTeamC={playerOptions.length === 6 ? (t) => onUpdate({ teamC: t } as any) : undefined}
         onShuffleTeams={(a, b) => onUpdate({ teamA: a, teamB: b })}
       />
 
