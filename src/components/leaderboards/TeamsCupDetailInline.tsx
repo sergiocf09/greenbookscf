@@ -1342,7 +1342,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                       <button
                         type="button"
                         onClick={() => setDraftTeam(p.id, draftTeam === teamA.id ? null : teamA.id)}
-                        className="w-5 h-5 rounded-md border-2 text-[9px] font-bold transition-all"
+                        className="w-4 h-4 rounded-md border-2 text-[8px] font-bold transition-all"
                         style={{
                           borderColor: teamA.color,
                           backgroundColor: draftTeam === teamA.id ? teamA.color : 'transparent',
@@ -1356,7 +1356,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                       <button
                         type="button"
                         onClick={() => setDraftTeam(p.id, draftTeam === teamB.id ? null : teamB.id)}
-                        className="w-5 h-5 rounded-md border-2 text-[9px] font-bold transition-all"
+                        className="w-4 h-4 rounded-md border-2 text-[8px] font-bold transition-all"
                         style={{
                           borderColor: teamB.color,
                           backgroundColor: draftTeam === teamB.id ? teamB.color : 'transparent',
@@ -1371,6 +1371,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                   <TeePicker
                     value={getDraftTee(p)}
                     onChange={(v) => setDraftTee(p.id, v)}
+                    size="xxs"
                     className="gap-0.5"
                   />
                   <Input
@@ -1384,14 +1385,14 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                       setDraftHcp(p.id, Number.isFinite(v) ? v : 0);
                     }}
                     onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                    className="w-10 h-6 px-0.5 text-center text-xs shrink-0"
+                    className="w-9 h-6 px-0.5 text-center text-xs shrink-0"
                     aria-label="HCP Index"
                     title="HCP Index"
                   />
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                    className="h-5 w-5 shrink-0 text-muted-foreground hover:text-destructive"
                     onClick={() => setParticipantToRemove(p)}
                     aria-label={`Eliminar a ${p.display_name}`}
                   >
