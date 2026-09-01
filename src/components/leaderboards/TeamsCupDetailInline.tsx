@@ -1319,7 +1319,10 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         }
         setShowAssignPanel(open);
       }}>
-        <DialogContent className="w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] sm:w-full sm:max-w-sm max-h-[85vh] overflow-y-auto overflow-x-hidden p-2.5 [&>button.absolute]:hidden">
+        <DialogContent
+          className="w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:w-full sm:max-w-sm mx-auto max-h-[85vh] overflow-y-auto overflow-x-hidden p-2 box-border [&>button.absolute]:hidden"
+          style={{ width: 'calc(100vw - 2rem)', maxWidth: 'calc(100vw - 2rem)' }}
+        >
           {(() => {
             // Detect pending changes vs. saved state.
             const hasChanges = cup.participants.some(p => {
@@ -1332,14 +1335,14 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             const renderRow = (p: CupParticipant) => {
               const draftTeam = getDraftTeam(p);
               return (
-                <div key={p.id} className="flex items-center gap-1 p-1.5 border rounded-lg min-w-0">
+                <div key={p.id} className="flex items-center gap-0.5 p-1 border rounded-lg min-w-0">
                   <span className="text-xs font-medium truncate flex-1 min-w-0">{formatPlayerName(p.display_name)}</span>
                   <div className="flex gap-0.5 shrink-0">
                     {teamA && (
                       <button
                         type="button"
                         onClick={() => setDraftTeam(p.id, draftTeam === teamA.id ? null : teamA.id)}
-                        className="w-6 h-6 rounded-md border-2 text-[10px] font-bold transition-all"
+                        className="w-4 h-4 rounded-md border-2 text-[8px] font-bold transition-all"
                         style={{
                           borderColor: teamA.color,
                           backgroundColor: draftTeam === teamA.id ? teamA.color : 'transparent',
@@ -1353,7 +1356,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                       <button
                         type="button"
                         onClick={() => setDraftTeam(p.id, draftTeam === teamB.id ? null : teamB.id)}
-                        className="w-6 h-6 rounded-md border-2 text-[10px] font-bold transition-all"
+                        className="w-4 h-4 rounded-md border-2 text-[8px] font-bold transition-all"
                         style={{
                           borderColor: teamB.color,
                           backgroundColor: draftTeam === teamB.id ? teamB.color : 'transparent',
@@ -1364,10 +1367,12 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                       </button>
                     )}
                   </div>
-                  <div className="h-5 w-px bg-border shrink-0 mx-0.5" aria-hidden="true" />
+                  <div className="h-4 w-px bg-border shrink-0 mx-0.5" aria-hidden="true" />
                   <TeePicker
                     value={getDraftTee(p)}
                     onChange={(v) => setDraftTee(p.id, v)}
+                    size="xxs"
+                    className="gap-0.5"
                   />
                   <Input
                     type="number"
@@ -1380,14 +1385,14 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                       setDraftHcp(p.id, Number.isFinite(v) ? v : 0);
                     }}
                     onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                    className="w-11 h-6 px-1 text-center text-xs shrink-0"
+                    className="w-9 h-6 px-0.5 text-center text-xs shrink-0"
                     aria-label="HCP Index"
                     title="HCP Index"
                   />
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                    className="h-5 w-5 shrink-0 text-muted-foreground hover:text-destructive"
                     onClick={() => setParticipantToRemove(p)}
                     aria-label={`Eliminar a ${p.display_name}`}
                   >
@@ -1404,19 +1409,19 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
 
             // Column header: name | Equipo | sep | Tee | HCP | (trash)
             const ColumnHeader = () => (
-              <div className="flex items-center gap-1 px-1.5 pb-0.5 min-w-0">
+              <div className="flex items-center gap-0.5 px-1 pb-0.5 min-w-0">
                 <span className="flex-1 min-w-0" />
-                <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground text-center" style={{ width: teamA && teamB ? '3rem' : '1.5rem' }}>
-                  Equipo
+                <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground text-center" style={{ width: teamA && teamB ? '2.125rem' : '1.125rem' }}>
+                  Eq.
                 </span>
                 <span className="w-px shrink-0 mx-0.5" />
-                <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground text-center" style={{ width: '5.5rem' }}>
+                <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground text-center" style={{ width: '4.5rem' }}>
                   Tee
                 </span>
-                <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground text-center" style={{ width: '2.75rem' }}>
+                <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground text-center" style={{ width: '2.25rem' }}>
                   HCP
                 </span>
-                <span className="w-6 shrink-0" />
+                <span className="w-5 shrink-0" />
               </div>
             );
 
