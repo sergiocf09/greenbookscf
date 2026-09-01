@@ -231,8 +231,9 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
       {/* ── Configuración común de los 3 matches ── */}
       <div className="space-y-2 pt-2 border-t border-primary/15">
         <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-          Configuración para los 3 matches
+          Configuración para los 3 {isSix ? 'partidos' : 'matches'}
         </Label>
+
 
         <div className="flex items-center justify-between">
           <Label className="text-[10px] font-semibold text-primary">Modalidad Juego</Label>
