@@ -331,39 +331,73 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         }
       : undefined;
 
-  const applySixPairsFoursomes = (pairs: Array<[string, string]>) => {
-    const template = config.teamPressures.bets[0];
-    const generated = buildTeamPressuresFromPairs(
-      pairs,
-      template,
-      defaultsFromTemplate(template, 'lowBall'),
-      resolveTeamHandicaps
-    );
+  /** Last common config chosen in the 6-player generator panel (reused by shuffle). */
+  const [sixDefaultsFoursomes, setSixDefaultsFoursomes] = React.useState<BasePairDefaults | undefined>();
+  const [sixDefaultsCarritos, setSixDefaultsCarritos] = React.useState<BasePairDefaults | undefined>();
+
+  const applySixPairsFoursomes = (
+    pairs: Array<[string, string]>,
+    defaultsOverride?: BasePairDefaults,
+    mode: 'replace' | 'add' = 'replace'
+  ) => {
+    const existing = config.teamPressures.bets;
+    const template = existing[0];
+    const defaults =
+      defaultsOverride ?? sixDefaultsFoursomes ?? defaultsFromTemplate(template, 'lowBall');
+    if (defaultsOverride) setSixDefaultsFoursomes(defaultsOverride);
+    let generated = buildTeamPressuresFromPairs(pairs, template, defaults, resolveTeamHandicaps);
+    if (mode === 'add') generated = dropExistingMatches(generated, existing);
     onUpdateConfig({
       ...config,
-      teamPressures: { ...config.teamPressures, enabled: true, bets: generated },
+      teamPressures: {
+        ...config.teamPressures,
+        enabled: true,
+        bets: mode === 'replace' ? generated : [...existing, ...generated],
+      },
     });
   };
 
-  const applySixPairsCarritos = (pairs: Array<[string, string]>) => {
-    const template = (config.carritosTeams || [])[0] ?? (hasPrimaryCarritos ? config.carritos : undefined);
-    const generated = buildCarritosFromPairs(
+  const applySixPairsCarritos = (
+    pairs: Array<[string, string]>,
+    defaultsOverride?: BasePairDefaults,
+    mode: 'replace' | 'add' = 'replace'
+  ) => {
+    const existingTeams = config.carritosTeams || [];
+    const primary = hasPrimaryCarritos
+      ? [{ teamA: config.carritos.teamA, teamB: config.carritos.teamB }]
+      : [];
+    const template = existingTeams[0] ?? (hasPrimaryCarritos ? config.carritos : undefined);
+    const defaults =
+      defaultsOverride ?? sixDefaultsCarritos ?? defaultsFromTemplate(template, 'all');
+    if (defaultsOverride) setSixDefaultsCarritos(defaultsOverride);
+    let generated = buildCarritosFromPairs(
       pairs,
       template as Partial<CarritosTeamBet>,
-      defaultsFromTemplate(template, 'all'),
+      defaults,
       resolveTeamHandicaps
     );
+    if (mode === 'add') {
+      generated = dropExistingMatches(generated, [
+        ...primary,
+        ...existingTeams,
+      ] as Array<{ teamA: [string, string]; teamB: [string, string] }>);
+    }
     onUpdateConfig({
       ...config,
       carritos: {
         ...config.carritos,
         enabled: true,
-        teamA: ['', ''] as [string, string],
-        teamB: ['', ''] as [string, string],
+        ...(mode === 'replace'
+          ? {
+              teamA: ['', ''] as [string, string],
+              teamB: ['', ''] as [string, string],
+            }
+          : {}),
       },
-      carritosTeams: generated,
+      carritosTeams: mode === 'replace' ? generated : [...existingTeams, ...generated],
     });
   };
+
 
   /** Unique pairs currently configured across matches (used to detect combo index). */
   const uniquePairsOf = (
