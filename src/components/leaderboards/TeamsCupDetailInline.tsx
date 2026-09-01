@@ -1405,16 +1405,16 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
 
             // Column header: name | Equipo | sep | Tee | HCP | (trash)
             const ColumnHeader = () => (
-              <div className="flex items-center gap-1 px-1.5 pb-0.5 min-w-0">
+              <div className="flex items-center gap-0.5 px-1 pb-0.5 min-w-0">
                 <span className="flex-1 min-w-0" />
-                <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground text-center" style={{ width: teamA && teamB ? '3rem' : '1.5rem' }}>
+                <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground text-center" style={{ width: teamA && teamB ? '2.5rem' : '1.25rem' }}>
                   Equipo
                 </span>
                 <span className="w-px shrink-0 mx-0.5" />
-                <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground text-center" style={{ width: '5.5rem' }}>
+                <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground text-center" style={{ width: '4.5rem' }}>
                   Tee
                 </span>
-                <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground text-center" style={{ width: '2.75rem' }}>
+                <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground text-center" style={{ width: '2.5rem' }}>
                   HCP
                 </span>
                 <span className="w-6 shrink-0" />
