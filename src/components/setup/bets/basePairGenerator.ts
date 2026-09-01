@@ -184,7 +184,46 @@ export const buildBasePairCarritosTeams = (
     } as CarritosTeamBet;
   });
 
+/**
+ * Round-robin between fixed pairs (6 players → 3 pairs → 3 matches:
+ * P1vP2, P1vP3, P2vP3).
+ */
+export const pairMatchups = (
+  pairs: Array<[string, string]>
+): Array<{ teamA: [string, string]; teamB: [string, string] }> => {
+  const out: Array<{ teamA: [string, string]; teamB: [string, string] }> = [];
+  for (let i = 0; i < pairs.length; i++) {
+    for (let j = i + 1; j < pairs.length; j++) {
+      out.push({ teamA: [...pairs[i]] as [string, string], teamB: [...pairs[j]] as [string, string] });
+    }
+  }
+  return out;
+};
+
+export const buildTeamPressuresFromPairs = (
+  pairs: Array<[string, string]>,
+  template?: TeamPressuresBet,
+  defaults?: BasePairDefaults,
+  resolveHandicaps?: TeamHandicapResolver
+): TeamPressuresBet[] =>
+  pairMatchups(pairs).map((m, idx) => ({
+    ...buildBasePairTeamPressures(m.teamA, m.teamB, template, defaults, resolveHandicaps)[0],
+    id: uid('team-pressure', idx),
+  }));
+
+export const buildCarritosFromPairs = (
+  pairs: Array<[string, string]>,
+  template?: Partial<CarritosTeamBet>,
+  defaults?: BasePairDefaults,
+  resolveHandicaps?: TeamHandicapResolver
+): CarritosTeamBet[] =>
+  pairMatchups(pairs).map((m, idx) => ({
+    ...buildBasePairCarritosTeams(m.teamA, m.teamB, template, defaults, resolveHandicaps)[0],
+    id: uid('carritos', idx),
+  }));
+
 /** Filters generated matches, dropping any whose 4-player set already exists. */
+
 export const dropExistingMatches = <
   T extends { teamA: [string, string]; teamB: [string, string] }
 >(
