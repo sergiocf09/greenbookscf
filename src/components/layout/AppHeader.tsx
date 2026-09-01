@@ -234,16 +234,15 @@ export function AppHeader(props: AppHeaderProps) {
             </div>
           )}
           {/* Friends Button - only show in setup view */}
-
-
           {view === 'setup' && (
             <Button
               variant="ghost"
-              size="icon"
-              className="rounded-full text-primary-foreground hover:bg-primary-foreground/10"
+              className="rounded-full text-primary-foreground hover:bg-primary-foreground/10 h-auto w-auto px-2 py-1 flex flex-col items-center gap-0.5"
               onClick={() => onOpenDialog('friends')}
+              title="Amigos"
             >
               <Users className="h-5 w-5" />
+              <span className="text-[10px] leading-none font-medium">Amigos</span>
             </Button>
           )}
           {/* Help + Refresh stacked vertically */}
