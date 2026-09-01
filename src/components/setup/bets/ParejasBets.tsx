@@ -1269,6 +1269,8 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
   getStrokesForLocalPair,
   getLocalPairStrokeState,
   isNineHole,
+  sixPairs,
+  onApplySixPairs,
 }) => {
   return (
     <div className={cn(
@@ -1321,6 +1323,8 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
         teamC={playerOptions.length === 6 ? ((bet as any).teamC as [string, string] | undefined) : undefined}
         onUpdateTeamC={playerOptions.length === 6 ? (t) => onUpdate({ teamC: t } as any) : undefined}
         onShuffleTeams={(a, b, c) => onUpdate({ teamA: a, teamB: b, ...(c ? { teamC: c } : {}) } as any)}
+        sixPairs={sixPairs}
+        onApplySixPairs={onApplySixPairs}
       />
 
       {/* Handicap Mode Selector */}
@@ -1683,6 +1687,8 @@ interface CarritosCardProps {
   getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
   getLocalPairStrokeState?: (localIdA: string, localIdB: string) => { strokes: number; hasExplicitOverride: boolean };
   isNineHole?: boolean;
+  sixPairs?: Array<[string, string]>;
+  onApplySixPairs?: (pairs: Array<[string, string]>) => void;
 }
 
 const CarritosCard: React.FC<CarritosCardProps> = ({
@@ -1704,6 +1710,8 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
   getStrokesForLocalPair,
   getLocalPairStrokeState,
   isNineHole,
+  sixPairs,
+  onApplySixPairs,
 }) => {
   return (
     <div className="space-y-3 p-3 rounded-lg bg-muted/30 mb-3" onPointerDown={(e) => e.stopPropagation()}>
@@ -1750,6 +1758,8 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
         teamC={playerOptions.length === 6 ? (teamC as [string, string] | undefined) : undefined}
         onUpdateTeamC={playerOptions.length === 6 ? (t) => onUpdate({ teamC: t } as any) : undefined}
         onShuffleTeams={(a, b, c) => onUpdate({ teamA: a, teamB: b, ...(c ? { teamC: c } : {}) } as any)}
+        sixPairs={sixPairs}
+        onApplySixPairs={onApplySixPairs}
       />
 
       {/* Handicap Mode Selector */}
