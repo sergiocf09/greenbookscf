@@ -13,7 +13,7 @@ const TEE_META: Record<TeeColor, { bg: string; ring: string; label: string; text
 interface Props {
   value: TeeColor | null;
   onChange: (v: TeeColor) => void;
-  size?: 'xs' | 'sm';
+  size?: 'xxs' | 'xs' | 'sm';
   className?: string;
 }
 
@@ -22,7 +22,10 @@ interface Props {
  * can pick which tee the player will play from. Letters: A/B/M/R (es).
  */
 export const TeePicker: React.FC<Props> = ({ value, onChange, size = 'xs', className }) => {
-  const sizeCls = size === 'sm' ? 'w-6 h-6 text-[10px]' : 'w-5 h-5 text-[9px]';
+  const sizeCls =
+    size === 'sm' ? 'w-6 h-6 text-[10px]' :
+    size === 'xxs' ? 'w-4 h-4 text-[8px]' :
+    'w-5 h-5 text-[9px]';
   return (
     <div className={cn('flex gap-1 shrink-0', className)}>
       {(Object.keys(TEE_META) as TeeColor[]).map(c => {
