@@ -9,7 +9,7 @@ import { AmountInput } from './AmountInput';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, Shuffle } from 'lucide-react';
+import { Plus, Trash2, Shuffle, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -876,45 +876,26 @@ const PlayerWithHcp: React.FC<PlayerWithHcpProps> = ({
   );
 };
 
-function getNextPairCombo(
-  playerIds: string[],
-  currentTeamA: [string, string],
-  currentTeamB: [string, string],
-  currentTeamC?: [string, string]
-): {
+export interface PairCombo {
   teamA: [string, string];
   teamB: [string, string];
   teamC?: [string, string];
-} {
+}
+
+/** Full ordered list of pairing combinations: 3 for 4 players, 15 for 6 players. */
+export function getPairCombos(playerIds: string[]): PairCombo[] {
   if (playerIds.length === 4) {
     const [A, B, C, D] = playerIds;
-    const combos: Array<{ teamA: [string, string]; teamB: [string, string] }> = [
+    return [
       { teamA: [A, B], teamB: [C, D] },
       { teamA: [A, C], teamB: [B, D] },
       { teamA: [A, D], teamB: [B, C] },
     ];
-
-    const currentKey = `${currentTeamA[0]}_${currentTeamA[1]}_${currentTeamB[0]}_${currentTeamB[1]}`;
-    const currentIdx = combos.findIndex((c) =>
-      [
-        `${c.teamA[0]}_${c.teamA[1]}_${c.teamB[0]}_${c.teamB[1]}`,
-        `${c.teamA[1]}_${c.teamA[0]}_${c.teamB[0]}_${c.teamB[1]}`,
-        `${c.teamA[0]}_${c.teamA[1]}_${c.teamB[1]}_${c.teamB[0]}`,
-        `${c.teamA[1]}_${c.teamA[0]}_${c.teamB[1]}_${c.teamB[0]}`,
-      ].includes(currentKey)
-    );
-
-    const nextIdx = currentIdx === -1 ? 0 : (currentIdx + 1) % 3;
-    return combos[nextIdx];
   }
 
   if (playerIds.length === 6) {
     const [p1, p2, p3, p4, p5, p6] = playerIds;
-    const combos: Array<{
-      teamA: [string, string];
-      teamB: [string, string];
-      teamC: [string, string];
-    }> = [
+    return [
       { teamA: [p1, p2], teamB: [p3, p4], teamC: [p5, p6] },
       { teamA: [p1, p2], teamB: [p3, p5], teamC: [p4, p6] },
       { teamA: [p1, p2], teamB: [p3, p6], teamC: [p4, p5] },
@@ -931,32 +912,40 @@ function getNextPairCombo(
       { teamA: [p1, p6], teamB: [p2, p4], teamC: [p3, p5] },
       { teamA: [p1, p6], teamB: [p2, p5], teamC: [p3, p4] },
     ];
-
-    const normalize = (a: string, b: string) => [a, b].sort().join('_');
-    const currentMatches = new Set([
-      normalize(currentTeamA[0], currentTeamA[1]),
-      normalize(currentTeamB[0], currentTeamB[1]),
-      normalize(currentTeamC?.[0] ?? '', currentTeamC?.[1] ?? ''),
-    ]);
-
-    const currentIdx = combos.findIndex((c) => {
-      const comboMatches = new Set([
-        normalize(c.teamA[0], c.teamA[1]),
-        normalize(c.teamB[0], c.teamB[1]),
-        normalize(c.teamC[0], c.teamC[1]),
-      ]);
-      return (
-        [...currentMatches].every((m) => comboMatches.has(m)) &&
-        [...comboMatches].every((m) => currentMatches.has(m))
-      );
-    });
-
-    const nextIdx = currentIdx === -1 ? 0 : (currentIdx + 1) % 15;
-    return combos[nextIdx];
   }
 
-  return { teamA: currentTeamA, teamB: currentTeamB };
+  return [];
 }
+
+const normalizePair = (a?: string, b?: string) => [a ?? '', b ?? ''].sort().join('_');
+
+/** Index of the combo that matches the current teams, or -1 when the state matches none. */
+export function findPairComboIndex(
+  combos: PairCombo[],
+  currentTeamA: [string, string],
+  currentTeamB: [string, string],
+  currentTeamC?: [string, string]
+): number {
+  const currentPairs = [
+    normalizePair(currentTeamA?.[0], currentTeamA?.[1]),
+    normalizePair(currentTeamB?.[0], currentTeamB?.[1]),
+  ];
+  const expectThree = combos.some((c) => !!c.teamC);
+  if (expectThree) currentPairs.push(normalizePair(currentTeamC?.[0], currentTeamC?.[1]));
+
+  const currentSet = new Set(currentPairs);
+  if (currentSet.size !== currentPairs.length) return -1;
+
+  return combos.findIndex((c) => {
+    const comboPairs = [
+      normalizePair(c.teamA[0], c.teamA[1]),
+      normalizePair(c.teamB[0], c.teamB[1]),
+    ];
+    if (c.teamC) comboPairs.push(normalizePair(c.teamC[0], c.teamC[1]));
+    return comboPairs.length === currentPairs.length && comboPairs.every((p) => currentSet.has(p));
+  });
+}
+
 
 /* ─── Compact two-column team layout ─── */
 interface TeamColumnsProps {
@@ -970,8 +959,8 @@ interface TeamColumnsProps {
   onUpdateHandicaps: (hcps: Record<string, number>) => void;
   /** Only provided when the bet has exactly 4 or 6 participants → enables Shuffle */
   allPlayerOptions?: { value: string; label: string }[];
-  /** Optional atomic setter used by Shuffle (avoids stale sequential updates) */
-  onShuffleTeams?: (teamA: [string, string], teamB: [string, string]) => void;
+  /** Atomic setter used by Shuffle (avoids stale sequential updates) */
+  onShuffleTeams?: (teamA: [string, string], teamB: [string, string], teamC?: [string, string]) => void;
   /** Optional third team for 6-player shuffles */
   teamC?: [string, string];
   onUpdateTeamC?: (team: [string, string]) => void;
@@ -1001,40 +990,69 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
     onUpdateHandicaps({ ...teamHandicaps, [pid]: val });
   };
 
+  const shuffleEnabled = !!allPlayerOptions && (allPlayerOptions.length === 4 || allPlayerOptions.length === 6);
+  const combos = useMemo(
+    () => (shuffleEnabled ? getPairCombos(allPlayerOptions!.map(o => o.value)) : []),
+    [shuffleEnabled, allPlayerOptions]
+  );
+  const detectedIdx = shuffleEnabled ? findPairComboIndex(combos, teamA, teamB, teamC) : -1;
+  // Local fallback index: keeps the cycle advancing even when the current state
+  // matches no combo (e.g. manually edited teams).
+  const [lastIdx, setLastIdx] = React.useState<number | null>(null);
+  const baseIdx = detectedIdx >= 0 ? detectedIdx : (lastIdx ?? -1);
+
+  const applyComboAt = (rawIdx: number) => {
+    if (!combos.length) return;
+    const idx = ((rawIdx % combos.length) + combos.length) % combos.length;
+    const combo = combos[idx];
+    setLastIdx(idx);
+    if (onShuffleTeams) {
+      onShuffleTeams(combo.teamA, combo.teamB, combo.teamC);
+    } else {
+      onUpdateTeamA(combo.teamA);
+      onUpdateTeamB(combo.teamB);
+      if (combo.teamC && onUpdateTeamC) onUpdateTeamC(combo.teamC);
+    }
+  };
+
   return (
     <div className="space-y-1">
-      {allPlayerOptions && (allPlayerOptions.length === 4 || allPlayerOptions.length === 6) && (
+      {shuffleEnabled && (
         <div className="flex flex-col items-end mb-1 gap-0.5">
-          <button
-            type="button"
-            onClick={() => {
-              const ids = allPlayerOptions.map(o => o.value);
-              const next = getNextPairCombo(ids, teamA, teamB, teamC);
-              onUpdateTeamA(next.teamA);
-              onUpdateTeamB(next.teamB);
-              if (next.teamC && onUpdateTeamC) onUpdateTeamC(next.teamC);
-            }}
-            className="flex items-center gap-1 text-[11px] text-primary border border-primary/30 rounded-md px-2 py-1 hover:bg-primary/5 transition-colors"
-            title={allPlayerOptions.length === 6
-              ? 'Ciclar combinaciones (15 opciones)'
-              : 'Ciclar combinaciones de parejas'}
-          >
-            <Shuffle className="h-3 w-3" />
-            Shuffle
-            {allPlayerOptions.length === 6 && (
-              <span className="text-[9px] text-muted-foreground ml-0.5">×15</span>
-            )}
-          </button>
-          {allPlayerOptions.length === 6 && teamA[0] && teamA[1] && (
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => applyComboAt(baseIdx - 1)}
+              className="flex items-center text-[11px] text-primary border border-primary/30 rounded-md px-1.5 py-1 hover:bg-primary/5 transition-colors"
+              title="Combinación anterior"
+              aria-label="Combinación anterior"
+            >
+              <ChevronLeft className="h-3 w-3" />
+            </button>
+            <button
+              type="button"
+              onClick={() => applyComboAt(baseIdx + 1)}
+              className="flex items-center gap-1 text-[11px] text-primary border border-primary/30 rounded-md px-2 py-1 hover:bg-primary/5 transition-colors"
+              title={`Ciclar combinaciones (${combos.length} opciones)`}
+            >
+              <Shuffle className="h-3 w-3" />
+              Shuffle
+              <span className="text-[9px] text-muted-foreground ml-0.5">
+                {baseIdx >= 0 ? `${baseIdx + 1}/${combos.length}` : `×${combos.length}`}
+              </span>
+            </button>
+          </div>
+          {allPlayerOptions!.length === 6 && teamA[0] && teamA[1] && (
             <p className="text-[9px] text-muted-foreground">
-              {allPlayerOptions[0].label.split(' ')[0]} fijo con{' '}
-              {(allPlayerOptions.find(o => o.value === teamA[1] && o.value !== allPlayerOptions[0].value)
-                ?? allPlayerOptions.find(o => o.value === teamA[0] && o.value !== allPlayerOptions[0].value))
+              {allPlayerOptions![0].label.split(' ')[0]} fijo con{' '}
+              {(allPlayerOptions!.find(o => o.value === teamA[1] && o.value !== allPlayerOptions![0].value)
+                ?? allPlayerOptions!.find(o => o.value === teamA[0] && o.value !== allPlayerOptions![0].value))
                 ?.label.split(' ')[0] ?? '—'}
             </p>
           )}
         </div>
       )}
+
       {/* Header row */}
       <div className="grid grid-cols-2 gap-2">
         <Label className="text-[10px] text-muted-foreground font-medium leading-none">Equipo A</Label>
@@ -1162,7 +1180,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
         allPlayerOptions={(playerOptions.length === 4 || playerOptions.length === 6) ? playerOptions : undefined}
         teamC={playerOptions.length === 6 ? ((bet as any).teamC as [string, string] | undefined) : undefined}
         onUpdateTeamC={playerOptions.length === 6 ? (t) => onUpdate({ teamC: t } as any) : undefined}
-        onShuffleTeams={(a, b) => onUpdate({ teamA: a, teamB: b })}
+        onShuffleTeams={(a, b, c) => onUpdate({ teamA: a, teamB: b, ...(c ? { teamC: c } : {}) } as any)}
       />
 
       {/* Handicap Mode Selector */}
@@ -1591,7 +1609,7 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
         allPlayerOptions={(playerOptions.length === 4 || playerOptions.length === 6) ? playerOptions : undefined}
         teamC={playerOptions.length === 6 ? (teamC as [string, string] | undefined) : undefined}
         onUpdateTeamC={playerOptions.length === 6 ? (t) => onUpdate({ teamC: t } as any) : undefined}
-        onShuffleTeams={(a, b) => onUpdate({ teamA: a, teamB: b })}
+        onShuffleTeams={(a, b, c) => onUpdate({ teamA: a, teamB: b, ...(c ? { teamC: c } : {}) } as any)}
       />
 
       {/* Handicap Mode Selector */}
