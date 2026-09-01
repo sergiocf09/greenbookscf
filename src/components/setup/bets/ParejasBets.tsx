@@ -22,9 +22,14 @@ import {
   buildTeamPressuresFromPairs,
   buildCarritosFromPairs,
   dropExistingMatches,
+  getPairCombos,
+  findPairComboIndex,
 } from './basePairGenerator';
+export { getPairCombos, findPairComboIndex } from './basePairGenerator';
+export type { PairCombo } from './basePairGenerator';
 
 import type { BasePairDefaults, TeamHandicapResolver } from './basePairGenerator';
+
 import {
   AlertDialog,
   AlertDialogAction,
