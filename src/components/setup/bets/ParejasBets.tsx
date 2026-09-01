@@ -9,7 +9,7 @@ import { AmountInput } from './AmountInput';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Shuffle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -874,6 +874,33 @@ const PlayerWithHcp: React.FC<PlayerWithHcpProps> = ({
   );
 };
 
+/**
+ * Cicla por las 3 combinaciones únicas de 4 jugadores en orden:
+ * combo 0: [A,B] vs [C,D] · combo 1: [A,C] vs [B,D] · combo 2: [A,D] vs [B,C]
+ */
+function getNextPairCombo(
+  playerIds: string[],
+  currentTeamA: [string, string],
+  currentTeamB: [string, string]
+): { teamA: [string, string]; teamB: [string, string] } {
+  if (playerIds.length < 4) return { teamA: currentTeamA, teamB: currentTeamB };
+
+  const [A, B, C, D] = playerIds;
+  const combos: Array<{ teamA: [string, string]; teamB: [string, string] }> = [
+    { teamA: [A, B], teamB: [C, D] },
+    { teamA: [A, C], teamB: [B, D] },
+    { teamA: [A, D], teamB: [B, C] },
+  ];
+
+  const key = (a: [string, string], b: [string, string]) =>
+    [[...a].sort().join('_'), [...b].sort().join('_')].sort().join('#');
+  const currentKey = key(currentTeamA, currentTeamB);
+  const currentIdx = combos.findIndex((c) => key(c.teamA, c.teamB) === currentKey);
+
+  const nextIdx = currentIdx === -1 ? 0 : (currentIdx + 1) % 3;
+  return combos[nextIdx];
+}
+
 /* ─── Compact two-column team layout ─── */
 interface TeamColumnsProps {
   teamA: [string, string];
@@ -884,6 +911,10 @@ interface TeamColumnsProps {
   onUpdateTeamA: (team: [string, string]) => void;
   onUpdateTeamB: (team: [string, string]) => void;
   onUpdateHandicaps: (hcps: Record<string, number>) => void;
+  /** Only provided when the bet has exactly 4 participants → enables Shuffle */
+  allPlayerOptions?: { value: string; label: string }[];
+  /** Optional atomic setter used by Shuffle (avoids stale sequential updates) */
+  onShuffleTeams?: (teamA: [string, string], teamB: [string, string]) => void;
 }
 
 const TeamColumns: React.FC<TeamColumnsProps> = ({
@@ -895,6 +926,8 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
   onUpdateTeamA,
   onUpdateTeamB,
   onUpdateHandicaps,
+  allPlayerOptions,
+  onShuffleTeams,
 }) => {
   const getHcp = (pid: string) => {
     if (teamHandicaps[pid] !== undefined) return teamHandicaps[pid];
@@ -908,6 +941,28 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
 
   return (
     <div className="space-y-1">
+      {allPlayerOptions && allPlayerOptions.length === 4 && (
+        <div className="flex justify-end mb-1">
+          <button
+            type="button"
+            onClick={() => {
+              const ids = allPlayerOptions.map(o => o.value);
+              const next = getNextPairCombo(ids, teamA, teamB);
+              if (onShuffleTeams) {
+                onShuffleTeams(next.teamA, next.teamB);
+              } else {
+                onUpdateTeamA(next.teamA);
+                onUpdateTeamB(next.teamB);
+              }
+            }}
+            className="flex items-center gap-1 text-[11px] text-primary border border-primary/30 rounded-md px-2 py-1 hover:bg-primary/5 transition-colors"
+            title="Cambiar combinación de parejas"
+          >
+            <Shuffle className="h-3 w-3" />
+            Shuffle
+          </button>
+        </div>
+      )}
       {/* Header row */}
       <div className="grid grid-cols-2 gap-2">
         <Label className="text-[10px] text-muted-foreground font-medium leading-none">Equipo A</Label>
@@ -1032,6 +1087,8 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
         onUpdateTeamA={(t) => onUpdate({ teamA: t })}
         onUpdateTeamB={(t) => onUpdate({ teamB: t })}
         onUpdateHandicaps={(h) => onUpdate({ teamHandicaps: h })}
+        allPlayerOptions={playerOptions.length === 4 ? playerOptions : undefined}
+        onShuffleTeams={(a, b) => onUpdate({ teamA: a, teamB: b })}
       />
 
       {/* Handicap Mode Selector */}
@@ -1455,6 +1512,8 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
         onUpdateTeamA={(t) => onUpdate({ teamA: t })}
         onUpdateTeamB={(t) => onUpdate({ teamB: t })}
         onUpdateHandicaps={(h) => onUpdate({ teamHandicaps: h })}
+        allPlayerOptions={playerOptions.length === 4 ? playerOptions : undefined}
+        onShuffleTeams={(a, b) => onUpdate({ teamA: a, teamB: b })}
       />
 
       {/* Handicap Mode Selector */}
@@ -1826,6 +1885,15 @@ const SixesBetCard: React.FC<{
             <div className="space-y-2 p-2 rounded-lg bg-muted/30">
               <Label className="text-[10px] font-semibold text-primary">Set 1 · H1–6</Label>
               <TeamColumns teamA={set1?.team1 ?? ['', '']} teamB={set1?.team2 ?? ['', '']}
+                allPlayerOptions={playerOptions.length === 4 ? playerOptions : undefined}
+                onShuffleTeams={(a, b) => {
+                  const newSets: SixesSetAssignment[] = [
+                    { setNumber: 1, team1: a, team2: b },
+                    { setNumber: 2, team1: [a[0], b[0]], team2: [a[1], b[1]] },
+                    { setNumber: 3, team1: [a[0], b[1]], team2: [a[1], b[0]] },
+                  ];
+                  onUpdate({ sets: newSets });
+                }}
                 teamHandicaps={bet.useHandicap ? th : {}}
                 players={players} playerOptions={playerOptions}
                 onUpdateTeamA={(t) => {
