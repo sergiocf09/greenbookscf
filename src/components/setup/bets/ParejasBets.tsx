@@ -986,6 +986,8 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
   onUpdateHandicaps,
   allPlayerOptions,
   onShuffleTeams,
+  teamC,
+  onUpdateTeamC,
 }) => {
   const getHcp = (pid: string) => {
     if (teamHandicaps[pid] !== undefined) return teamHandicaps[pid];
