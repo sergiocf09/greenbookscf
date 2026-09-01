@@ -304,8 +304,87 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
     });
   };
 
+  // ===== 6 players: 3 fixed pairs → 3 matches (round robin) =====
+  const defaultsFromTemplate = (
+    t: any,
+    fallbackScoring: BasePairDefaults['scoringType']
+  ): BasePairDefaults | undefined =>
+    t?.handicapConfig?.mode
+      ? {
+          scoringType: (t.scoringType ?? fallbackScoring) as BasePairDefaults['scoringType'],
+          handicapMode: t.handicapConfig.mode,
+          frontAmount: t.frontAmount ?? 100,
+          backAmount: t.backAmount ?? 100,
+          totalAmount: t.totalAmount ?? 100,
+          openingThreshold: t.openingThreshold,
+          continua: t.continua,
+          unitsEnabled: t.unitsConfig?.enabled,
+          unitsValue: t.unitsConfig?.valuePerUnit,
+          oyesesEnabled: t.oyesesConfig?.enabled,
+          oyesesValue: t.oyesesConfig?.valuePerOyes,
+          oyesesModality: t.oyesesConfig?.modality,
+        }
+      : undefined;
+
+  const applySixPairsFoursomes = (pairs: Array<[string, string]>) => {
+    const template = config.teamPressures.bets[0];
+    const generated = buildTeamPressuresFromPairs(
+      pairs,
+      template,
+      defaultsFromTemplate(template, 'lowBall'),
+      resolveTeamHandicaps
+    );
+    onUpdateConfig({
+      ...config,
+      teamPressures: { ...config.teamPressures, enabled: true, bets: generated },
+    });
+  };
+
+  const applySixPairsCarritos = (pairs: Array<[string, string]>) => {
+    const template = (config.carritosTeams || [])[0] ?? (hasPrimaryCarritos ? config.carritos : undefined);
+    const generated = buildCarritosFromPairs(
+      pairs,
+      template as Partial<CarritosTeamBet>,
+      defaultsFromTemplate(template, 'all'),
+      resolveTeamHandicaps
+    );
+    onUpdateConfig({
+      ...config,
+      carritos: {
+        ...config.carritos,
+        enabled: true,
+        teamA: ['', ''] as [string, string],
+        teamB: ['', ''] as [string, string],
+      },
+      carritosTeams: generated,
+    });
+  };
+
+  /** Unique pairs currently configured across matches (used to detect combo index). */
+  const uniquePairsOf = (
+    matches: Array<{ teamA: [string, string]; teamB: [string, string] }>
+  ): Array<[string, string]> => {
+    const seen = new Map<string, [string, string]>();
+    matches.forEach((m) => {
+      [m.teamA, m.teamB].forEach((t) => {
+        if (t?.[0] && t?.[1]) {
+          const key = [...t].sort().join('|');
+          if (!seen.has(key)) seen.set(key, [t[0], t[1]]);
+        }
+      });
+    });
+    return [...seen.values()];
+  };
+
+  const foursomesSixPairs = uniquePairsOf(config.teamPressures.bets);
+  const carritosSixPairs = uniquePairsOf([
+    ...(hasPrimaryCarritos ? [{ teamA: config.carritos.teamA, teamB: config.carritos.teamB }] : []),
+    ...(config.carritosTeams || []),
+  ] as Array<{ teamA: [string, string]; teamB: [string, string] }>);
+
   const carritosMatchCount =
     (config.carritosTeams || []).length + (hasPrimaryCarritos ? 1 : 0);
+
 
 
 
