@@ -228,7 +228,7 @@ export const useScorePersistence = ({
     } catch (err) {
       devError('Error in saveScore:', err);
     }
-  }, [roundPlayerIds, logEvent, roundId, scores, players]);
+  }, [roundPlayerIds, logEvent, roundId, scores, players, confirmedHoles]);
 
 
 
