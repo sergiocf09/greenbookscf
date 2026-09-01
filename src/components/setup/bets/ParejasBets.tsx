@@ -1253,6 +1253,9 @@ interface TeamPressureCardProps {
   getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
   getLocalPairStrokeState?: (localIdA: string, localIdB: string) => { strokes: number; hasExplicitOverride: boolean };
   isNineHole?: boolean;
+  sixPairs?: Array<[string, string]>;
+  onApplySixPairs?: (pairs: Array<[string, string]>) => void;
+
 }
 
 const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
