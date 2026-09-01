@@ -36,7 +36,12 @@ export function computeCupPoints(
     const pts = m.points_per_match ?? 1;
     const live = results.get(m.id);
     const closed = live?.match_closed ?? false;
-    const rtype = closed ? live!.result_type : m.result_type;
+    // Live results are the single source of truth whenever the match is linked
+    // to a round: a stored result_type is only honoured for manual overrides or
+    // when no live computation exists, so unconfirming holes clears the points.
+    const rtype = closed
+      ? live!.result_type
+      : (live ? (m.result_override ? m.result_type : null) : m.result_type);
 
     if (rtype === 'a_wins') { pointsA += pts; closedA += pts; completed++; }
     else if (rtype === 'b_wins') { pointsB += pts; closedB += pts; completed++; }
