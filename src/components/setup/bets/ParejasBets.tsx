@@ -966,10 +966,13 @@ interface TeamColumnsProps {
   onUpdateTeamA: (team: [string, string]) => void;
   onUpdateTeamB: (team: [string, string]) => void;
   onUpdateHandicaps: (hcps: Record<string, number>) => void;
-  /** Only provided when the bet has exactly 4 participants → enables Shuffle */
+  /** Only provided when the bet has exactly 4 or 6 participants → enables Shuffle */
   allPlayerOptions?: { value: string; label: string }[];
   /** Optional atomic setter used by Shuffle (avoids stale sequential updates) */
   onShuffleTeams?: (teamA: [string, string], teamB: [string, string]) => void;
+  /** Optional third team for 6-player shuffles */
+  teamC?: [string, string];
+  onUpdateTeamC?: (team: [string, string]) => void;
 }
 
 const TeamColumns: React.FC<TeamColumnsProps> = ({
