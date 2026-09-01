@@ -1332,14 +1332,14 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             const renderRow = (p: CupParticipant) => {
               const draftTeam = getDraftTeam(p);
               return (
-                <div key={p.id} className="flex items-center gap-1 p-1.5 border rounded-lg min-w-0">
+                <div key={p.id} className="flex items-center gap-0.5 p-1 border rounded-lg min-w-0">
                   <span className="text-xs font-medium truncate flex-1 min-w-0">{formatPlayerName(p.display_name)}</span>
                   <div className="flex gap-0.5 shrink-0">
                     {teamA && (
                       <button
                         type="button"
                         onClick={() => setDraftTeam(p.id, draftTeam === teamA.id ? null : teamA.id)}
-                        className="w-6 h-6 rounded-md border-2 text-[10px] font-bold transition-all"
+                        className="w-5 h-5 rounded-md border-2 text-[9px] font-bold transition-all"
                         style={{
                           borderColor: teamA.color,
                           backgroundColor: draftTeam === teamA.id ? teamA.color : 'transparent',
@@ -1353,7 +1353,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                       <button
                         type="button"
                         onClick={() => setDraftTeam(p.id, draftTeam === teamB.id ? null : teamB.id)}
-                        className="w-6 h-6 rounded-md border-2 text-[10px] font-bold transition-all"
+                        className="w-5 h-5 rounded-md border-2 text-[9px] font-bold transition-all"
                         style={{
                           borderColor: teamB.color,
                           backgroundColor: draftTeam === teamB.id ? teamB.color : 'transparent',
@@ -1364,10 +1364,11 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                       </button>
                     )}
                   </div>
-                  <div className="h-5 w-px bg-border shrink-0 mx-0.5" aria-hidden="true" />
+                  <div className="h-4 w-px bg-border shrink-0 mx-0.5" aria-hidden="true" />
                   <TeePicker
                     value={getDraftTee(p)}
                     onChange={(v) => setDraftTee(p.id, v)}
+                    className="gap-0.5"
                   />
                   <Input
                     type="number"
@@ -1380,7 +1381,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                       setDraftHcp(p.id, Number.isFinite(v) ? v : 0);
                     }}
                     onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                    className="w-11 h-6 px-1 text-center text-xs shrink-0"
+                    className="w-10 h-6 px-0.5 text-center text-xs shrink-0"
                     aria-label="HCP Index"
                     title="HCP Index"
                   />
