@@ -959,8 +959,8 @@ interface TeamColumnsProps {
   onUpdateHandicaps: (hcps: Record<string, number>) => void;
   /** Only provided when the bet has exactly 4 or 6 participants → enables Shuffle */
   allPlayerOptions?: { value: string; label: string }[];
-  /** Optional atomic setter used by Shuffle (avoids stale sequential updates) */
-  onShuffleTeams?: (teamA: [string, string], teamB: [string, string]) => void;
+  /** Atomic setter used by Shuffle (avoids stale sequential updates) */
+  onShuffleTeams?: (teamA: [string, string], teamB: [string, string], teamC?: [string, string]) => void;
   /** Optional third team for 6-player shuffles */
   teamC?: [string, string];
   onUpdateTeamC?: (team: [string, string]) => void;
@@ -990,40 +990,69 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
     onUpdateHandicaps({ ...teamHandicaps, [pid]: val });
   };
 
+  const shuffleEnabled = !!allPlayerOptions && (allPlayerOptions.length === 4 || allPlayerOptions.length === 6);
+  const combos = useMemo(
+    () => (shuffleEnabled ? getPairCombos(allPlayerOptions!.map(o => o.value)) : []),
+    [shuffleEnabled, allPlayerOptions]
+  );
+  const detectedIdx = shuffleEnabled ? findPairComboIndex(combos, teamA, teamB, teamC) : -1;
+  // Local fallback index: keeps the cycle advancing even when the current state
+  // matches no combo (e.g. manually edited teams).
+  const [lastIdx, setLastIdx] = React.useState<number | null>(null);
+  const baseIdx = detectedIdx >= 0 ? detectedIdx : (lastIdx ?? -1);
+
+  const applyComboAt = (rawIdx: number) => {
+    if (!combos.length) return;
+    const idx = ((rawIdx % combos.length) + combos.length) % combos.length;
+    const combo = combos[idx];
+    setLastIdx(idx);
+    if (onShuffleTeams) {
+      onShuffleTeams(combo.teamA, combo.teamB, combo.teamC);
+    } else {
+      onUpdateTeamA(combo.teamA);
+      onUpdateTeamB(combo.teamB);
+      if (combo.teamC && onUpdateTeamC) onUpdateTeamC(combo.teamC);
+    }
+  };
+
   return (
     <div className="space-y-1">
-      {allPlayerOptions && (allPlayerOptions.length === 4 || allPlayerOptions.length === 6) && (
+      {shuffleEnabled && (
         <div className="flex flex-col items-end mb-1 gap-0.5">
-          <button
-            type="button"
-            onClick={() => {
-              const ids = allPlayerOptions.map(o => o.value);
-              const next = getNextPairCombo(ids, teamA, teamB, teamC);
-              onUpdateTeamA(next.teamA);
-              onUpdateTeamB(next.teamB);
-              if (next.teamC && onUpdateTeamC) onUpdateTeamC(next.teamC);
-            }}
-            className="flex items-center gap-1 text-[11px] text-primary border border-primary/30 rounded-md px-2 py-1 hover:bg-primary/5 transition-colors"
-            title={allPlayerOptions.length === 6
-              ? 'Ciclar combinaciones (15 opciones)'
-              : 'Ciclar combinaciones de parejas'}
-          >
-            <Shuffle className="h-3 w-3" />
-            Shuffle
-            {allPlayerOptions.length === 6 && (
-              <span className="text-[9px] text-muted-foreground ml-0.5">×15</span>
-            )}
-          </button>
-          {allPlayerOptions.length === 6 && teamA[0] && teamA[1] && (
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => applyComboAt(baseIdx - 1)}
+              className="flex items-center text-[11px] text-primary border border-primary/30 rounded-md px-1.5 py-1 hover:bg-primary/5 transition-colors"
+              title="Combinación anterior"
+              aria-label="Combinación anterior"
+            >
+              <ChevronLeft className="h-3 w-3" />
+            </button>
+            <button
+              type="button"
+              onClick={() => applyComboAt(baseIdx + 1)}
+              className="flex items-center gap-1 text-[11px] text-primary border border-primary/30 rounded-md px-2 py-1 hover:bg-primary/5 transition-colors"
+              title={`Ciclar combinaciones (${combos.length} opciones)`}
+            >
+              <Shuffle className="h-3 w-3" />
+              Shuffle
+              <span className="text-[9px] text-muted-foreground ml-0.5">
+                {baseIdx >= 0 ? `${baseIdx + 1}/${combos.length}` : `×${combos.length}`}
+              </span>
+            </button>
+          </div>
+          {allPlayerOptions!.length === 6 && teamA[0] && teamA[1] && (
             <p className="text-[9px] text-muted-foreground">
-              {allPlayerOptions[0].label.split(' ')[0]} fijo con{' '}
-              {(allPlayerOptions.find(o => o.value === teamA[1] && o.value !== allPlayerOptions[0].value)
-                ?? allPlayerOptions.find(o => o.value === teamA[0] && o.value !== allPlayerOptions[0].value))
+              {allPlayerOptions![0].label.split(' ')[0]} fijo con{' '}
+              {(allPlayerOptions!.find(o => o.value === teamA[1] && o.value !== allPlayerOptions![0].value)
+                ?? allPlayerOptions!.find(o => o.value === teamA[0] && o.value !== allPlayerOptions![0].value))
                 ?.label.split(' ')[0] ?? '—'}
             </p>
           )}
         </div>
       )}
+
       {/* Header row */}
       <div className="grid grid-cols-2 gap-2">
         <Label className="text-[10px] text-muted-foreground font-medium leading-none">Equipo A</Label>
