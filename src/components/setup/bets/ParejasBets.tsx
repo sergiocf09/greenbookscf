@@ -568,6 +568,19 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
             onGenerate={generateCarritosFromBase}
           />
         )}
+        {carritosOptions.length === 6 && (
+          <BasePairSelector
+            playerOptions={carritosOptions}
+            variant="carritos"
+            mode={6}
+            isNineHole={(config.roundHoles ?? 18) === 9}
+            sixPairs={carritosSixPairs.length === 3 ? carritosSixPairs : undefined}
+            existingCount={carritosMatchCount}
+            onGenerateSix={(pairs, mode, defaults) =>
+              applySixPairsCarritos(pairs, defaults, mode)
+            }
+          />
+        )}
         {!hasPrimaryCarritos && (config.carritosTeams || []).length === 0 ? (
           <div className="text-center py-4">
             <p className="text-xs text-muted-foreground mb-2">No hay apuestas de carritos configuradas</p>
@@ -578,20 +591,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           </div>
         ) : (
           <>
-            {carritosOptions.length === 6 && carritosMatchCount < 3 && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full mb-3 gap-1"
-                onClick={() => {
-                  const combo = getPairCombos(carritosOptions.map(o => o.value))[0];
-                  if (combo?.teamC) applySixPairsCarritos([combo.teamA, combo.teamB, combo.teamC]);
-                }}
-              >
-                <Shuffle className="h-3.5 w-3.5" />
-                Generar los 3 carritos (6 jugadores)
-              </Button>
-            )}
+
             {/* Primary carritos */}
             {hasPrimaryCarritos && (
               <CarritosCard
