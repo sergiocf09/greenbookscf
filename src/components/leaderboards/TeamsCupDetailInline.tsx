@@ -1415,7 +1415,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                   Eq.
                 </span>
                 <span className="w-px shrink-0 mx-0.5" />
-                <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground text-center" style={{ width: '4.375rem' }}>
+                <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground text-center" style={{ width: '4.5rem' }}>
                   Tee
                 </span>
                 <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground text-center" style={{ width: '2.25rem' }}>
