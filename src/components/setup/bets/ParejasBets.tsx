@@ -1697,6 +1697,27 @@ const HandicapModeSelector: React.FC<{
     }
   };
 
+  // Re-apply team-based handicap modes when the pairing changes (e.g. Shuffle),
+  // so the calculation always matches the current team composition.
+  const applyModeRef = React.useRef(applyMode);
+  applyModeRef.current = applyMode;
+  const lastPairKeyRef = React.useRef<string | null>(null);
+  const teamsKey = teamA && teamB ? `${[...teamA].sort().join('|')}__${[...teamB].sort().join('|')}` : '';
+  React.useEffect(() => {
+    if (!teamsKey) return;
+    if (lastPairKeyRef.current === null) {
+      lastPairKeyRef.current = teamsKey;
+      return;
+    }
+    if (lastPairKeyRef.current === teamsKey) return;
+    lastPairKeyRef.current = teamsKey;
+    if (mode === 'diferencialEquipo' || mode === 'slidingEquipo') {
+      applyModeRef.current(mode);
+    }
+  }, [teamsKey, mode]);
+
+
+
   // Detect half-point for sliding equipo
   const slidingHasHalf = React.useMemo(() => {
     if (mode !== 'slidingEquipo' || !teamA || !teamB) return false;
