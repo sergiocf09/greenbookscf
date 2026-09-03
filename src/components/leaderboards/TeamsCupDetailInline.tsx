@@ -1079,29 +1079,44 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
               : <>Aún no hay matches. Usa <span className="font-medium">+ Agregar Match</span> para crear el primero.</>}
           </p>
         ) : (
-          <div className="space-y-2">
-            {[...visibleMatches]
-              .sort((a, b) => {
-                // Most-advanced match (more holes played) shown first.
-                // Tie-break by original match_order (creation order).
-                const ha = cup.matchResults.get(a.id)?.holes_played ?? 0;
-                const hb = cup.matchResults.get(b.id)?.holes_played ?? 0;
-                if (hb !== ha) return hb - ha;
-                return (a.match_order ?? 0) - (b.match_order ?? 0);
-              })
-              .map(m => (
-                <CupMatchRow
-                  key={m.id}
-                  match={m}
-                  teams={cup.teams}
-                  participants={cup.participants}
-                  result={cup.matchResults.get(m.id)}
-                  isCreator={isCreator}
-                  initialsMap={initialsMap}
-                  onEdit={() => { setEditingMatch(m); setShowMatchEditor(true); }}
-                  onDelete={() => setMatchToDelete(m)}
-                />
-              ))}
+          <div className="space-y-4">
+            {(() => {
+              const grouped = new Map<number, CupMatch[]>();
+              for (const m of visibleMatches) {
+                const g = cup.getMatchGroupNumber(m);
+                if (!grouped.has(g)) grouped.set(g, []);
+                grouped.get(g)!.push(m);
+              }
+              const entries = Array.from(grouped.entries())
+                .sort(([a], [b]) => (a === Infinity ? 1 : b === Infinity ? -1 : a - b))
+                .map(([g, ms]) => ({
+                  groupNumber: g,
+                  matches: ms.sort((a, b) => (a.match_order ?? 0) - (b.match_order ?? 0)),
+                }));
+              return entries.map(({ groupNumber, matches }) => (
+                <div key={groupNumber === Infinity ? 'ungrouped' : groupNumber} className="space-y-2">
+                  {entries.length > 1 && groupNumber !== Infinity && (
+                    <div className="flex items-center gap-1.5 px-1">
+                      <span className="text-[11px] font-semibold text-muted-foreground">Grupo {groupNumber}</span>
+                      <span className="h-px flex-1 bg-border" />
+                    </div>
+                  )}
+                  {matches.map(m => (
+                    <CupMatchRow
+                      key={m.id}
+                      match={m}
+                      teams={cup.teams}
+                      participants={cup.participants}
+                      result={cup.matchResults.get(m.id)}
+                      isCreator={isCreator}
+                      initialsMap={initialsMap}
+                      onEdit={() => { setEditingMatch(m); setShowMatchEditor(true); }}
+                      onDelete={() => setMatchToDelete(m)}
+                    />
+                  ))}
+                </div>
+              ));
+            })()}
           </div>
         )}
       </div>
