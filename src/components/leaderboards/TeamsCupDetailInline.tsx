@@ -446,6 +446,8 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   const [addingSelf, setAddingSelf] = useState(false);
   /** null = vista acumulada (todos los días); si no, slot "day-session". */
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [showShareImage, setShowShareImage] = useState(false);
+
 
   const creatorIsParticipant = !!(profile && cup.participants.some(p => p.profile_id === profile.id));
 
