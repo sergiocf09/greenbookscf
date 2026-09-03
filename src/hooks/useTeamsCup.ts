@@ -92,6 +92,7 @@ export function useTeamsCup(leaderboardId: string | null) {
   const [matchResults, setMatchResults] = useState<Map<string, CupMatchResult>>(new Map());
   const [days, setDays] = useState<CupDay[]>([]);
   const [hcpByRound, setHcpByRound] = useState<Map<string, Map<string, { hcp: number; tee: TeeColor | null }>>>(new Map());
+  const [groupByParticipant, setGroupByParticipant] = useState<Map<string, Map<string, number>>>(new Map());
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
@@ -168,14 +169,26 @@ export function useTeamsCup(leaderboardId: string | null) {
         ...(latestRoundId ? [latestRoundId] : []),
       ]));
       const hcpMap = new Map<string, Map<string, { hcp: number; tee: TeeColor | null }>>();
+      const groupMap = new Map<string, Map<string, number>>();
       if (roundIdsToLoad.length > 0) {
-        const { data: rps } = await supabase
-          .from('round_players')
-          .select('round_id, profile_id, guest_name, handicap_for_round, tee_color')
-          .in('round_id', roundIdsToLoad);
+        const [{ data: rps }, { data: groupsData }] = await Promise.all([
+          supabase
+            .from('round_players')
+            .select('round_id, profile_id, guest_name, handicap_for_round, tee_color, group_id')
+            .in('round_id', roundIdsToLoad),
+          supabase
+            .from('round_groups')
+            .select('id, round_id, group_number')
+            .in('round_id', roundIdsToLoad),
+        ]);
+
+        const groupNumById = new Map<string, number>();
+        (groupsData ?? []).forEach((g: any) => groupNumById.set(g.id, Number(g.group_number)));
+
         (rps ?? []).forEach(r => {
           const rid = r.round_id as string;
           if (!hcpMap.has(rid)) hcpMap.set(rid, new Map());
+          if (!groupMap.has(rid)) groupMap.set(rid, new Map());
           const part = r.profile_id
             ? rawParts.find(p => p.profile_id === r.profile_id)
             : rawParts.find(p => !!p.guest_name && p.guest_name === r.guest_name);
@@ -184,10 +197,15 @@ export function useTeamsCup(leaderboardId: string | null) {
               hcp: Number(r.handicap_for_round ?? 0),
               tee: (r.tee_color as TeeColor | null) ?? null,
             });
+            const gnum = groupNumById.get(r.group_id as string);
+            if (gnum !== undefined) {
+              groupMap.get(rid)!.set(part.id, gnum);
+            }
           }
         });
       }
       setHcpByRound(hcpMap);
+      setGroupByParticipant(groupMap);
 
       // Default (display) Course HCP = most recent linked round.
       const courseHcpByPart = latestRoundId
@@ -572,6 +590,24 @@ export function useTeamsCup(leaderboardId: string | null) {
     };
   }, []);
 
+  /**
+   * Derive the foursome (round_groups.group_number) a match belongs to by looking
+   * at where its players are placed in the linked round. Falls back to Infinity
+   * (sorted last) when no group data exists.
+   */
+  const getMatchGroupNumber = useCallback((match: CupMatch): number => {
+    if (!match.round_id) return Infinity;
+    const roundMap = groupByParticipant.get(match.round_id);
+    if (!roundMap) return Infinity;
+    const ids = [match.player_a1_id, match.player_a2_id, match.player_b1_id, match.player_b2_id].filter(Boolean) as string[];
+    const groups = ids.map(id => roundMap.get(id)).filter((g): g is number => g !== undefined);
+    if (groups.length === 0) return Infinity;
+    const counts = new Map<number, number>();
+    groups.forEach(g => counts.set(g, (counts.get(g) || 0) + 1));
+    const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0] - b[0]);
+    return sorted[0][0];
+  }, [groupByParticipant]);
+
   return {
     teams, matches, participants, matchResults, standings,
     days, standingsBySlot, standingsByDay, participantsForRound,
@@ -579,5 +615,6 @@ export function useTeamsCup(leaderboardId: string | null) {
     assignTeam, updateMatchHandicap, updateTeam, batchUpdateParticipants,
     createMatch, updateMatch, deleteMatch,
     isCreator, myParticipant, calcMatchHandicap, calcFourballHandicap,
+    getMatchGroupNumber,
   };
 }
