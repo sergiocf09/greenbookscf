@@ -1200,41 +1200,85 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       {/* ── Total view: per-day breakdown (matches live inside each day) ─── */}
       {isMultiSlot && !activeSlotOption && (
         <Card>
-          <CardContent className="p-3 space-y-2">
-            <h2 className="text-sm font-semibold">Por jornada</h2>
+          <CardContent className="p-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-bold">Por jornada</h2>
+              <p className="text-[11px] text-muted-foreground">Toca para ver matches</p>
+            </div>
+
             {slotOptions.map(o => {
               const s = cup.standingsBySlot.get(o.key);
               const status = slotStatusLabel(o.key);
+              const pa = s?.points_a ?? 0;
+              const pb = s?.points_b ?? 0;
+              const total = pa + pb;
+              const done = s?.matches_completed ?? 0;
+              const tot = s?.matches_total ?? 0;
+              const pct = tot > 0 ? Math.round((done / tot) * 100) : 0;
+              const statusClass = status === 'Cerrado'
+                ? 'bg-primary/15 text-primary border-primary/30'
+                : status === 'En juego'
+                  ? 'bg-amber-500/15 text-amber-500 border-amber-500/30'
+                  : 'bg-muted text-muted-foreground border-border';
+
               return (
                 <button
                   key={o.key}
                   type="button"
                   onClick={() => setSelectedSlot(o.key)}
-                  className="w-full flex items-center gap-2 rounded-lg border border-border bg-muted/30 hover:bg-muted px-3 py-2 text-left"
+                  className="w-full rounded-xl border border-border bg-muted/40 hover:bg-muted/70 active:scale-[0.99] transition-all px-3.5 py-3 text-left"
                 >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold truncate">{o.label}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {s?.matches_total ?? 0} matches · {s?.matches_completed ?? 0} completados
-                    </p>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <p className="text-lg font-bold truncate">{o.label}</p>
+                    </div>
+                    <Badge variant="outline" className={`text-[10px] shrink-0 ${statusClass}`}>
+                      {status}
+                    </Badge>
                   </div>
-                  <Badge
-                    variant={status === 'Cerrado' ? 'secondary' : 'outline'}
-                    className="text-[10px] shrink-0"
-                  >
-                    {status}
-                  </Badge>
-                  <p className="text-base font-bold shrink-0 tabular-nums">
-                    <span style={{ color: st?.team_a?.color }}>{s?.points_a ?? 0}</span>
-                    <span className="text-muted-foreground font-light mx-1">—</span>
-                    <span style={{ color: st?.team_b?.color }}>{s?.points_b ?? 0}</span>
-                  </p>
+
+                  <div className="flex items-end justify-center gap-4 mt-2">
+                    <div className="text-center min-w-0">
+                      <p className="text-3xl font-black tabular-nums leading-none" style={{ color: st?.team_a?.color }}>
+                        {pa}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground truncate mt-1 max-w-[110px]">
+                        {st?.team_a?.name ?? 'Equipo A'}
+                      </p>
+                    </div>
+                    <span className="text-lg text-muted-foreground font-light leading-none pb-4">—</span>
+                    <div className="text-center min-w-0">
+                      <p className="text-3xl font-black tabular-nums leading-none" style={{ color: st?.team_b?.color }}>
+                        {pb}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground truncate mt-1 max-w-[110px]">
+                        {st?.team_b?.name ?? 'Equipo B'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="h-2 rounded-full overflow-hidden flex mt-2.5 bg-muted">
+                    {total > 0 && (
+                      <>
+                        <div className="h-full" style={{ width: `${(pa / total) * 100}%`, backgroundColor: st?.team_a?.color }} />
+                        <div className="h-full" style={{ width: `${(pb / total) * 100}%`, backgroundColor: st?.team_b?.color }} />
+                      </>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-xs text-muted-foreground">
+                      <span className="font-semibold text-foreground">{done}</span>/{tot} matches completados
+                      {tot > 0 && <span className="ml-1">· {pct}%</span>}
+                    </p>
+                    <span className="flex items-center gap-0.5 text-xs font-medium text-primary shrink-0">
+                      Ver <ChevronRight className="h-3.5 w-3.5" />
+                    </span>
+                  </div>
                 </button>
               );
             })}
-            <p className="text-[11px] text-muted-foreground italic pt-0.5">
-              Toca una jornada para ver sus matches.
-            </p>
           </CardContent>
         </Card>
       )}
