@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { formatPlayerName, disambiguateInitials } from '@/lib/playerInput';
+import { formatPlayerName, formatPlayerNameShort, disambiguateInitials } from '@/lib/playerInput';
 import { PlayerNameTwoLine } from '@/components/leaderboards/PlayerNameTwoLine';
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
