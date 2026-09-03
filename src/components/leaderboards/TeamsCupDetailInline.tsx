@@ -817,6 +817,106 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         (m.session_number ?? 1) === activeSlotOption.session_number)
     : cup.matches;
 
+  /* ── Sharing ─────────────────────────────────────
+   * A slot can only be shared once its linked round has been closed by the
+   * organizer. In the accumulated (Total) view we allow sharing as soon as at
+   * least one day is closed; days still in play are labelled as such.
+   */
+  const slotStatusLabel = (key: string): string => {
+    if (cup.isSlotClosed(key)) return 'Cerrado';
+    const s = cup.standingsBySlot.get(key);
+    if (s && (s.has_in_progress || s.matches_completed > 0)) return 'En juego';
+    return 'Pendiente';
+  };
+  const canShareSelection = activeSlot
+    ? cup.isSlotClosed(activeSlot)
+    : slotOptions.some(o => cup.isSlotClosed(o.key));
+
+  const shareMatchesData = React.useMemo(() => {
+    const source = activeSlotOption
+      ? cup.matches.filter(m =>
+          (m.day_number ?? 1) === activeSlotOption.day_number &&
+          (m.session_number ?? 1) === activeSlotOption.session_number)
+      : cup.matches;
+    const nameOf = (id: string | null) => {
+      if (!id) return null;
+      const p = cup.participants.find(x => x.id === id);
+      return p ? formatPlayerNameShort(p.display_name) : null;
+    };
+    return [...source]
+      .sort((a, b) => {
+        const ga = cup.getMatchGroupNumber(a);
+        const gb = cup.getMatchGroupNumber(b);
+        if (ga !== gb) return (ga === Infinity ? 1e9 : ga) - (gb === Infinity ? 1e9 : gb);
+        return (a.match_order ?? 0) - (b.match_order ?? 0);
+      })
+      .map(m => {
+        const res = cup.matchResults.get(m.id);
+        const closed = res?.match_closed ?? false;
+        const diff = res ? res.side_a_holes_won - res.side_b_holes_won : 0;
+        const rtype = closed
+          ? res!.result_type
+          : (m.result_override ? m.result_type : (res ? res.result_type : 'pending'));
+        let winner: 'a' | 'b' | 'halved' | null = null;
+        if (rtype === 'a_wins') winner = 'a';
+        else if (rtype === 'b_wins') winner = 'b';
+        else if (rtype === 'halved') winner = 'halved';
+        else if (rtype === 'in_progress' && (res?.holes_played ?? 0) > 0) {
+          winner = diff > 0 ? 'a' : diff < 0 ? 'b' : 'halved';
+        }
+        let resultText = 'VS';
+        let resultNote: string | undefined;
+        if (closed) {
+          resultText = res?.current_standing
+            ? res.current_standing.replace(/^[AB]\s*/, '')
+            : formatRunning(diff);
+          resultNote = 'Final';
+        } else if (rtype === 'in_progress' && (res?.holes_played ?? 0) > 0) {
+          resultText = formatRunning(diff);
+          resultNote = `thru ${res!.holes_played}`;
+        } else if (m.result_override && m.result_type) {
+          resultText = m.result_detail || formatRunning(diff);
+          resultNote = 'Final';
+        } else {
+          resultText = '—';
+          resultNote = 'Pendiente';
+        }
+        const g = cup.getMatchGroupNumber(m);
+        return {
+          group: g === Infinity ? null : g,
+          sideA: [nameOf(m.player_a1_id), nameOf(m.player_a2_id)].filter(Boolean) as string[],
+          sideB: [nameOf(m.player_b1_id), nameOf(m.player_b2_id)].filter(Boolean) as string[],
+          resultText,
+          resultNote,
+          winner,
+        };
+      });
+  }, [cup, activeSlotOption]);
+
+  const shareSlots = activeSlotOption
+    ? undefined
+    : slotOptions.map(o => {
+        const s = cup.standingsBySlot.get(o.key);
+        return {
+          label: o.label,
+          points_a: s?.points_a ?? 0,
+          points_b: s?.points_b ?? 0,
+          statusLabel: slotStatusLabel(o.key),
+        };
+      });
+
+  const shareRoundInfo = (() => {
+    const roundId = activeSlot
+      ? cup.standingsBySlot.get(activeSlot)?.round_id ?? null
+      : null;
+    if (roundId) {
+      const info = cup.roundInfoById.get(roundId);
+      if (info) return { courseName: info.courseName, date: info.date };
+    }
+    return { courseName: linkedRoundInfo.courseName, date: linkedRoundInfo.date };
+  })();
+
+
   const cupFormat = (event as any)?.cup_format || 'match_individual';
 
   const byName = (a: CupParticipant, b: CupParticipant) =>
