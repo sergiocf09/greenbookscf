@@ -840,10 +840,15 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           (m.day_number ?? 1) === activeSlotOption.day_number &&
           (m.session_number ?? 1) === activeSlotOption.session_number)
       : cup.matches;
+    // For the share image we want "Nombre Apellido" (first name + first surname).
     const nameOf = (id: string | null) => {
       if (!id) return null;
       const p = cup.participants.find(x => x.id === id);
-      return p ? formatPlayerNameShort(p.display_name) : null;
+      if (!p) return null;
+      const parts = (p.display_name || '').trim().split(/\s+/).filter(Boolean);
+      if (parts.length === 0) return null;
+      if (parts.length === 1) return parts[0];
+      return `${parts[0]} ${parts[1]}`;
     };
     return [...source]
       .sort((a, b) => {
