@@ -633,6 +633,18 @@ export function useTeamsCup(leaderboardId: string | null) {
     return sorted[0][0];
   }, [groupByParticipant]);
 
+  /**
+   * A slot (day/session) is "closed" when the round linked to its matches has
+   * been closed by the organizer (`rounds.status = 'completed'`). Sharing
+   * results is only allowed for closed slots.
+   */
+  const isSlotClosed = useCallback((slotKey: string): boolean => {
+    const st = standingsBySlot.get(slotKey);
+    const roundId = st?.round_id ?? null;
+    if (!roundId) return false;
+    return roundInfoById.get(roundId)?.status === 'completed';
+  }, [standingsBySlot, roundInfoById]);
+
   return {
     teams, matches, participants, matchResults, standings,
     days, standingsBySlot, standingsByDay, participantsForRound,
@@ -640,6 +652,7 @@ export function useTeamsCup(leaderboardId: string | null) {
     assignTeam, updateMatchHandicap, updateTeam, batchUpdateParticipants,
     createMatch, updateMatch, deleteMatch,
     isCreator, myParticipant, calcMatchHandicap, calcFourballHandicap,
-    getMatchGroupNumber,
+    getMatchGroupNumber, roundInfoById, isSlotClosed,
   };
 }
+
