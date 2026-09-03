@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { formatPlayerName, disambiguateInitials } from '@/lib/playerInput';
+import { formatPlayerName, formatPlayerNameShort, disambiguateInitials } from '@/lib/playerInput';
 import { PlayerNameTwoLine } from '@/components/leaderboards/PlayerNameTwoLine';
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
@@ -41,6 +41,8 @@ import { CreateRoundFromCupDialog } from '@/components/leaderboards/CreateRoundF
 import { cupSlotKey, cupSessionLabel } from '@/types/leaderboard';
 import { ManageFoursomesDialog } from '@/components/leaderboards/ManageFoursomesDialog';
 import { useActiveRoundForLink } from '@/hooks/useActiveRoundForLink';
+import { TeamsCupShareImage } from '@/components/leaderboards/TeamsCupShareImage';
+
 
 /* ── helpers ─────────────────────────────────────── */
 
@@ -446,6 +448,8 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   const [addingSelf, setAddingSelf] = useState(false);
   /** null = vista acumulada (todos los días); si no, slot "day-session". */
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [showShareImage, setShowShareImage] = useState(false);
+
 
   const creatorIsParticipant = !!(profile && cup.participants.some(p => p.profile_id === profile.id));
 
@@ -815,6 +819,106 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         (m.session_number ?? 1) === activeSlotOption.session_number)
     : cup.matches;
 
+  /* ── Sharing ─────────────────────────────────────
+   * A slot can only be shared once its linked round has been closed by the
+   * organizer. In the accumulated (Total) view we allow sharing as soon as at
+   * least one day is closed; days still in play are labelled as such.
+   */
+  const slotStatusLabel = (key: string): string => {
+    if (cup.isSlotClosed(key)) return 'Cerrado';
+    const s = cup.standingsBySlot.get(key);
+    if (s && (s.has_in_progress || s.matches_completed > 0)) return 'En juego';
+    return 'Pendiente';
+  };
+  const canShareSelection = activeSlot
+    ? cup.isSlotClosed(activeSlot)
+    : slotOptions.some(o => cup.isSlotClosed(o.key));
+
+  const shareMatchesData = React.useMemo(() => {
+    const source = activeSlotOption
+      ? cup.matches.filter(m =>
+          (m.day_number ?? 1) === activeSlotOption.day_number &&
+          (m.session_number ?? 1) === activeSlotOption.session_number)
+      : cup.matches;
+    const nameOf = (id: string | null) => {
+      if (!id) return null;
+      const p = cup.participants.find(x => x.id === id);
+      return p ? formatPlayerNameShort(p.display_name) : null;
+    };
+    return [...source]
+      .sort((a, b) => {
+        const ga = cup.getMatchGroupNumber(a);
+        const gb = cup.getMatchGroupNumber(b);
+        if (ga !== gb) return (ga === Infinity ? 1e9 : ga) - (gb === Infinity ? 1e9 : gb);
+        return (a.match_order ?? 0) - (b.match_order ?? 0);
+      })
+      .map(m => {
+        const res = cup.matchResults.get(m.id);
+        const closed = res?.match_closed ?? false;
+        const diff = res ? res.side_a_holes_won - res.side_b_holes_won : 0;
+        const rtype = closed
+          ? res!.result_type
+          : (m.result_override ? m.result_type : (res ? res.result_type : 'pending'));
+        let winner: 'a' | 'b' | 'halved' | null = null;
+        if (rtype === 'a_wins') winner = 'a';
+        else if (rtype === 'b_wins') winner = 'b';
+        else if (rtype === 'halved') winner = 'halved';
+        else if (rtype === 'in_progress' && (res?.holes_played ?? 0) > 0) {
+          winner = diff > 0 ? 'a' : diff < 0 ? 'b' : 'halved';
+        }
+        let resultText = 'VS';
+        let resultNote: string | undefined;
+        if (closed) {
+          resultText = res?.current_standing
+            ? res.current_standing.replace(/^[AB]\s*/, '')
+            : formatRunning(diff);
+          resultNote = 'Final';
+        } else if (rtype === 'in_progress' && (res?.holes_played ?? 0) > 0) {
+          resultText = formatRunning(diff);
+          resultNote = `thru ${res!.holes_played}`;
+        } else if (m.result_override && m.result_type) {
+          resultText = m.result_detail || formatRunning(diff);
+          resultNote = 'Final';
+        } else {
+          resultText = '—';
+          resultNote = 'Pendiente';
+        }
+        const g = cup.getMatchGroupNumber(m);
+        return {
+          group: g === Infinity ? null : g,
+          sideA: [nameOf(m.player_a1_id), nameOf(m.player_a2_id)].filter(Boolean) as string[],
+          sideB: [nameOf(m.player_b1_id), nameOf(m.player_b2_id)].filter(Boolean) as string[],
+          resultText,
+          resultNote,
+          winner,
+        };
+      });
+  }, [cup, activeSlotOption]);
+
+  const shareSlots = activeSlotOption
+    ? undefined
+    : slotOptions.map(o => {
+        const s = cup.standingsBySlot.get(o.key);
+        return {
+          label: o.label,
+          points_a: s?.points_a ?? 0,
+          points_b: s?.points_b ?? 0,
+          statusLabel: slotStatusLabel(o.key),
+        };
+      });
+
+  const shareRoundInfo = (() => {
+    const roundId = activeSlot
+      ? cup.standingsBySlot.get(activeSlot)?.round_id ?? null
+      : null;
+    if (roundId) {
+      const info = cup.roundInfoById.get(roundId);
+      if (info) return { courseName: info.courseName, date: info.date };
+    }
+    return { courseName: linkedRoundInfo.courseName, date: linkedRoundInfo.date };
+  })();
+
+
   const cupFormat = (event as any)?.cup_format || 'match_individual';
 
   const byName = (a: CupParticipant, b: CupParticipant) =>
@@ -939,42 +1043,79 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         </div>
       </div>
 
-      {/* ── Day / session chips ─── */}
+      {/* ── Day / session chips + share ─── */}
       {isMultiSlot && (
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
-          <button
-            type="button"
-            onClick={() => setSelectedSlot(null)}
-            className={`shrink-0 h-7 px-3 rounded-full text-xs font-medium border transition-colors ${
-              activeSlot === null
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'bg-background text-muted-foreground border-border hover:bg-muted'
-            }`}
+        <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 flex-1 min-w-0">
+            <button
+              type="button"
+              onClick={() => setSelectedSlot(null)}
+              className={`shrink-0 h-7 px-3 rounded-full text-xs font-medium border transition-colors ${
+                activeSlot === null
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-background text-muted-foreground border-border hover:bg-muted'
+              }`}
+            >
+              Total
+            </button>
+            {slotOptions.map(o => {
+              const s2 = cup.standingsBySlot.get(o.key);
+              return (
+                <button
+                  key={o.key}
+                  type="button"
+                  onClick={() => setSelectedSlot(o.key)}
+                  className={`shrink-0 h-7 px-3 rounded-full text-xs font-medium border transition-colors ${
+                    activeSlot === o.key
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background text-muted-foreground border-border hover:bg-muted'
+                  }`}
+                >
+                  {o.label}
+                  {s2 && s2.matches_total > 0 && (
+                    <span className="ml-1 opacity-80">{s2.points_a}–{s2.points_b}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            className="shrink-0 h-7 w-7"
+            disabled={!canShareSelection}
+            onClick={() => canShareSelection
+              ? setShowShareImage(true)
+              : toast.info('Disponible cuando el organizador cierre la ronda')}
+            title={canShareSelection
+              ? 'Compartir resultado'
+              : 'Disponible cuando el organizador cierre la ronda'}
+            aria-label="Compartir resultado"
           >
-            Total
-          </button>
-          {slotOptions.map(o => {
-            const s2 = cup.standingsBySlot.get(o.key);
-            return (
-              <button
-                key={o.key}
-                type="button"
-                onClick={() => setSelectedSlot(o.key)}
-                className={`shrink-0 h-7 px-3 rounded-full text-xs font-medium border transition-colors ${
-                  activeSlot === o.key
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-background text-muted-foreground border-border hover:bg-muted'
-                }`}
-              >
-                {o.label}
-                {s2 && s2.matches_total > 0 && (
-                  <span className="ml-1 opacity-80">{s2.points_a}–{s2.points_b}</span>
-                )}
-              </button>
-            );
-          })}
+            <Share2 className="h-3.5 w-3.5" />
+          </Button>
         </div>
       )}
+
+      {/* Single-day cups: share button under the header */}
+      {!isMultiSlot && (
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 gap-1.5 text-xs"
+            disabled={!canShareSelection}
+            onClick={() => setShowShareImage(true)}
+            title={canShareSelection
+              ? 'Compartir resultado'
+              : 'Disponible cuando el organizador cierre la ronda'}
+          >
+            <Share2 className="h-3.5 w-3.5" />
+            Compartir resultado
+          </Button>
+        </div>
+      )}
+
 
       {/* ── Section 1: Global Scoreboard ─── */}
       {st ? (
@@ -1056,8 +1197,53 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         </Card>
       )}
 
-      {/* ── Section 2: Matches ─── */}
+      {/* ── Total view: per-day breakdown (matches live inside each day) ─── */}
+      {isMultiSlot && !activeSlotOption && (
+        <Card>
+          <CardContent className="p-3 space-y-2">
+            <h2 className="text-sm font-semibold">Por jornada</h2>
+            {slotOptions.map(o => {
+              const s = cup.standingsBySlot.get(o.key);
+              const status = slotStatusLabel(o.key);
+              return (
+                <button
+                  key={o.key}
+                  type="button"
+                  onClick={() => setSelectedSlot(o.key)}
+                  className="w-full flex items-center gap-2 rounded-lg border border-border bg-muted/30 hover:bg-muted px-3 py-2 text-left"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold truncate">{o.label}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {s?.matches_total ?? 0} matches · {s?.matches_completed ?? 0} completados
+                    </p>
+                  </div>
+                  <Badge
+                    variant={status === 'Cerrado' ? 'secondary' : 'outline'}
+                    className="text-[10px] shrink-0"
+                  >
+                    {status}
+                  </Badge>
+                  <p className="text-base font-bold shrink-0 tabular-nums">
+                    <span style={{ color: st?.team_a?.color }}>{s?.points_a ?? 0}</span>
+                    <span className="text-muted-foreground font-light mx-1">—</span>
+                    <span style={{ color: st?.team_b?.color }}>{s?.points_b ?? 0}</span>
+                  </p>
+                </button>
+              );
+            })}
+            <p className="text-[11px] text-muted-foreground italic pt-0.5">
+              Toca una jornada para ver sus matches.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Section 2: Matches (only inside a day; Total shows the breakdown) ─── */}
+      {(!isMultiSlot || !!activeSlotOption) && (
       <div>
+
+
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-base font-semibold">Matches</h2>
           {isCreator && (
@@ -1120,6 +1306,8 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           </div>
         )}
       </div>
+      )}
+
 
       {/* ── Section 2.5: Crear Ronda y Grupos de Juego (creator only) ─── */}
       {isCreator && cup.participants.length >= 2 && (!linkedRoundInfo.date || !linkedRoundInfo.hasFoursomes) && (
@@ -1630,7 +1818,29 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         />
       )}
 
-
+      {/* ── Share result image ─── */}
+      {showShareImage && teamA && teamB && (
+        <TeamsCupShareImage
+          open={showShareImage}
+          onClose={() => setShowShareImage(false)}
+          cupName={event?.name || 'Teams Cup'}
+          subtitle={activeSlotOption ? activeSlotOption.label : 'Total acumulado'}
+          courseName={shareRoundInfo.courseName}
+          date={shareRoundInfo.date}
+          teamA={{
+            name: teamA.name || 'Equipo A',
+            color: teamA.color || '#3B82F6',
+            points: (activeSlot ? slotSt?.points_a : st?.points_a) ?? 0,
+          }}
+          teamB={{
+            name: teamB.name || 'Equipo B',
+            color: teamB.color || '#ef4444',
+            points: (activeSlot ? slotSt?.points_b : st?.points_b) ?? 0,
+          }}
+          slots={shareSlots}
+          matches={shareMatchesData}
+        />
+      )}
 
 
       {/* ── Settings Dialog (creator only) ─── */}

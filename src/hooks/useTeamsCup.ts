@@ -84,6 +84,13 @@ export interface CupSlotStandings extends CupPoints {
   points_available: number;
 }
 
+/** Basic info of a round linked to a cup slot. */
+export interface CupRoundInfo {
+  status: 'setup' | 'in_progress' | 'completed';
+  date: string | null;
+  courseName: string | null;
+}
+
 export function useTeamsCup(leaderboardId: string | null) {
   const { profile } = useAuth();
   const [teams, setTeams] = useState<CupTeam[]>([]);
@@ -93,7 +100,9 @@ export function useTeamsCup(leaderboardId: string | null) {
   const [days, setDays] = useState<CupDay[]>([]);
   const [hcpByRound, setHcpByRound] = useState<Map<string, Map<string, { hcp: number; tee: TeeColor | null }>>>(new Map());
   const [groupByParticipant, setGroupByParticipant] = useState<Map<string, Map<string, number>>>(new Map());
+  const [roundInfoById, setRoundInfoById] = useState<Map<string, CupRoundInfo>>(new Map());
   const [loading, setLoading] = useState(true);
+
 
   const fetchAll = useCallback(async () => {
     if (!leaderboardId) return;
@@ -170,8 +179,9 @@ export function useTeamsCup(leaderboardId: string | null) {
       ]));
       const hcpMap = new Map<string, Map<string, { hcp: number; tee: TeeColor | null }>>();
       const groupMap = new Map<string, Map<string, number>>();
+      const roundInfoMap = new Map<string, CupRoundInfo>();
       if (roundIdsToLoad.length > 0) {
-        const [{ data: rps }, { data: groupsData }] = await Promise.all([
+        const [{ data: rps }, { data: groupsData }, { data: roundsData }] = await Promise.all([
           supabase
             .from('round_players')
             .select('round_id, profile_id, guest_name, handicap_for_round, tee_color, group_id')
@@ -180,10 +190,23 @@ export function useTeamsCup(leaderboardId: string | null) {
             .from('round_groups')
             .select('id, round_id, group_number')
             .in('round_id', roundIdsToLoad),
+          supabase
+            .from('rounds')
+            .select('id, status, date, golf_courses(name)')
+            .in('id', roundIdsToLoad),
         ]);
+
+        (roundsData ?? []).forEach((r: any) => {
+          roundInfoMap.set(r.id as string, {
+            status: r.status,
+            date: r.date ?? null,
+            courseName: r.golf_courses?.name ?? null,
+          });
+        });
 
         const groupNumById = new Map<string, number>();
         (groupsData ?? []).forEach((g: any) => groupNumById.set(g.id, Number(g.group_number)));
+
 
         (rps ?? []).forEach(r => {
           const rid = r.round_id as string;
@@ -206,6 +229,8 @@ export function useTeamsCup(leaderboardId: string | null) {
       }
       setHcpByRound(hcpMap);
       setGroupByParticipant(groupMap);
+      setRoundInfoById(roundInfoMap);
+
 
       // Default (display) Course HCP = most recent linked round.
       const courseHcpByPart = latestRoundId
@@ -608,6 +633,18 @@ export function useTeamsCup(leaderboardId: string | null) {
     return sorted[0][0];
   }, [groupByParticipant]);
 
+  /**
+   * A slot (day/session) is "closed" when the round linked to its matches has
+   * been closed by the organizer (`rounds.status = 'completed'`). Sharing
+   * results is only allowed for closed slots.
+   */
+  const isSlotClosed = useCallback((slotKey: string): boolean => {
+    const st = standingsBySlot.get(slotKey);
+    const roundId = st?.round_id ?? null;
+    if (!roundId) return false;
+    return roundInfoById.get(roundId)?.status === 'completed';
+  }, [standingsBySlot, roundInfoById]);
+
   return {
     teams, matches, participants, matchResults, standings,
     days, standingsBySlot, standingsByDay, participantsForRound,
@@ -615,6 +652,7 @@ export function useTeamsCup(leaderboardId: string | null) {
     assignTeam, updateMatchHandicap, updateTeam, batchUpdateParticipants,
     createMatch, updateMatch, deleteMatch,
     isCreator, myParticipant, calcMatchHandicap, calcFourballHandicap,
-    getMatchGroupNumber,
+    getMatchGroupNumber, roundInfoById, isSlotClosed,
   };
 }
+
