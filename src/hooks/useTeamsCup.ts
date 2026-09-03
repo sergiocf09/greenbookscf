@@ -229,6 +229,8 @@ export function useTeamsCup(leaderboardId: string | null) {
       }
       setHcpByRound(hcpMap);
       setGroupByParticipant(groupMap);
+      setRoundInfoById(roundInfoMap);
+
 
       // Default (display) Course HCP = most recent linked round.
       const courseHcpByPart = latestRoundId
