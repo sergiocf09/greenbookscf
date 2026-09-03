@@ -893,7 +893,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           winner,
         };
       });
-  }, [cup, activeSlotOption]);
+  })();
 
   const shareSlots = activeSlotOption
     ? undefined
