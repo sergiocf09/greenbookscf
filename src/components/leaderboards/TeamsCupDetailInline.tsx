@@ -41,6 +41,8 @@ import { CreateRoundFromCupDialog } from '@/components/leaderboards/CreateRoundF
 import { cupSlotKey, cupSessionLabel } from '@/types/leaderboard';
 import { ManageFoursomesDialog } from '@/components/leaderboards/ManageFoursomesDialog';
 import { useActiveRoundForLink } from '@/hooks/useActiveRoundForLink';
+import { TeamsCupShareImage } from '@/components/leaderboards/TeamsCupShareImage';
+
 
 /* ── helpers ─────────────────────────────────────── */
 
