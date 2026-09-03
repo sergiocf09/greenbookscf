@@ -1818,7 +1818,29 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         />
       )}
 
-
+      {/* ── Share result image ─── */}
+      {showShareImage && teamA && teamB && (
+        <TeamsCupShareImage
+          open={showShareImage}
+          onClose={() => setShowShareImage(false)}
+          cupName={event?.name || 'Teams Cup'}
+          subtitle={activeSlotOption ? activeSlotOption.label : 'Total acumulado'}
+          courseName={shareRoundInfo.courseName}
+          date={shareRoundInfo.date}
+          teamA={{
+            name: teamA.name || 'Equipo A',
+            color: teamA.color || '#3B82F6',
+            points: (activeSlot ? slotSt?.points_a : st?.points_a) ?? 0,
+          }}
+          teamB={{
+            name: teamB.name || 'Equipo B',
+            color: teamB.color || '#ef4444',
+            points: (activeSlot ? slotSt?.points_b : st?.points_b) ?? 0,
+          }}
+          slots={shareSlots}
+          matches={shareMatchesData}
+        />
+      )}
 
 
       {/* ── Settings Dialog (creator only) ─── */}
