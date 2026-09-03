@@ -939,42 +939,79 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         </div>
       </div>
 
-      {/* ── Day / session chips ─── */}
+      {/* ── Day / session chips + share ─── */}
       {isMultiSlot && (
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
-          <button
-            type="button"
-            onClick={() => setSelectedSlot(null)}
-            className={`shrink-0 h-7 px-3 rounded-full text-xs font-medium border transition-colors ${
-              activeSlot === null
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'bg-background text-muted-foreground border-border hover:bg-muted'
-            }`}
+        <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 flex-1 min-w-0">
+            <button
+              type="button"
+              onClick={() => setSelectedSlot(null)}
+              className={`shrink-0 h-7 px-3 rounded-full text-xs font-medium border transition-colors ${
+                activeSlot === null
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-background text-muted-foreground border-border hover:bg-muted'
+              }`}
+            >
+              Total
+            </button>
+            {slotOptions.map(o => {
+              const s2 = cup.standingsBySlot.get(o.key);
+              return (
+                <button
+                  key={o.key}
+                  type="button"
+                  onClick={() => setSelectedSlot(o.key)}
+                  className={`shrink-0 h-7 px-3 rounded-full text-xs font-medium border transition-colors ${
+                    activeSlot === o.key
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background text-muted-foreground border-border hover:bg-muted'
+                  }`}
+                >
+                  {o.label}
+                  {s2 && s2.matches_total > 0 && (
+                    <span className="ml-1 opacity-80">{s2.points_a}–{s2.points_b}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            className="shrink-0 h-7 w-7"
+            disabled={!canShareSelection}
+            onClick={() => canShareSelection
+              ? setShowShareImage(true)
+              : toast.info('Disponible cuando el organizador cierre la ronda')}
+            title={canShareSelection
+              ? 'Compartir resultado'
+              : 'Disponible cuando el organizador cierre la ronda'}
+            aria-label="Compartir resultado"
           >
-            Total
-          </button>
-          {slotOptions.map(o => {
-            const s2 = cup.standingsBySlot.get(o.key);
-            return (
-              <button
-                key={o.key}
-                type="button"
-                onClick={() => setSelectedSlot(o.key)}
-                className={`shrink-0 h-7 px-3 rounded-full text-xs font-medium border transition-colors ${
-                  activeSlot === o.key
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-background text-muted-foreground border-border hover:bg-muted'
-                }`}
-              >
-                {o.label}
-                {s2 && s2.matches_total > 0 && (
-                  <span className="ml-1 opacity-80">{s2.points_a}–{s2.points_b}</span>
-                )}
-              </button>
-            );
-          })}
+            <Share2 className="h-3.5 w-3.5" />
+          </Button>
         </div>
       )}
+
+      {/* Single-day cups: share button under the header */}
+      {!isMultiSlot && (
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 gap-1.5 text-xs"
+            disabled={!canShareSelection}
+            onClick={() => setShowShareImage(true)}
+            title={canShareSelection
+              ? 'Compartir resultado'
+              : 'Disponible cuando el organizador cierre la ronda'}
+          >
+            <Share2 className="h-3.5 w-3.5" />
+            Compartir resultado
+          </Button>
+        </div>
+      )}
+
 
       {/* ── Section 1: Global Scoreboard ─── */}
       {st ? (
