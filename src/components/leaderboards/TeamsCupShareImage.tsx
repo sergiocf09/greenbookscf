@@ -89,7 +89,7 @@ function groupEntries(matches: CupShareMatch[]) {
   });
 }
 
-function computeHeight(props: TeamsCupShareImageProps): number {
+export function computeCupShareHeight(props: TeamsCupShareImageProps): number {
   const slots = props.slots ?? [];
   const entries = groupEntries(props.matches);
   const showGroupHeaders = entries.length > 1;
@@ -112,11 +112,11 @@ function truncate(ctx: CanvasRenderingContext2D, text: string, maxW: number): st
   return t + '…';
 }
 
-function drawCanvas(ctx: CanvasRenderingContext2D, props: TeamsCupShareImageProps) {
+export function drawCupShareCanvas(ctx: CanvasRenderingContext2D, props: TeamsCupShareImageProps) {
   const { cupName, subtitle, courseName, date, teamA, teamB, matches } = props;
   const slots = props.slots ?? [];
   const W = CANVAS_W;
-  const H = computeHeight(props);
+  const H = computeCupShareHeight(props);
   ctx.clearRect(0, 0, W, H);
 
   // ── Background ──
@@ -391,10 +391,10 @@ export const TeamsCupShareImage: React.FC<TeamsCupShareImageProps> = (props) => 
     const canvas = canvasRef.current;
     if (!canvas) return;
     canvas.width = CANVAS_W;
-    canvas.height = computeHeight(props);
+    canvas.height = computeCupShareHeight(props);
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    drawCanvas(ctx, props);
+    drawCupShareCanvas(ctx, props);
     setPreviewUrl(canvas.toDataURL('image/png'));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(props.matches), JSON.stringify(props.slots), cupName, subtitle,
