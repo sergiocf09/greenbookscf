@@ -179,8 +179,9 @@ export function useTeamsCup(leaderboardId: string | null) {
       ]));
       const hcpMap = new Map<string, Map<string, { hcp: number; tee: TeeColor | null }>>();
       const groupMap = new Map<string, Map<string, number>>();
+      const roundInfoMap = new Map<string, CupRoundInfo>();
       if (roundIdsToLoad.length > 0) {
-        const [{ data: rps }, { data: groupsData }] = await Promise.all([
+        const [{ data: rps }, { data: groupsData }, { data: roundsData }] = await Promise.all([
           supabase
             .from('round_players')
             .select('round_id, profile_id, guest_name, handicap_for_round, tee_color, group_id')
@@ -189,10 +190,23 @@ export function useTeamsCup(leaderboardId: string | null) {
             .from('round_groups')
             .select('id, round_id, group_number')
             .in('round_id', roundIdsToLoad),
+          supabase
+            .from('rounds')
+            .select('id, status, date, golf_courses(name)')
+            .in('id', roundIdsToLoad),
         ]);
+
+        (roundsData ?? []).forEach((r: any) => {
+          roundInfoMap.set(r.id as string, {
+            status: r.status,
+            date: r.date ?? null,
+            courseName: r.golf_courses?.name ?? null,
+          });
+        });
 
         const groupNumById = new Map<string, number>();
         (groupsData ?? []).forEach((g: any) => groupNumById.set(g.id, Number(g.group_number)));
+
 
         (rps ?? []).forEach(r => {
           const rid = r.round_id as string;
