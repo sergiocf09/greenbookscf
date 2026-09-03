@@ -1306,6 +1306,8 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           </div>
         )}
       </div>
+      )}
+
 
       {/* ── Section 2.5: Crear Ronda y Grupos de Juego (creator only) ─── */}
       {isCreator && cup.participants.length >= 2 && (!linkedRoundInfo.date || !linkedRoundInfo.hasFoursomes) && (
