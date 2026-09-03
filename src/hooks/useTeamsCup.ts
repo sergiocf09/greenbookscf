@@ -84,6 +84,13 @@ export interface CupSlotStandings extends CupPoints {
   points_available: number;
 }
 
+/** Basic info of a round linked to a cup slot. */
+export interface CupRoundInfo {
+  status: 'setup' | 'in_progress' | 'completed';
+  date: string | null;
+  courseName: string | null;
+}
+
 export function useTeamsCup(leaderboardId: string | null) {
   const { profile } = useAuth();
   const [teams, setTeams] = useState<CupTeam[]>([]);
@@ -93,7 +100,9 @@ export function useTeamsCup(leaderboardId: string | null) {
   const [days, setDays] = useState<CupDay[]>([]);
   const [hcpByRound, setHcpByRound] = useState<Map<string, Map<string, { hcp: number; tee: TeeColor | null }>>>(new Map());
   const [groupByParticipant, setGroupByParticipant] = useState<Map<string, Map<string, number>>>(new Map());
+  const [roundInfoById, setRoundInfoById] = useState<Map<string, CupRoundInfo>>(new Map());
   const [loading, setLoading] = useState(true);
+
 
   const fetchAll = useCallback(async () => {
     if (!leaderboardId) return;
