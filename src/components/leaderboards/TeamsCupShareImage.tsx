@@ -352,33 +352,57 @@ export function drawCupShareCanvas(ctx: CanvasRenderingContext2D, props: TeamsCu
         const rh = MATCH_ROW_H - 12;
         card(ctx, PAD, y, CW, rh, 14);
 
-        // Side panels tinted with team colors (like the app)
-        const panelW = CW * 0.34;
+        // Side panels: the winning side gets a strong tinted panel + border,
+        // the losing side is dimmed. Halved matches keep both neutral.
+        const panelW = CW * 0.365;
         const panelH = rh - 20;
         const py = y + 10;
-        ctx.fillStyle = 'rgba(14,155,107,0.12)';
-        roundRectPath(ctx, PAD + 10, py, panelW, panelH, 10);
-        ctx.fill();
-        ctx.fillStyle = 'rgba(217,181,49,0.12)';
-        roundRectPath(ctx, PAD + CW - 10 - panelW, py, panelW, panelH, 10);
-        ctx.fill();
+        const colA = teamA.color || GREEN;
+        const colB = teamB.color || GOLD;
+        const drawPanel = (x: number, color: string, state: 'win' | 'lose' | 'neutral') => {
+          ctx.save();
+          ctx.globalAlpha = state === 'win' ? 0.3 : state === 'lose' ? 0.05 : 0.12;
+          ctx.fillStyle = color;
+          roundRectPath(ctx, x, py, panelW, panelH, 10);
+          ctx.fill();
+          ctx.restore();
+          if (state === 'win') {
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            roundRectPath(ctx, x + 1.5, py + 1.5, panelW - 3, panelH - 3, 10);
+            ctx.stroke();
+            ctx.restore();
+          }
+        };
+        const stateA = m.winner === 'a' ? 'win' : m.winner === 'b' ? 'lose' : 'neutral';
+        const stateB = m.winner === 'b' ? 'win' : m.winner === 'a' ? 'lose' : 'neutral';
+        drawPanel(PAD + 10, colA, stateA);
+        drawPanel(PAD + CW - 10 - panelW, colB, stateB);
 
-        const drawNames = (names: string[], x: number, align: CanvasTextAlign) => {
+        const drawNames = (
+          names: string[],
+          x: number,
+          align: CanvasTextAlign,
+          state: 'win' | 'lose' | 'neutral',
+        ) => {
           ctx.textAlign = align;
-          ctx.font = 'bold 24px Arial, sans-serif';
           if (names.length === 0) return;
+          const main = state === 'win' ? '#FFFFFF' : state === 'lose' ? 'rgba(242,246,243,0.5)' : TXT;
+          const sec = state === 'win' ? '#FFFFFF' : state === 'lose' ? 'rgba(242,246,243,0.45)' : 'rgba(242,246,243,0.85)';
+          ctx.font = `bold ${names.length === 1 ? 24 : 22}px Arial, sans-serif`;
           if (names.length === 1) {
-            ctx.fillStyle = TXT;
-            ctx.fillText(truncate(ctx, names[0], panelW - 32), x, py + panelH / 2 + 9);
+            ctx.fillStyle = main;
+            ctx.fillText(truncate(ctx, names[0], panelW - 28), x, py + panelH / 2 + 9);
             return;
           }
           names.slice(0, 2).forEach((n, i) => {
-            ctx.fillStyle = i === 0 ? TXT : 'rgba(242,246,243,0.85)';
-            ctx.fillText(truncate(ctx, n, panelW - 32), x, py + 34 + i * 32);
+            ctx.fillStyle = i === 0 ? main : sec;
+            ctx.fillText(truncate(ctx, n, panelW - 28), x, py + 34 + i * 32);
           });
         };
-        drawNames(m.sideA, PAD + 26, 'left');
-        drawNames(m.sideB, PAD + CW - 26, 'right');
+        drawNames(m.sideA, PAD + 24, 'left', stateA);
+        drawNames(m.sideB, PAD + CW - 24, 'right', stateB);
 
         // Center result
         const centerX = PAD + CW / 2;
