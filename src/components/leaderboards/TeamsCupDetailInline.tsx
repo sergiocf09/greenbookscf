@@ -27,7 +27,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import {
-  Loader2, Plus, ChevronDown, Pencil, Trash2, UserPlus,
+  Loader2, Plus, ChevronDown, ChevronRight, Pencil, Trash2, UserPlus,
   Check, X, Hash, Copy, Share2, Settings, Link2, Unlink,
   Calendar, MapPin, CheckCircle, RefreshCw,
 } from 'lucide-react';
