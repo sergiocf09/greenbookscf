@@ -42,20 +42,26 @@ export interface TeamsCupShareImageProps {
   matches: CupShareMatch[];
 }
 
-/* ── Canvas constants ────────────────────────────── */
+/* ── Canvas constants (dark app-like theme) ──────── */
 
 const CANVAS_W = 1080;
-const GREEN = '#006747';
-const GOLD = '#FCE300';
+const PAD = 44;
+const GREEN = '#0E9B6B';
+const GOLD = '#D9B531';
+const BG = '#0A140F';
+const CARD = 'rgba(255,255,255,0.045)';
+const CARD_BORDER = 'rgba(255,255,255,0.10)';
+const TXT = '#F2F6F3';
+const MUTED = 'rgba(242,246,243,0.55)';
 
-const HEADER_H = 250;
-const SCORE_H = 230;
-const SLOT_ROW_H = 46;
-const SLOT_HEADER_H = 46;
-const GROUP_HEADER_H = 40;
-const MATCH_ROW_H = 92;
-const MATCHES_HEADER_H = 50;
-const FOOTER_H = 120;
+const HEADER_H = 236;
+const SCORE_H = 268;
+const SLOT_HEADER_H = 54;
+const SLOT_CARD_H = 148;
+const GROUP_HEADER_H = 46;
+const MATCH_ROW_H = 116;
+const MATCHES_HEADER_H = 56;
+const FOOTER_H = 128;
 
 function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath();
@@ -69,6 +75,44 @@ function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: n
   ctx.lineTo(x, y + r);
   ctx.quadraticCurveTo(x, y, x + r, y);
   ctx.closePath();
+}
+
+function card(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r = 16, fill = CARD) {
+  ctx.fillStyle = fill;
+  roundRectPath(ctx, x, y, w, h, r);
+  ctx.fill();
+  ctx.strokeStyle = CARD_BORDER;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+function pill(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  cx: number,
+  cy: number,
+  color: string,
+  bg: string,
+  font = 'bold 20px Arial, sans-serif',
+) {
+  ctx.font = font;
+  const tw = ctx.measureText(text).width;
+  const w = tw + 34;
+  const h = 40;
+  ctx.fillStyle = bg;
+  roundRectPath(ctx, cx - w / 2, cy - h / 2, w, h, h / 2);
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.globalAlpha = 0.4;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, cx, cy + 1);
+  ctx.textBaseline = 'alphabetic';
+  return w;
 }
 
 function fmtPts(v: number): string {
@@ -94,15 +138,15 @@ export function computeCupShareHeight(props: TeamsCupShareImageProps): number {
   const entries = groupEntries(props.matches);
   const showGroupHeaders = entries.length > 1;
   let h = HEADER_H + SCORE_H;
-  if (slots.length > 0) h += SLOT_HEADER_H + slots.length * SLOT_ROW_H + 16;
+  if (slots.length > 0) h += SLOT_HEADER_H + slots.length * (SLOT_CARD_H + 14) + 12;
   if (props.matches.length > 0) {
     h += MATCHES_HEADER_H;
     h += props.matches.length * MATCH_ROW_H;
     if (showGroupHeaders) h += entries.length * GROUP_HEADER_H;
-    h += 16;
+    h += 12;
   }
   h += FOOTER_H;
-  return Math.max(1080, h);
+  return Math.max(1000, h);
 }
 
 function truncate(ctx: CanvasRenderingContext2D, text: string, maxW: number): string {
@@ -112,47 +156,43 @@ function truncate(ctx: CanvasRenderingContext2D, text: string, maxW: number): st
   return t + '…';
 }
 
+function statusColors(label: string): { fg: string; bg: string } {
+  if (label === 'Cerrado') return { fg: GREEN, bg: 'rgba(14,155,107,0.16)' };
+  if (label === 'En juego') return { fg: GOLD, bg: 'rgba(217,181,49,0.16)' };
+  return { fg: MUTED, bg: 'rgba(255,255,255,0.06)' };
+}
+
 export function drawCupShareCanvas(ctx: CanvasRenderingContext2D, props: TeamsCupShareImageProps) {
   const { cupName, subtitle, courseName, date, teamA, teamB, matches } = props;
   const slots = props.slots ?? [];
   const W = CANVAS_W;
   const H = computeCupShareHeight(props);
+  const CW = W - PAD * 2;
   ctx.clearRect(0, 0, W, H);
 
-  // ── Background ──
-  const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
-  bgGrad.addColorStop(0, '#004d35');
-  bgGrad.addColorStop(0.5, GREEN);
-  bgGrad.addColorStop(1, '#003d2e');
-  ctx.fillStyle = bgGrad;
+  // ── Background (near-black green, like the dark app) ──
+  ctx.fillStyle = BG;
   ctx.fillRect(0, 0, W, H);
-
-  ctx.save();
-  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-  ctx.lineWidth = 1;
-  for (let i = -H; i < W + H; i += 40) {
-    ctx.beginPath();
-    ctx.moveTo(i, 0);
-    ctx.lineTo(i + H, H);
-    ctx.stroke();
-  }
-  ctx.restore();
+  const glow = ctx.createRadialGradient(W / 2, 0, 0, W / 2, 0, W);
+  glow.addColorStop(0, 'rgba(14,155,107,0.16)');
+  glow.addColorStop(1, 'rgba(10,20,15,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, 700);
 
   ctx.fillStyle = GOLD;
-  ctx.fillRect(0, 0, W, 12);
+  ctx.fillRect(0, 0, W, 8);
 
   // ── Header ──
-  ctx.fillStyle = GOLD;
-  ctx.font = 'bold 64px Georgia, serif';
   ctx.textAlign = 'center';
-  ctx.fillText('GreenBook', W / 2, 92);
+  ctx.fillStyle = GOLD;
+  ctx.font = 'bold 30px Georgia, serif';
+  ctx.fillText('GREENBOOK', W / 2, 74);
 
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 40px Georgia, serif';
-  ctx.fillText(truncate(ctx, cupName, W - 120), W / 2, 146);
+  ctx.fillStyle = TXT;
+  ctx.font = 'bold 56px Georgia, serif';
+  ctx.fillText(truncate(ctx, cupName, CW), W / 2, 136);
 
   const metaParts: string[] = [];
-  if (courseName) metaParts.push(courseName);
   if (date) {
     metaParts.push(
       new Date(date + 'T12:00:00').toLocaleDateString('es-MX', {
@@ -160,67 +200,43 @@ export function drawCupShareCanvas(ctx: CanvasRenderingContext2D, props: TeamsCu
       }),
     );
   }
+  if (courseName) metaParts.push(courseName);
   if (metaParts.length > 0) {
-    ctx.fillStyle = 'rgba(255,255,255,0.75)';
-    ctx.font = '24px Georgia, serif';
-    ctx.fillText(truncate(ctx, metaParts.join('  ·  '), W - 120), W / 2, 184);
+    ctx.fillStyle = MUTED;
+    ctx.font = '24px Arial, sans-serif';
+    ctx.fillText(truncate(ctx, metaParts.join('  ·  '), CW), W / 2, 176);
   }
 
-  // Subtitle pill
-  {
-    ctx.font = 'bold 20px Arial, sans-serif';
-    const label = subtitle.toUpperCase();
-    const tw = ctx.measureText(label).width;
-    const bw = tw + 36;
-    const bh = 36;
-    const bx = (W - bw) / 2;
-    const by = 200;
-    ctx.fillStyle = 'rgba(252,227,0,0.18)';
-    roundRectPath(ctx, bx, by, bw, bh, 18);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(252,227,0,0.5)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    ctx.fillStyle = GOLD;
-    ctx.textBaseline = 'middle';
-    ctx.fillText(label, W / 2, by + bh / 2 + 1);
-    ctx.textBaseline = 'alphabetic';
-  }
+  pill(ctx, subtitle, W / 2, 210, GOLD, 'rgba(217,181,49,0.16)');
 
-  // ── Scoreboard ──
+  // ── Scoreboard card ──
   let y = HEADER_H;
   {
-    const cardX = 40, cardW = W - 80, cardH = SCORE_H - 30;
-    ctx.fillStyle = 'rgba(255,255,255,0.06)';
-    roundRectPath(ctx, cardX, y, cardW, cardH, 14);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+    const h = SCORE_H - 32;
+    card(ctx, PAD, y, CW, h, 20);
 
-    const leftCx = cardX + cardW * 0.25;
-    const rightCx = cardX + cardW * 0.75;
+    const leftCx = PAD + CW * 0.26;
+    const rightCx = PAD + CW * 0.74;
 
     ctx.textAlign = 'center';
-    ctx.font = 'bold 26px Arial, sans-serif';
-    ctx.fillStyle = teamA.color;
-    ctx.fillText(truncate(ctx, teamA.name, cardW * 0.42), leftCx, y + 48);
-    ctx.fillStyle = teamB.color;
-    ctx.fillText(truncate(ctx, teamB.name, cardW * 0.42), rightCx, y + 48);
+    ctx.font = 'bold 28px Arial, sans-serif';
+    ctx.fillStyle = teamA.color || GREEN;
+    ctx.fillText(truncate(ctx, teamA.name, CW * 0.4), leftCx, y + 54);
+    ctx.fillStyle = teamB.color || GOLD;
+    ctx.fillText(truncate(ctx, teamB.name, CW * 0.4), rightCx, y + 54);
 
-    ctx.font = 'bold 88px Georgia, serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(fmtPts(teamA.points), leftCx, y + 132);
-    ctx.fillText(fmtPts(teamB.points), rightCx, y + 132);
+    ctx.font = 'bold 96px Georgia, serif';
+    ctx.fillStyle = TXT;
+    ctx.fillText(fmtPts(teamA.points), leftCx, y + 148);
+    ctx.fillText(fmtPts(teamB.points), rightCx, y + 148);
 
-    ctx.fillStyle = 'rgba(255,255,255,0.45)';
-    ctx.font = '300 44px Georgia, serif';
-    ctx.fillText('—', cardX + cardW / 2, y + 122);
+    ctx.fillStyle = MUTED;
+    ctx.font = '300 46px Georgia, serif';
+    ctx.fillText('—', PAD + CW / 2, y + 132);
 
-    // Progress bar
     const total = teamA.points + teamB.points;
-    const barX = cardX + 40, barW = cardW - 80, barY = y + 158, barH = 14;
-    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    const barX = PAD + 44, barW = CW - 88, barY = y + 176, barH = 14;
+    ctx.fillStyle = 'rgba(255,255,255,0.10)';
     roundRectPath(ctx, barX, barY, barW, barH, 7);
     ctx.fill();
     if (total > 0) {
@@ -228,65 +244,88 @@ export function drawCupShareCanvas(ctx: CanvasRenderingContext2D, props: TeamsCu
       roundRectPath(ctx, barX, barY, barW, barH, 7);
       ctx.clip();
       const aw = (teamA.points / total) * barW;
-      ctx.fillStyle = teamA.color;
+      ctx.fillStyle = teamA.color || GREEN;
       ctx.fillRect(barX, barY, aw, barH);
-      ctx.fillStyle = teamB.color;
+      ctx.fillStyle = teamB.color || GOLD;
       ctx.fillRect(barX + aw, barY, barW - aw, barH);
       ctx.restore();
     }
-    y += cardH + 30;
+
+    const doneTotal = matches.length;
+    const doneCount = matches.filter(m => m.winner !== null).length;
+    if (doneTotal > 0 || slots.length > 0) {
+      ctx.fillStyle = MUTED;
+      ctx.font = '22px Arial, sans-serif';
+      const label = slots.length > 0
+        ? `Acumulado · ${doneTotal} matches · ${doneCount} completados`
+        : `${doneTotal} matches · ${doneCount} completados`;
+      ctx.fillText(label, PAD + CW / 2, y + 218);
+    }
+    y += h + 32;
   }
 
-  // ── Per-day breakdown ──
+  // ── Per-day breakdown (visual cards) ──
   if (slots.length > 0) {
     ctx.textAlign = 'left';
-    ctx.fillStyle = 'rgba(255,255,255,0.55)';
-    ctx.font = '500 20px Arial, sans-serif';
-    ctx.fillText('POR JORNADA', 55, y + 26);
+    ctx.fillStyle = MUTED;
+    ctx.font = '600 22px Arial, sans-serif';
+    ctx.fillText('POR JORNADA', PAD + 6, y + 30);
     y += SLOT_HEADER_H;
 
-    slots.forEach((s, i) => {
-      const rx = 40, rw = W - 80, rh = SLOT_ROW_H - 8;
-      ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)';
-      roundRectPath(ctx, rx, y, rw, rh, 8);
-      ctx.fill();
+    slots.forEach((s) => {
+      card(ctx, PAD, y, CW, SLOT_CARD_H, 16);
+      const sc = statusColors(s.statusLabel);
 
       ctx.textAlign = 'left';
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 22px Arial, sans-serif';
-      ctx.fillText(truncate(ctx, s.label, rw * 0.45), rx + 18, y + rh / 2 + 8);
+      ctx.fillStyle = TXT;
+      ctx.font = 'bold 30px Arial, sans-serif';
+      ctx.fillText(truncate(ctx, s.label, CW * 0.5), PAD + 26, y + 48);
 
-      ctx.font = '18px Arial, sans-serif';
-      ctx.fillStyle = s.statusLabel === 'Cerrado' ? 'rgba(74,222,128,0.9)' : 'rgba(255,255,255,0.55)';
+      ctx.font = 'bold 18px Arial, sans-serif';
+      const pw = ctx.measureText(s.statusLabel).width + 34;
+      pill(ctx, s.statusLabel, PAD + CW - 26 - pw / 2, y + 38, sc.fg, sc.bg, 'bold 18px Arial, sans-serif');
+
+      // Scores centered
       ctx.textAlign = 'center';
-      ctx.fillText(s.statusLabel, rx + rw * 0.62, y + rh / 2 + 7);
+      const cx = PAD + CW / 2;
+      ctx.font = 'bold 52px Georgia, serif';
+      ctx.fillStyle = teamA.color || GREEN;
+      ctx.fillText(fmtPts(s.points_a), cx - 74, y + 106);
+      ctx.fillStyle = teamB.color || GOLD;
+      ctx.fillText(fmtPts(s.points_b), cx + 74, y + 106);
+      ctx.fillStyle = MUTED;
+      ctx.font = '300 32px Georgia, serif';
+      ctx.fillText('—', cx, y + 100);
 
-      ctx.textAlign = 'right';
-      ctx.font = 'bold 24px Georgia, serif';
-      ctx.fillStyle = teamA.color;
-      const ptsA = fmtPts(s.points_a);
-      const ptsB = fmtPts(s.points_b);
-      const dash = ' — ';
-      const wB = ctx.measureText(ptsB).width;
-      const wD = ctx.measureText(dash).width;
-      ctx.fillStyle = teamB.color;
-      ctx.fillText(ptsB, rx + rw - 18, y + rh / 2 + 8);
-      ctx.fillStyle = 'rgba(255,255,255,0.45)';
-      ctx.fillText(dash, rx + rw - 18 - wB, y + rh / 2 + 8);
-      ctx.fillStyle = teamA.color;
-      ctx.fillText(ptsA, rx + rw - 18 - wB - wD, y + rh / 2 + 8);
+      // Slot progress bar
+      const total = s.points_a + s.points_b;
+      const barX = PAD + 26, barW = CW - 52, barY = y + SLOT_CARD_H - 24, barH = 10;
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      roundRectPath(ctx, barX, barY, barW, barH, 5);
+      ctx.fill();
+      if (total > 0) {
+        ctx.save();
+        roundRectPath(ctx, barX, barY, barW, barH, 5);
+        ctx.clip();
+        const aw = (s.points_a / total) * barW;
+        ctx.fillStyle = teamA.color || GREEN;
+        ctx.fillRect(barX, barY, aw, barH);
+        ctx.fillStyle = teamB.color || GOLD;
+        ctx.fillRect(barX + aw, barY, barW - aw, barH);
+        ctx.restore();
+      }
 
-      y += SLOT_ROW_H;
+      y += SLOT_CARD_H + 14;
     });
-    y += 16;
+    y += 12;
   }
 
   // ── Matches ──
   if (matches.length > 0) {
     ctx.textAlign = 'left';
-    ctx.fillStyle = 'rgba(255,255,255,0.55)';
-    ctx.font = '500 20px Arial, sans-serif';
-    ctx.fillText('MATCHES', 55, y + 28);
+    ctx.fillStyle = MUTED;
+    ctx.font = '600 22px Arial, sans-serif';
+    ctx.fillText('MATCHES', PAD + 6, y + 32);
     y += MATCHES_HEADER_H;
 
     const entries = groupEntries(matches);
@@ -296,87 +335,86 @@ export function drawCupShareCanvas(ctx: CanvasRenderingContext2D, props: TeamsCu
       if (showGroupHeaders) {
         ctx.textAlign = 'left';
         ctx.fillStyle = GOLD;
-        ctx.font = 'bold 18px Arial, sans-serif';
+        ctx.font = 'bold 20px Arial, sans-serif';
         const label = groupNumber === null ? 'Sin grupo' : `Grupo ${groupNumber}`;
-        ctx.fillText(label, 55, y + 24);
+        ctx.fillText(label, PAD + 6, y + 28);
         const lw = ctx.measureText(label).width;
-        ctx.strokeStyle = 'rgba(252,227,0,0.25)';
+        ctx.strokeStyle = 'rgba(217,181,49,0.22)';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(55 + lw + 12, y + 18);
-        ctx.lineTo(W - 55, y + 18);
+        ctx.moveTo(PAD + 6 + lw + 14, y + 22);
+        ctx.lineTo(PAD + CW, y + 22);
         ctx.stroke();
         y += GROUP_HEADER_H;
       }
 
       ms.forEach((m) => {
-        const rx = 40, rw = W - 80, rh = MATCH_ROW_H - 10;
-        ctx.fillStyle = 'rgba(255,255,255,0.05)';
-        roundRectPath(ctx, rx, y, rw, rh, 10);
+        const rh = MATCH_ROW_H - 12;
+        card(ctx, PAD, y, CW, rh, 14);
+
+        // Side panels tinted with team colors (like the app)
+        const panelW = CW * 0.34;
+        const panelH = rh - 20;
+        const py = y + 10;
+        ctx.fillStyle = 'rgba(14,155,107,0.12)';
+        roundRectPath(ctx, PAD + 10, py, panelW, panelH, 10);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(217,181,49,0.12)';
+        roundRectPath(ctx, PAD + CW - 10 - panelW, py, panelW, panelH, 10);
         ctx.fill();
 
-        // Winner accent bar
-        if (m.winner === 'a' || m.winner === 'b') {
-          ctx.fillStyle = m.winner === 'a' ? teamA.color : teamB.color;
-          const barX = m.winner === 'a' ? rx : rx + rw - 6;
-          roundRectPath(ctx, barX, y, 6, rh, 3);
-          ctx.fill();
-        }
-
-        const centerX = rx + rw / 2;
-        const sideW = rw / 2 - 110;
-
-        // Side A names
-        ctx.textAlign = 'left';
-        ctx.font = 'bold 22px Arial, sans-serif';
-        m.sideA.forEach((n, i) => {
-          ctx.fillStyle = i === 0 ? '#ffffff' : 'rgba(255,255,255,0.85)';
-          const ny = m.sideA.length > 1 ? y + 32 + i * 30 : y + rh / 2 + 8;
-          ctx.fillText(truncate(ctx, n, sideW), rx + 22, ny);
-        });
-
-        // Side B names
-        ctx.textAlign = 'right';
-        m.sideB.forEach((n, i) => {
-          ctx.fillStyle = i === 0 ? '#ffffff' : 'rgba(255,255,255,0.85)';
-          const ny = m.sideB.length > 1 ? y + 32 + i * 30 : y + rh / 2 + 8;
-          ctx.fillText(truncate(ctx, n, sideW), rx + rw - 22, ny);
-        });
+        const drawNames = (names: string[], x: number, align: CanvasTextAlign) => {
+          ctx.textAlign = align;
+          ctx.font = 'bold 24px Arial, sans-serif';
+          if (names.length === 0) return;
+          if (names.length === 1) {
+            ctx.fillStyle = TXT;
+            ctx.fillText(truncate(ctx, names[0], panelW - 32), x, py + panelH / 2 + 9);
+            return;
+          }
+          names.slice(0, 2).forEach((n, i) => {
+            ctx.fillStyle = i === 0 ? TXT : 'rgba(242,246,243,0.85)';
+            ctx.fillText(truncate(ctx, n, panelW - 32), x, py + 34 + i * 32);
+          });
+        };
+        drawNames(m.sideA, PAD + 26, 'left');
+        drawNames(m.sideB, PAD + CW - 26, 'right');
 
         // Center result
+        const centerX = PAD + CW / 2;
         ctx.textAlign = 'center';
-        ctx.font = 'bold 30px Georgia, serif';
+        ctx.font = 'bold 38px Georgia, serif';
         ctx.fillStyle = m.winner === 'a'
-          ? teamA.color
+          ? (teamA.color || GREEN)
           : m.winner === 'b'
-            ? teamB.color
+            ? (teamB.color || GOLD)
             : m.winner === 'halved'
               ? GOLD
-              : 'rgba(255,255,255,0.55)';
-        ctx.fillText(m.resultText, centerX, y + rh / 2 + 2);
+              : MUTED;
+        ctx.fillText(truncate(ctx, m.resultText, CW * 0.3), centerX, y + rh / 2 + 2);
         if (m.resultNote) {
-          ctx.font = '16px Arial, sans-serif';
-          ctx.fillStyle = 'rgba(255,255,255,0.55)';
-          ctx.fillText(m.resultNote, centerX, y + rh / 2 + 26);
+          ctx.font = '18px Arial, sans-serif';
+          ctx.fillStyle = MUTED;
+          ctx.fillText(truncate(ctx, m.resultNote, CW * 0.3), centerX, y + rh / 2 + 30);
         }
 
         y += MATCH_ROW_H;
       });
     });
-    y += 16;
+    y += 12;
   }
 
   // ── Footer ──
   ctx.fillStyle = GOLD;
-  ctx.fillRect(0, H - 12, W, 12);
-  const footerY = H - 90;
+  ctx.fillRect(0, H - 8, W, 8);
+  const footerY = H - 92;
   ctx.textAlign = 'center';
-  ctx.fillStyle = 'rgba(255,255,255,0.40)';
-  ctx.font = '18px Arial, sans-serif';
-  ctx.fillText('¿Quieres llevar tus torneos y apuestas de golf?', W / 2, footerY + 20);
+  ctx.fillStyle = 'rgba(242,246,243,0.42)';
+  ctx.font = '20px Arial, sans-serif';
+  ctx.fillText('¿Quieres llevar tus torneos y apuestas de golf?', W / 2, footerY + 24);
   ctx.fillStyle = GOLD;
-  ctx.font = 'bold 24px Arial, sans-serif';
-  ctx.fillText('golfgreenbookscf.com', W / 2, footerY + 52);
+  ctx.font = 'bold 26px Arial, sans-serif';
+  ctx.fillText('golfgreenbookscf.com', W / 2, footerY + 58);
 }
 
 /* ── Component ───────────────────────────────────── */
