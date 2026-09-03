@@ -102,7 +102,7 @@ function pill(
   ctx.fillStyle = bg;
   roundRectPath(ctx, cx - w / 2, cy - h / 2, w, h, h / 2);
   ctx.fill();
-  ctx.strokeStyle = color.replace(/[\d.]+\)$/, '0.35)').startsWith('rgba') ? color : color;
+  ctx.strokeStyle = color;
   ctx.globalAlpha = 0.4;
   ctx.lineWidth = 1.5;
   ctx.stroke();
