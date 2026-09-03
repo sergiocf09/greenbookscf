@@ -834,7 +834,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     ? cup.isSlotClosed(activeSlot)
     : slotOptions.some(o => cup.isSlotClosed(o.key));
 
-  const shareMatchesData = React.useMemo(() => {
+  const shareMatchesData = (() => {
     const source = activeSlotOption
       ? cup.matches.filter(m =>
           (m.day_number ?? 1) === activeSlotOption.day_number &&
@@ -893,7 +893,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           winner,
         };
       });
-  }, [cup, activeSlotOption]);
+  })();
 
   const shareSlots = activeSlotOption
     ? undefined
