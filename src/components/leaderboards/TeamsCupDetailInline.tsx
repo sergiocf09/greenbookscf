@@ -1239,8 +1239,10 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         </Card>
       )}
 
-      {/* ── Section 2: Matches ─── */}
-      <div className={isMultiSlot && !activeSlotOption ? 'hidden' : undefined}>
+      {/* ── Section 2: Matches (only inside a day; Total shows the breakdown) ─── */}
+      {(!isMultiSlot || !!activeSlotOption) && (
+      <div>
+
 
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-base font-semibold">Matches</h2>
