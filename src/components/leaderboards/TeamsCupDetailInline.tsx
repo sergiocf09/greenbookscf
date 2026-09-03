@@ -1197,8 +1197,51 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         </Card>
       )}
 
+      {/* ── Total view: per-day breakdown (matches live inside each day) ─── */}
+      {isMultiSlot && !activeSlotOption && (
+        <Card>
+          <CardContent className="p-3 space-y-2">
+            <h2 className="text-sm font-semibold">Por jornada</h2>
+            {slotOptions.map(o => {
+              const s = cup.standingsBySlot.get(o.key);
+              const status = slotStatusLabel(o.key);
+              return (
+                <button
+                  key={o.key}
+                  type="button"
+                  onClick={() => setSelectedSlot(o.key)}
+                  className="w-full flex items-center gap-2 rounded-lg border border-border bg-muted/30 hover:bg-muted px-3 py-2 text-left"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold truncate">{o.label}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {s?.matches_total ?? 0} matches · {s?.matches_completed ?? 0} completados
+                    </p>
+                  </div>
+                  <Badge
+                    variant={status === 'Cerrado' ? 'secondary' : 'outline'}
+                    className="text-[10px] shrink-0"
+                  >
+                    {status}
+                  </Badge>
+                  <p className="text-base font-bold shrink-0 tabular-nums">
+                    <span style={{ color: st?.team_a?.color }}>{s?.points_a ?? 0}</span>
+                    <span className="text-muted-foreground font-light mx-1">—</span>
+                    <span style={{ color: st?.team_b?.color }}>{s?.points_b ?? 0}</span>
+                  </p>
+                </button>
+              );
+            })}
+            <p className="text-[11px] text-muted-foreground italic pt-0.5">
+              Toca una jornada para ver sus matches.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* ── Section 2: Matches ─── */}
-      <div>
+      <div className={isMultiSlot && !activeSlotOption ? 'hidden' : undefined}>
+
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-base font-semibold">Matches</h2>
           {isCreator && (
