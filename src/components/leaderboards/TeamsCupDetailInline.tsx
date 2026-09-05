@@ -76,12 +76,14 @@ interface MatchRowProps {
   isCreator: boolean;
   /** Initials map disambiguated across ALL leaderboard participants. */
   initialsMap: Map<string, string>;
+  /** True when the round feeding this match is already closed. */
+  roundClosed?: boolean;
   onEdit: () => void;
   onDelete: () => void;
 }
 
 const CupMatchRow: React.FC<MatchRowProps> = ({
-  match, teams, participants, result, isCreator, initialsMap, onEdit, onDelete,
+  match, teams, participants, result, isCreator, initialsMap, roundClosed, onEdit, onDelete,
 }) => {
   const teamA = teams[0];
   const teamB = teams[1];
@@ -156,10 +158,16 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
     );
   };
 
-  const closed = result?.match_closed ?? false;
   const holesPlayed = result?.holes_played ?? 0;
+  // A match is final either when the RPC closed it (mathematically decided /
+  // 18 holes) or when the feeding round is already closed with holes played.
+  const closed = (result?.match_closed ?? false) || (!!roundClosed && holesPlayed > 0);
   const diff = result ? (result.side_a_holes_won - result.side_b_holes_won) : 0;
-  const rtype = closed ? result!.result_type : (match.result_type || (result ? result.result_type : 'pending'));
+  const rawRtype = closed ? result!.result_type : (match.result_type || (result ? result.result_type : 'pending'));
+  // If the round closed early, the RPC may still report `in_progress`: resolve it.
+  const rtype = closed && rawRtype === 'in_progress'
+    ? (diff > 0 ? 'a_wins' : diff < 0 ? 'b_wins' : 'halved')
+    : rawRtype;
 
   let centerColor: string = 'hsl(var(--muted-foreground))';
   if (rtype === 'a_wins' || (rtype === 'in_progress' && diff > 0)) centerColor = colorA;
@@ -881,11 +889,18 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       })
       .map(m => {
         const res = cup.matchResults.get(m.id);
-        const closed = res?.match_closed ?? false;
+        const roundClosed = m.round_id
+          ? cup.roundInfoById.get(m.round_id)?.status === 'completed'
+          : false;
+        const closed = (res?.match_closed ?? false)
+          || (roundClosed && (res?.holes_played ?? 0) > 0);
         const diff = res ? res.side_a_holes_won - res.side_b_holes_won : 0;
-        const rtype = closed
+        const rawRtype = closed
           ? res!.result_type
           : (m.result_override ? m.result_type : (res ? res.result_type : 'pending'));
+        const rtype = closed && rawRtype === 'in_progress'
+          ? (diff > 0 ? 'a_wins' : diff < 0 ? 'b_wins' : 'halved')
+          : rawRtype;
         let winner: 'a' | 'b' | 'halved' | null = null;
         if (rtype === 'a_wins') winner = 'a';
         else if (rtype === 'b_wins') winner = 'b';
@@ -1367,6 +1382,11 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                       result={cup.matchResults.get(m.id)}
                       isCreator={isCreator}
                       initialsMap={initialsMap}
+                      roundClosed={
+                        m.round_id
+                          ? cup.roundInfoById.get(m.round_id)?.status === 'completed'
+                          : false
+                      }
                       onEdit={() => { setEditingMatch(m); setShowMatchEditor(true); }}
                       onDelete={() => setMatchToDelete(m)}
                     />
