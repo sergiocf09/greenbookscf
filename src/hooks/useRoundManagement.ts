@@ -1034,7 +1034,7 @@ export const useRoundManagement = ({
         if (state === 'locked') {
           pushStageFail(report, 'beginAttempt', 'Ya hay un cierre en proceso (lock backend)');
           setLastCloseReport({ ...report });
-          toast('Cierre en proceso (backend)');
+          toast('Ya hay un cierre en proceso. Espera un minuto y vuelve a intentar.');
           // Reset local lock — backend is handling it, don't block future retries
           closeInFlightRef.current = false;
           setIsClosing(false);
