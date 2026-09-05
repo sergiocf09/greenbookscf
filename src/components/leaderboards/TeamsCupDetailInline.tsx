@@ -185,9 +185,9 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
       {!closed && holesPlayed > 0 && (
         <span className="text-[9px] text-muted-foreground mt-0.5">thru {holesPlayed}</span>
       )}
-      {closed && result?.current_standing && centerText !== 'AS' && (
+      {closed && result?.current_standing && (
         <span className="text-[9px] font-semibold mt-0.5" style={{ color: centerColor }}>
-          {result.current_standing.replace(/^[AB]\s*/, 'Final ')}
+          {centerText === 'AS' ? 'All Square' : result.current_standing.replace(/^[AB]\s*/, 'Final ')}
         </span>
       )}
       <div className="text-[10px] mt-0.5">
