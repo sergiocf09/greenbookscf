@@ -911,15 +911,22 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         let resultText = 'VS';
         let resultNote: string | undefined;
         if (closed) {
-          resultText = res?.current_standing
-            ? res.current_standing.replace(/^[AB]\s*/, '')
-            : formatRunning(diff);
+          // A halved match always uses the canonical Ryder notation. Do not
+          // derive it from current_standing: stripping a leading side marker
+          // from "AS" would incorrectly leave only "S".
+          resultText = rtype === 'halved'
+            ? 'AS'
+            : res?.current_standing
+              ? res.current_standing.replace(/^[AB]\s+/, '')
+              : formatRunning(diff);
           resultNote = rtype === 'halved' ? 'All Square' : 'Final';
         } else if (rtype === 'in_progress' && (res?.holes_played ?? 0) > 0) {
           resultText = formatRunning(diff);
           resultNote = `thru ${res!.holes_played}`;
         } else if (m.result_override && m.result_type) {
-          resultText = m.result_detail || formatRunning(diff);
+          resultText = m.result_type === 'halved'
+            ? 'AS'
+            : (m.result_detail || formatRunning(diff));
           resultNote = m.result_type === 'halved' ? 'All Square' : 'Final';
         } else {
           resultText = '—';
