@@ -83,7 +83,7 @@ interface MatchRowProps {
 }
 
 const CupMatchRow: React.FC<MatchRowProps> = ({
-  match, teams, participants, result, isCreator, initialsMap, onEdit, onDelete,
+  match, teams, participants, result, isCreator, initialsMap, roundClosed, onEdit, onDelete,
 }) => {
   const teamA = teams[0];
   const teamB = teams[1];
