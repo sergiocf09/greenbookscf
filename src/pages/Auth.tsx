@@ -35,9 +35,30 @@ const Auth = () => {
     if (pwd.length < 8) return { valid: false, message: 'La contraseña debe tener al menos 8 caracteres' };
     if (!/[A-Z]/.test(pwd)) return { valid: false, message: 'La contraseña debe incluir al menos una mayúscula' };
     if (!/[a-z]/.test(pwd)) return { valid: false, message: 'La contraseña debe incluir al menos una minúscula' };
-    if (!/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)) return { valid: false, message: 'La contraseña debe incluir al menos un número o signo' };
+    if (!/[0-9]/.test(pwd)) return { valid: false, message: 'La contraseña debe incluir al menos un número' };
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)) return { valid: false, message: 'La contraseña debe incluir al menos un signo (por ejemplo ! @ # $ %)' };
     return { valid: true, message: '' };
   };
+
+  const translateAuthError = (message: string): string => {
+    const m = (message || '').toLowerCase();
+    if (m.includes('known to be weak') || m.includes('pwned'))
+      return 'Esa contraseña es demasiado común. Elige una diferente.';
+    if (m.includes('password should contain') || m.includes('password should be at least'))
+      return 'La contraseña necesita al menos 8 caracteres, una mayúscula, una minúscula, un número y un signo.';
+    if (m.includes('for security purposes') || m.includes('rate limit') || m.includes('too many'))
+      return 'Demasiados intentos. Espera un momento antes de volver a intentar.';
+    if (m.includes('already registered') || m.includes('already been registered') || m.includes('user already'))
+      return 'Este correo ya está registrado. Inicia sesión o recupera tu contraseña.';
+    if (m.includes('invalid login credentials'))
+      return 'Correo o contraseña incorrectos.';
+    if (m.includes('email not confirmed'))
+      return 'Debes confirmar tu correo antes de iniciar sesión.';
+    if (m.includes('invalid email') || m.includes('unable to validate email'))
+      return 'El correo no es válido.';
+    return 'No pudimos completar la operación. Intenta de nuevo.';
+  };
+
 
   const returnTo = (location.state as any)?.returnTo as string | undefined;
 
@@ -73,7 +94,7 @@ const Auth = () => {
     setIsLoading(true);
     const { error } = await signIn(email, password);
     if (error) {
-      toast.error('Error al iniciar sesión', { description: error.message });
+      toast.error('Error al iniciar sesión', { description: translateAuthError(error.message) });
     } else {
       toast.success('¡Bienvenido!');
       const pending = sessionStorage.getItem('pendingReturnTo');
@@ -97,7 +118,7 @@ const Auth = () => {
       redirectTo: getAuthRedirectUrl('/reset-password'),
     });
     if (error) {
-      toast.error('Error al enviar correo', { description: error.message });
+      toast.error('Error al enviar correo', { description: translateAuthError(error.message) });
     } else {
       toast.success('Correo enviado', { description: 'Revisa tu bandeja de entrada para restablecer tu contraseña.' });
       setForgotMode(false);
@@ -119,7 +140,7 @@ const Auth = () => {
     setIsLoading(true);
     const { error } = await signUp(email, password, displayName);
     if (error) {
-      toast.error('Error al registrarse', { description: error.message });
+      toast.error('Error al registrarse', { description: translateAuthError(error.message) });
     } else {
       toast.success('¡Cuenta creada! Revisa tu correo para confirmar.');
     }
@@ -301,7 +322,7 @@ const Auth = () => {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  <p className="text-xs text-muted-foreground">Mínimo 8 caracteres, 1 mayúscula, 1 minúscula y 1 número o signo</p>
+                  <p className="text-xs text-muted-foreground">Mínimo 8 caracteres, con 1 mayúscula, 1 minúscula, 1 número y 1 signo (! @ # $ %). Evita contraseñas comunes.</p>
                 </div>
                 <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
                   <input
