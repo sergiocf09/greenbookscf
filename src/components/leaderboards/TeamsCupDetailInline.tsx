@@ -76,6 +76,8 @@ interface MatchRowProps {
   isCreator: boolean;
   /** Initials map disambiguated across ALL leaderboard participants. */
   initialsMap: Map<string, string>;
+  /** True when the round feeding this match is already closed. */
+  roundClosed?: boolean;
   onEdit: () => void;
   onDelete: () => void;
 }
