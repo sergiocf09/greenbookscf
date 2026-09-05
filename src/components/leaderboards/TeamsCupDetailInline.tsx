@@ -158,10 +158,16 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
     );
   };
 
-  const closed = result?.match_closed ?? false;
   const holesPlayed = result?.holes_played ?? 0;
+  // A match is final either when the RPC closed it (mathematically decided /
+  // 18 holes) or when the feeding round is already closed with holes played.
+  const closed = (result?.match_closed ?? false) || (!!roundClosed && holesPlayed > 0);
   const diff = result ? (result.side_a_holes_won - result.side_b_holes_won) : 0;
-  const rtype = closed ? result!.result_type : (match.result_type || (result ? result.result_type : 'pending'));
+  const rawRtype = closed ? result!.result_type : (match.result_type || (result ? result.result_type : 'pending'));
+  // If the round closed early, the RPC may still report `in_progress`: resolve it.
+  const rtype = closed && rawRtype === 'in_progress'
+    ? (diff > 0 ? 'a_wins' : diff < 0 ? 'b_wins' : 'halved')
+    : rawRtype;
 
   let centerColor: string = 'hsl(var(--muted-foreground))';
   if (rtype === 'a_wins' || (rtype === 'in_progress' && diff > 0)) centerColor = colorA;
