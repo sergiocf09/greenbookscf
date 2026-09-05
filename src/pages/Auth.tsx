@@ -35,9 +35,30 @@ const Auth = () => {
     if (pwd.length < 8) return { valid: false, message: 'La contraseña debe tener al menos 8 caracteres' };
     if (!/[A-Z]/.test(pwd)) return { valid: false, message: 'La contraseña debe incluir al menos una mayúscula' };
     if (!/[a-z]/.test(pwd)) return { valid: false, message: 'La contraseña debe incluir al menos una minúscula' };
-    if (!/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)) return { valid: false, message: 'La contraseña debe incluir al menos un número o signo' };
+    if (!/[0-9]/.test(pwd)) return { valid: false, message: 'La contraseña debe incluir al menos un número' };
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)) return { valid: false, message: 'La contraseña debe incluir al menos un signo (por ejemplo ! @ # $ %)' };
     return { valid: true, message: '' };
   };
+
+  const translateAuthError = (message: string): string => {
+    const m = (message || '').toLowerCase();
+    if (m.includes('known to be weak') || m.includes('pwned'))
+      return 'Esa contraseña es demasiado común. Elige una diferente.';
+    if (m.includes('password should contain') || m.includes('password should be at least'))
+      return 'La contraseña necesita al menos 8 caracteres, una mayúscula, una minúscula, un número y un signo.';
+    if (m.includes('for security purposes') || m.includes('rate limit') || m.includes('too many'))
+      return 'Demasiados intentos. Espera un momento antes de volver a intentar.';
+    if (m.includes('already registered') || m.includes('already been registered') || m.includes('user already'))
+      return 'Este correo ya está registrado. Inicia sesión o recupera tu contraseña.';
+    if (m.includes('invalid login credentials'))
+      return 'Correo o contraseña incorrectos.';
+    if (m.includes('email not confirmed'))
+      return 'Debes confirmar tu correo antes de iniciar sesión.';
+    if (m.includes('invalid email') || m.includes('unable to validate email'))
+      return 'El correo no es válido.';
+    return 'No pudimos completar la operación. Intenta de nuevo.';
+  };
+
 
   const returnTo = (location.state as any)?.returnTo as string | undefined;
 
