@@ -185,9 +185,9 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
       {!closed && holesPlayed > 0 && (
         <span className="text-[9px] text-muted-foreground mt-0.5">thru {holesPlayed}</span>
       )}
-      {closed && result?.current_standing && centerText !== 'AS' && (
+      {closed && result?.current_standing && (
         <span className="text-[9px] font-semibold mt-0.5" style={{ color: centerColor }}>
-          {result.current_standing.replace(/^[AB]\s*/, 'Final ')}
+          {centerText === 'AS' ? 'All Square' : result.current_standing.replace(/^[AB]\s*/, 'Final ')}
         </span>
       )}
       <div className="text-[10px] mt-0.5">
@@ -899,13 +899,13 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           resultText = res?.current_standing
             ? res.current_standing.replace(/^[AB]\s*/, '')
             : formatRunning(diff);
-          resultNote = 'Final';
+          resultNote = rtype === 'halved' ? 'All Square' : 'Final';
         } else if (rtype === 'in_progress' && (res?.holes_played ?? 0) > 0) {
           resultText = formatRunning(diff);
           resultNote = `thru ${res!.holes_played}`;
         } else if (m.result_override && m.result_type) {
           resultText = m.result_detail || formatRunning(diff);
-          resultNote = 'Final';
+          resultNote = m.result_type === 'halved' ? 'All Square' : 'Final';
         } else {
           resultText = '—';
           resultNote = 'Pendiente';
