@@ -983,15 +983,16 @@ export const useRoundManagement = ({
       pushStageOk(report, 'validateInputs');
 
       // Backend idempotency lock
-      // First: detect and auto-clear zombie backend locks (started > 5 min ago, never finished)
+      // First: detect and auto-clear zombie backend locks. The backend lock window
+      // is 60s, so any attempt older than 90s that never ended is dead.
       try {
-        const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+        const staleBefore = new Date(Date.now() - 90 * 1000).toISOString();
         const { data: zombieLocks } = await supabase
           .from('round_close_attempts')
           .select('id')
           .eq('round_id', roundState.id)
           .eq('status', 'started')
-          .lt('started_at', fiveMinAgo)
+          .lt('started_at', staleBefore)
           .is('ended_at', null);
         if (zombieLocks && zombieLocks.length > 0) {
           devWarn('Auto-clearing zombie backend locks:', zombieLocks.map(z => z.id));
@@ -1001,7 +1002,7 @@ export const useRoundManagement = ({
               p_attempt_id: zombie.id,
               p_status: 'failed',
               p_error_stage: 'validateInputs',
-              p_error_message: 'Auto-cleared zombie lock (>5 min without ending)',
+              p_error_message: 'Auto-cleared zombie lock (>90s without ending)',
               p_report: null,
             });
           }
@@ -1033,7 +1034,7 @@ export const useRoundManagement = ({
         if (state === 'locked') {
           pushStageFail(report, 'beginAttempt', 'Ya hay un cierre en proceso (lock backend)');
           setLastCloseReport({ ...report });
-          toast('Cierre en proceso (backend)');
+          toast('Ya hay un cierre en proceso. Espera un minuto y vuelve a intentar.');
           // Reset local lock — backend is handling it, don't block future retries
           closeInFlightRef.current = false;
           setIsClosing(false);
