@@ -983,15 +983,16 @@ export const useRoundManagement = ({
       pushStageOk(report, 'validateInputs');
 
       // Backend idempotency lock
-      // First: detect and auto-clear zombie backend locks (started > 5 min ago, never finished)
+      // First: detect and auto-clear zombie backend locks. The backend lock window
+      // is 60s, so any attempt older than 90s that never ended is dead.
       try {
-        const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+        const staleBefore = new Date(Date.now() - 90 * 1000).toISOString();
         const { data: zombieLocks } = await supabase
           .from('round_close_attempts')
           .select('id')
           .eq('round_id', roundState.id)
           .eq('status', 'started')
-          .lt('started_at', fiveMinAgo)
+          .lt('started_at', staleBefore)
           .is('ended_at', null);
         if (zombieLocks && zombieLocks.length > 0) {
           devWarn('Auto-clearing zombie backend locks:', zombieLocks.map(z => z.id));
