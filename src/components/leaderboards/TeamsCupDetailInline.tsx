@@ -1375,6 +1375,11 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                       result={cup.matchResults.get(m.id)}
                       isCreator={isCreator}
                       initialsMap={initialsMap}
+                      roundClosed={
+                        m.round_id
+                          ? cup.roundInfoById.get(m.round_id)?.status === 'completed'
+                          : false
+                      }
                       onEdit={() => { setEditingMatch(m); setShowMatchEditor(true); }}
                       onDelete={() => setMatchToDelete(m)}
                     />
