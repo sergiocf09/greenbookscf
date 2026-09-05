@@ -1864,7 +1864,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           days={cup.days}
           defaultDay={activeSlotOption?.day_number ?? 1}
           defaultSession={activeSlotOption?.session_number ?? 1}
-          existingRoundId={linkedRoundInfo.roundId}
+          existingRoundId={effectiveRoundId}
           onCreated={async () => {
             await cup.fetchAll();
             setLinkedRoundRefresh(n => n + 1);
