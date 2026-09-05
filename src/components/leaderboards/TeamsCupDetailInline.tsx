@@ -819,6 +819,28 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         (m.session_number ?? 1) === activeSlotOption.session_number)
     : cup.matches;
 
+  /* ── Round per slot (day/session) ─────────────────
+   * Each day/session of a multi-day cup has its OWN round. The globally
+   * "latest linked round" (linkedRoundInfo) must NOT hide the create-round
+   * card for a day that has no round yet.
+   */
+  const slotRoundId: string | null = activeSlotOption
+    ? (cup.standingsBySlot.get(activeSlot!)?.round_id
+        ?? visibleMatches.find(m => m.round_id)?.round_id
+        ?? null)
+    : null;
+  const effectiveRoundId: string | null = activeSlotOption
+    ? slotRoundId
+    : linkedRoundInfo.roundId;
+  const effectiveHasFoursomes = activeSlotOption
+    ? !!slotRoundId
+    : linkedRoundInfo.hasFoursomes;
+  const effectiveRoundDate = activeSlotOption
+    ? (slotRoundId ? cup.roundInfoById.get(slotRoundId)?.date ?? null : null)
+    : linkedRoundInfo.date;
+
+
+
   /* ── Sharing ─────────────────────────────────────
    * A slot can only be shared once its linked round has been closed by the
    * organizer. In the accumulated (Total) view we allow sharing as soon as at
