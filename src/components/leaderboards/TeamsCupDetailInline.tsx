@@ -889,11 +889,18 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       })
       .map(m => {
         const res = cup.matchResults.get(m.id);
-        const closed = res?.match_closed ?? false;
+        const roundClosed = m.round_id
+          ? cup.roundInfoById.get(m.round_id)?.status === 'completed'
+          : false;
+        const closed = (res?.match_closed ?? false)
+          || (roundClosed && (res?.holes_played ?? 0) > 0);
         const diff = res ? res.side_a_holes_won - res.side_b_holes_won : 0;
-        const rtype = closed
+        const rawRtype = closed
           ? res!.result_type
           : (m.result_override ? m.result_type : (res ? res.result_type : 'pending'));
+        const rtype = closed && rawRtype === 'in_progress'
+          ? (diff > 0 ? 'a_wins' : diff < 0 ? 'b_wins' : 'halved')
+          : rawRtype;
         let winner: 'a' | 'b' | 'halved' | null = null;
         if (rtype === 'a_wins') winner = 'a';
         else if (rtype === 'b_wins') winner = 'b';
