@@ -1002,7 +1002,7 @@ export const useRoundManagement = ({
               p_attempt_id: zombie.id,
               p_status: 'failed',
               p_error_stage: 'validateInputs',
-              p_error_message: 'Auto-cleared zombie lock (>5 min without ending)',
+              p_error_message: 'Auto-cleared zombie lock (>90s without ending)',
               p_report: null,
             });
           }
