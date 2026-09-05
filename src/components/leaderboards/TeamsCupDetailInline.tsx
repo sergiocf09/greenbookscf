@@ -899,13 +899,13 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           resultText = res?.current_standing
             ? res.current_standing.replace(/^[AB]\s*/, '')
             : formatRunning(diff);
-          resultNote = 'Final';
+          resultNote = rtype === 'halved' ? 'All Square' : 'Final';
         } else if (rtype === 'in_progress' && (res?.holes_played ?? 0) > 0) {
           resultText = formatRunning(diff);
           resultNote = `thru ${res!.holes_played}`;
         } else if (m.result_override && m.result_type) {
           resultText = m.result_detail || formatRunning(diff);
-          resultNote = 'Final';
+          resultNote = m.result_type === 'halved' ? 'All Square' : 'Final';
         } else {
           resultText = '—';
           resultNote = 'Pendiente';
