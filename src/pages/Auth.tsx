@@ -94,7 +94,7 @@ const Auth = () => {
     setIsLoading(true);
     const { error } = await signIn(email, password);
     if (error) {
-      toast.error('Error al iniciar sesión', { description: error.message });
+      toast.error('Error al iniciar sesión', { description: translateAuthError(error.message) });
     } else {
       toast.success('¡Bienvenido!');
       const pending = sessionStorage.getItem('pendingReturnTo');
@@ -118,7 +118,7 @@ const Auth = () => {
       redirectTo: getAuthRedirectUrl('/reset-password'),
     });
     if (error) {
-      toast.error('Error al enviar correo', { description: error.message });
+      toast.error('Error al enviar correo', { description: translateAuthError(error.message) });
     } else {
       toast.success('Correo enviado', { description: 'Revisa tu bandeja de entrada para restablecer tu contraseña.' });
       setForgotMode(false);
@@ -140,7 +140,7 @@ const Auth = () => {
     setIsLoading(true);
     const { error } = await signUp(email, password, displayName);
     if (error) {
-      toast.error('Error al registrarse', { description: error.message });
+      toast.error('Error al registrarse', { description: translateAuthError(error.message) });
     } else {
       toast.success('¡Cuenta creada! Revisa tu correo para confirmar.');
     }
@@ -322,7 +322,7 @@ const Auth = () => {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  <p className="text-xs text-muted-foreground">Mínimo 8 caracteres, 1 mayúscula, 1 minúscula y 1 número o signo</p>
+                  <p className="text-xs text-muted-foreground">Mínimo 8 caracteres, con 1 mayúscula, 1 minúscula, 1 número y 1 signo (! @ # $ %). Evita contraseñas comunes.</p>
                 </div>
                 <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
                   <input
