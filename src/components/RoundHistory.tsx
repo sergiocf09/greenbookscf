@@ -141,96 +141,111 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
 
       if (error) throw error;
 
-      // Fetch all supplementary data in PARALLEL (not sequentially)
-      const roundItems: RoundHistoryItem[] = await Promise.all(
-        (roundPlayers || []).map(async (rp) => {
-          const round = rp.rounds as any;
-          const course = round.golf_courses as any;
+      // ── Batched supplementary data: 2 queries total (no per-round N+1) ──
+      const rpRows = (roundPlayers || []) as any[];
+      const rpIds = rpRows.map(rp => rp.id as string);
+      const participantRoundIds = new Set(rpRows.map(rp => rp.round_id as string));
 
-          // Fetch strokes + player count in parallel
-          const [scoresResult, countResult] = await Promise.all([
-            supabase.from('hole_scores').select('hole_number, strokes, confirmed').eq('round_player_id', rp.id),
-            supabase.from('round_players').select('id', { count: 'exact', head: true }).eq('round_id', rp.round_id),
-          ]);
+      const [organizedRes, scoresRes] = await Promise.all([
+        supabase
+          .from('rounds')
+          .select(`
+            id, date, status, tee_color, course_id, bet_config, starting_hole, is_incomplete,
+            golf_courses(name, location)
+          `)
+          .eq('organizer_id', profile.id)
+          .eq('status', 'completed')
+          .order('date', { ascending: false }),
+        rpIds.length > 0
+          ? supabase
+              .from('hole_scores')
+              .select('round_player_id, hole_number, strokes')
+              .eq('confirmed', true)
+              .in('round_player_id', rpIds)
+          : Promise.resolve({ data: [] as any[] } as any),
+      ]);
 
-          // Filter by active segment for 9H rounds: any back/front data persisted
-          // from a prior 18H state must be ignored regardless of `confirmed` flag.
-          const roundHoles: 9 | 18 = (round.bet_config as any)?.roundHoles === 9 ? 9 : 18;
-          const startingHole: 1 | 10 = round.starting_hole === 10 ? 10 : 1;
-          const inActiveSegment = (h: number) => {
-            if (roundHoles === 18) return true;
-            return startingHole === 10 ? h >= 10 && h <= 18 : h >= 1 && h <= 9;
-          };
-          const totalStrokes = scoresResult.data?.reduce(
-            (sum, s) => (s.confirmed && inActiveSegment(s.hole_number) ? sum + (s.strokes || 0) : sum),
-            0
-          ) || 0;
+      const organizedRounds = (organizedRes.data || []) as any[];
+      const extraRounds = organizedRounds.filter(r => !participantRoundIds.has(r.id));
 
-          return {
-            id: round.id,
-            roundPlayerId: rp.id,
-            date: round.date,
-            status: round.status,
-            courseName: course?.name || 'Campo desconocido',
-            courseLocation: course?.location || '',
-            courseId: round.course_id,
-            teeColor: (rp as any).tee_color || round.tee_color,
-            roundTeeColor: round.tee_color,
-            totalStrokes,
-            handicapUsed: Number(rp.handicap_for_round) || 0,
-            playersCount: countResult.count || 1,
-            isOrganizer: rp.is_organizer,
-            capturedOnly: false,
-            roundHoles,
-            isIncomplete: round.is_incomplete ?? false,
-            isCoAdmin: (rp as any).is_admin ?? false,
-          };
-        })
-      );
+      const countRoundIds = [...participantRoundIds, ...extraRounds.map(r => r.id as string)];
+      const { data: countRows } = countRoundIds.length > 0
+        ? await supabase.from('round_players').select('round_id').in('round_id', countRoundIds)
+        : { data: [] as any[] };
+      const countByRound = new Map<string, number>();
+      for (const row of ((countRows || []) as any[])) {
+        countByRound.set(row.round_id, (countByRound.get(row.round_id) || 0) + 1);
+      }
 
-      // Also fetch rounds this user ORGANIZED but did not play (external capturist mode)
-      const participantRoundIds = new Set(roundItems.map(r => r.id));
-      const { data: organizedRounds } = await supabase
-        .from('rounds')
-        .select(`
-          id, date, status, tee_color, course_id, bet_config, starting_hole, is_incomplete,
-          golf_courses(name, location)
-        `)
-        .eq('organizer_id', profile.id)
-        .eq('status', 'completed')
-        .order('date', { ascending: false });
+      const scoresByRp = new Map<string, { hole_number: number; strokes: number | null }[]>();
+      for (const s of ((scoresRes.data || []) as any[])) {
+        const arr = scoresByRp.get(s.round_player_id) || [];
+        arr.push({ hole_number: s.hole_number, strokes: s.strokes });
+        scoresByRp.set(s.round_player_id, arr);
+      }
 
-      const extras: RoundHistoryItem[] = await Promise.all(
-        (organizedRounds || [])
-          .filter((r: any) => !participantRoundIds.has(r.id))
-          .map(async (r: any) => {
-            const course = r.golf_courses as any;
-            const roundHoles: 9 | 18 = (r.bet_config as any)?.roundHoles === 9 ? 9 : 18;
-            const { count } = await supabase
-              .from('round_players')
-              .select('id', { count: 'exact', head: true })
-              .eq('round_id', r.id);
-            return {
-              id: r.id,
-              roundPlayerId: null,
-              date: r.date,
-              status: r.status,
-              courseName: course?.name || 'Campo desconocido',
-              courseLocation: course?.location || '',
-              courseId: r.course_id,
-              teeColor: r.tee_color,
-              roundTeeColor: r.tee_color,
-              totalStrokes: 0,
-              handicapUsed: 0,
-              playersCount: count || 0,
-              isOrganizer: true,
-              capturedOnly: true,
-              roundHoles,
-              isIncomplete: r.is_incomplete ?? false,
-              isCoAdmin: false,
-            };
-          })
-      );
+      const roundItems: RoundHistoryItem[] = rpRows.map((rp) => {
+        const round = rp.rounds as any;
+        const course = round.golf_courses as any;
+
+        // Filter by active segment for 9H rounds: any back/front data persisted
+        // from a prior 18H state must be ignored.
+        const roundHoles: 9 | 18 = (round.bet_config as any)?.roundHoles === 9 ? 9 : 18;
+        const startingHole: 1 | 10 = round.starting_hole === 10 ? 10 : 1;
+        const inActiveSegment = (h: number) => {
+          if (roundHoles === 18) return true;
+          return startingHole === 10 ? h >= 10 && h <= 18 : h >= 1 && h <= 9;
+        };
+        const totalStrokes = (scoresByRp.get(rp.id) || []).reduce(
+          (sum, s) => (inActiveSegment(s.hole_number) ? sum + (s.strokes || 0) : sum),
+          0
+        );
+
+        return {
+          id: round.id,
+          roundPlayerId: rp.id,
+          date: round.date,
+          status: round.status,
+          courseName: course?.name || 'Campo desconocido',
+          courseLocation: course?.location || '',
+          courseId: round.course_id,
+          teeColor: (rp as any).tee_color || round.tee_color,
+          roundTeeColor: round.tee_color,
+          totalStrokes,
+          handicapUsed: Number(rp.handicap_for_round) || 0,
+          playersCount: countByRound.get(round.id) || 1,
+          isOrganizer: rp.is_organizer,
+          capturedOnly: false,
+          roundHoles,
+          isIncomplete: round.is_incomplete ?? false,
+          isCoAdmin: (rp as any).is_admin ?? false,
+        };
+      });
+
+      // Rounds this user ORGANIZED but did not play (external capturist mode)
+      const extras: RoundHistoryItem[] = extraRounds.map((r: any) => {
+        const course = r.golf_courses as any;
+        const roundHoles: 9 | 18 = (r.bet_config as any)?.roundHoles === 9 ? 9 : 18;
+        return {
+          id: r.id,
+          roundPlayerId: null,
+          date: r.date,
+          status: r.status,
+          courseName: course?.name || 'Campo desconocido',
+          courseLocation: course?.location || '',
+          courseId: r.course_id,
+          teeColor: r.tee_color,
+          roundTeeColor: r.tee_color,
+          totalStrokes: 0,
+          handicapUsed: 0,
+          playersCount: countByRound.get(r.id) || 0,
+          isOrganizer: true,
+          capturedOnly: true,
+          roundHoles,
+          isIncomplete: r.is_incomplete ?? false,
+          isCoAdmin: false,
+        };
+      });
 
       const merged = [...roundItems, ...extras].sort(
         (a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)
