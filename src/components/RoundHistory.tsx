@@ -141,12 +141,18 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
 
       if (error) throw error;
 
-      // ── Batched supplementary data: 2 queries total (no per-round N+1) ──
+      // ── Batched supplementary data (chunked: PostgREST caps each response) ──
       const rpRows = (roundPlayers || []) as any[];
       const rpIds = rpRows.map(rp => rp.id as string);
       const participantRoundIds = new Set(rpRows.map(rp => rp.round_id as string));
 
-      const [organizedRes, scoresRes] = await Promise.all([
+      const chunk = <T,>(arr: T[], size: number): T[][] => {
+        const out: T[][] = [];
+        for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+        return out;
+      };
+
+      const [organizedRes, scoreChunks] = await Promise.all([
         supabase
           .from('rounds')
           .select(`
@@ -156,25 +162,31 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
           .eq('organizer_id', profile.id)
           .eq('status', 'completed')
           .order('date', { ascending: false }),
-        rpIds.length > 0
-          ? supabase
+        Promise.all(
+          chunk(rpIds, 40).map(ids =>
+            supabase
               .from('hole_scores')
               .select('round_player_id, hole_number, strokes')
               .eq('confirmed', true)
-              .in('round_player_id', rpIds)
-          : Promise.resolve({ data: [] as any[] } as any),
+              .in('round_player_id', ids),
+          ),
+        ),
       ]);
 
       const organizedRounds = (organizedRes.data || []) as any[];
       const extraRounds = organizedRounds.filter(r => !participantRoundIds.has(r.id));
 
       const countRoundIds = [...participantRoundIds, ...extraRounds.map(r => r.id as string)];
-      const { data: countRows } = countRoundIds.length > 0
-        ? await supabase.from('round_players').select('round_id').in('round_id', countRoundIds)
-        : { data: [] as any[] };
+      const countChunks = await Promise.all(
+        chunk(countRoundIds, 40).map(ids =>
+          supabase.from('round_players').select('round_id').in('round_id', ids),
+        ),
+      );
       const countByRound = new Map<string, number>();
-      for (const row of ((countRows || []) as any[])) {
-        countByRound.set(row.round_id, (countByRound.get(row.round_id) || 0) + 1);
+      for (const res of countChunks) {
+        for (const row of ((res.data || []) as any[])) {
+          countByRound.set(row.round_id, (countByRound.get(row.round_id) || 0) + 1);
+        }
       }
 
       const scoresByRp = new Map<string, { hole_number: number; strokes: number | null }[]>();
