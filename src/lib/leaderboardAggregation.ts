@@ -106,3 +106,64 @@ export function getDayForRoundDate(
   const d = rules.days?.find(d => d.date === roundDate);
   return d ? d.day_number : null;
 }
+
+/* ── Single-round, per-mode totals (used by the historical round view) ── */
+
+export type ScoringMode = 'gross' | 'net' | 'stableford';
+
+export interface HoleInfo {
+  hole_number: number;
+  par: number;
+  stroke_index: number;
+}
+
+export interface RoundModeTotals {
+  grossTotal: number;
+  netTotal: number;
+  grossVsPar: number;
+  netVsPar: number;
+  stablefordTotal: number;
+  holesPlayed: number;
+}
+
+/**
+ * Totals for one player in one round, applying the competition handicap
+ * hole-by-hole via stroke index (same rule used by the live leaderboards).
+ */
+export function computeRoundModeTotals(
+  scores: { hole_number: number; strokes: number | null }[],
+  holes: HoleInfo[],
+  handicap: number,
+): RoundModeTotals {
+  const totals: RoundModeTotals = {
+    grossTotal: 0, netTotal: 0, grossVsPar: 0, netVsPar: 0,
+    stablefordTotal: 0, holesPlayed: 0,
+  };
+  const sortedHoles = [...holes].sort((a, b) => a.stroke_index - b.stroke_index);
+  const fullStrokes = Math.floor(handicap / 18);
+  const remainder = Math.round(handicap) % 18;
+
+  for (const s of scores) {
+    if (!s.strokes) continue;
+    const holeInfo = holes.find(h => h.hole_number === s.hole_number);
+    const par = holeInfo?.par || 4;
+    const idx = sortedHoles.findIndex(h => h.hole_number === s.hole_number);
+    const strokesReceived = fullStrokes + (idx >= 0 && idx < remainder ? 1 : 0);
+    const netStrokes = s.strokes - strokesReceived;
+    const diff = netStrokes - par;
+    let stb = 0;
+    if (diff <= -3) stb = 5;
+    else if (diff === -2) stb = 4;
+    else if (diff === -1) stb = 3;
+    else if (diff === 0) stb = 2;
+    else if (diff === 1) stb = 1;
+
+    totals.grossTotal += s.strokes;
+    totals.netTotal += netStrokes;
+    totals.grossVsPar += s.strokes - par;
+    totals.netVsPar += diff;
+    totals.stablefordTotal += stb;
+    totals.holesPlayed += 1;
+  }
+  return totals;
+}

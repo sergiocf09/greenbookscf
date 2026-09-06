@@ -22,6 +22,10 @@ import { Badge } from '@/components/ui/badge';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { cn } from '@/lib/utils';
 import { formatPlayerName } from '@/lib/playerInput';
+import { useHistoricalCompetitions } from '@/hooks/useHistoricalCompetitions';
+import { HistoricalCupSummaryCard } from '@/components/leaderboards/HistoricalCupSummaryCard';
+import { HistoricalStrokeSummaryCard } from '@/components/leaderboards/HistoricalStrokeSummaryCard';
+
 
 interface PlayerScoreData {
   playerId: string;
@@ -56,25 +60,8 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
   const currentUserProfileId = profile?.id ?? null;
   const [activeTab, setActiveTab] = useState<'scorecard' | 'bets' | 'leaderboards'>('scorecard');
 
-  type RoundLeaderboard = {
-    id: string;
-    name: string;
-    competition_type: string;
-    status: string;
-    myPosition: number | null;
-    myNetVsPar: number | null;
-    myGrossTotal: number | null;
-    totalParticipants: number;
-    topStandings: Array<{
-      display_name: string;
-      initials: string;
-      avatar_color: string;
-      netVsPar: number;
-      grossTotal: number;
-      isMe: boolean;
-    }>;
-  };
-  const [roundLeaderboards, setRoundLeaderboards] = useState<RoundLeaderboard[]>([]);
+
+
   const [showShare, setShowShare] = useState(false);
   const [loading, setLoading] = useState(true);
   const [hasSnapshot, setHasSnapshot] = useState(false);
@@ -199,133 +186,11 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
     fetchRoundData();
   }, [roundId]);
 
-  // ── Fetch leaderboards linked to this round ──────────────────────────────
-  useEffect(() => {
-    const fetchRoundLeaderboards = async () => {
-      try {
-        const { data: linkedLBs } = await supabase
-          .from('leaderboard_rounds')
-          .select('leaderboard_id')
-          .eq('round_id', roundId);
+  // ── Competitions (leaderboards) linked to this round ─────────────────────
+  const { competitions: roundLeaderboards } =
+    useHistoricalCompetitions(roundId, currentUserProfileId);
 
-        if (!linkedLBs || linkedLBs.length === 0) {
-          setRoundLeaderboards([]);
-          return;
-        }
 
-        const lbIds = linkedLBs.map(l => l.leaderboard_id);
-
-        const [{ data: lbEvents }, { data: rpData }, { data: courseData }] = await Promise.all([
-          supabase.from('leaderboard_events')
-            .select('id, name, status, competition_type')
-            .in('id', lbIds),
-          supabase.from('round_players')
-            .select('id, profile_id')
-            .eq('round_id', roundId),
-          supabase.from('rounds')
-            .select('course_id')
-            .eq('id', roundId)
-            .single(),
-        ]);
-
-        if (!lbEvents || lbEvents.length === 0) {
-          setRoundLeaderboards([]);
-          return;
-        }
-
-        const { data: courseHoles } = courseData
-          ? await supabase.from('course_holes')
-              .select('hole_number, par')
-              .eq('course_id', courseData.course_id)
-          : { data: [] };
-        const parMap: Record<number, number> =
-          Object.fromEntries((courseHoles || []).map(h => [h.hole_number, h.par]));
-
-        const rpProfileMap: Record<string, string> =
-          Object.fromEntries((rpData || [])
-            .filter(rp => rp.profile_id)
-            .map(rp => [rp.profile_id!, rp.id]));
-        const rpIds = (rpData || []).map(rp => rp.id);
-
-        const { data: allHoleScores } = rpIds.length > 0
-          ? await supabase.from('hole_scores')
-              .select('round_player_id, hole_number, strokes')
-              .in('round_player_id', rpIds)
-              .eq('confirmed', true)
-          : { data: [] };
-
-        const enriched = await Promise.all(lbEvents.map(async (lb) => {
-          const { data: parts } = await supabase
-            .from('leaderboard_participants')
-            .select('id, profile_id, guest_name, guest_initials, guest_color')
-            .eq('leaderboard_id', lb.id)
-            .eq('is_active', true);
-
-          const profileIds = (parts || [])
-            .filter(p => p.profile_id).map(p => p.profile_id!);
-          let profileMap: Record<string, any> = {};
-          if (profileIds.length > 0) {
-            const { data: profiles } = await supabase
-              .from('profiles')
-              .select('id, display_name, initials, avatar_color')
-              .in('id', profileIds);
-            if (profiles)
-              profileMap = Object.fromEntries(profiles.map(p => [p.id, p]));
-          }
-
-          const standings = (parts || []).map(part => {
-            const rpId = part.profile_id ? rpProfileMap[part.profile_id] : null;
-            const myScores = rpId
-              ? (allHoleScores || []).filter(hs => hs.round_player_id === rpId)
-              : [];
-            const grossTotal = myScores.reduce((s, hs) => s + (hs.strokes || 0), 0);
-            const vsParTotal = myScores.reduce((s, hs) =>
-              s + (hs.strokes || 0) - (parMap[hs.hole_number] || 4), 0);
-            const prof = part.profile_id ? profileMap[part.profile_id] : null;
-            return {
-              profile_id: part.profile_id,
-              display_name: prof?.display_name ?? part.guest_name ?? 'Jugador',
-              initials: prof?.initials ?? part.guest_initials ?? '??',
-              avatar_color: prof?.avatar_color ?? part.guest_color ?? '#3B82F6',
-              netVsPar: vsParTotal,
-              grossTotal,
-              holesPlayed: myScores.length,
-              isMe: part.profile_id === currentUserProfileId,
-            };
-          })
-          .filter(s => s.holesPlayed > 0)
-          .sort((a, b) => a.netVsPar - b.netVsPar);
-
-          const myIdx = standings.findIndex(s => s.isMe);
-          const myStanding = myIdx >= 0 ? standings[myIdx] : null;
-
-          return {
-            id: lb.id,
-            name: lb.name,
-            competition_type: (lb as any).competition_type ?? 'standard',
-            status: lb.status,
-            myPosition: myIdx >= 0 ? myIdx + 1 : null,
-            myNetVsPar: myStanding?.netVsPar ?? null,
-            myGrossTotal: myStanding?.grossTotal ?? null,
-            totalParticipants: standings.length,
-            topStandings: standings.slice(0, 5).map(s => ({
-              display_name: s.display_name,
-              initials: s.initials,
-              avatar_color: s.avatar_color,
-              netVsPar: s.netVsPar,
-              grossTotal: s.grossTotal,
-              isMe: s.isMe,
-            })),
-          };
-        }));
-
-        setRoundLeaderboards(enriched.filter(lb => lb.totalParticipants > 0));
-      } catch (err) {
-        console.warn('[HistoricalRoundView] leaderboard fetch error:', err);
-      }
-    };
-    fetchRoundLeaderboards();
-  }, [roundId, currentUserProfileId]);
 
   // ── All snapshot players (unfiltered) ──────────────────────────────────────
   const allSnapshotPlayers: Player[] = useMemo(() => {
@@ -705,84 +570,20 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
 
         <TabsContent value="leaderboards" className="mt-4 space-y-3">
           {roundLeaderboards.map(lb => (
-            <Card key={lb.id}>
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <CardTitle className="text-base truncate">{lb.name}</CardTitle>
-                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                      {lb.competition_type === 'teams_cup' && (
-                        <Badge variant="secondary" className="text-xs">Teams Cup</Badge>
-                      )}
-                      <Badge
-                        variant={lb.status === 'completed' ? 'outline' : 'default'}
-                        className="text-xs"
-                      >
-                        {lb.status === 'completed' ? 'Finalizada' : 'Activa'}
-                      </Badge>
-                    </div>
-                  </div>
-                  {lb.myPosition !== null && (
-                    <div className="text-right shrink-0">
-                      <div className="text-2xl font-bold text-primary leading-none">
-                        #{lb.myPosition}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        de {lb.totalParticipants}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                {lb.myNetVsPar !== null && (
-                  <div className="flex items-baseline gap-2 mt-2 pt-2 border-t border-border">
-                    <span className="text-sm font-semibold text-foreground">
-                      {lb.myNetVsPar > 0 ? '+' : ''}{lb.myNetVsPar} vs par
-                    </span>
-                    {lb.myGrossTotal != null && lb.myGrossTotal > 0 && (
-                      <span className="text-xs text-muted-foreground">
-                        {lb.myGrossTotal} bruto
-                      </span>
-                    )}
-                  </div>
-                )}
-              </CardHeader>
-
-              <CardContent className="pt-0">
-                <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
-                  Posiciones
-                </div>
-                <div className="space-y-1.5">
-                  {lb.topStandings.map((s, idx) => (
-                    <div
-                      key={`${lb.id}-${idx}`}
-                      className={cn(
-                        "flex items-center gap-2 px-2 py-1.5 rounded-md",
-                        s.isMe ? "bg-primary/10" : "bg-muted/40"
-                      )}
-                    >
-                      <span className="text-xs font-bold text-muted-foreground w-5 shrink-0">
-                        {idx + 1}.
-                      </span>
-                      <PlayerAvatar
-                        initials={s.initials}
-                        background={s.avatar_color}
-                        size="sm"
-                      />
-                      <span className="text-sm flex-1 min-w-0 truncate">
-                        {formatPlayerName(s.display_name)}
-                        {s.isMe && (
-                          <span className="ml-1 text-xs text-primary font-medium">(tú)</span>
-                        )}
-                      </span>
-                      <span className="text-sm font-semibold tabular-nums shrink-0">
-                        {s.netVsPar > 0 ? '+' : ''}{s.netVsPar}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            lb.competition_type === 'teams_cup' ? (
+              <HistoricalCupSummaryCard
+                key={lb.id}
+                leaderboardId={lb.id}
+                name={lb.name}
+                status={lb.status}
+                roundId={roundId}
+                currentUserProfileId={currentUserProfileId}
+              />
+            ) : (
+              <HistoricalStrokeSummaryCard key={lb.id} competition={lb} />
+            )
           ))}
+
 
           {roundLeaderboards.length === 0 && (
             <div className="text-center py-8 text-muted-foreground text-sm flex flex-col items-center gap-2">
