@@ -22,6 +22,10 @@ import { Badge } from '@/components/ui/badge';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { cn } from '@/lib/utils';
 import { formatPlayerName } from '@/lib/playerInput';
+import { useHistoricalCompetitions } from '@/hooks/useHistoricalCompetitions';
+import { HistoricalCupSummaryCard } from '@/components/leaderboards/HistoricalCupSummaryCard';
+import { HistoricalStrokeSummaryCard } from '@/components/leaderboards/HistoricalStrokeSummaryCard';
+
 
 interface PlayerScoreData {
   playerId: string;
