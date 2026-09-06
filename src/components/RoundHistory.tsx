@@ -190,10 +190,12 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
       }
 
       const scoresByRp = new Map<string, { hole_number: number; strokes: number | null }[]>();
-      for (const s of ((scoresRes.data || []) as any[])) {
-        const arr = scoresByRp.get(s.round_player_id) || [];
-        arr.push({ hole_number: s.hole_number, strokes: s.strokes });
-        scoresByRp.set(s.round_player_id, arr);
+      for (const res of scoreChunks) {
+        for (const s of ((res.data || []) as any[])) {
+          const arr = scoresByRp.get(s.round_player_id) || [];
+          arr.push({ hole_number: s.hole_number, strokes: s.strokes });
+          scoresByRp.set(s.round_player_id, arr);
+        }
       }
 
       const roundItems: RoundHistoryItem[] = rpRows.map((rp) => {
