@@ -705,84 +705,20 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
 
         <TabsContent value="leaderboards" className="mt-4 space-y-3">
           {roundLeaderboards.map(lb => (
-            <Card key={lb.id}>
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <CardTitle className="text-base truncate">{lb.name}</CardTitle>
-                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                      {lb.competition_type === 'teams_cup' && (
-                        <Badge variant="secondary" className="text-xs">Teams Cup</Badge>
-                      )}
-                      <Badge
-                        variant={lb.status === 'completed' ? 'outline' : 'default'}
-                        className="text-xs"
-                      >
-                        {lb.status === 'completed' ? 'Finalizada' : 'Activa'}
-                      </Badge>
-                    </div>
-                  </div>
-                  {lb.myPosition !== null && (
-                    <div className="text-right shrink-0">
-                      <div className="text-2xl font-bold text-primary leading-none">
-                        #{lb.myPosition}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        de {lb.totalParticipants}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                {lb.myNetVsPar !== null && (
-                  <div className="flex items-baseline gap-2 mt-2 pt-2 border-t border-border">
-                    <span className="text-sm font-semibold text-foreground">
-                      {lb.myNetVsPar > 0 ? '+' : ''}{lb.myNetVsPar} vs par
-                    </span>
-                    {lb.myGrossTotal != null && lb.myGrossTotal > 0 && (
-                      <span className="text-xs text-muted-foreground">
-                        {lb.myGrossTotal} bruto
-                      </span>
-                    )}
-                  </div>
-                )}
-              </CardHeader>
-
-              <CardContent className="pt-0">
-                <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
-                  Posiciones
-                </div>
-                <div className="space-y-1.5">
-                  {lb.topStandings.map((s, idx) => (
-                    <div
-                      key={`${lb.id}-${idx}`}
-                      className={cn(
-                        "flex items-center gap-2 px-2 py-1.5 rounded-md",
-                        s.isMe ? "bg-primary/10" : "bg-muted/40"
-                      )}
-                    >
-                      <span className="text-xs font-bold text-muted-foreground w-5 shrink-0">
-                        {idx + 1}.
-                      </span>
-                      <PlayerAvatar
-                        initials={s.initials}
-                        background={s.avatar_color}
-                        size="sm"
-                      />
-                      <span className="text-sm flex-1 min-w-0 truncate">
-                        {formatPlayerName(s.display_name)}
-                        {s.isMe && (
-                          <span className="ml-1 text-xs text-primary font-medium">(tú)</span>
-                        )}
-                      </span>
-                      <span className="text-sm font-semibold tabular-nums shrink-0">
-                        {s.netVsPar > 0 ? '+' : ''}{s.netVsPar}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            lb.competition_type === 'teams_cup' ? (
+              <HistoricalCupSummaryCard
+                key={lb.id}
+                leaderboardId={lb.id}
+                name={lb.name}
+                status={lb.status}
+                roundId={roundId}
+                currentUserProfileId={currentUserProfileId}
+              />
+            ) : (
+              <HistoricalStrokeSummaryCard key={lb.id} competition={lb} />
+            )
           ))}
+
 
           {roundLeaderboards.length === 0 && (
             <div className="text-center py-8 text-muted-foreground text-sm flex flex-col items-center gap-2">
