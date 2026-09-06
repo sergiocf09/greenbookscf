@@ -880,8 +880,18 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       if (parts.length === 1) return parts[0];
       return `${parts[0]} ${parts[1]}`;
     };
+    const slotOrderOf = (m: typeof cup.matches[number]) =>
+      (m.day_number ?? 1) * 100 + (m.session_number ?? 1);
+    const slotLabelOf = (m: typeof cup.matches[number]) => {
+      if (activeSlotOption) return null;
+      const key = cupSlotKey(m.day_number ?? 1, m.session_number ?? 1);
+      return slotOptions.find(o => o.key === key)?.label ?? null;
+    };
     return [...source]
       .sort((a, b) => {
+        const sa = slotOrderOf(a);
+        const sb = slotOrderOf(b);
+        if (sa !== sb) return sa - sb;
         const ga = cup.getMatchGroupNumber(a);
         const gb = cup.getMatchGroupNumber(b);
         if (ga !== gb) return (ga === Infinity ? 1e9 : ga) - (gb === Infinity ? 1e9 : gb);
@@ -935,6 +945,8 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         const g = cup.getMatchGroupNumber(m);
         return {
           group: g === Infinity ? null : g,
+          slotLabel: slotLabelOf(m),
+          slotOrder: slotOrderOf(m),
           sideA: [nameOf(m.player_a1_id), nameOf(m.player_a2_id)].filter(Boolean) as string[],
           sideB: [nameOf(m.player_b1_id), nameOf(m.player_b2_id)].filter(Boolean) as string[],
           resultText,

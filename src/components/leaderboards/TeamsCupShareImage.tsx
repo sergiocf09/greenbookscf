@@ -9,6 +9,10 @@ import { Button } from '@/components/ui/button';
 export interface CupShareMatch {
   /** Foursome / playing group number (null when unknown). */
   group: number | null;
+  /** Day/session label, used to keep chronological order in the Total view. */
+  slotLabel?: string | null;
+  /** Sort key for the day/session (day * 100 + session). */
+  slotOrder?: number;
   sideA: string[];
   sideB: string[];
   /** Main result label: '3&2', 'AS', '2UP', 'Pendiente'… */
@@ -119,17 +123,41 @@ function fmtPts(v: number): string {
   return Number.isInteger(v) ? `${v}` : v.toFixed(1).replace('.0', '');
 }
 
-function groupEntries(matches: CupShareMatch[]) {
-  const map = new Map<number | null, CupShareMatch[]>();
+type ShareGroup = {
+  key: string;
+  slotLabel: string | null;
+  group: number | null;
+  slotOrder: number;
+  matches: CupShareMatch[];
+};
+
+/**
+ * Groups matches first by day/session (chronological) and then by playing
+ * group, so the Total view never interleaves days.
+ */
+function groupEntries(matches: CupShareMatch[]): ShareGroup[] {
+  const map = new Map<string, ShareGroup>();
   for (const m of matches) {
-    const key = m.group ?? null;
-    if (!map.has(key)) map.set(key, []);
-    map.get(key)!.push(m);
+    const slotLabel = m.slotLabel ?? null;
+    const group = m.group ?? null;
+    const key = `${slotLabel ?? ''}|${group ?? ''}`;
+    if (!map.has(key)) {
+      map.set(key, {
+        key,
+        slotLabel,
+        group,
+        slotOrder: m.slotOrder ?? 0,
+        matches: [],
+      });
+    }
+    map.get(key)!.matches.push(m);
   }
-  return Array.from(map.entries()).sort(([a], [b]) => {
-    if (a === null) return 1;
-    if (b === null) return -1;
-    return a - b;
+  return Array.from(map.values()).sort((a, b) => {
+    if (a.slotOrder !== b.slotOrder) return a.slotOrder - b.slotOrder;
+    if (a.group === b.group) return 0;
+    if (a.group === null) return 1;
+    if (b.group === null) return -1;
+    return a.group - b.group;
   });
 }
 
@@ -331,12 +359,14 @@ export function drawCupShareCanvas(ctx: CanvasRenderingContext2D, props: TeamsCu
     const entries = groupEntries(matches);
     const showGroupHeaders = entries.length > 1;
 
-    entries.forEach(([groupNumber, ms]) => {
+    entries.forEach((entry) => {
+      const ms = entry.matches;
       if (showGroupHeaders) {
         ctx.textAlign = 'left';
         ctx.fillStyle = GOLD;
         ctx.font = 'bold 20px Arial, sans-serif';
-        const label = groupNumber === null ? 'Sin grupo' : `Grupo ${groupNumber}`;
+        const groupPart = entry.group === null ? 'Sin grupo' : `Grupo ${entry.group}`;
+        const label = entry.slotLabel ? `${entry.slotLabel} · ${groupPart}` : groupPart;
         ctx.fillText(label, PAD + 6, y + 28);
         const lw = ctx.measureText(label).width;
         ctx.strokeStyle = 'rgba(217,181,49,0.22)';
