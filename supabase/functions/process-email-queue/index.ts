@@ -260,7 +260,10 @@ Deno.serve(async (req) => {
             text: payload.text,
             purpose: payload.purpose,
             label: payload.label,
-            idempotency_key: payload.idempotency_key,
+            // App emails may omit run_id, but then an idempotency_key is required.
+            // Fall back to the unique message_id so the send is never rejected with 400.
+            idempotency_key:
+              payload.idempotency_key ?? (payload.run_id ? undefined : payload.message_id),
             unsubscribe_token: payload.unsubscribe_token,
             message_id: payload.message_id,
           },
