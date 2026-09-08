@@ -113,6 +113,64 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
   const [roundToReopen, setRoundToReopen] = useState<RoundHistoryItem | null>(null);
   const [reopening, setReopening] = useState(false);
 
+  const [showActivity, setShowActivity] = useState<boolean>(() => {
+    try { return localStorage.getItem('rh_activity_panel') === 'true'; }
+    catch { return false; }
+  });
+
+  const toggleActivity = () => {
+    setShowActivity(prev => {
+      const next = !prev;
+      try { localStorage.setItem('rh_activity_panel', String(next)); } catch {}
+      return next;
+    });
+  };
+
+  const activityData = useMemo(() => {
+    // Agrupar por mes YYYY-MM
+    const monthMap = new Map<string, { label: string; rondas: number; totalScore: number; courses: Set<string> }>();
+
+    for (const r of rounds) {
+      if (!r.totalStrokes || r.totalStrokes === 0) continue;
+      const d = parseLocalDate(r.date);
+      const key = format(d, 'yyyy-MM');
+      const label = format(d, 'MMM yy', { locale: es });
+      if (!monthMap.has(key)) {
+        monthMap.set(key, { label, rondas: 0, totalScore: 0, courses: new Set() });
+      }
+      const m = monthMap.get(key)!;
+      m.rondas += 1;
+      m.totalScore += r.totalStrokes;
+      m.courses.add(r.courseId);
+    }
+
+    const sorted = [...monthMap.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-12); // máximo últimos 12 meses
+
+    const points = sorted.map(([, v]) => ({
+      label: v.label.charAt(0).toUpperCase() + v.label.slice(1),
+      rondas: v.rondas,
+      promScore: Math.round(v.totalScore / v.rondas),
+      campos: v.courses.size,
+    }));
+
+    const globalAvg = points.length > 0
+      ? Math.round(points.reduce((s, p) => s + p.promScore, 0) / points.length)
+      : 0;
+
+    // Campos distintos por período
+    const now = new Date();
+    const cutoff3m  = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+    const cutoff6m  = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+    const cutoff12m = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+    const fields3m  = new Set(rounds.filter(r => parseLocalDate(r.date) >= cutoff3m).map(r => r.courseId)).size;
+    const fields6m  = new Set(rounds.filter(r => parseLocalDate(r.date) >= cutoff6m).map(r => r.courseId)).size;
+    const fields12m = new Set(rounds.filter(r => parseLocalDate(r.date) >= cutoff12m).map(r => r.courseId)).size;
+
+    return { points, globalAvg, fields3m, fields6m, fields12m };
+  }, [rounds]);
+
   const fetchRounds = async () => {
     if (!profile) return;
     
