@@ -217,6 +217,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   const [betsTimeFilter, setBetsTimeFilter] = useState<'3m' | '6m' | '1y' | 'all'>('all');
 
   const [evolutionFilter, setEvolutionFilter] = useState<'3m' | '6m' | '1y' | 'all'>('all');
+  const [evolutionRivalFilter, setEvolutionRivalFilter] = useState<string>('all');
 
   // Sliding tab state
   const [slidingEntries, setSlidingEntries] = useState<SlidingEntry[]>([]);
@@ -629,9 +630,37 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
       ? new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())
       : null;
 
-    const filtered = cutoff
+    const byTime = cutoff
       ? sorted.filter(r => parseLocalDate(r.date) >= cutoff)
       : sorted;
+
+    // Filtro por rival: recalcular el neto de cada ronda usando sólo el dinero
+    // movido entre el usuario y ese rival; las rondas sin coincidencia se excluyen.
+    let filtered = byTime;
+    if (evolutionRivalFilter !== 'all' && profile) {
+      const netByRound = new Map<string, number>();
+      for (const snap of allSnapshots) {
+        const userPlayer = snap.players.find((p: any) => p.profileId === profile.id);
+        if (!userPlayer) continue;
+        let sum = 0;
+        let found = false;
+        for (const entry of snap.ledger) {
+          const isWinner = entry.toPlayerId === userPlayer.id;
+          const isLoser  = entry.fromPlayerId === userPlayer.id;
+          if (!isWinner && !isLoser) continue;
+          if (entry.amount <= 0) continue;
+          const rivalId = isWinner ? entry.fromPlayerId : entry.toPlayerId;
+          const rivalPlayer = snap.players.find((p: any) => p.id === rivalId);
+          if ((rivalPlayer?.profileId ?? null) !== evolutionRivalFilter) continue;
+          sum += isWinner ? entry.amount : -entry.amount;
+          found = true;
+        }
+        if (found) netByRound.set(snap.roundId, sum);
+      }
+      filtered = byTime
+        .filter(r => netByRound.has(r.roundId))
+        .map(r => ({ ...r, netAmount: netByRound.get(r.roundId)! }));
+    }
 
     // Gráfica acumulativa: suma corrida
     let cumulative = 0;
@@ -669,7 +698,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     }));
 
     return { cumulativePoints, cumulativeTicks, monthlyPoints };
-  }, [myRounds, evolutionFilter]);
+  }, [myRounds, evolutionFilter, evolutionRivalFilter, allSnapshots, profile]);
 
   const betCategoryData = useMemo((): BetCategoryData[] => {
     if (!profile) return [];
@@ -700,10 +729,19 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
         if (!isWinner && !isLoser) continue;
         if (entry.amount <= 0) continue;
 
+        // Filtro por rival (seleccionable desde la pantalla inicial)
+        if (betsRivalFilter !== 'all') {
+          const entryRivalId = isWinner ? entry.fromPlayerId : entry.toPlayerId;
+          const entryRivalPlayer = snap.players.find((p: any) => p.id === entryRivalId);
+          if ((entryRivalPlayer?.profileId ?? null) !== betsRivalFilter) continue;
+        }
+
         const rawType = entry.betType;
         const category = BET_CATEGORY_MAP[rawType] ?? rawType;
         const amount = isWinner ? entry.amount : -entry.amount;
         const isTeamBet = TEAM_BET_CATEGORIES.has(category);
+        // Con rival seleccionado, las apuestas de parejas no son atribuibles a una persona
+        if (isTeamBet && betsRivalFilter !== 'all') continue;
 
         if (!categoryMap.has(category)) {
           categoryMap.set(category, {
@@ -752,7 +790,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
     return Array.from(categoryMap.values())
       .sort((a, b) => b.totalAmount - a.totalAmount);
-  }, [allSnapshots, profile, betsTimeFilter]);
+  }, [allSnapshots, profile, betsTimeFilter, betsRivalFilter]);
 
   /** Lista de rivales disponibles para filtrar (de allSnapshots) */
   const betsRivalOptions = useMemo(() => {
@@ -1383,8 +1421,19 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
             </div>
           ) : (
             <div className="space-y-5 pb-4">
-              {/* Filtros de tiempo */}
-              <div className="flex gap-1.5 justify-end">
+              {/* Filtros de tiempo y rival */}
+              <div className="flex items-center gap-1.5 justify-end">
+                {betsRivalOptions.length > 1 && (
+                  <select
+                    value={evolutionRivalFilter}
+                    onChange={e => setEvolutionRivalFilter(e.target.value)}
+                    className="flex-1 min-w-0 max-w-[52%] mr-auto h-7 text-[11px] bg-muted border border-border rounded-full px-2 text-foreground"
+                  >
+                    {betsRivalOptions.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                )}
                 {(['3m', '6m', '1y', 'all'] as const).map(f => (
                   <button
                     key={f}
@@ -1576,6 +1625,17 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     </button>
                   ))}
                 </div>
+                {betsRivalOptions.length > 1 && (
+                  <select
+                    value={betsRivalFilter}
+                    onChange={e => setBetsRivalFilter(e.target.value)}
+                    className="flex-1 min-w-0 max-w-[52%] h-7 text-[11px] bg-muted border border-border rounded-full px-2 text-foreground"
+                  >
+                    {betsRivalOptions.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               {betCategoryData.length === 0 ? (
@@ -1679,7 +1739,20 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
             /* ── VISTA DETALLE: desglose por rival ── */
             (() => {
               const cat = betCategoryData.find(c => c.category === selectedBetCategory);
-              if (!cat) return null;
+              if (!cat) {
+                return (
+                  <div className="space-y-3 pb-4">
+                    <button type="button"
+                      onClick={() => setSelectedBetCategory(null)}
+                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground p-1 -ml-1">
+                      <ArrowLeft className="h-4 w-4" /> Volver
+                    </button>
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      Sin movimientos de {selectedBetCategory} con este rival en el período
+                    </p>
+                  </div>
+                );
+              }
 
               // Aplicar filtro de rival
               const rivals = Array.from(cat.byRival.values())
@@ -1691,7 +1764,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                   {/* Header de detalle */}
                   <div className="flex items-center gap-2">
                     <button type="button"
-                      onClick={() => { setSelectedBetCategory(null); setBetsRivalFilter('all'); }}
+                      onClick={() => setSelectedBetCategory(null)}
                       className="text-muted-foreground hover:text-foreground p-1 -ml-1">
                       <ArrowLeft className="h-4 w-4" />
                     </button>
