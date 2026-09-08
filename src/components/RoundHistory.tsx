@@ -698,6 +698,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
   return (
     <>
       <div className="space-y-3 w-full max-w-full overflow-hidden">
+        {/* Header: botón importar + botón actividad en el mismo renglón */}
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -708,7 +709,151 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
             <ImagePlus className="h-4 w-4 mr-2" />
             Importar Tarjeta
           </Button>
+          <Button
+            variant={showActivity ? 'default' : 'outline'}
+            size="sm"
+            className="shrink-0 px-3"
+            onClick={toggleActivity}
+            title="Mi actividad mensual"
+          >
+            <BarChart2 className="h-4 w-4" />
+          </Button>
         </div>
+
+        {/* Panel de actividad mensual colapsable */}
+        {showActivity && activityData.points.length >= 2 && (
+          <div className="space-y-4 bg-card border border-border rounded-xl p-3">
+
+            {/* Título */}
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              Mi Actividad · Últimos 12 meses
+            </p>
+
+            {/* Gráfica 1: Rondas por mes */}
+            <div>
+              <p className="text-[11px] text-muted-foreground mb-2">Rondas por mes</p>
+              <ResponsiveContainer width="100%" height={90}>
+                <BarChart data={activityData.points} margin={{ top: 0, right: 4, left: -28, bottom: 0 }} barSize={18}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 9, fill: '#64748b' }}
+                    tickLine={false}
+                    axisLine={false}
+                    interval={0}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 9, fill: '#64748b' }}
+                    tickLine={false}
+                    axisLine={false}
+                    allowDecimals={false}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#0f172a',
+                      border: '1px solid #1e293b',
+                      borderRadius: '8px',
+                      fontSize: '11px',
+                      color: '#f8fafc',
+                    }}
+                    formatter={(v: number) => [`${v} ronda${v !== 1 ? 's' : ''}`, '']}
+                    labelStyle={{ color: '#94a3b8', fontSize: '10px' }}
+                    cursor={{ fill: '#1e293b' }}
+                  />
+                  <Bar dataKey="rondas" fill="#22c55e" radius={[4, 4, 0, 0]} fillOpacity={0.85} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Separador */}
+            <div className="border-t border-border" />
+
+            {/* Gráfica 2: Score promedio por mes */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[11px] text-muted-foreground">Score promedio por mes</p>
+                <span className="text-[10px] text-muted-foreground">
+                  Prom. global: <span className="font-semibold text-foreground">{activityData.globalAvg}</span>
+                </span>
+              </div>
+              <ResponsiveContainer width="100%" height={90}>
+                <LineChart data={activityData.points} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 9, fill: '#64748b' }}
+                    tickLine={false}
+                    axisLine={false}
+                    interval={0}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 9, fill: '#64748b' }}
+                    tickLine={false}
+                    axisLine={false}
+                    domain={['auto', 'auto']}
+                    reversed={false}
+                  />
+                  <ReferenceLine
+                    y={activityData.globalAvg}
+                    stroke="#475569"
+                    strokeDasharray="4 2"
+                    strokeWidth={1}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#0f172a',
+                      border: '1px solid #1e293b',
+                      borderRadius: '8px',
+                      fontSize: '11px',
+                      color: '#f8fafc',
+                    }}
+                    formatter={(v: number) => [v, 'Score']}
+                    labelStyle={{ color: '#94a3b8', fontSize: '10px' }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="promScore"
+                    stroke="#38bdf8"
+                    strokeWidth={2}
+                    dot={{ fill: '#38bdf8', r: 3, strokeWidth: 0 }}
+                    activeDot={{ r: 5, strokeWidth: 0 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Separador */}
+            <div className="border-t border-border" />
+
+            {/* Campos distintos por período */}
+            <div>
+              <p className="text-[11px] text-muted-foreground mb-2">Campos distintos jugados</p>
+              <div className="flex gap-2">
+                {[
+                  { label: '3 meses', value: activityData.fields3m },
+                  { label: '6 meses', value: activityData.fields6m },
+                  { label: '12 meses', value: activityData.fields12m },
+                ].map(({ label, value }) => (
+                  <div key={label} className="flex-1 bg-muted/50 rounded-lg p-2 text-center">
+                    <p className="text-lg font-bold text-primary">{value}</p>
+                    <p className="text-[10px] text-muted-foreground">{label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* Mensaje si hay menos de 2 meses de data */}
+        {showActivity && activityData.points.length < 2 && (
+          <div className="bg-muted/30 rounded-xl p-3 text-center">
+            <p className="text-xs text-muted-foreground">
+              Completa rondas en al menos 2 meses diferentes para ver tu actividad
+            </p>
+          </div>
+        )}
+
         <ScrollArea className="h-[400px]">
           <div className="space-y-2 pr-2">
             {rounds.map((round) => (
