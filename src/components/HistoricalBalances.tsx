@@ -715,6 +715,47 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
     const categoryMap = new Map<string, BetCategoryData>();
 
+    /** Acumula un monto en una categoría (y su desglose por rival) */
+    const addToCategory = (
+      category: string,
+      amount: number,
+      isTeamBet: boolean,
+      rival: { id: string; name: string; profileId: string | null } | null,
+      incident: 'won' | 'lost' | null
+    ) => {
+      if (!categoryMap.has(category)) {
+        categoryMap.set(category, {
+          category,
+          totalAmount: 0,
+          incidentsWon: 0,
+          incidentsLost: 0,
+          isTeamBet,
+          byRival: new Map(),
+        });
+      }
+      const catData = categoryMap.get(category)!;
+      catData.totalAmount += amount;
+      if (incident === 'won') catData.incidentsWon += 1;
+      if (incident === 'lost') catData.incidentsLost += 1;
+
+      if (!isTeamBet && rival) {
+        const rivalKey = rival.profileId ?? rival.id;
+        if (!catData.byRival.has(rivalKey)) {
+          catData.byRival.set(rivalKey, {
+            rivalName: rival.name,
+            rivalProfileId: rival.profileId,
+            amount: 0,
+            incidentsWon: 0,
+            incidentsLost: 0,
+          });
+        }
+        const rivalData = catData.byRival.get(rivalKey)!;
+        rivalData.amount += amount;
+        if (incident === 'won') rivalData.incidentsWon += 1;
+        if (incident === 'lost') rivalData.incidentsLost += 1;
+      }
+    };
+
     for (const snap of allSnapshots) {
       if (cutoff && parseLocalDate(snap.date) < cutoff) continue;
 
@@ -722,6 +763,8 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
       if (!userPlayer) continue;
 
       const userId = userPlayer.id;
+      // Suma atribuida por rival dentro de esta ronda (para reconciliar con vsBalances)
+      const attributedByRivalId = new Map<string, number>();
 
       for (const entry of snap.ledger) {
         const isWinner = entry.toPlayerId === userId;
@@ -729,64 +772,60 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
         if (!isWinner && !isLoser) continue;
         if (entry.amount <= 0) continue;
 
-        // Filtro por rival (seleccionable desde la pantalla inicial)
-        if (betsRivalFilter !== 'all') {
-          const entryRivalId = isWinner ? entry.fromPlayerId : entry.toPlayerId;
-          const entryRivalPlayer = snap.players.find((p: any) => p.id === entryRivalId);
-          if ((entryRivalPlayer?.profileId ?? null) !== betsRivalFilter) continue;
-        }
-
         const rawType = entry.betType;
         const category = BET_CATEGORY_MAP[rawType] ?? rawType;
         const amount = isWinner ? entry.amount : -entry.amount;
         const isTeamBet = TEAM_BET_CATEGORIES.has(category);
+
+        const rivalId = isWinner ? entry.fromPlayerId : entry.toPlayerId;
+        const rivalName = isWinner ? entry.fromPlayerName : entry.toPlayerName;
+        const rivalPlayer = snap.players.find((p: any) => p.id === rivalId);
+        const rivalProfileId = rivalPlayer?.profileId ?? null;
+
+        attributedByRivalId.set(rivalId, (attributedByRivalId.get(rivalId) ?? 0) + amount);
+
+        // Filtro por rival (seleccionable desde la pantalla inicial)
+        if (betsRivalFilter !== 'all' && rivalProfileId !== betsRivalFilter) continue;
         // Con rival seleccionado, las apuestas de parejas no son atribuibles a una persona
         if (isTeamBet && betsRivalFilter !== 'all') continue;
 
-        if (!categoryMap.has(category)) {
-          categoryMap.set(category, {
-            category,
-            totalAmount: 0,
-            incidentsWon: 0,
-            incidentsLost: 0,
-            isTeamBet,
-            byRival: new Map(),
-          });
-        }
-        const catData = categoryMap.get(category)!;
-        catData.totalAmount += amount;
-        if (INCIDENT_CATEGORIES.has(category)) {
-          if (isWinner) catData.incidentsWon += 1;
-          else catData.incidentsLost += 1;
-        }
+        addToCategory(
+          category,
+          amount,
+          isTeamBet,
+          { id: rivalId, name: rivalName, profileId: rivalProfileId },
+          INCIDENT_CATEGORIES.has(category) ? (isWinner ? 'won' : 'lost') : null
+        );
+      }
 
-        // Desglose por rival (solo apuestas no-team)
-        if (!isTeamBet) {
-          const rivalId = isWinner ? entry.fromPlayerId : entry.toPlayerId;
-          const rivalName = isWinner ? entry.fromPlayerName : entry.toPlayerName;
+      // Reconciliación: si el ledger de la ronda no cubre todo el balance
+      // registrado contra un rival, el faltante se agrupa en "Otros".
+      const userBalance = (snap.balances as any[]).find((b: any) => b.playerId === userId);
+      for (const vb of (userBalance?.vsBalances ?? []) as any[]) {
+        const rivalId = vb.rivalId as string;
+        const expected = Number(vb.netAmount) || 0;
+        const attributed = attributedByRivalId.get(rivalId) ?? 0;
+        const residual = Math.round((expected - attributed) * 100) / 100;
+        if (residual === 0) continue;
 
-          const rivalPlayer = snap.players.find((p: any) => p.id === rivalId);
-          const rivalProfileId = rivalPlayer?.profileId ?? null;
+        const rivalPlayer = snap.players.find((p: any) => p.id === rivalId);
+        const rivalProfileId = rivalPlayer?.profileId ?? null;
+        if (betsRivalFilter !== 'all' && rivalProfileId !== betsRivalFilter) continue;
 
-          const rivalKey = rivalProfileId ?? rivalId;
-          if (!catData.byRival.has(rivalKey)) {
-            catData.byRival.set(rivalKey, {
-              rivalName,
-              rivalProfileId,
-              amount: 0,
-              incidentsWon: 0,
-              incidentsLost: 0,
-            });
-          }
-          const rivalData = catData.byRival.get(rivalKey)!;
-          rivalData.amount += amount;
-          if (INCIDENT_CATEGORIES.has(category)) {
-            if (isWinner) rivalData.incidentsWon += 1;
-            else rivalData.incidentsLost += 1;
-          }
-        }
+        addToCategory(
+          'Otros',
+          residual,
+          false,
+          {
+            id: rivalId,
+            name: (vb.rivalName as string) ?? rivalPlayer?.name ?? 'Rival',
+            profileId: rivalProfileId,
+          },
+          null
+        );
       }
     }
+
 
     return Array.from(categoryMap.values())
       .sort((a, b) => b.totalAmount - a.totalAmount);
