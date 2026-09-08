@@ -1725,27 +1725,29 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                   {rivals.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-6">Sin datos para este rival</p>
                   ) : (
-                    <div className="space-y-2">
-                      {rivals.map(rival => (
-                        <div key={rival.rivalProfileId ?? rival.rivalName}
-                          className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold truncate">{rival.rivalName}</p>
-                            {INCIDENT_CATEGORIES.has(cat.category) && (rival.incidentsWon + rival.incidentsLost > 0) && (
-                              <p className="text-[10px] text-muted-foreground">
-                                {rival.incidentsWon} cobradas · {rival.incidentsLost} pagadas
-                              </p>
-                            )}
+                    <ScrollArea className="h-[340px]">
+                      <div className="space-y-2 pr-2">
+                        {rivals.map(rival => (
+                          <div key={rival.rivalProfileId ?? rival.rivalName}
+                            className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold truncate">{rival.rivalName}</p>
+                              {INCIDENT_CATEGORIES.has(cat.category) && (rival.incidentsWon + rival.incidentsLost > 0) && (
+                                <p className="text-[10px] text-muted-foreground">
+                                  {rival.incidentsWon} cobradas · {rival.incidentsLost} pagadas
+                                </p>
+                              )}
+                            </div>
+                            <span className={cn(
+                              'text-sm font-bold tabular-nums shrink-0',
+                              rival.amount > 0 ? 'text-green-500' : rival.amount < 0 ? 'text-destructive' : 'text-muted-foreground'
+                            )}>
+                              {rival.amount > 0 ? '+' : ''}${fmtMoney(Math.abs(rival.amount))}
+                            </span>
                           </div>
-                          <span className={cn(
-                            'text-sm font-bold tabular-nums shrink-0',
-                            rival.amount > 0 ? 'text-green-500' : rival.amount < 0 ? 'text-destructive' : 'text-muted-foreground'
-                          )}>
-                            {rival.amount > 0 ? '+' : ''}${fmtMoney(Math.abs(rival.amount))}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
                   )}
                 </div>
               );
