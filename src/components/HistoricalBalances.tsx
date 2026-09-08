@@ -1329,7 +1329,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                         tick={{ fontSize: 9, fill: '#64748b' }}
                         tickLine={false}
                         axisLine={false}
-                        tickFormatter={v => `$${Math.abs(v) >= 1000 ? `${(v/1000).toFixed(1)}k` : v}`}
+                        tickFormatter={v => `${v < 0 ? '-' : ''}$${Math.abs(v) >= 1000 ? `${(Math.abs(v)/1000).toFixed(1)}k` : Math.abs(v)}`}
                         width={48}
                       />
                       <ReferenceLine y={0} stroke="#475569" strokeDasharray="4 2" strokeWidth={1} />
@@ -1344,7 +1344,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                         itemStyle={{ color: '#f8fafc' }}
                         labelStyle={{ color: '#e2e8f0', fontSize: '10px' }}
                         formatter={(value: number) => [
-                          `${value >= 0 ? '+' : ''}$${fmtMoney(Math.abs(value))}`,
+                          `${value >= 0 ? '+' : '-'}$${fmtMoney(Math.abs(value))}`,
                           'Mes',
                         ]}
                       />
