@@ -1246,11 +1246,12 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                         fontSize: '11px',
                         color: '#f8fafc',
                       }}
+                      itemStyle={{ color: '#f8fafc' }}
+                      labelStyle={{ color: '#e2e8f0', fontSize: '10px' }}
                       formatter={(value: number, name: string) => [
                         `${value >= 0 ? '+' : ''}$${fmtMoney(Math.abs(value))}`,
                         name === 'acumulado' ? 'Acumulado' : 'Ronda',
                       ]}
-                      labelStyle={{ color: '#94a3b8', fontSize: '10px' }}
                     />
                     <Area
                       type="monotone"
