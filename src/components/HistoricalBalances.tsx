@@ -214,6 +214,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   const [activeTab, setActiveTab] = useState<'rivals' | 'rounds' | 'sliding' | 'evolution' | 'bets'>('rivals');
   const [selectedBetCategory, setSelectedBetCategory] = useState<string | null>(null);
   const [betsRivalFilter, setBetsRivalFilter] = useState<string>('all');
+  const [rivalSortDesc, setRivalSortDesc] = useState<boolean>(true);
   const [betsTimeFilter, setBetsTimeFilter] = useState<'3m' | '6m' | '1y' | 'all'>('all');
 
   const [evolutionFilter, setEvolutionFilter] = useState<'3m' | '6m' | '1y' | 'all'>('all');
@@ -1801,7 +1802,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
               // Aplicar filtro de rival
               const rivals = Array.from(cat.byRival.values())
                 .filter(r => betsRivalFilter === 'all' || r.rivalProfileId === betsRivalFilter)
-                .sort((a, b) => b.amount - a.amount);
+                .sort((a, b) => rivalSortDesc ? b.amount - a.amount : a.amount - b.amount);
 
               return (
                 <div className="space-y-3 pb-4">
@@ -1827,15 +1828,25 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
                   {/* Filtro de rival */}
                   {betsRivalOptions.length > 2 && (
-                    <select
-                      value={betsRivalFilter}
-                      onChange={e => setBetsRivalFilter(e.target.value)}
-                      className="w-full text-xs bg-muted border border-border rounded-lg px-3 py-2 text-foreground"
-                    >
-                      {betsRivalOptions.map(o => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
-                      ))}
-                    </select>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={betsRivalFilter}
+                        onChange={e => setBetsRivalFilter(e.target.value)}
+                        className="flex-1 min-w-0 text-xs bg-muted border border-border rounded-lg px-3 py-2 text-foreground"
+                      >
+                        {betsRivalOptions.map(o => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => setRivalSortDesc(v => !v)}
+                        title={rivalSortDesc ? 'Orden: mayor a menor' : 'Orden: menor a mayor'}
+                        className="shrink-0 flex items-center justify-center h-8 w-8 rounded-lg bg-muted border border-border text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <ArrowUpDown className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   )}
 
                   {/* Lista de rivales */}
