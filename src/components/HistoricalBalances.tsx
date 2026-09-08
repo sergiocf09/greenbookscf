@@ -549,12 +549,23 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     let cumulative = 0;
     const cumulativePoints = filtered.map(r => {
       cumulative += r.netAmount;
+      const d = parseLocalDate(r.date);
       return {
-        date: format(parseLocalDate(r.date), 'MMM', { locale: es }),
+        date: format(d, 'MMM', { locale: es }),
+        monthKey: format(d, 'yyyy-MM'),
+        fullDate: format(d, 'dd/MM/yy', { locale: es }),
         acumulado: Math.round(cumulative),
         ronda: Math.round(r.netAmount),
         curso: r.courseName,
       };
+    });
+
+    // Etiquetas del eje X: sólo la primera ronda de cada mes muestra el nombre del mes
+    const seenMonths = new Set<string>();
+    const cumulativeTicks = cumulativePoints.map(p => {
+      if (seenMonths.has(p.monthKey)) return '';
+      seenMonths.add(p.monthKey);
+      return p.date;
     });
 
     // Gráfica por mes: agrupar y sumar
@@ -569,7 +580,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
       total: Math.round(total),
     }));
 
-    return { cumulativePoints, monthlyPoints };
+    return { cumulativePoints, cumulativeTicks, monthlyPoints };
   }, [myRounds, evolutionFilter]);
 
   if (!canAccessHistory) {
