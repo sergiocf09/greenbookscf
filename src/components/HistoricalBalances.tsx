@@ -842,8 +842,10 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
         if (p.profileId) map.set(p.profileId, p.name ?? p.profileId);
       }
     }
-    return [{ value: 'all', label: 'Todos los rivales' },
-      ...Array.from(map.entries()).map(([v, label]) => ({ value: v, label }))];
+    const rivals = Array.from(map.entries())
+      .map(([v, label]) => ({ value: v, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, 'es'));
+    return [{ value: 'all', label: 'Todos los rivales' }, ...rivals];
   }, [allSnapshots, profile]);
 
   if (!canAccessHistory) {
