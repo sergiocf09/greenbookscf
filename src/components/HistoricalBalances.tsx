@@ -1328,11 +1328,12 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                           fontSize: '11px',
                           color: '#f8fafc',
                         }}
+                        itemStyle={{ color: '#f8fafc' }}
+                        labelStyle={{ color: '#e2e8f0', fontSize: '10px' }}
                         formatter={(value: number) => [
                           `${value >= 0 ? '+' : ''}$${fmtMoney(Math.abs(value))}`,
                           'Mes',
                         ]}
-                        labelStyle={{ color: '#94a3b8', fontSize: '10px' }}
                       />
                       <Bar dataKey="total" radius={[4, 4, 0, 0]}>
                         {evolutionData.monthlyPoints.map((entry, index) => (
