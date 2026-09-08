@@ -214,6 +214,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   const [activeTab, setActiveTab] = useState<'rivals' | 'rounds' | 'sliding' | 'evolution' | 'bets'>('rivals');
   const [selectedBetCategory, setSelectedBetCategory] = useState<string | null>(null);
   const [betsRivalFilter, setBetsRivalFilter] = useState<string>('all');
+  const [rivalSortDesc, setRivalSortDesc] = useState<boolean>(true);
   const [betsTimeFilter, setBetsTimeFilter] = useState<'3m' | '6m' | '1y' | 'all'>('all');
 
   const [evolutionFilter, setEvolutionFilter] = useState<'3m' | '6m' | '1y' | 'all'>('all');
@@ -1503,14 +1504,20 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
                   >
                     <defs>
-                      <linearGradient id="gradPositive" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0.02} />
-                      </linearGradient>
-                      <linearGradient id="gradNegative" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.02} />
-                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0.3} />
-                      </linearGradient>
+                      {(() => {
+                        const vals = evolutionData.cumulativePoints.map(p => p.acumulado);
+                        const max = Math.max(0, ...vals);
+                        const min = Math.min(0, ...vals);
+                        const offset = max === min ? 1 : max / (max - min);
+                        return (
+                          <linearGradient id="gradSign" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset={0} stopColor="#22c55e" stopOpacity={0.3} />
+                            <stop offset={offset} stopColor="#22c55e" stopOpacity={0.02} />
+                            <stop offset={offset} stopColor="#ef4444" stopOpacity={0.02} />
+                            <stop offset={1} stopColor="#ef4444" stopOpacity={0.3} />
+                          </linearGradient>
+                        );
+                      })()}
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                     <XAxis
@@ -1553,10 +1560,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                         return last?.acumulado >= 0 ? '#22c55e' : '#ef4444';
                       })()}
                       strokeWidth={2}
-                      fill={(() => {
-                        const last = evolutionData.cumulativePoints[evolutionData.cumulativePoints.length - 1];
-                        return last?.acumulado >= 0 ? 'url(#gradPositive)' : 'url(#gradNegative)';
-                      })()}
+                      fill="url(#gradSign)"
                       dot={false}
                       activeDot={{ r: 4, strokeWidth: 0 }}
                     />
@@ -1651,8 +1655,19 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
             <div className="space-y-4 pb-4">
 
               {/* Filtros */}
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex gap-1.5">
+              <div className="flex items-center gap-1.5">
+                {betsRivalOptions.length > 1 && (
+                  <select
+                    value={betsRivalFilter}
+                    onChange={e => setBetsRivalFilter(e.target.value)}
+                    className="flex-1 min-w-0 max-w-[52%] h-7 text-[11px] bg-muted border border-border rounded-full px-2 text-foreground"
+                  >
+                    {betsRivalOptions.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                )}
+                <div className="flex gap-1.5 ml-auto">
                   {(['3m', '6m', '1y', 'all'] as const).map(f => (
                     <button key={f} type="button"
                       onClick={() => setBetsTimeFilter(f)}
@@ -1666,17 +1681,6 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     </button>
                   ))}
                 </div>
-                {betsRivalOptions.length > 1 && (
-                  <select
-                    value={betsRivalFilter}
-                    onChange={e => setBetsRivalFilter(e.target.value)}
-                    className="flex-1 min-w-0 max-w-[52%] h-7 text-[11px] bg-muted border border-border rounded-full px-2 text-foreground"
-                  >
-                    {betsRivalOptions.map(o => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                )}
               </div>
 
               {betCategoryData.length === 0 ? (
@@ -1798,7 +1802,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
               // Aplicar filtro de rival
               const rivals = Array.from(cat.byRival.values())
                 .filter(r => betsRivalFilter === 'all' || r.rivalProfileId === betsRivalFilter)
-                .sort((a, b) => b.amount - a.amount);
+                .sort((a, b) => rivalSortDesc ? b.amount - a.amount : a.amount - b.amount);
 
               return (
                 <div className="space-y-3 pb-4">
@@ -1824,15 +1828,25 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
                   {/* Filtro de rival */}
                   {betsRivalOptions.length > 2 && (
-                    <select
-                      value={betsRivalFilter}
-                      onChange={e => setBetsRivalFilter(e.target.value)}
-                      className="w-full text-xs bg-muted border border-border rounded-lg px-3 py-2 text-foreground"
-                    >
-                      {betsRivalOptions.map(o => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
-                      ))}
-                    </select>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={betsRivalFilter}
+                        onChange={e => setBetsRivalFilter(e.target.value)}
+                        className="flex-1 min-w-0 text-xs bg-muted border border-border rounded-lg px-3 py-2 text-foreground"
+                      >
+                        {betsRivalOptions.map(o => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => setRivalSortDesc(v => !v)}
+                        title={rivalSortDesc ? 'Orden: mayor a menor' : 'Orden: menor a mayor'}
+                        className="shrink-0 flex items-center justify-center h-8 w-8 rounded-lg bg-muted border border-border text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <ArrowUpDown className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   )}
 
                   {/* Lista de rivales */}
