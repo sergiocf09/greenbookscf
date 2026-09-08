@@ -217,6 +217,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   const [betsTimeFilter, setBetsTimeFilter] = useState<'3m' | '6m' | '1y' | 'all'>('all');
 
   const [evolutionFilter, setEvolutionFilter] = useState<'3m' | '6m' | '1y' | 'all'>('all');
+  const [evolutionRivalFilter, setEvolutionRivalFilter] = useState<string>('all');
 
   // Sliding tab state
   const [slidingEntries, setSlidingEntries] = useState<SlidingEntry[]>([]);
@@ -700,10 +701,19 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
         if (!isWinner && !isLoser) continue;
         if (entry.amount <= 0) continue;
 
+        // Filtro por rival (seleccionable desde la pantalla inicial)
+        if (betsRivalFilter !== 'all') {
+          const entryRivalId = isWinner ? entry.fromPlayerId : entry.toPlayerId;
+          const entryRivalPlayer = snap.players.find((p: any) => p.id === entryRivalId);
+          if ((entryRivalPlayer?.profileId ?? null) !== betsRivalFilter) continue;
+        }
+
         const rawType = entry.betType;
         const category = BET_CATEGORY_MAP[rawType] ?? rawType;
         const amount = isWinner ? entry.amount : -entry.amount;
         const isTeamBet = TEAM_BET_CATEGORIES.has(category);
+        // Con rival seleccionado, las apuestas de parejas no son atribuibles a una persona
+        if (isTeamBet && betsRivalFilter !== 'all') continue;
 
         if (!categoryMap.has(category)) {
           categoryMap.set(category, {
@@ -752,7 +762,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
     return Array.from(categoryMap.values())
       .sort((a, b) => b.totalAmount - a.totalAmount);
-  }, [allSnapshots, profile, betsTimeFilter]);
+  }, [allSnapshots, profile, betsTimeFilter, betsRivalFilter]);
 
   /** Lista de rivales disponibles para filtrar (de allSnapshots) */
   const betsRivalOptions = useMemo(() => {
