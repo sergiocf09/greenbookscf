@@ -40,7 +40,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, Cell,
 } from 'recharts';
-import { BarChart2 } from 'lucide-react';
+import { BarChart2, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -114,6 +114,91 @@ const getSnapshotTotalBalance = (snap: RoundSnapshot, playerId: string): number 
   return Number(playerBalance?.totalNet) || 0;
 };
 
+/** Mapeo de betType raw → categoría display */
+const BET_CATEGORY_MAP: Record<string, string> = {
+  'Rayas Front': 'Rayas',
+  'Rayas Back': 'Rayas',
+  'Rayas Medal Total': 'Rayas',
+  'Rayas Oyes': 'Rayas',
+  'Rayas Unidades': 'Rayas',
+  'Medal': 'Medal',
+  'Medal General': 'Medal',
+  'Medal Front': 'Medal',
+  'Medal Back': 'Medal',
+  'Medal Front 9': 'Medal',
+  'Medal Back 9': 'Medal',
+  'Medal Total': 'Medal',
+  'Presiones Front': 'Presiones',
+  'Presiones Match 18': 'Presiones',
+  'Presiones Back': 'Presiones',
+  'Presiones Back (Carry x2+Match)': 'Presiones',
+  'Putts': 'Putts',
+  'Putts General': 'Putts',
+  'Putts Front': 'Putts',
+  'Putts Back': 'Putts',
+  'Putts Front 9': 'Putts',
+  'Putts Back 9': 'Putts',
+  'Putts Total': 'Putts',
+  'Skins Front': 'Skins',
+  'Skins Back': 'Skins',
+  'Skins Grupal Front': 'Skins',
+  'Skins Grupal Back': 'Skins',
+  'Bloques': 'Bloques',
+  'Bloques Front': 'Bloques',
+  'Bloques Back': 'Bloques',
+  'Bloques Total': 'Bloques',
+  'Carritos Front': 'Carritos',
+  'Carritos Back': 'Carritos',
+  'Carritos Total': 'Carritos',
+  'Wolf': 'Wolf',
+  'Sixes': 'Sixes',
+  'Vegas': 'Vegas',
+  'Presiones Parejas': 'Presiones Parejas',
+  'Presiones Pareja': 'Presiones Parejas',
+  'Manchas': 'Manchas',
+  'Match Play': 'Match Play',
+  'Zoológico Coneja': 'Coneja',
+  'Coneja': 'Coneja',
+  'Zoológico Pingüinos': 'Pingüinos',
+  'Pingüinos': 'Pingüinos',
+  'Zoológico Culebras': 'Culebras',
+  'Culebras': 'Culebras',
+  'Zoológico Caros': 'Caros',
+  'Caros': 'Caros',
+  'Zoológico Camello': 'Camello',
+  'Camello': 'Camello',
+  'Zoológico Gorila': 'Gorila',
+  'Gorila': 'Gorila',
+  'Zoológico Pez': 'Pez',
+  'Pez': 'Pez',
+  'Oyes': 'Oyes',
+  'Nines': 'Nines',
+  'Stableford': 'Stableford',
+  'GIR General': 'GIR',
+  'Side Bet': 'Side Bet',
+  'Unidades': 'Unidades',
+};
+
+/** Categorías que son team bets — no tienen desglose por rival */
+const TEAM_BET_CATEGORIES = new Set([
+  'Carritos', 'Wolf', 'Sixes', 'Vegas', 'Presiones Parejas',
+]);
+
+/** Categorías donde mostrar conteo de incidencias */
+const INCIDENT_CATEGORIES = new Set([
+  'Rayas', 'Coneja', 'Pingüinos', 'Culebras', 'Caros', 'Manchas', 'Skins',
+  'Camello', 'Gorila', 'Pez', 'Oyes',
+]);
+
+interface BetCategoryData {
+  category: string;
+  totalAmount: number;
+  incidentsWon: number;
+  incidentsLost: number;
+  isTeamBet: boolean;
+  byRival: Map<string, { rivalName: string; rivalProfileId: string | null; amount: number; incidentsWon: number; incidentsLost: number }>;
+}
+
 export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBalancesProps>(({ 
   onViewRound,
   onClose 
@@ -126,7 +211,10 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   const [totalRounds, setTotalRounds] = useState(0);
   
   // Tab state
-  const [activeTab, setActiveTab] = useState<'rivals' | 'rounds' | 'sliding' | 'evolution'>('rivals');
+  const [activeTab, setActiveTab] = useState<'rivals' | 'rounds' | 'sliding' | 'evolution' | 'bets'>('rivals');
+  const [selectedBetCategory, setSelectedBetCategory] = useState<string | null>(null);
+  const [betsRivalFilter, setBetsRivalFilter] = useState<string>('all');
+  const [betsTimeFilter, setBetsTimeFilter] = useState<'3m' | '6m' | '1y' | 'all'>('all');
 
   const [evolutionFilter, setEvolutionFilter] = useState<'3m' | '6m' | '1y' | 'all'>('all');
 
@@ -583,6 +671,104 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     return { cumulativePoints, cumulativeTicks, monthlyPoints };
   }, [myRounds, evolutionFilter]);
 
+  const betCategoryData = useMemo((): BetCategoryData[] => {
+    if (!profile) return [];
+
+    // Filtro de tiempo
+    const now = new Date();
+    const cutoff = betsTimeFilter === '3m'
+      ? new Date(now.getFullYear(), now.getMonth() - 3, now.getDate())
+      : betsTimeFilter === '6m'
+      ? new Date(now.getFullYear(), now.getMonth() - 6, now.getDate())
+      : betsTimeFilter === '1y'
+      ? new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())
+      : null;
+
+    const categoryMap = new Map<string, BetCategoryData>();
+
+    for (const snap of allSnapshots) {
+      if (cutoff && parseLocalDate(snap.date) < cutoff) continue;
+
+      const userPlayer = snap.players.find((p: any) => p.profileId === profile.id);
+      if (!userPlayer) continue;
+
+      const userId = userPlayer.id;
+
+      for (const entry of snap.ledger) {
+        const isWinner = entry.toPlayerId === userId;
+        const isLoser  = entry.fromPlayerId === userId;
+        if (!isWinner && !isLoser) continue;
+        if (entry.amount <= 0) continue;
+
+        const rawType = entry.betType;
+        const category = BET_CATEGORY_MAP[rawType] ?? rawType;
+        const amount = isWinner ? entry.amount : -entry.amount;
+        const isTeamBet = TEAM_BET_CATEGORIES.has(category);
+
+        if (!categoryMap.has(category)) {
+          categoryMap.set(category, {
+            category,
+            totalAmount: 0,
+            incidentsWon: 0,
+            incidentsLost: 0,
+            isTeamBet,
+            byRival: new Map(),
+          });
+        }
+        const catData = categoryMap.get(category)!;
+        catData.totalAmount += amount;
+        if (INCIDENT_CATEGORIES.has(category)) {
+          if (isWinner) catData.incidentsWon += 1;
+          else catData.incidentsLost += 1;
+        }
+
+        // Desglose por rival (solo apuestas no-team)
+        if (!isTeamBet) {
+          const rivalId = isWinner ? entry.fromPlayerId : entry.toPlayerId;
+          const rivalName = isWinner ? entry.fromPlayerName : entry.toPlayerName;
+
+          const rivalPlayer = snap.players.find((p: any) => p.id === rivalId);
+          const rivalProfileId = rivalPlayer?.profileId ?? null;
+
+          const rivalKey = rivalProfileId ?? rivalId;
+          if (!catData.byRival.has(rivalKey)) {
+            catData.byRival.set(rivalKey, {
+              rivalName,
+              rivalProfileId,
+              amount: 0,
+              incidentsWon: 0,
+              incidentsLost: 0,
+            });
+          }
+          const rivalData = catData.byRival.get(rivalKey)!;
+          rivalData.amount += amount;
+          if (INCIDENT_CATEGORIES.has(category)) {
+            if (isWinner) rivalData.incidentsWon += 1;
+            else rivalData.incidentsLost += 1;
+          }
+        }
+      }
+    }
+
+    return Array.from(categoryMap.values())
+      .sort((a, b) => b.totalAmount - a.totalAmount);
+  }, [allSnapshots, profile, betsTimeFilter]);
+
+  /** Lista de rivales disponibles para filtrar (de allSnapshots) */
+  const betsRivalOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const snap of allSnapshots) {
+      const userPlayer = snap.players.find((p: any) => p.profileId === profile?.id);
+      if (!userPlayer) continue;
+      for (const p of snap.players) {
+        if (p.id === userPlayer.id) continue;
+        if (p.profileId) map.set(p.profileId, p.name ?? p.profileId);
+      }
+    }
+    return [{ value: 'all', label: 'Todos los rivales' },
+      ...Array.from(map.entries()).map(([v, label]) => ({ value: v, label }))];
+  }, [allSnapshots, profile]);
+
   if (!canAccessHistory) {
     return (
       <div className="text-center py-12 space-y-4">
@@ -800,7 +986,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     <div className="space-y-3 overflow-hidden">
       {/* Tabs: Vs Rivales / Mis Rondas */}
       <Tabs value={activeTab} onValueChange={(v) => {
-        const tab = v as 'rivals' | 'rounds' | 'sliding' | 'evolution';
+        const tab = v as 'rivals' | 'rounds' | 'sliding' | 'evolution' | 'bets';
         setActiveTab(tab);
         if (tab === 'sliding') fetchSliding();
       }} className="w-full">
@@ -810,6 +996,9 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
           <TabsTrigger value="sliding" className="flex-1 text-xs">Sliding</TabsTrigger>
           <TabsTrigger value="evolution" className="flex-1 text-xs">
             <BarChart2 className="h-3 w-3" />
+          </TabsTrigger>
+          <TabsTrigger value="bets" className="flex-1 text-xs">
+            <Layers className="h-3 w-3" />
           </TabsTrigger>
         </TabsList>
 
@@ -1364,6 +1553,204 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
             </div>
           )}
         </TabsContent>
+
+        {/* ── Por Apuesta Tab ── */}
+        <TabsContent value="bets" className="mt-3">
+          {selectedBetCategory === null ? (
+            /* ── VISTA PRINCIPAL: lista de categorías ── */
+            <div className="space-y-4 pb-4">
+
+              {/* Filtros */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex gap-1.5">
+                  {(['3m', '6m', '1y', 'all'] as const).map(f => (
+                    <button key={f} type="button"
+                      onClick={() => setBetsTimeFilter(f)}
+                      className={cn(
+                        'text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors',
+                        betsTimeFilter === f
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-muted text-muted-foreground border-border'
+                      )}>
+                      {f === '3m' ? '3M' : f === '6m' ? '6M' : f === '1y' ? '1A' : 'Todo'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {betCategoryData.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Layers className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                  <p className="text-sm text-muted-foreground">Sin apuestas registradas en este período</p>
+                </div>
+              ) : (
+                <>
+                  {/* Resumen global */}
+                  {(() => {
+                    const total = betCategoryData.reduce((s, c) => s + c.totalAmount, 0);
+                    const best  = betCategoryData[0];
+                    const worst = betCategoryData[betCategoryData.length - 1];
+                    return (
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { label: 'Total', value: total, highlight: true },
+                          { label: best?.category ?? '—', value: best?.totalAmount ?? 0, prefix: '↑ ' },
+                          { label: worst?.category ?? '—', value: worst?.totalAmount ?? 0, prefix: '↓ ' },
+                        ].map(({ label, value, prefix = '' }) => (
+                          <div key={label} className="bg-card border border-border rounded-xl p-2.5 text-center">
+                            <p className="text-[10px] text-muted-foreground mb-1 truncate">{prefix}{label}</p>
+                            <p className={cn(
+                              'text-sm font-bold tabular-nums',
+                              value > 0 ? 'text-green-500' : value < 0 ? 'text-destructive' : 'text-muted-foreground'
+                            )}>
+                              {value > 0 ? '+' : ''}${fmtMoney(Math.abs(value))}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Lista de categorías con barra proporcional */}
+                  {(() => {
+                    const maxAbs = Math.max(...betCategoryData.map(c => Math.abs(c.totalAmount)), 1);
+                    return (
+                      <div className="space-y-2">
+                        {betCategoryData.map(cat => {
+                          const pct = Math.round((Math.abs(cat.totalAmount) / maxAbs) * 100);
+                          const isPositive = cat.totalAmount >= 0;
+                          return (
+                            <button
+                              key={cat.category}
+                              type="button"
+                              onClick={() => !cat.isTeamBet && setSelectedBetCategory(cat.category)}
+                              className={cn(
+                                'w-full flex flex-col gap-1 p-3 bg-card border border-border rounded-xl transition-colors text-left',
+                                !cat.isTeamBet && 'hover:bg-muted/40 active:bg-muted/60',
+                                cat.isTeamBet && 'opacity-80'
+                              )}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-semibold">{cat.category}</span>
+                                  {cat.isTeamBet && (
+                                    <span className="text-[9px] text-muted-foreground border border-border rounded px-1">parejas</span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className={cn(
+                                    'text-sm font-bold tabular-nums',
+                                    isPositive ? 'text-green-500' : 'text-destructive'
+                                  )}>
+                                    {isPositive ? '+' : ''}${fmtMoney(Math.abs(cat.totalAmount))}
+                                  </span>
+                                  {!cat.isTeamBet && (
+                                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Barra proporcional */}
+                              <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                                <div
+                                  className={cn('h-full rounded-full transition-all', isPositive ? 'bg-green-500' : 'bg-destructive')}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+
+                              {/* Incidencias para apuestas relevantes */}
+                              {INCIDENT_CATEGORIES.has(cat.category) && (cat.incidentsWon + cat.incidentsLost > 0) && (
+                                <p className="text-[10px] text-muted-foreground">
+                                  {cat.incidentsWon} cobradas · {cat.incidentsLost} pagadas
+                                </p>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </>
+              )}
+            </div>
+          ) : (
+            /* ── VISTA DETALLE: desglose por rival ── */
+            (() => {
+              const cat = betCategoryData.find(c => c.category === selectedBetCategory);
+              if (!cat) return null;
+
+              // Aplicar filtro de rival
+              const rivals = Array.from(cat.byRival.values())
+                .filter(r => betsRivalFilter === 'all' || r.rivalProfileId === betsRivalFilter)
+                .sort((a, b) => b.amount - a.amount);
+
+              return (
+                <div className="space-y-3 pb-4">
+                  {/* Header de detalle */}
+                  <div className="flex items-center gap-2">
+                    <button type="button"
+                      onClick={() => { setSelectedBetCategory(null); setBetsRivalFilter('all'); }}
+                      className="text-muted-foreground hover:text-foreground p-1 -ml-1">
+                      <ArrowLeft className="h-4 w-4" />
+                    </button>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold">{cat.category}</p>
+                      <p className={cn(
+                        'text-xs font-semibold tabular-nums',
+                        cat.totalAmount > 0 ? 'text-green-500' : cat.totalAmount < 0 ? 'text-destructive' : 'text-muted-foreground'
+                      )}>
+                        {cat.totalAmount > 0 ? '+' : ''}${fmtMoney(Math.abs(cat.totalAmount))} total
+                        {INCIDENT_CATEGORIES.has(cat.category) && (cat.incidentsWon + cat.incidentsLost > 0) &&
+                          ` · ${cat.incidentsWon} cobradas / ${cat.incidentsLost} pagadas`}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Filtro de rival */}
+                  {betsRivalOptions.length > 2 && (
+                    <select
+                      value={betsRivalFilter}
+                      onChange={e => setBetsRivalFilter(e.target.value)}
+                      className="w-full text-xs bg-muted border border-border rounded-lg px-3 py-2 text-foreground"
+                    >
+                      {betsRivalOptions.map(o => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  )}
+
+                  {/* Lista de rivales */}
+                  {rivals.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-6">Sin datos para este rival</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {rivals.map(rival => (
+                        <div key={rival.rivalProfileId ?? rival.rivalName}
+                          className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold truncate">{rival.rivalName}</p>
+                            {INCIDENT_CATEGORIES.has(cat.category) && (rival.incidentsWon + rival.incidentsLost > 0) && (
+                              <p className="text-[10px] text-muted-foreground">
+                                {rival.incidentsWon} cobradas · {rival.incidentsLost} pagadas
+                              </p>
+                            )}
+                          </div>
+                          <span className={cn(
+                            'text-sm font-bold tabular-nums shrink-0',
+                            rival.amount > 0 ? 'text-green-500' : rival.amount < 0 ? 'text-destructive' : 'text-muted-foreground'
+                          )}>
+                            {rival.amount > 0 ? '+' : ''}${fmtMoney(Math.abs(rival.amount))}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()
+          )}
+        </TabsContent>
+
       </Tabs>
 
       {preAppSheetEl}
