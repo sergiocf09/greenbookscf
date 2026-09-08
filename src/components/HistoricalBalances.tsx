@@ -1654,8 +1654,19 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
             <div className="space-y-4 pb-4">
 
               {/* Filtros */}
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex gap-1.5">
+              <div className="flex items-center gap-1.5">
+                {betsRivalOptions.length > 1 && (
+                  <select
+                    value={betsRivalFilter}
+                    onChange={e => setBetsRivalFilter(e.target.value)}
+                    className="flex-1 min-w-0 max-w-[52%] h-7 text-[11px] bg-muted border border-border rounded-full px-2 text-foreground"
+                  >
+                    {betsRivalOptions.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                )}
+                <div className="flex gap-1.5 ml-auto">
                   {(['3m', '6m', '1y', 'all'] as const).map(f => (
                     <button key={f} type="button"
                       onClick={() => setBetsTimeFilter(f)}
@@ -1669,17 +1680,6 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     </button>
                   ))}
                 </div>
-                {betsRivalOptions.length > 1 && (
-                  <select
-                    value={betsRivalFilter}
-                    onChange={e => setBetsRivalFilter(e.target.value)}
-                    className="flex-1 min-w-0 max-w-[52%] h-7 text-[11px] bg-muted border border-border rounded-full px-2 text-foreground"
-                  >
-                    {betsRivalOptions.map(o => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                )}
               </div>
 
               {betCategoryData.length === 0 ? (
