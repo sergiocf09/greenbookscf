@@ -746,7 +746,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                   </p>
                 </div>
               ) : (
-                <ScrollArea className="max-h-[420px]">
+                <ScrollArea className="max-h-[380px]">
                   <div className="space-y-5 p-4">
 
                     {/* Gráfica 1: Rondas por mes */}
