@@ -1559,10 +1559,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                         return last?.acumulado >= 0 ? '#22c55e' : '#ef4444';
                       })()}
                       strokeWidth={2}
-                      fill={(() => {
-                        const last = evolutionData.cumulativePoints[evolutionData.cumulativePoints.length - 1];
-                        return last?.acumulado >= 0 ? 'url(#gradPositive)' : 'url(#gradNegative)';
-                      })()}
+                      fill="url(#gradSign)"
                       dot={false}
                       activeDot={{ r: 4, strokeWidth: 0 }}
                     />
