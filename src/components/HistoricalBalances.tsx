@@ -34,6 +34,13 @@ import {
   ArrowDown,
   Lock,
 } from 'lucide-react';
+
+import {
+  AreaChart, Area, BarChart, Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, ReferenceLine, Cell,
+} from 'recharts';
+import { BarChart2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -119,7 +126,9 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   const [totalRounds, setTotalRounds] = useState(0);
   
   // Tab state
-  const [activeTab, setActiveTab] = useState<'rivals' | 'rounds' | 'sliding'>('rivals');
+  const [activeTab, setActiveTab] = useState<'rivals' | 'rounds' | 'sliding' | 'evolution'>('rivals');
+
+  const [evolutionFilter, setEvolutionFilter] = useState<'3m' | '6m' | '1y' | 'all'>('all');
 
   // Sliding tab state
   const [slidingEntries, setSlidingEntries] = useState<SlidingEntry[]>([]);
@@ -516,6 +525,53 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     return rows;
   }, [allSnapshots, profile]);
 
+  const evolutionData = useMemo(() => {
+    // Ordenar rondas de más antigua a más reciente
+    const sorted = [...myRounds].sort(
+      (a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime()
+    );
+
+    // Aplicar filtro de tiempo
+    const now = new Date();
+    const cutoff = evolutionFilter === '3m'
+      ? new Date(now.getFullYear(), now.getMonth() - 3, now.getDate())
+      : evolutionFilter === '6m'
+      ? new Date(now.getFullYear(), now.getMonth() - 6, now.getDate())
+      : evolutionFilter === '1y'
+      ? new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())
+      : null;
+
+    const filtered = cutoff
+      ? sorted.filter(r => parseLocalDate(r.date) >= cutoff)
+      : sorted;
+
+    // Gráfica acumulativa: suma corrida
+    let cumulative = 0;
+    const cumulativePoints = filtered.map(r => {
+      cumulative += r.netAmount;
+      return {
+        date: format(parseLocalDate(r.date), 'dd/MM/yy', { locale: es }),
+        acumulado: Math.round(cumulative),
+        ronda: Math.round(r.netAmount),
+        curso: r.courseName,
+      };
+    });
+
+    // Gráfica por mes: agrupar y sumar
+    const monthMap = new Map<string, number>();
+    for (const r of filtered) {
+      const key = format(parseLocalDate(r.date), 'MMM yy', { locale: es });
+      monthMap.set(key, (monthMap.get(key) ?? 0) + r.netAmount);
+    }
+
+    const monthlyPoints = [...monthMap.entries()].map(([mes, total]) => ({
+      mes,
+      total: Math.round(total),
+    }));
+
+    return { cumulativePoints, monthlyPoints };
+  }, [myRounds, evolutionFilter]);
+
   if (!canAccessHistory) {
     return (
       <div className="text-center py-12 space-y-4">
@@ -733,7 +789,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     <div className="space-y-3 overflow-hidden">
       {/* Tabs: Vs Rivales / Mis Rondas */}
       <Tabs value={activeTab} onValueChange={(v) => {
-        const tab = v as 'rivals' | 'rounds' | 'sliding';
+        const tab = v as 'rivals' | 'rounds' | 'sliding' | 'evolution';
         setActiveTab(tab);
         if (tab === 'sliding') fetchSliding();
       }} className="w-full">
@@ -741,6 +797,9 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
           <TabsTrigger value="rivals" className="flex-1 text-xs">Vs Rivales</TabsTrigger>
           <TabsTrigger value="rounds" className="flex-1 text-xs">Mis Rondas</TabsTrigger>
           <TabsTrigger value="sliding" className="flex-1 text-xs">Sliding</TabsTrigger>
+          <TabsTrigger value="evolution" className="flex-1 text-xs">
+            <BarChart2 className="h-3 w-3" />
+          </TabsTrigger>
         </TabsList>
 
         {/* ── Vs Rivales Tab ── */}
