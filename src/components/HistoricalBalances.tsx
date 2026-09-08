@@ -1171,6 +1171,184 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
             );
           })()}
         </TabsContent>
+
+        {/* ── Evolución Tab ── */}
+        <TabsContent value="evolution" className="mt-3">
+          {myRounds.length < 2 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <BarChart2 className="h-10 w-10 text-muted-foreground/40 mb-3" />
+              <p className="text-sm text-muted-foreground">
+                Juega al menos 2 rondas para ver tu evolución
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-5 pb-4">
+              {/* Filtros de tiempo */}
+              <div className="flex gap-1.5 justify-end">
+                {(['3m', '6m', '1y', 'all'] as const).map(f => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setEvolutionFilter(f)}
+                    className={cn(
+                      'text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors',
+                      evolutionFilter === f
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
+                    )}
+                  >
+                    {f === '3m' ? '3M' : f === '6m' ? '6M' : f === '1y' ? '1A' : 'Todo'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Gráfica 1: Balance Acumulado */}
+              <div className="bg-card border border-border rounded-xl p-3">
+                <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+                  Balance Acumulado
+                </p>
+                <ResponsiveContainer width="100%" height={180}>
+                  <AreaChart
+                    data={evolutionData.cumulativePoints}
+                    margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="gradPositive" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0.02} />
+                      </linearGradient>
+                      <linearGradient id="gradNegative" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.02} />
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0.3} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 9, fill: '#64748b' }}
+                      tickLine={false}
+                      axisLine={false}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis
+                      tick={{ fontSize: 9, fill: '#64748b' }}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={v => `$${Math.abs(v) >= 1000 ? `${(v/1000).toFixed(1)}k` : v}`}
+                      width={48}
+                    />
+                    <ReferenceLine y={0} stroke="#475569" strokeDasharray="4 2" strokeWidth={1} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#0f172a',
+                        border: '1px solid #1e293b',
+                        borderRadius: '8px',
+                        fontSize: '11px',
+                        color: '#f8fafc',
+                      }}
+                      formatter={(value: number, name: string) => [
+                        `${value >= 0 ? '+' : ''}$${fmtMoney(Math.abs(value))}`,
+                        name === 'acumulado' ? 'Acumulado' : 'Ronda',
+                      ]}
+                      labelStyle={{ color: '#94a3b8', fontSize: '10px' }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="acumulado"
+                      stroke={(() => {
+                        const last = evolutionData.cumulativePoints[evolutionData.cumulativePoints.length - 1];
+                        return last?.acumulado >= 0 ? '#22c55e' : '#ef4444';
+                      })()}
+                      strokeWidth={2}
+                      fill={(() => {
+                        const last = evolutionData.cumulativePoints[evolutionData.cumulativePoints.length - 1];
+                        return last?.acumulado >= 0 ? 'url(#gradPositive)' : 'url(#gradNegative)';
+                      })()}
+                      dot={false}
+                      activeDot={{ r: 4, strokeWidth: 0 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+
+                {/* Balance final destacado */}
+                {(() => {
+                  const last = evolutionData.cumulativePoints[evolutionData.cumulativePoints.length - 1];
+                  if (!last) return null;
+                  return (
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-border">
+                      <span className="text-[10px] text-muted-foreground">Balance total período</span>
+                      <span className={cn(
+                        'text-sm font-bold tabular-nums',
+                        last.acumulado > 0 ? 'text-green-500' : last.acumulado < 0 ? 'text-destructive' : 'text-muted-foreground'
+                      )}>
+                        {last.acumulado >= 0 ? '+' : ''}${fmtMoney(Math.abs(last.acumulado))}
+                      </span>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Gráfica 2: Por Mes */}
+              <div className="bg-card border border-border rounded-xl p-3">
+                <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+                  Resultado por Mes
+                </p>
+                {evolutionData.monthlyPoints.length < 2 ? (
+                  <p className="text-xs text-muted-foreground text-center py-6">
+                    Se necesitan al menos 2 meses de datos para esta gráfica
+                  </p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={160}>
+                    <BarChart
+                      data={evolutionData.monthlyPoints}
+                      margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                      barSize={Math.max(8, Math.min(32, 180 / evolutionData.monthlyPoints.length))}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                      <XAxis
+                        dataKey="mes"
+                        tick={{ fontSize: 9, fill: '#64748b' }}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 9, fill: '#64748b' }}
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={v => `$${Math.abs(v) >= 1000 ? `${(v/1000).toFixed(1)}k` : v}`}
+                        width={48}
+                      />
+                      <ReferenceLine y={0} stroke="#475569" strokeDasharray="4 2" strokeWidth={1} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#0f172a',
+                          border: '1px solid #1e293b',
+                          borderRadius: '8px',
+                          fontSize: '11px',
+                          color: '#f8fafc',
+                        }}
+                        formatter={(value: number) => [
+                          `${value >= 0 ? '+' : ''}$${fmtMoney(Math.abs(value))}`,
+                          'Mes',
+                        ]}
+                        labelStyle={{ color: '#94a3b8', fontSize: '10px' }}
+                      />
+                      <Bar dataKey="total" radius={[4, 4, 0, 0]}>
+                        {evolutionData.monthlyPoints.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.total >= 0 ? '#22c55e' : '#ef4444'}
+                            fillOpacity={0.85}
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
 
       {preAppSheetEl}
