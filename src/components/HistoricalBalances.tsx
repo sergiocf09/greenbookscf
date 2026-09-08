@@ -1739,7 +1739,20 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
             /* ── VISTA DETALLE: desglose por rival ── */
             (() => {
               const cat = betCategoryData.find(c => c.category === selectedBetCategory);
-              if (!cat) return null;
+              if (!cat) {
+                return (
+                  <div className="space-y-3 pb-4">
+                    <button type="button"
+                      onClick={() => setSelectedBetCategory(null)}
+                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground p-1 -ml-1">
+                      <ArrowLeft className="h-4 w-4" /> Volver
+                    </button>
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      Sin movimientos de {selectedBetCategory} con este rival en el período
+                    </p>
+                  </div>
+                );
+              }
 
               // Aplicar filtro de rival
               const rivals = Array.from(cat.byRival.values())
