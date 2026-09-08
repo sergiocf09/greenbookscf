@@ -630,9 +630,37 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
       ? new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())
       : null;
 
-    const filtered = cutoff
+    const byTime = cutoff
       ? sorted.filter(r => parseLocalDate(r.date) >= cutoff)
       : sorted;
+
+    // Filtro por rival: recalcular el neto de cada ronda usando sólo el dinero
+    // movido entre el usuario y ese rival; las rondas sin coincidencia se excluyen.
+    let filtered = byTime;
+    if (evolutionRivalFilter !== 'all' && profile) {
+      const netByRound = new Map<string, number>();
+      for (const snap of allSnapshots) {
+        const userPlayer = snap.players.find((p: any) => p.profileId === profile.id);
+        if (!userPlayer) continue;
+        let sum = 0;
+        let found = false;
+        for (const entry of snap.ledger) {
+          const isWinner = entry.toPlayerId === userPlayer.id;
+          const isLoser  = entry.fromPlayerId === userPlayer.id;
+          if (!isWinner && !isLoser) continue;
+          if (entry.amount <= 0) continue;
+          const rivalId = isWinner ? entry.fromPlayerId : entry.toPlayerId;
+          const rivalPlayer = snap.players.find((p: any) => p.id === rivalId);
+          if ((rivalPlayer?.profileId ?? null) !== evolutionRivalFilter) continue;
+          sum += isWinner ? entry.amount : -entry.amount;
+          found = true;
+        }
+        if (found) netByRound.set(snap.roundId, sum);
+      }
+      filtered = byTime
+        .filter(r => netByRound.has(r.roundId))
+        .map(r => ({ ...r, netAmount: netByRound.get(r.roundId)! }));
+    }
 
     // Gráfica acumulativa: suma corrida
     let cumulative = 0;
@@ -670,7 +698,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     }));
 
     return { cumulativePoints, cumulativeTicks, monthlyPoints };
-  }, [myRounds, evolutionFilter]);
+  }, [myRounds, evolutionFilter, evolutionRivalFilter, allSnapshots, profile]);
 
   const betCategoryData = useMemo((): BetCategoryData[] => {
     if (!profile) return [];
