@@ -549,12 +549,23 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     let cumulative = 0;
     const cumulativePoints = filtered.map(r => {
       cumulative += r.netAmount;
+      const d = parseLocalDate(r.date);
       return {
-        date: format(parseLocalDate(r.date), 'dd/MM/yy', { locale: es }),
+        date: format(d, 'MMM', { locale: es }),
+        monthKey: format(d, 'yyyy-MM'),
+        fullDate: format(d, 'dd/MM/yy', { locale: es }),
         acumulado: Math.round(cumulative),
         ronda: Math.round(r.netAmount),
         curso: r.courseName,
       };
+    });
+
+    // Etiquetas del eje X: sólo la primera ronda de cada mes muestra el nombre del mes
+    const seenMonths = new Set<string>();
+    const cumulativeTicks = cumulativePoints.map(p => {
+      if (seenMonths.has(p.monthKey)) return '';
+      seenMonths.add(p.monthKey);
+      return p.date;
     });
 
     // Gráfica por mes: agrupar y sumar
@@ -569,7 +580,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
       total: Math.round(total),
     }));
 
-    return { cumulativePoints, monthlyPoints };
+    return { cumulativePoints, cumulativeTicks, monthlyPoints };
   }, [myRounds, evolutionFilter]);
 
   if (!canAccessHistory) {
@@ -1225,16 +1236,17 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                     <XAxis
                       dataKey="date"
+                      tickFormatter={(_, i) => evolutionData.cumulativeTicks[i] ?? ''}
                       tick={{ fontSize: 9, fill: '#64748b' }}
                       tickLine={false}
                       axisLine={false}
-                      interval="preserveStartEnd"
+                      interval={0}
                     />
                     <YAxis
                       tick={{ fontSize: 9, fill: '#64748b' }}
                       tickLine={false}
                       axisLine={false}
-                      tickFormatter={v => `$${Math.abs(v) >= 1000 ? `${(v/1000).toFixed(1)}k` : v}`}
+                      tickFormatter={v => `${v < 0 ? '-' : ''}$${Math.abs(v) >= 1000 ? `${(Math.abs(v)/1000).toFixed(1)}k` : Math.abs(v)}`}
                       width={48}
                     />
                     <ReferenceLine y={0} stroke="#475569" strokeDasharray="4 2" strokeWidth={1} />
@@ -1249,9 +1261,10 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                       itemStyle={{ color: '#f8fafc' }}
                       labelStyle={{ color: '#e2e8f0', fontSize: '10px' }}
                       formatter={(value: number, name: string) => [
-                        `${value >= 0 ? '+' : ''}$${fmtMoney(Math.abs(value))}`,
+                        `${value >= 0 ? '+' : '-'}$${fmtMoney(Math.abs(value))}`,
                         name === 'acumulado' ? 'Acumulado' : 'Ronda',
                       ]}
+                      labelFormatter={(_, p: any[]) => p?.[0]?.payload?.fullDate ?? ''}
                     />
                     <Area
                       type="monotone"
@@ -1316,7 +1329,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                         tick={{ fontSize: 9, fill: '#64748b' }}
                         tickLine={false}
                         axisLine={false}
-                        tickFormatter={v => `$${Math.abs(v) >= 1000 ? `${(v/1000).toFixed(1)}k` : v}`}
+                        tickFormatter={v => `${v < 0 ? '-' : ''}$${Math.abs(v) >= 1000 ? `${(Math.abs(v)/1000).toFixed(1)}k` : Math.abs(v)}`}
                         width={48}
                       />
                       <ReferenceLine y={0} stroke="#475569" strokeDasharray="4 2" strokeWidth={1} />
@@ -1331,7 +1344,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                         itemStyle={{ color: '#f8fafc' }}
                         labelStyle={{ color: '#e2e8f0', fontSize: '10px' }}
                         formatter={(value: number) => [
-                          `${value >= 0 ? '+' : ''}$${fmtMoney(Math.abs(value))}`,
+                          `${value >= 0 ? '+' : '-'}$${fmtMoney(Math.abs(value))}`,
                           'Mes',
                         ]}
                       />
