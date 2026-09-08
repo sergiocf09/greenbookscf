@@ -1236,10 +1236,11 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                     <XAxis
                       dataKey="date"
+                      tickFormatter={(_, i) => evolutionData.cumulativeTicks[i] ?? ''}
                       tick={{ fontSize: 9, fill: '#64748b' }}
                       tickLine={false}
                       axisLine={false}
-                      interval="preserveStartEnd"
+                      interval={0}
                     />
                     <YAxis
                       tick={{ fontSize: 9, fill: '#64748b' }}
