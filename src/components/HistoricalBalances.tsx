@@ -1264,7 +1264,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                         `${value >= 0 ? '+' : '-'}$${fmtMoney(Math.abs(value))}`,
                         name === 'acumulado' ? 'Acumulado' : 'Ronda',
                       ]}
-                      labelFormatter={(_, p: any) => p?.payload?.fullDate ?? ''}
+                      labelFormatter={(_, p: any[]) => p?.[0]?.payload?.fullDate ?? ''}
                     />
                     <Area
                       type="monotone"
