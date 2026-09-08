@@ -1615,59 +1615,61 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                   {(() => {
                     const maxAbs = Math.max(...betCategoryData.map(c => Math.abs(c.totalAmount)), 1);
                     return (
-                      <div className="space-y-2">
-                        {betCategoryData.map(cat => {
-                          const pct = Math.round((Math.abs(cat.totalAmount) / maxAbs) * 100);
-                          const isPositive = cat.totalAmount >= 0;
-                          return (
-                            <button
-                              key={cat.category}
-                              type="button"
-                              onClick={() => !cat.isTeamBet && setSelectedBetCategory(cat.category)}
-                              className={cn(
-                                'w-full flex flex-col gap-1 p-3 bg-card border border-border rounded-xl transition-colors text-left',
-                                !cat.isTeamBet && 'hover:bg-muted/40 active:bg-muted/60',
-                                cat.isTeamBet && 'opacity-80'
-                              )}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm font-semibold">{cat.category}</span>
-                                  {cat.isTeamBet && (
-                                    <span className="text-[9px] text-muted-foreground border border-border rounded px-1">parejas</span>
-                                  )}
+                      <ScrollArea className="h-[340px]">
+                        <div className="space-y-2 pr-2">
+                          {betCategoryData.map(cat => {
+                            const pct = Math.round((Math.abs(cat.totalAmount) / maxAbs) * 100);
+                            const isPositive = cat.totalAmount >= 0;
+                            return (
+                              <button
+                                key={cat.category}
+                                type="button"
+                                onClick={() => !cat.isTeamBet && setSelectedBetCategory(cat.category)}
+                                className={cn(
+                                  'w-full flex flex-col gap-1 p-3 bg-card border border-border rounded-xl transition-colors text-left',
+                                  !cat.isTeamBet && 'hover:bg-muted/40 active:bg-muted/60',
+                                  cat.isTeamBet && 'opacity-80'
+                                )}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-semibold">{cat.category}</span>
+                                    {cat.isTeamBet && (
+                                      <span className="text-[9px] text-muted-foreground border border-border rounded px-1">parejas</span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className={cn(
+                                      'text-sm font-bold tabular-nums',
+                                      isPositive ? 'text-green-500' : 'text-destructive'
+                                    )}>
+                                      {isPositive ? '+' : ''}${fmtMoney(Math.abs(cat.totalAmount))}
+                                    </span>
+                                    {!cat.isTeamBet && (
+                                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <span className={cn(
-                                    'text-sm font-bold tabular-nums',
-                                    isPositive ? 'text-green-500' : 'text-destructive'
-                                  )}>
-                                    {isPositive ? '+' : ''}${fmtMoney(Math.abs(cat.totalAmount))}
-                                  </span>
-                                  {!cat.isTeamBet && (
-                                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                                  )}
+
+                                {/* Barra proporcional */}
+                                <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                                  <div
+                                    className={cn('h-full rounded-full transition-all', isPositive ? 'bg-green-500' : 'bg-destructive')}
+                                    style={{ width: `${pct}%` }}
+                                  />
                                 </div>
-                              </div>
 
-                              {/* Barra proporcional */}
-                              <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                                <div
-                                  className={cn('h-full rounded-full transition-all', isPositive ? 'bg-green-500' : 'bg-destructive')}
-                                  style={{ width: `${pct}%` }}
-                                />
-                              </div>
-
-                              {/* Incidencias para apuestas relevantes */}
-                              {INCIDENT_CATEGORIES.has(cat.category) && (cat.incidentsWon + cat.incidentsLost > 0) && (
-                                <p className="text-[10px] text-muted-foreground">
-                                  {cat.incidentsWon} cobradas · {cat.incidentsLost} pagadas
-                                </p>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
+                                {/* Incidencias para apuestas relevantes */}
+                                {INCIDENT_CATEGORIES.has(cat.category) && (cat.incidentsWon + cat.incidentsLost > 0) && (
+                                  <p className="text-[10px] text-muted-foreground">
+                                    {cat.incidentsWon} cobradas · {cat.incidentsLost} pagadas
+                                  </p>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </ScrollArea>
                     );
                   })()}
                 </>
@@ -1723,27 +1725,29 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                   {rivals.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-6">Sin datos para este rival</p>
                   ) : (
-                    <div className="space-y-2">
-                      {rivals.map(rival => (
-                        <div key={rival.rivalProfileId ?? rival.rivalName}
-                          className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold truncate">{rival.rivalName}</p>
-                            {INCIDENT_CATEGORIES.has(cat.category) && (rival.incidentsWon + rival.incidentsLost > 0) && (
-                              <p className="text-[10px] text-muted-foreground">
-                                {rival.incidentsWon} cobradas · {rival.incidentsLost} pagadas
-                              </p>
-                            )}
+                    <ScrollArea className="h-[340px]">
+                      <div className="space-y-2 pr-2">
+                        {rivals.map(rival => (
+                          <div key={rival.rivalProfileId ?? rival.rivalName}
+                            className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold truncate">{rival.rivalName}</p>
+                              {INCIDENT_CATEGORIES.has(cat.category) && (rival.incidentsWon + rival.incidentsLost > 0) && (
+                                <p className="text-[10px] text-muted-foreground">
+                                  {rival.incidentsWon} cobradas · {rival.incidentsLost} pagadas
+                                </p>
+                              )}
+                            </div>
+                            <span className={cn(
+                              'text-sm font-bold tabular-nums shrink-0',
+                              rival.amount > 0 ? 'text-green-500' : rival.amount < 0 ? 'text-destructive' : 'text-muted-foreground'
+                            )}>
+                              {rival.amount > 0 ? '+' : ''}${fmtMoney(Math.abs(rival.amount))}
+                            </span>
                           </div>
-                          <span className={cn(
-                            'text-sm font-bold tabular-nums shrink-0',
-                            rival.amount > 0 ? 'text-green-500' : rival.amount < 0 ? 'text-destructive' : 'text-muted-foreground'
-                          )}>
-                            {rival.amount > 0 ? '+' : ''}${fmtMoney(Math.abs(rival.amount))}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
                   )}
                 </div>
               );
