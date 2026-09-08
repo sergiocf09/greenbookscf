@@ -1751,7 +1751,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                   {/* Header de detalle */}
                   <div className="flex items-center gap-2">
                     <button type="button"
-                      onClick={() => { setSelectedBetCategory(null); setBetsRivalFilter('all'); }}
+                      onClick={() => setSelectedBetCategory(null)}
                       className="text-muted-foreground hover:text-foreground p-1 -ml-1">
                       <ArrowLeft className="h-4 w-4" />
                     </button>
