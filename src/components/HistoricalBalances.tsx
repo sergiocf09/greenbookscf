@@ -1503,14 +1503,20 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
                   >
                     <defs>
-                      <linearGradient id="gradPositive" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0.02} />
-                      </linearGradient>
-                      <linearGradient id="gradNegative" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.02} />
-                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0.3} />
-                      </linearGradient>
+                      {(() => {
+                        const vals = evolutionData.cumulativePoints.map(p => p.acumulado);
+                        const max = Math.max(0, ...vals);
+                        const min = Math.min(0, ...vals);
+                        const offset = max === min ? 1 : max / (max - min);
+                        return (
+                          <linearGradient id="gradSign" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset={0} stopColor="#22c55e" stopOpacity={0.3} />
+                            <stop offset={offset} stopColor="#22c55e" stopOpacity={0.02} />
+                            <stop offset={offset} stopColor="#ef4444" stopOpacity={0.02} />
+                            <stop offset={1} stopColor="#ef4444" stopOpacity={0.3} />
+                          </linearGradient>
+                        );
+                      })()}
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                     <XAxis
