@@ -550,7 +550,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     const cumulativePoints = filtered.map(r => {
       cumulative += r.netAmount;
       return {
-        date: format(parseLocalDate(r.date), 'dd/MM/yy', { locale: es }),
+        date: format(parseLocalDate(r.date), 'MMM', { locale: es }),
         acumulado: Math.round(cumulative),
         ronda: Math.round(r.netAmount),
         curso: r.courseName,
