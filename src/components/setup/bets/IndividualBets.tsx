@@ -20,6 +20,70 @@ interface IndividualBetsProps {
   basePlayerId?: string;
 }
 
+/** Rango de hoyos de Caros: permite escribir libremente (borrar dígitos) y valida al salir del campo */
+const CarosRange: React.FC<{
+  maxHole: number;
+  startHole: number;
+  endHole: number;
+  onChange: (updates: { startHole?: number; endHole?: number }) => void;
+}> = ({ maxHole, startHole, endHole, onChange }) => {
+  const [startDraft, setStartDraft] = React.useState(String(startHole));
+  const [endDraft, setEndDraft] = React.useState(String(endHole));
+
+  React.useEffect(() => { setStartDraft(String(startHole)); }, [startHole]);
+  React.useEffect(() => { setEndDraft(String(endHole)); }, [endHole]);
+
+  const commit = (which: 'start' | 'end', raw: string) => {
+    const parsed = parseInt(raw, 10);
+    if (Number.isNaN(parsed)) {
+      setStartDraft(String(startHole));
+      setEndDraft(String(endHole));
+      return;
+    }
+    const value = Math.max(1, Math.min(maxHole, parsed));
+    if (which === 'start') {
+      const nextEnd = Math.max(value, endHole);
+      onChange({ startHole: value, ...(nextEnd !== endHole ? { endHole: nextEnd } : {}) });
+    } else {
+      const nextStart = Math.min(value, startHole);
+      onChange({ endHole: value, ...(nextStart !== startHole ? { startHole: nextStart } : {}) });
+    }
+  };
+
+  const inputProps = {
+    type: 'number' as const,
+    inputMode: 'numeric' as const,
+    min: 1,
+    max: maxHole,
+    onClick: (e: React.MouseEvent) => e.stopPropagation(),
+    className: 'w-12 h-6 text-center text-xs p-1 border rounded bg-background',
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <Label className="text-xs text-muted-foreground">Rango:</Label>
+      <div className="flex items-center gap-1">
+        <input
+          {...inputProps}
+          value={startDraft}
+          onChange={(e) => setStartDraft(e.target.value)}
+          onBlur={() => commit('start', startDraft)}
+          onKeyDown={(e) => { if (e.key === 'Enter') commit('start', startDraft); }}
+        />
+        <span className="text-xs text-muted-foreground">a</span>
+        <input
+          {...inputProps}
+          value={endDraft}
+          onChange={(e) => setEndDraft(e.target.value)}
+          onBlur={() => commit('end', endDraft)}
+          onKeyDown={(e) => { if (e.key === 'Enter') commit('end', endDraft); }}
+        />
+      </div>
+      <span className="text-[10px] text-muted-foreground">(1-{maxHole})</span>
+    </div>
+  );
+};
+
 export const IndividualBets: React.FC<IndividualBetsProps> = ({
   config,
   players,
@@ -32,6 +96,10 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
   /** Only show bet detail if at least 1 player participates */
   const show = (betKey: string) => betHasParticipants(config, betKey, players);
   const isNineHole = (config.roundHoles ?? 18) === 9;
+  const carosMaxHole = isNineHole ? 9 : 18;
+  const carosStart = Math.min(config.caros.startHole ?? (isNineHole ? 6 : 15), carosMaxHole);
+  const carosEnd = Math.min(config.caros.endHole ?? (isNineHole ? 9 : 18), carosMaxHole);
+
 
   return (
     <div className="space-y-3">
@@ -149,27 +217,24 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         <BetSection
           id="caros"
           title="Caros"
-          description={`Hoyos ${config.caros.startHole ?? 15}-${config.caros.endHole ?? 18} (ganador único)`}
+          description={`Hoyos ${carosStart}-${carosEnd} (ganador único)`}
           enabled={config.caros.enabled}
           onToggle={(enabled) => onUpdateBet('caros', { enabled })}
           isExpanded={expandedSections.includes('caros')}
           onExpandChange={(open) => onToggleSection('caros', open)}
-          helpText="Match de score neto en los últimos hoyos de la ronda (por defecto hoyos 15 al 18, configurable). El jugador con menor total neto en esos hoyos gana la apuesta."
+          helpText="Match de score neto en un rango de hoyos configurable, contados en orden de juego (por defecto los últimos 4 hoyos de la ronda). El jugador con menor total neto en esos hoyos gana la apuesta."
         >
           <AmountInput label="Importe total" value={config.caros.amount} onChange={(v) => onUpdateBet('caros', { amount: v })} />
-          <CollapsibleSubSection label="Configuración" summary={`Hoyos ${config.caros.startHole ?? 15} a ${config.caros.endHole ?? 18}`}>
-            <div className="flex items-center gap-2">
-              <Label className="text-xs text-muted-foreground">Rango:</Label>
-              <div className="flex items-center gap-1">
-                <input type="number" min={1} max={17} value={config.caros.startHole ?? 15}
-                  onChange={(e) => { const start = Math.max(1, Math.min(17, parseInt(e.target.value) || 15)); onUpdateBet('caros', { startHole: start }); }}
-                  onClick={(e) => e.stopPropagation()} className="w-12 h-6 text-center text-xs p-1 border rounded bg-background" />
-                <span className="text-xs text-muted-foreground">a</span>
-                <input type="number" min={2} max={18} value={config.caros.endHole ?? 18}
-                  onChange={(e) => { const end = Math.max(2, Math.min(18, parseInt(e.target.value) || 18)); onUpdateBet('caros', { endHole: end }); }}
-                  onClick={(e) => e.stopPropagation()} className="w-12 h-6 text-center text-xs p-1 border rounded bg-background" />
-              </div>
-            </div>
+          <CollapsibleSubSection label="Configuración" summary={`Hoyos ${carosStart} a ${carosEnd}`}>
+
+            <CarosRange
+              maxHole={carosMaxHole}
+              startHole={carosStart}
+              endHole={carosEnd}
+              onChange={(updates) => onUpdateBet('caros', updates)}
+            />
+
+
           </CollapsibleSubSection>
         </BetSection>
       )}
