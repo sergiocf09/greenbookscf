@@ -20,6 +20,70 @@ interface IndividualBetsProps {
   basePlayerId?: string;
 }
 
+/** Rango de hoyos de Caros: permite escribir libremente (borrar dígitos) y valida al salir del campo */
+const CarosRange: React.FC<{
+  maxHole: number;
+  startHole: number;
+  endHole: number;
+  onChange: (updates: { startHole?: number; endHole?: number }) => void;
+}> = ({ maxHole, startHole, endHole, onChange }) => {
+  const [startDraft, setStartDraft] = React.useState(String(startHole));
+  const [endDraft, setEndDraft] = React.useState(String(endHole));
+
+  React.useEffect(() => { setStartDraft(String(startHole)); }, [startHole]);
+  React.useEffect(() => { setEndDraft(String(endHole)); }, [endHole]);
+
+  const commit = (which: 'start' | 'end', raw: string) => {
+    const parsed = parseInt(raw, 10);
+    if (Number.isNaN(parsed)) {
+      setStartDraft(String(startHole));
+      setEndDraft(String(endHole));
+      return;
+    }
+    const value = Math.max(1, Math.min(maxHole, parsed));
+    if (which === 'start') {
+      const nextEnd = Math.max(value, endHole);
+      onChange({ startHole: value, ...(nextEnd !== endHole ? { endHole: nextEnd } : {}) });
+    } else {
+      const nextStart = Math.min(value, startHole);
+      onChange({ endHole: value, ...(nextStart !== startHole ? { startHole: nextStart } : {}) });
+    }
+  };
+
+  const inputProps = {
+    type: 'number' as const,
+    inputMode: 'numeric' as const,
+    min: 1,
+    max: maxHole,
+    onClick: (e: React.MouseEvent) => e.stopPropagation(),
+    className: 'w-12 h-6 text-center text-xs p-1 border rounded bg-background',
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <Label className="text-xs text-muted-foreground">Rango:</Label>
+      <div className="flex items-center gap-1">
+        <input
+          {...inputProps}
+          value={startDraft}
+          onChange={(e) => setStartDraft(e.target.value)}
+          onBlur={() => commit('start', startDraft)}
+          onKeyDown={(e) => { if (e.key === 'Enter') commit('start', startDraft); }}
+        />
+        <span className="text-xs text-muted-foreground">a</span>
+        <input
+          {...inputProps}
+          value={endDraft}
+          onChange={(e) => setEndDraft(e.target.value)}
+          onBlur={() => commit('end', endDraft)}
+          onKeyDown={(e) => { if (e.key === 'Enter') commit('end', endDraft); }}
+        />
+      </div>
+      <span className="text-[10px] text-muted-foreground">(1-{maxHole})</span>
+    </div>
+  );
+};
+
 export const IndividualBets: React.FC<IndividualBetsProps> = ({
   config,
   players,
