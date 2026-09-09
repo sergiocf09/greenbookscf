@@ -787,8 +787,9 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
         // Filtro por rival (seleccionable desde la pantalla inicial)
         if (betsRivalFilter !== 'all' && rivalProfileId !== betsRivalFilter) continue;
-        // Con rival seleccionado, las apuestas de parejas no son atribuibles a una persona
-        if (isTeamBet && betsRivalFilter !== 'all') continue;
+        // Las apuestas de parejas liquidan por pareja (50/50), así que cada
+        // entrada del ledger SÍ es atribuible al rival: se incluyen en el total
+        // para que cuadre con "Por Rival" y "Evolución".
 
         addToCategory(
           category,
