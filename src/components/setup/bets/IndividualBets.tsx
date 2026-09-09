@@ -96,6 +96,10 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
   /** Only show bet detail if at least 1 player participates */
   const show = (betKey: string) => betHasParticipants(config, betKey, players);
   const isNineHole = (config.roundHoles ?? 18) === 9;
+  const carosMaxHole = isNineHole ? 9 : 18;
+  const carosStart = Math.min(config.caros.startHole ?? (isNineHole ? 6 : 15), carosMaxHole);
+  const carosEnd = Math.min(config.caros.endHole ?? (isNineHole ? 9 : 18), carosMaxHole);
+
 
   return (
     <div className="space-y-3">
