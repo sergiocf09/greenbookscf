@@ -228,11 +228,12 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           <CollapsibleSubSection label="Configuración" summary={`Hoyos ${carosStart} a ${carosEnd}`}>
 
             <CarosRange
-              maxHole={isNineHole ? 9 : 18}
-              startHole={config.caros.startHole ?? (isNineHole ? 6 : 15)}
-              endHole={config.caros.endHole ?? (isNineHole ? 9 : 18)}
+              maxHole={carosMaxHole}
+              startHole={carosStart}
+              endHole={carosEnd}
               onChange={(updates) => onUpdateBet('caros', updates)}
             />
+
 
           </CollapsibleSubSection>
         </BetSection>
