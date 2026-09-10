@@ -100,6 +100,13 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
   const carosStart = Math.min(config.caros.startHole ?? (isNineHole ? 6 : 15), carosMaxHole);
   const carosEnd = Math.min(config.caros.endHole ?? (isNineHole ? 9 : 18), carosMaxHole);
 
+  // Persist the effective range so the calculation uses the same holes shown here
+  React.useEffect(() => {
+    if (config.caros.startHole !== carosStart || config.caros.endHole !== carosEnd) {
+      onUpdateBet('caros', { startHole: carosStart, endHole: carosEnd });
+    }
+  }, [carosStart, carosEnd, config.caros.startHole, config.caros.endHole, onUpdateBet]);
+
 
   return (
     <div className="space-y-3">
