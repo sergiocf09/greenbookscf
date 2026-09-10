@@ -97,8 +97,16 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
   const show = (betKey: string) => betHasParticipants(config, betKey, players);
   const isNineHole = (config.roundHoles ?? 18) === 9;
   const carosMaxHole = isNineHole ? 9 : 18;
-  const carosStart = Math.min(config.caros.startHole ?? (isNineHole ? 6 : 15), carosMaxHole);
-  const carosEnd = Math.min(config.caros.endHole ?? (isNineHole ? 9 : 18), carosMaxHole);
+  // Si el rango guardado no cabe en la ronda (p.ej. default 15-18 en ronda de 9),
+  // usar el default del formato en lugar de colapsar todo al hoyo máximo.
+  const savedCarosOutOfRange =
+    (config.caros.startHole ?? 0) > carosMaxHole || (config.caros.endHole ?? 0) > carosMaxHole;
+  const carosStart = savedCarosOutOfRange
+    ? (isNineHole ? 6 : 15)
+    : Math.min(config.caros.startHole ?? (isNineHole ? 6 : 15), carosMaxHole);
+  const carosEnd = savedCarosOutOfRange
+    ? carosMaxHole
+    : Math.min(config.caros.endHole ?? (isNineHole ? 9 : 18), carosMaxHole);
 
   // Persist the effective range so the calculation uses the same holes shown here
   React.useEffect(() => {
