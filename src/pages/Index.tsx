@@ -2665,7 +2665,15 @@ const Index = () => {
             onTeeColorChange={handleTeeColorChange}
             onStartingHoleChange={setStartingHole}
             onRoundHolesChange={(h) => setBetConfig(prev => {
-              const next: typeof prev = { ...prev, roundHoles: h };
+              const next: typeof prev = {
+                ...prev,
+                roundHoles: h,
+                caros: {
+                  ...prev.caros,
+                  startHole: h === 9 ? 6 : 15,
+                  endHole: h === 9 ? 9 : 18,
+                },
+              };
               if (h === 9 && prev.bloques?.holesPerBlock === 6) {
                 next.bloques = { ...prev.bloques, holesPerBlock: 3 };
               }
