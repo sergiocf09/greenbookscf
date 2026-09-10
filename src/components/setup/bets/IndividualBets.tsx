@@ -97,10 +97,15 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
   const show = (betKey: string) => betHasParticipants(config, betKey, players);
   const isNineHole = (config.roundHoles ?? 18) === 9;
   const carosMaxHole = isNineHole ? 9 : 18;
-  // Si el rango guardado no cabe en la ronda (p.ej. default 15-18 en ronda de 9),
-  // usar el default del formato en lugar de colapsar todo al hoyo máximo.
+  // Si el rango guardado no cabe en la ronda (p.ej. default 15-18 en ronda de 9)
+  // o quedó colapsado en un solo hoyo al final (9-9, artefacto de versiones previas),
+  // usar el default del formato: últimos 4 hoyos (6-9 en rondas de 9).
+  const savedStart = config.caros.startHole ?? 0;
+  const savedEnd = config.caros.endHole ?? 0;
   const savedCarosOutOfRange =
-    (config.caros.startHole ?? 0) > carosMaxHole || (config.caros.endHole ?? 0) > carosMaxHole;
+    savedStart > carosMaxHole ||
+    savedEnd > carosMaxHole ||
+    savedStart >= savedEnd;
   const carosStart = savedCarosOutOfRange
     ? (isNineHole ? 6 : 15)
     : Math.min(config.caros.startHole ?? (isNineHole ? 6 : 15), carosMaxHole);
