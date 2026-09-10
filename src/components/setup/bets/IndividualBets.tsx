@@ -95,30 +95,52 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
 }) => {
   /** Only show bet detail if at least 1 player participates */
   const show = (betKey: string) => betHasParticipants(config, betKey, players);
-  const isNineHole = (config.roundHoles ?? 18) === 9;
+  const roundHoles = config.roundHoles ?? 18;
+  const isNineHole = roundHoles === 9;
   const carosMaxHole = isNineHole ? 9 : 18;
+  const defaultCarosStart = isNineHole ? 6 : 15;
   // Si el rango guardado no cabe en la ronda (p.ej. default 15-18 en ronda de 9)
   // o quedó colapsado en un solo hoyo al final (9-9, artefacto de versiones previas),
-  // usar el default del formato: últimos 4 hoyos (6-9 en rondas de 9).
+  // usar el default del formato: últimos 4 hoyos (6-9 en rondas de 9, 15-18 en 18).
   const savedStart = config.caros.startHole ?? 0;
   const savedEnd = config.caros.endHole ?? 0;
   const savedCarosOutOfRange =
     savedStart > carosMaxHole ||
     savedEnd > carosMaxHole ||
     savedStart >= savedEnd;
-  const carosStart = savedCarosOutOfRange
-    ? (isNineHole ? 6 : 15)
-    : Math.min(config.caros.startHole ?? (isNineHole ? 6 : 15), carosMaxHole);
-  const carosEnd = savedCarosOutOfRange
+
+  // Al cambiar el formato de la ronda (9 <-> 18), reiniciar el rango si venía
+  // del default del formato anterior (6-9 en 9 hoyos, 15-18 en 18 hoyos).
+  const prevRoundHolesRef = React.useRef(roundHoles);
+  const [formatReseed, setFormatReseed] = React.useState(false);
+  React.useEffect(() => {
+    if (prevRoundHolesRef.current !== roundHoles) {
+      const prevDefaultStart = prevRoundHolesRef.current === 9 ? 6 : 15;
+      const prevDefaultEnd = prevRoundHolesRef.current === 9 ? 9 : 18;
+      prevRoundHolesRef.current = roundHoles;
+      if (savedStart === prevDefaultStart && savedEnd === prevDefaultEnd) {
+        setFormatReseed(true);
+      }
+    }
+  }, [roundHoles, savedStart, savedEnd]);
+
+  const needsReseed = savedCarosOutOfRange || formatReseed;
+  const carosStart = needsReseed
+    ? defaultCarosStart
+    : Math.min(config.caros.startHole ?? defaultCarosStart, carosMaxHole);
+  const carosEnd = needsReseed
     ? carosMaxHole
-    : Math.min(config.caros.endHole ?? (isNineHole ? 9 : 18), carosMaxHole);
+    : Math.min(config.caros.endHole ?? carosMaxHole, carosMaxHole);
 
   // Persist the effective range so the calculation uses the same holes shown here
   React.useEffect(() => {
     if (config.caros.startHole !== carosStart || config.caros.endHole !== carosEnd) {
       onUpdateBet('caros', { startHole: carosStart, endHole: carosEnd });
+    } else if (formatReseed) {
+      setFormatReseed(false);
     }
-  }, [carosStart, carosEnd, config.caros.startHole, config.caros.endHole, onUpdateBet]);
+  }, [carosStart, carosEnd, config.caros.startHole, config.caros.endHole, onUpdateBet, formatReseed]);
+
 
 
   return (
