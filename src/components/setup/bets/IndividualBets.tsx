@@ -100,14 +100,16 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
   const carosMaxHole = isNineHole ? 9 : 18;
   const defaultCarosStart = isNineHole ? 6 : 15;
   // Si el rango guardado no cabe en la ronda (p.ej. default 15-18 en ronda de 9)
-  // o quedó colapsado en un solo hoyo al final (9-9, artefacto de versiones previas),
-  // usar el default del formato: últimos 4 hoyos (6-9 en rondas de 9, 15-18 en 18).
+  // o está invertido, usar el default del formato: últimos 4 hoyos.
+  // Un rango de un solo hoyo (p.ej. 18-18) es válido y se respeta.
   const savedStart = config.caros.startHole ?? 0;
   const savedEnd = config.caros.endHole ?? 0;
   const savedCarosOutOfRange =
+    savedStart < 1 ||
+    savedEnd < 1 ||
     savedStart > carosMaxHole ||
     savedEnd > carosMaxHole ||
-    savedStart >= savedEnd;
+    savedStart > savedEnd;
 
   // Al cambiar el formato de la ronda (9 <-> 18), reiniciar el rango si venía
   // del default del formato anterior (6-9 en 9 hoyos, 15-18 en 18 hoyos).
