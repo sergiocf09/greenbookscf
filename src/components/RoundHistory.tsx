@@ -735,9 +735,9 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
             </Button>
           </div>
 
-          {/* Pop-up de actividad mensual, justo debajo del botón */}
-          {showActivity && (
-            <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-card border border-border rounded-xl shadow-2xl shadow-black/40">
+          {/* Pop-up de actividad mensual: anclado a la parte superior de la pantalla */}
+          {showActivity && createPortal(
+            <div className="fixed left-2 right-2 top-[max(0.5rem,env(safe-area-inset-top))] z-[80] bg-card border border-border rounded-xl shadow-2xl shadow-black/40">
               {/* Encabezado con crucecita para cerrar */}
               <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-border">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
