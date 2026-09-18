@@ -61,6 +61,14 @@ export const BloquesStrip: React.FC<Props> = ({
     else tiedResolved.push(b);
   }
 
+  // In-progress blocks: provisional (not yet settled) standing
+  const inProgressBlocks = blocks.filter(b => !b.resolved && (b.holesPlayed ?? 0) > 0);
+  const provisionalNet = inProgressBlocks.reduce((sum, b) => {
+    if (b.provisionalWinnerId === playerA.id) return sum + b.amountAtStake;
+    if (b.provisionalWinnerId === playerB.id) return sum - b.amountAtStake;
+    return sum;
+  }, 0);
+
   const renderList = (arr: BloqueResult[]) => arr.map(b => `B${b.blockNumber}`).join(', ');
 
   return (
