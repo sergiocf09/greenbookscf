@@ -716,9 +716,9 @@ function CoursePicker({
                     onClick={async () => {
                       setImporting(true);
                       try {
-                        const newId = await importCourse(r.apiId);
-                        if (newId) {
-                          onPick(newId, `${r.clubName}${r.courseName ? ` — ${r.courseName}` : ''}`);
+                        const imported = await importCourse(r.apiId);
+                        if (imported) {
+                          onPick(imported.courseId, `${r.clubName}${r.courseName ? ` — ${r.courseName}` : ''}`);
                           setOpen(false);
                         }
                       } finally {

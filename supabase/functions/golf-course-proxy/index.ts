@@ -113,6 +113,21 @@ Deno.serve(async (req) => {
 
     // ─── IMPORT ───
     if (action === "import") {
+      // Marca el campo como visible para quien lo pidió (también cuando ya existía)
+      const addToFavorites = async (courseId: string) => {
+        try {
+          const { data: profileId } = await supabase.rpc("get_my_profile_id");
+          if (profileId) {
+            await supabase.from("course_favorites").upsert(
+              { profile_id: profileId, course_id: courseId },
+              { onConflict: "profile_id,course_id" }
+            );
+          }
+        } catch (e) {
+          console.error("favorite upsert failed:", e);
+        }
+      };
+
       const apiId = (url.searchParams.get("id") || "").trim();
       if (!apiId) {
         return new Response(JSON.stringify({ error: "Missing course id" }), {
@@ -124,6 +139,7 @@ Deno.serve(async (req) => {
       // Redirige al campo canónico si el id externo está bloqueado
       const blockedCanonical = BLOCKED_API_COURSE_IDS[apiId];
       if (blockedCanonical) {
+        await addToFavorites(blockedCanonical);
         return new Response(
           JSON.stringify({ courseId: blockedCanonical, cached: true, redirected: true }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -142,6 +158,7 @@ Deno.serve(async (req) => {
 
 
       if (existing) {
+        await addToFavorites(existing.id);
         return new Response(
           JSON.stringify({ courseId: existing.id, cached: true }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -182,6 +199,7 @@ Deno.serve(async (req) => {
         `${courseData.club_name || ""} ${courseData.course_name || ""}`
       );
       if (nameCanonical) {
+        await addToFavorites(nameCanonical);
         return new Response(
           JSON.stringify({ courseId: nameCanonical, cached: true, redirected: true }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -191,6 +209,22 @@ Deno.serve(async (req) => {
       const state = courseData.location?.state || "";
       const country = courseData.location?.country || "";
       const locationStr = [city, state].filter(Boolean).join(", ");
+
+      // Dedupe por nombre + ciudad: el catálogo externo cambia ids del mismo campo
+      const { data: sameName } = await supabase
+        .from("golf_courses")
+        .select("id, name, location")
+        .ilike("name", courseName);
+      const dupe = (sameName || []).find((c: any) =>
+        !city || (c.location || "").toLowerCase().includes(city.toLowerCase())
+      );
+      if (dupe) {
+        await addToFavorites(dupe.id);
+        return new Response(
+          JSON.stringify({ courseId: dupe.id, cached: true, redirected: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
       // Get tees - try male first, then female
       const maleTees: any[] = courseData.tees?.male || [];
