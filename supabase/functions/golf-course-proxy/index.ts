@@ -113,6 +113,21 @@ Deno.serve(async (req) => {
 
     // ─── IMPORT ───
     if (action === "import") {
+      // Marca el campo como visible para quien lo pidió (también cuando ya existía)
+      const addToFavorites = async (courseId: string) => {
+        try {
+          const { data: profileId } = await supabase.rpc("get_my_profile_id");
+          if (profileId) {
+            await supabase.from("course_favorites").upsert(
+              { profile_id: profileId, course_id: courseId },
+              { onConflict: "profile_id,course_id" }
+            );
+          }
+        } catch (e) {
+          console.error("favorite upsert failed:", e);
+        }
+      };
+
       const apiId = (url.searchParams.get("id") || "").trim();
       if (!apiId) {
         return new Response(JSON.stringify({ error: "Missing course id" }), {

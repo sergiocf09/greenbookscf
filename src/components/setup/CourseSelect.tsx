@@ -324,7 +324,9 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
       <CourseSearchDialog
         open={showSearch}
         onOpenChange={setShowSearch}
+        localCourses={localCourseOptions}
         onImported={(courseId) => {
+          void ensureFavorite(courseId);
           refresh();
           setTimeout(() => onChange(courseId), 500);
         }}
