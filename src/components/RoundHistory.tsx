@@ -840,7 +840,10 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                               fontSize: '12px',
                               color: '#f8fafc',
                             }}
-                            formatter={(v: number) => [v, 'Score']}
+                            formatter={(v: number, _n: any, item: any) => [
+                              `${v} (${item?.payload?.scoredRounds ?? 0} rondas de 18)`,
+                              'Score prom.',
+                            ]}
                             labelStyle={{ color: '#94a3b8', fontSize: '11px' }}
                           />
                           <Line
@@ -848,6 +851,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                             dataKey="promScore"
                             stroke="#38bdf8"
                             strokeWidth={2}
+                            connectNulls
                             dot={{ fill: '#38bdf8', r: 3, strokeWidth: 0 }}
                             activeDot={{ r: 5, strokeWidth: 0 }}
                           />
