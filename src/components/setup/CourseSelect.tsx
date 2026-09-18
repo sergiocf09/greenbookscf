@@ -117,38 +117,90 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
           </Button>
         </div>
       </div>
-      
+
+      {courses.length > 5 && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Filtra entre los campos ya en GreenBook..."
+            className="pl-8 h-8 text-xs"
+          />
+        </div>
+      )}
+
       <Select value={selectedCourseId || ''} onValueChange={onChange}>
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Selecciona un campo" />
         </SelectTrigger>
         <SelectContent>
-          {displayCourses.map((course) => (
-            <SelectItem key={course.id} value={course.id}>
-              <div className="flex items-center gap-2">
-                <span>{course.name}</span>
-                {course.isManual && (
-                  <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
-                    *Manual
-                  </Badge>
-                )}
-              </div>
-            </SelectItem>
-          ))}
-          {!showAll && otherCourses.length > 0 && (
-            <div className="px-2 py-1.5">
-              <button
-                className="text-xs text-primary hover:underline w-full text-left"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowAll(true);
-                }}
-              >
-                Ver todos los campos ({otherCourses.length} más)
-              </button>
-            </div>
+          {(filterQuery.length > 0 || showAll) ? (
+            <>
+              {favoriteCourses.length > 0 && (
+                <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Mis campos
+                </div>
+              )}
+              {favoriteCourses.map((course) => (
+                <SelectItem key={course.id} value={course.id}>
+                  <div className="flex items-center gap-2">
+                    <span>{course.name}</span>
+                    {course.isManual && (
+                      <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">*Manual</Badge>
+                    )}
+                  </div>
+                </SelectItem>
+              ))}
+              {otherCourses.length > 0 && (
+                <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Otros campos en GreenBook
+                </div>
+              )}
+              {otherCourses.map((course) => (
+                <SelectItem key={course.id} value={course.id}>
+                  <div className="flex items-center gap-2">
+                    <span>{course.name}</span>
+                    {course.isManual && (
+                      <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">*Manual</Badge>
+                    )}
+                  </div>
+                </SelectItem>
+              ))}
+              {matches.length === 0 && (
+                <div className="px-2 py-3 text-xs text-muted-foreground">
+                  Ningún campo coincide. Usa "Buscar" para el catálogo mundial.
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {displayCourses.map((course) => (
+                <SelectItem key={course.id} value={course.id}>
+                  <div className="flex items-center gap-2">
+                    <span>{course.name}</span>
+                    {course.isManual && (
+                      <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">*Manual</Badge>
+                    )}
+                  </div>
+                </SelectItem>
+              ))}
+              {otherCourses.length > 0 && (
+                <div className="px-2 py-1.5">
+                  <button
+                    className="text-xs text-primary hover:underline w-full text-left"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowAll(true);
+                    }}
+                  >
+                    Ver todos los campos ({otherCourses.length} más)
+                  </button>
+                </div>
+              )}
+            </>
           )}
-          {showAll && favoriteCourses.length > 0 && (
+          {showAll && filterQuery.length === 0 && favoriteCourses.length > 0 && (
             <div className="px-2 py-1.5">
               <button
                 className="text-xs text-primary hover:underline w-full text-left"
