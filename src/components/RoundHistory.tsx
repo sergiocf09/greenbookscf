@@ -729,16 +729,29 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
             </Button>
           </div>
 
-          {/* Pop-up de actividad mensual: anclado a la parte superior de la pantalla */}
+          {/* Pop-up de actividad mensual: anclado a la parte superior de la pantalla.
+              pointerEvents 'auto' es imprescindible: el diálogo contenedor pone
+              pointer-events:none en <body> y el portal heredaría ese bloqueo,
+              impidiendo tooltips y dejando pasar los toques a la app de atrás. */}
           {showActivity && createPortal(
-            <div className="fixed left-2 right-2 top-[max(0.5rem,env(safe-area-inset-top))] z-[80] bg-card border border-border rounded-xl shadow-2xl shadow-black/40">
+            <div
+              className="fixed inset-0 z-[80]"
+              style={{ pointerEvents: 'auto' }}
+            >
+              {/* Fondo que bloquea la app de atrás; tocarlo solo cierra el pop-up */}
+              <div
+                className="absolute inset-0 bg-black/50"
+                onClick={toggleActivity}
+                aria-hidden="true"
+              />
+              <div className="absolute left-2 right-2 top-[max(0.5rem,env(safe-area-inset-top))] bg-card border border-border rounded-xl shadow-2xl shadow-black/40">
               {/* Encabezado con crucecita para cerrar */}
               <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-border">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                   Mi Actividad · Últimos 12 meses
                 </p>
                 <button
-                  onClick={toggleActivity}
+                  onClick={(e) => { e.stopPropagation(); toggleActivity(); }}
                   className="p-1 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                   title="Cerrar"
                   aria-label="Cerrar panel de actividad"
@@ -877,6 +890,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                   </div>
                 </ScrollArea>
               )}
+              </div>
             </div>,
             document.body
           )}
