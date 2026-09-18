@@ -199,6 +199,7 @@ Deno.serve(async (req) => {
         `${courseData.club_name || ""} ${courseData.course_name || ""}`
       );
       if (nameCanonical) {
+        await addToFavorites(nameCanonical);
         return new Response(
           JSON.stringify({ courseId: nameCanonical, cached: true, redirected: true }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -208,6 +209,22 @@ Deno.serve(async (req) => {
       const state = courseData.location?.state || "";
       const country = courseData.location?.country || "";
       const locationStr = [city, state].filter(Boolean).join(", ");
+
+      // Dedupe por nombre + ciudad: el catálogo externo cambia ids del mismo campo
+      const { data: sameName } = await supabase
+        .from("golf_courses")
+        .select("id, name, location")
+        .ilike("name", courseName);
+      const dupe = (sameName || []).find((c: any) =>
+        !city || (c.location || "").toLowerCase().includes(city.toLowerCase())
+      );
+      if (dupe) {
+        await addToFavorites(dupe.id);
+        return new Response(
+          JSON.stringify({ courseId: dupe.id, cached: true, redirected: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
       // Get tees - try male first, then female
       const maleTees: any[] = courseData.tees?.male || [];
