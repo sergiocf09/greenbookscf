@@ -139,6 +139,7 @@ Deno.serve(async (req) => {
       // Redirige al campo canónico si el id externo está bloqueado
       const blockedCanonical = BLOCKED_API_COURSE_IDS[apiId];
       if (blockedCanonical) {
+        await addToFavorites(blockedCanonical);
         return new Response(
           JSON.stringify({ courseId: blockedCanonical, cached: true, redirected: true }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -157,6 +158,7 @@ Deno.serve(async (req) => {
 
 
       if (existing) {
+        await addToFavorites(existing.id);
         return new Response(
           JSON.stringify({ courseId: existing.id, cached: true }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
