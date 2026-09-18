@@ -787,8 +787,11 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                   </p>
                 </div>
               ) : (
-                <ScrollArea className="min-h-0 flex-1 overscroll-contain">
-                  <div className="space-y-5 p-4">
+                <div
+                  className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]"
+                  onTouchMove={(event) => event.stopPropagation()}
+                >
+                  <div className="space-y-5 p-4 pb-8">
 
                     {/* Gráfica 1: Rondas por mes */}
                     <div>
@@ -954,7 +957,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                     </div>
 
                   </div>
-                </ScrollArea>
+                </div>
               )}
               </div>
             </div>,
