@@ -539,7 +539,9 @@ const Index = () => {
     // Persist the matrix defaults automatically while the round is open, so all
     // bets (bilateral, coneja, etc.) read confirmed handicaps even if the
     // organizer never edits the matrix.
-    autoSeed: roundState.status !== 'completed',
+    // Only the organizer / round admins can write round_handicaps (RLS), so
+    // non-admin participants must not attempt the auto-seed insert.
+    autoSeed: roundState.status !== 'completed' && isCurrentUserRoundAdmin,
   });
 
 
