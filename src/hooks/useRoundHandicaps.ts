@@ -523,7 +523,12 @@ export const useRoundHandicaps = ({
         await loadHandicaps();
       } catch (err) {
         devError('Error auto-seeding round handicaps:', err);
-        seededSignatureRef.current = null; // allow retry
+        // Permission errors (RLS: only organizer/round admins may write) are
+        // permanent for this user — retrying would loop forever.
+        const code = (err as { code?: string } | null)?.code;
+        if (code !== '42501') {
+          seededSignatureRef.current = null; // transient → allow retry
+        }
       }
     })();
   }, [roundId, autoSeed, isLoaded, players, roundPlayerIds, handicaps, toRoundPlayerId, loadHandicaps]);
