@@ -266,7 +266,7 @@ export const BloquesStrip: React.FC<Props> = ({
                             </div>
                           ))}
                           <div className="text-center py-1.5 font-bold tabular-nums">
-                            {cells.some(c => c.net === null) ? '–' : sumNet}
+                            {cells.every(c => c.net === null) ? '–' : sumNet}
                           </div>
                         </div>
                       );
