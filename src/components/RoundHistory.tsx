@@ -117,6 +117,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
   // El panel de actividad siempre arranca cerrado al abrir el historial:
   // no debe bloquear la lista de rondas al entrar.
   const [showActivity, setShowActivity] = useState<boolean>(false);
+  const [selectedFieldPeriod, setSelectedFieldPeriod] = useState<3 | 6 | 12 | null>(null);
 
   const toggleActivity = () => setShowActivity(prev => !prev);
 
@@ -160,6 +161,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
       rondas: v.rondas,
       promScore: v.scoredRounds > 0 ? Math.round(v.totalScore / v.scoredRounds) : null,
       scoredRounds: v.scoredRounds,
+      totalRounds: v.rondas,
       campos: v.courses.size,
     }));
 
@@ -172,11 +174,29 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
     const cutoff3m  = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
     const cutoff6m  = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
     const cutoff12m = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-    const fields3m  = new Set(rounds.filter(r => parseLocalDate(r.date) >= cutoff3m).map(r => r.courseId)).size;
-    const fields6m  = new Set(rounds.filter(r => parseLocalDate(r.date) >= cutoff6m).map(r => r.courseId)).size;
-    const fields12m = new Set(rounds.filter(r => parseLocalDate(r.date) >= cutoff12m).map(r => r.courseId)).size;
+    const playedRounds = rounds.filter(r => r.totalStrokes > 0);
+    const summarizeFields = (cutoff: Date) => {
+      const counts = new Map<string, { name: string; count: number }>();
+      for (const round of playedRounds) {
+        if (parseLocalDate(round.date) < cutoff) continue;
+        const current = counts.get(round.courseId);
+        counts.set(round.courseId, {
+          name: round.courseName,
+          count: (current?.count ?? 0) + 1,
+        });
+      }
+      return [...counts.values()].sort((a, b) =>
+        b.count - a.count || a.name.localeCompare(b.name, 'es'),
+      );
+    };
 
-    return { points, globalAvg, fields3m, fields6m, fields12m };
+    const fieldsByPeriod = {
+      3: summarizeFields(cutoff3m),
+      6: summarizeFields(cutoff6m),
+      12: summarizeFields(cutoff12m),
+    };
+
+    return { points, globalAvg, fieldsByPeriod };
   }, [rounds]);
 
   const fetchRounds = async () => {
@@ -841,18 +861,26 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                             strokeWidth={1}
                           />
                           <Tooltip
-                            contentStyle={{
-                              backgroundColor: '#0f172a',
-                              border: '1px solid #1e293b',
-                              borderRadius: '8px',
-                              fontSize: '12px',
-                              color: '#f8fafc',
+                            content={({ active, payload, label }) => {
+                              if (!active || !payload?.length) return null;
+                              const point = payload[0]?.payload as {
+                                promScore?: number | null;
+                                scoredRounds?: number;
+                                totalRounds?: number;
+                              } | undefined;
+                              if (!point || point.promScore === null || point.promScore === undefined) return null;
+                              return (
+                                <div className="max-w-[220px] rounded-lg border border-border bg-popover px-3 py-2 text-popover-foreground shadow-lg">
+                                  <p className="text-[11px] text-muted-foreground">{label}</p>
+                                  <p className="mt-1 text-sm font-medium text-sky-500">
+                                    Promedio: {point.promScore}
+                                  </p>
+                                  <p className="mt-0.5 text-xs text-muted-foreground">
+                                    {point.scoredRounds ?? 0} de {point.totalRounds ?? 0} rondas · 18 hoyos
+                                  </p>
+                                </div>
+                              );
                             }}
-                            formatter={(v: number, _n: any, item: any) => [
-                              `${v} (${item?.payload?.scoredRounds ?? 0} rondas de 18)`,
-                              'Score prom.',
-                            ]}
-                            labelStyle={{ color: '#94a3b8', fontSize: '11px' }}
                           />
                           <Line
                             type="monotone"
@@ -873,18 +901,56 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                     {/* Campos distintos por período */}
                     <div>
                       <p className="text-xs text-muted-foreground mb-2">Campos distintos jugados</p>
-                      <div className="flex gap-2">
+                      <div className="grid grid-cols-3 gap-2">
                         {[
-                          { label: '3 meses', value: activityData.fields3m },
-                          { label: '6 meses', value: activityData.fields6m },
-                          { label: '12 meses', value: activityData.fields12m },
-                        ].map(({ label, value }) => (
-                          <div key={label} className="flex-1 bg-muted/50 rounded-lg p-2.5 text-center">
-                            <p className="text-xl font-bold text-primary">{value}</p>
-                            <p className="text-[10px] text-muted-foreground">{label}</p>
-                          </div>
+                          { label: '3 meses', period: 3 as const },
+                          { label: '6 meses', period: 6 as const },
+                          { label: '12 meses', period: 12 as const },
+                        ].map(({ label, period }) => (
+                          <Button
+                            key={period}
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setSelectedFieldPeriod(current => current === period ? null : period)}
+                            aria-expanded={selectedFieldPeriod === period}
+                            className={cn(
+                              'h-auto min-w-0 flex-col gap-0.5 rounded-lg border px-2 py-2.5 text-center',
+                              selectedFieldPeriod === period
+                                ? 'border-primary bg-primary/10'
+                                : 'border-transparent bg-muted/50',
+                            )}
+                          >
+                            <span className="text-xl font-bold text-primary">
+                              {activityData.fieldsByPeriod[period].length}
+                            </span>
+                            <span className="text-[10px] font-normal text-muted-foreground">{label}</span>
+                            {selectedFieldPeriod === period
+                              ? <ChevronUp className="mt-0.5 h-3 w-3" />
+                              : <ChevronDown className="mt-0.5 h-3 w-3" />}
+                          </Button>
                         ))}
                       </div>
+                      {selectedFieldPeriod && (
+                        <div className="mt-2 rounded-lg border border-border bg-muted/20 px-3 py-2">
+                          <p className="mb-1.5 text-[11px] font-medium text-foreground">
+                            Campos jugados · {selectedFieldPeriod} meses
+                          </p>
+                          {activityData.fieldsByPeriod[selectedFieldPeriod].length > 0 ? (
+                            <div className="space-y-1">
+                              {activityData.fieldsByPeriod[selectedFieldPeriod].map(field => (
+                                <div key={field.name} className="flex items-start justify-between gap-3 text-xs">
+                                  <span className="min-w-0 text-foreground">{field.name}</span>
+                                  <span className="shrink-0 tabular-nums text-muted-foreground">
+                                    ({field.count} {field.count === 1 ? 'vez' : 'veces'})
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">No hay campos jugados en este período.</p>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                   </div>
