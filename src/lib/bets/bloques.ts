@@ -23,6 +23,12 @@ export interface BloqueResult {
   isCarry: boolean;
   resolved: boolean;
   multiplier: number;        // 1 normal, >1 if last block scaled
+  /** Holes with both scores captured inside this block (for in-progress display). */
+  holesPlayed: number;
+  /** Total holes that make up this block. */
+  holesInBlock: number;
+  /** Provisional leader while the block is still in progress (null = tied / no data). */
+  provisionalWinnerId: string | null;
 }
 
 export function getBloquesPairKey(idA: string, idB: string): string {
