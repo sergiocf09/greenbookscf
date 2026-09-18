@@ -890,6 +890,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                   </div>
                 </ScrollArea>
               )}
+              </div>
             </div>,
             document.body
           )}
