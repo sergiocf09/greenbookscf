@@ -114,18 +114,11 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
   const [roundToReopen, setRoundToReopen] = useState<RoundHistoryItem | null>(null);
   const [reopening, setReopening] = useState(false);
 
-  const [showActivity, setShowActivity] = useState<boolean>(() => {
-    try { return localStorage.getItem('rh_activity_panel') === 'true'; }
-    catch { return false; }
-  });
+  // El panel de actividad siempre arranca cerrado al abrir el historial:
+  // no debe bloquear la lista de rondas al entrar.
+  const [showActivity, setShowActivity] = useState<boolean>(false);
 
-  const toggleActivity = () => {
-    setShowActivity(prev => {
-      const next = !prev;
-      try { localStorage.setItem('rh_activity_panel', String(next)); } catch {}
-      return next;
-    });
-  };
+  const toggleActivity = () => setShowActivity(prev => !prev);
 
   const activityData = useMemo(() => {
     // Agrupar por mes YYYY-MM
