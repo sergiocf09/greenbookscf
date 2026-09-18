@@ -274,7 +274,7 @@ export const BloquesStrip: React.FC<Props> = ({
                   </div>
 
                   <div className="flex items-center justify-between pt-1 border-t border-border/50 text-[11px]">
-                    <span className="text-muted-foreground">Suma neta</span>
+                    <span className="text-muted-foreground">{inProgress ? 'Suma neta (parcial)' : 'Suma neta'}</span>
                     <span className="tabular-nums font-medium">
                       {blk.playerNetSum} <span className="text-muted-foreground">vs</span> {blk.rivalNetSum}
                     </span>
