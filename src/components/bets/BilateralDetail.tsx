@@ -1011,10 +1011,14 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         const parts: string[] = [];
         if (wonByPlayer.length > 0) parts.push(`B${wonByPlayer.join(',')}`);
         if (tied.length > 0) parts.push(`Empate B${tied.join(',')}`);
+        const inCurso = bloquesDetail.filter(b => !b.resolved && (b.holesPlayed ?? 0) > 0);
+        if (inCurso.length > 0) parts.push(`En curso B${inCurso.map(b => b.blockNumber).join(',')}`);
         bloquesDesc = parts.join(' · ') || '—';
       }
 
-      if (bloquesAmount !== 0 || bloquesDetail.some(b => b.resolved)) {
+      // Show the group from the very first hole of the round (even with nothing
+      // settled yet) so the bilateral standing is never hidden.
+      if (bloquesDetail.length > 0 || bloquesAmount !== 0) {
         groups.push({
           key: 'bloques',
           label: 'Bloques',

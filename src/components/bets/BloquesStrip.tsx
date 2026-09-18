@@ -61,6 +61,14 @@ export const BloquesStrip: React.FC<Props> = ({
     else tiedResolved.push(b);
   }
 
+  // In-progress blocks: provisional (not yet settled) standing
+  const inProgressBlocks = blocks.filter(b => !b.resolved && (b.holesPlayed ?? 0) > 0);
+  const provisionalNet = inProgressBlocks.reduce((sum, b) => {
+    if (b.provisionalWinnerId === playerA.id) return sum + b.amountAtStake;
+    if (b.provisionalWinnerId === playerB.id) return sum - b.amountAtStake;
+    return sum;
+  }, 0);
+
   const renderList = (arr: BloqueResult[]) => arr.map(b => `B${b.blockNumber}`).join(', ');
 
   return (
@@ -90,16 +98,36 @@ export const BloquesStrip: React.FC<Props> = ({
             Empate{!carryOverOnTie && ' (no cuenta)'}: {renderList(tiedResolved)}
           </div>
         )}
+        {inProgressBlocks.length > 0 && (
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+            <span>En curso: {renderList(inProgressBlocks)} (provisional)</span>
+            <span className={cn('tabular-nums font-semibold italic',
+              provisionalNet > 0 ? 'text-green-600/80' : provisionalNet < 0 ? 'text-destructive/80' : 'text-muted-foreground'
+            )}>
+              {provisionalNet === 0 ? '$0' : `${provisionalNet > 0 ? '+' : '-'}$${fmtMoney(Math.abs(provisionalNet))}`}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Block strip */}
       <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${blocks.length}, minmax(0, 1fr))` }}>
         {blocks.map(blk => {
+          const inProgress = !blk.resolved && (blk.holesPlayed ?? 0) > 0;
+          const provisionalA = inProgress && blk.provisionalWinnerId === playerA.id;
+          const provisionalB = inProgress && blk.provisionalWinnerId === playerB.id;
+          const provisionalTie = inProgress && blk.provisionalWinnerId === null;
           const isTie = blk.resolved && blk.winnerId === null;
           const isNeutralizedTie = isTie && !carryOverOnTie;
           const aWon = blk.resolved && blk.winnerId === playerA.id;
           const bgCls = !blk.resolved
-            ? 'bg-muted/30 text-muted-foreground/60'
+            ? inProgress
+              ? provisionalA
+                ? 'bg-green-50 dark:bg-green-900/15 text-green-700/80 dark:text-green-400/80 border-dashed border-green-400/60'
+                : provisionalB
+                  ? 'bg-red-50 dark:bg-red-900/15 text-red-700/80 dark:text-red-400/80 border-dashed border-red-400/60'
+                  : 'bg-amber-50 dark:bg-amber-950/15 text-amber-700/80 dark:text-amber-400/80 border-dashed border-amber-400/60'
+              : 'bg-muted/30 text-muted-foreground/60'
             : isNeutralizedTie
               ? 'bg-muted/60 text-muted-foreground'
               : isTie
@@ -115,21 +143,30 @@ export const BloquesStrip: React.FC<Props> = ({
                 'w-full flex flex-col items-center justify-center py-1.5 rounded text-[10px] font-medium border border-transparent',
                 bgCls,
                 blk.isCarry && 'ring-1 ring-amber-400/60',
-                blk.resolved && 'hover:opacity-90 cursor-pointer',
+                (blk.resolved || inProgress) && 'hover:opacity-90 cursor-pointer',
               )}
             >
               <span className="font-bold">B{blk.blockNumber}</span>
-              <span className="tabular-nums text-[9px]">
-                {!blk.resolved ? '—'
+              <span className={cn('tabular-nums text-[9px]', inProgress && 'italic')}>
+                {inProgress
+                  ? provisionalTie
+                    ? `=$${fmtMoney(blk.amountAtStake)}`
+                    : `${provisionalA ? '+' : '-'}$${fmtMoney(blk.amountAtStake)}`
+                  : !blk.resolved ? '—'
                   : isNeutralizedTie ? '—'
                   : isTie ? `=$${fmtMoney(blk.amountAtStake)}`
                   : aWon ? `+$${fmtMoney(blk.amountAtStake)}`
                   : `-$${fmtMoney(blk.amountAtStake)}`}
               </span>
+              {inProgress && (
+                <span className="text-[8px] opacity-80">
+                  {blk.holesPlayed}/{blk.holesInBlock}
+                </span>
+              )}
             </button>
           );
 
-          if (!blk.resolved) {
+          if (!blk.resolved && !inProgress) {
             return <div key={blk.blockNumber}>{pill}</div>;
           }
 
@@ -152,17 +189,29 @@ export const BloquesStrip: React.FC<Props> = ({
                       )}
                     </p>
                     <span className={cn('font-bold tabular-nums',
-                      isNeutralizedTie ? 'text-muted-foreground' : isTie ? 'text-amber-600' : aWon ? 'text-green-600' : 'text-destructive'
+                      inProgress
+                        ? provisionalA ? 'text-green-600/80 italic' : provisionalB ? 'text-destructive/80 italic' : 'text-amber-600/80 italic'
+                        : isNeutralizedTie ? 'text-muted-foreground' : isTie ? 'text-amber-600' : aWon ? 'text-green-600' : 'text-destructive'
                     )}>
-                      {isNeutralizedTie
-                        ? '— (no cuenta)'
-                        : isTie
+                      {inProgress
+                        ? provisionalTie
                           ? `=$${fmtMoney(blk.amountAtStake)}`
-                          : aWon
-                            ? `+$${fmtMoney(blk.amountAtStake)}`
-                            : `-$${fmtMoney(blk.amountAtStake)}`}
+                          : `${provisionalA ? '+' : '-'}$${fmtMoney(blk.amountAtStake)}`
+                        : isNeutralizedTie
+                          ? '— (no cuenta)'
+                          : isTie
+                            ? `=$${fmtMoney(blk.amountAtStake)}`
+                            : aWon
+                              ? `+$${fmtMoney(blk.amountAtStake)}`
+                              : `-$${fmtMoney(blk.amountAtStake)}`}
                     </span>
                   </div>
+
+                  {inProgress && (
+                    <p className="text-[10px] text-muted-foreground">
+                      En curso · {blk.holesPlayed} de {blk.holesInBlock} hoyos. El importe se define al cerrar el bloque.
+                    </p>
+                  )}
 
                   {blk.isCarry && (
                     <p className="text-[10px] text-amber-600">
@@ -235,7 +284,7 @@ export const BloquesStrip: React.FC<Props> = ({
                             </div>
                           ))}
                           <div className="text-center py-1.5 font-bold tabular-nums">
-                            {cells.some(c => c.net === null) ? '–' : sumNet}
+                            {cells.every(c => c.net === null) ? '–' : sumNet}
                           </div>
                         </div>
                       );
@@ -243,7 +292,7 @@ export const BloquesStrip: React.FC<Props> = ({
                   </div>
 
                   <div className="flex items-center justify-between pt-1 border-t border-border/50 text-[11px]">
-                    <span className="text-muted-foreground">Suma neta</span>
+                    <span className="text-muted-foreground">{inProgress ? 'Suma neta (parcial)' : 'Suma neta'}</span>
                     <span className="tabular-nums font-medium">
                       {blk.playerNetSum} <span className="text-muted-foreground">vs</span> {blk.rivalNetSum}
                     </span>
