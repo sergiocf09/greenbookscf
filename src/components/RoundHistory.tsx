@@ -147,9 +147,10 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
       const m = monthMap.get(key)!;
       m.rondas += 1;
       m.courses.add(r.courseId);
-      // El promedio de score solo considera rondas comparables: 18 hoyos completas.
-      // Mezclar rondas de 9 hoyos (o incompletas) distorsiona el promedio mensual.
-      const isComparable = r.roundHoles === 18 && !r.isIncomplete && r.status === 'completed';
+      // El promedio usa todas las rondas finalizadas de 18 hoyos que aparecen
+      // con score en el historial. `isIncomplete` puede conservarse en rondas
+      // cerradas válidas, por lo que no debe excluirlas del promedio mensual.
+      const isComparable = r.roundHoles === 18 && r.status === 'completed';
       if (isComparable) {
         m.totalScore += r.totalStrokes;
         m.scoredRounds += 1;
