@@ -82,34 +82,39 @@ export const calculateBloquesForPair = (
 
     let playerNetSum = 0;
     let rivalNetSum = 0;
-    let allPlayed = true;
+    let holesPlayed = 0;
 
     for (const h of blockHoles) {
       const sA = getHoleScore(playerA.id, h, adjustedScores);
       const sB = getHoleScore(playerB.id, h, adjustedScores);
-      if (sA === null || sB === null) { allPlayed = false; break; }
+      if (sA === null || sB === null) continue;
       playerNetSum += sA;
       rivalNetSum += sB;
+      holesPlayed++;
     }
 
+    const allPlayed = holesPlayed === blockHoles.length;
     const baseAmount = amountPerBlock + pendingCarry;
     const amountAtStake = baseAmount * effectiveMultiplier;
+    const diff = playerNetSum - rivalNetSum;
+    const leaderId = diff < 0 ? playerA.id : diff > 0 ? playerB.id : null;
 
     if (!allPlayed) {
+      // In-progress block: expose partial net sums and the provisional leader so
+      // the UI can show how the block is shaping up, without settling money yet.
       blocks.push({
         blockNumber: b + 1, startHole, endHole,
-        playerNetSum: 0, rivalNetSum: 0, diff: 0,
+        playerNetSum, rivalNetSum, diff,
         amountAtStake, winnerId: null,
         isCarry: pendingCarry > 0, resolved: false,
         multiplier: effectiveMultiplier,
+        holesPlayed, holesInBlock: blockHoles.length,
+        provisionalWinnerId: holesPlayed > 0 ? leaderId : null,
       });
       continue;
     }
 
-    const diff = playerNetSum - rivalNetSum;
-    let winnerId: string | null = null;
-    if (diff < 0) winnerId = playerA.id;
-    else if (diff > 0) winnerId = playerB.id;
+    const winnerId: string | null = leaderId;
 
     blocks.push({
       blockNumber: b + 1, startHole, endHole,
@@ -117,6 +122,8 @@ export const calculateBloquesForPair = (
       amountAtStake, winnerId,
       isCarry: pendingCarry > 0, resolved: true,
       multiplier: effectiveMultiplier,
+      holesPlayed, holesInBlock: blockHoles.length,
+      provisionalWinnerId: winnerId,
     });
 
     if (winnerId === null && carryOverOnTie) {
