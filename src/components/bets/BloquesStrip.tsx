@@ -171,17 +171,29 @@ export const BloquesStrip: React.FC<Props> = ({
                       )}
                     </p>
                     <span className={cn('font-bold tabular-nums',
-                      isNeutralizedTie ? 'text-muted-foreground' : isTie ? 'text-amber-600' : aWon ? 'text-green-600' : 'text-destructive'
+                      inProgress
+                        ? provisionalA ? 'text-green-600/80 italic' : provisionalB ? 'text-destructive/80 italic' : 'text-amber-600/80 italic'
+                        : isNeutralizedTie ? 'text-muted-foreground' : isTie ? 'text-amber-600' : aWon ? 'text-green-600' : 'text-destructive'
                     )}>
-                      {isNeutralizedTie
-                        ? '— (no cuenta)'
-                        : isTie
+                      {inProgress
+                        ? provisionalTie
                           ? `=$${fmtMoney(blk.amountAtStake)}`
-                          : aWon
-                            ? `+$${fmtMoney(blk.amountAtStake)}`
-                            : `-$${fmtMoney(blk.amountAtStake)}`}
+                          : `${provisionalA ? '+' : '-'}$${fmtMoney(blk.amountAtStake)}`
+                        : isNeutralizedTie
+                          ? '— (no cuenta)'
+                          : isTie
+                            ? `=$${fmtMoney(blk.amountAtStake)}`
+                            : aWon
+                              ? `+$${fmtMoney(blk.amountAtStake)}`
+                              : `-$${fmtMoney(blk.amountAtStake)}`}
                     </span>
                   </div>
+
+                  {inProgress && (
+                    <p className="text-[10px] text-muted-foreground">
+                      En curso · {blk.holesPlayed} de {blk.holesInBlock} hoyos. El importe se define al cerrar el bloque.
+                    </p>
+                  )}
 
                   {blk.isCarry && (
                     <p className="text-[10px] text-amber-600">
