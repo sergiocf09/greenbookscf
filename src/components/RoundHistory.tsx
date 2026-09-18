@@ -128,7 +128,13 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
 
   const activityData = useMemo(() => {
     // Agrupar por mes YYYY-MM
-    const monthMap = new Map<string, { label: string; rondas: number; totalScore: number; courses: Set<string> }>();
+    const monthMap = new Map<string, {
+      label: string;
+      rondas: number;
+      totalScore: number;
+      scoredRounds: number;
+      courses: Set<string>;
+    }>();
 
     for (const r of rounds) {
       if (!r.totalStrokes || r.totalStrokes === 0) continue;
@@ -136,12 +142,18 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
       const key = format(d, 'yyyy-MM');
       const label = format(d, 'MMM yy', { locale: es });
       if (!monthMap.has(key)) {
-        monthMap.set(key, { label, rondas: 0, totalScore: 0, courses: new Set() });
+        monthMap.set(key, { label, rondas: 0, totalScore: 0, scoredRounds: 0, courses: new Set() });
       }
       const m = monthMap.get(key)!;
       m.rondas += 1;
-      m.totalScore += r.totalStrokes;
       m.courses.add(r.courseId);
+      // El promedio de score solo considera rondas comparables: 18 hoyos completas.
+      // Mezclar rondas de 9 hoyos (o incompletas) distorsiona el promedio mensual.
+      const isComparable = r.roundHoles === 18 && !r.isIncomplete && r.status === 'completed';
+      if (isComparable) {
+        m.totalScore += r.totalStrokes;
+        m.scoredRounds += 1;
+      }
     }
 
     const sorted = [...monthMap.entries()]
@@ -151,13 +163,14 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
     const points = sorted.map(([, v]) => ({
       label: v.label.charAt(0).toUpperCase() + v.label.slice(1),
       rondas: v.rondas,
-      promScore: Math.round(v.totalScore / v.rondas),
+      promScore: v.scoredRounds > 0 ? Math.round(v.totalScore / v.scoredRounds) : null,
+      scoredRounds: v.scoredRounds,
       campos: v.courses.size,
     }));
 
-    const globalAvg = points.length > 0
-      ? Math.round(points.reduce((s, p) => s + p.promScore, 0) / points.length)
-      : 0;
+    const totalScoreAll = sorted.reduce((s, [, v]) => s + v.totalScore, 0);
+    const totalScoredRounds = sorted.reduce((s, [, v]) => s + v.scoredRounds, 0);
+    const globalAvg = totalScoredRounds > 0 ? Math.round(totalScoreAll / totalScoredRounds) : 0;
 
     // Campos distintos por período
     const now = new Date();
