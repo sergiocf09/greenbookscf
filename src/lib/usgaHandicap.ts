@@ -11,33 +11,36 @@ export const MAX_HANDICAP_INDEX = 54.0;
 
 /**
  * Number of best differentials to use based on total rounds available.
- * Per USGA WHS lookup table.
+ * Per the official World Handicap System (WHS 2020+) lookup table.
  */
 export const getNumDifferentialsToUse = (totalRounds: number): number => {
   if (totalRounds >= 20) return 8;
   if (totalRounds === 19) return 7;
-  if (totalRounds === 18) return 7;
-  if (totalRounds === 17) return 6;
-  if (totalRounds === 16) return 6;
-  if (totalRounds === 15) return 5;
-  if (totalRounds === 14) return 5;
-  if (totalRounds === 13) return 4;
-  if (totalRounds === 12) return 4;
-  if (totalRounds === 11) return 3;
-  if (totalRounds === 10) return 3;
-  if (totalRounds === 9) return 2;
-  if (totalRounds === 8) return 2;
-  if (totalRounds === 7) return 2;
-  if (totalRounds === 6) return 1;
-  if (totalRounds === 5) return 1;
-  if (totalRounds === 4) return 1;
-  if (totalRounds === 3) return 1;
+  if (totalRounds >= 17) return 6;
+  if (totalRounds >= 15) return 5;
+  if (totalRounds >= 12) return 4;
+  if (totalRounds >= 9) return 3;
+  if (totalRounds >= 6) return 2;
+  if (totalRounds >= 3) return 1;
+  return 0;
+};
+
+/**
+ * WHS adjustment applied to the average of the best differentials when the
+ * player has fewer than 20 acceptable scores.
+ *  3 scores → -2.0 | 4 scores → -1.0 | 6 scores → -1.0 | otherwise 0
+ */
+export const getWhsAdjustment = (totalRounds: number): number => {
+  if (totalRounds === 3) return -2.0;
+  if (totalRounds === 4) return -1.0;
+  if (totalRounds === 6) return -1.0;
   return 0;
 };
 
 /**
  * Calculate Handicap Index from an array of score differentials.
- * Applies the 0.96 multiplier and caps at MAX_HANDICAP_INDEX (54.0).
+ * WHS 2020+: plain average of the best N differentials (no 0.96 factor),
+ * plus the lookup-table adjustment for fewer than 20 scores. Capped at 54.0.
  */
 export const calculateHandicapIndexFromDifferentials = (
   differentials: number[]
@@ -50,7 +53,7 @@ export const calculateHandicapIndexFromDifferentials = (
   if (!best.length) return null;
 
   const avg = best.reduce((sum, d) => sum + d, 0) / best.length;
-  const handicapIndex = avg * 0.96;
+  const handicapIndex = avg + getWhsAdjustment(totalRounds);
   const rounded = Math.round(handicapIndex * 10) / 10;
   return Math.min(rounded, MAX_HANDICAP_INDEX);
 };

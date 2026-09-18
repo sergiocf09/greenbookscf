@@ -14,22 +14,19 @@ const MAX_HANDICAP_INDEX = 54.0;
 const getNumDifferentialsToUse = (totalRounds: number): number => {
   if (totalRounds >= 20) return 8;
   if (totalRounds === 19) return 7;
-  if (totalRounds === 18) return 7;
-  if (totalRounds === 17) return 6;
-  if (totalRounds === 16) return 6;
-  if (totalRounds === 15) return 5;
-  if (totalRounds === 14) return 5;
-  if (totalRounds === 13) return 4;
-  if (totalRounds === 12) return 4;
-  if (totalRounds === 11) return 3;
-  if (totalRounds === 10) return 3;
-  if (totalRounds === 9) return 2;
-  if (totalRounds === 8) return 2;
-  if (totalRounds === 7) return 2;
-  if (totalRounds === 6) return 1;
-  if (totalRounds === 5) return 1;
-  if (totalRounds === 4) return 1;
-  if (totalRounds === 3) return 1;
+  if (totalRounds >= 17) return 6;
+  if (totalRounds >= 15) return 5;
+  if (totalRounds >= 12) return 4;
+  if (totalRounds >= 9) return 3;
+  if (totalRounds >= 6) return 2;
+  if (totalRounds >= 3) return 1;
+  return 0;
+};
+
+const getWhsAdjustment = (totalRounds: number): number => {
+  if (totalRounds === 3) return -2.0;
+  if (totalRounds === 4) return -1.0;
+  if (totalRounds === 6) return -1.0;
   return 0;
 };
 
@@ -39,7 +36,7 @@ const calculateHandicapIndex = (differentials: number[]): number | null => {
   const best = [...differentials].sort((a, b) => a - b).slice(0, numToUse);
   if (!best.length) return null;
   const avg = best.reduce((s, d) => s + d, 0) / best.length;
-  const rounded = Math.round(avg * 0.96 * 10) / 10;
+  const rounded = Math.round((avg + getWhsAdjustment(differentials.length)) * 10) / 10;
   return Math.min(rounded, MAX_HANDICAP_INDEX);
 };
 
