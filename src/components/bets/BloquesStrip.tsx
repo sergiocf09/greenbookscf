@@ -95,11 +95,21 @@ export const BloquesStrip: React.FC<Props> = ({
       {/* Block strip */}
       <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${blocks.length}, minmax(0, 1fr))` }}>
         {blocks.map(blk => {
+          const inProgress = !blk.resolved && (blk.holesPlayed ?? 0) > 0;
+          const provisionalA = inProgress && blk.provisionalWinnerId === playerA.id;
+          const provisionalB = inProgress && blk.provisionalWinnerId === playerB.id;
+          const provisionalTie = inProgress && blk.provisionalWinnerId === null;
           const isTie = blk.resolved && blk.winnerId === null;
           const isNeutralizedTie = isTie && !carryOverOnTie;
           const aWon = blk.resolved && blk.winnerId === playerA.id;
           const bgCls = !blk.resolved
-            ? 'bg-muted/30 text-muted-foreground/60'
+            ? inProgress
+              ? provisionalA
+                ? 'bg-green-50 dark:bg-green-900/15 text-green-700/80 dark:text-green-400/80 border-dashed border-green-400/60'
+                : provisionalB
+                  ? 'bg-red-50 dark:bg-red-900/15 text-red-700/80 dark:text-red-400/80 border-dashed border-red-400/60'
+                  : 'bg-amber-50 dark:bg-amber-950/15 text-amber-700/80 dark:text-amber-400/80 border-dashed border-amber-400/60'
+              : 'bg-muted/30 text-muted-foreground/60'
             : isNeutralizedTie
               ? 'bg-muted/60 text-muted-foreground'
               : isTie
@@ -115,21 +125,30 @@ export const BloquesStrip: React.FC<Props> = ({
                 'w-full flex flex-col items-center justify-center py-1.5 rounded text-[10px] font-medium border border-transparent',
                 bgCls,
                 blk.isCarry && 'ring-1 ring-amber-400/60',
-                blk.resolved && 'hover:opacity-90 cursor-pointer',
+                (blk.resolved || inProgress) && 'hover:opacity-90 cursor-pointer',
               )}
             >
               <span className="font-bold">B{blk.blockNumber}</span>
-              <span className="tabular-nums text-[9px]">
-                {!blk.resolved ? '—'
+              <span className={cn('tabular-nums text-[9px]', inProgress && 'italic')}>
+                {inProgress
+                  ? provisionalTie
+                    ? `=$${fmtMoney(blk.amountAtStake)}`
+                    : `${provisionalA ? '+' : '-'}$${fmtMoney(blk.amountAtStake)}`
+                  : !blk.resolved ? '—'
                   : isNeutralizedTie ? '—'
                   : isTie ? `=$${fmtMoney(blk.amountAtStake)}`
                   : aWon ? `+$${fmtMoney(blk.amountAtStake)}`
                   : `-$${fmtMoney(blk.amountAtStake)}`}
               </span>
+              {inProgress && (
+                <span className="text-[8px] opacity-80">
+                  {blk.holesPlayed}/{blk.holesInBlock}
+                </span>
+              )}
             </button>
           );
 
-          if (!blk.resolved) {
+          if (!blk.resolved && !inProgress) {
             return <div key={blk.blockNumber}>{pill}</div>;
           }
 
