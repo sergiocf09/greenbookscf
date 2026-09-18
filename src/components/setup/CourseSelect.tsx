@@ -43,16 +43,33 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
   enabled = true,
 }) => {
   const { courses, loading, error, getCourseById, refresh } = useGolfCourses({ enabled });
-  const { favoriteIds, toggleFavorite } = useCourseFavorites();
+  const { favoriteIds, toggleFavorite, ensureFavorite } = useCourseFavorites();
   const [showAll, setShowAll] = useState(false);
   const [showAddCourse, setShowAddCourse] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [filter, setFilter] = useState('');
   const selectedCourse = selectedCourseId ? getCourseById(selectedCourseId) : null;
 
+  const normalize = (value: string) =>
+    value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+  const filterQuery = normalize(filter);
+  const matches = filterQuery.length > 0
+    ? courses.filter(c => normalize(`${c.name} ${c.location || ''}`).includes(filterQuery))
+    : courses;
+
   // Split courses into favorites and others
-  const favoriteCourses = courses.filter(c => favoriteIds.has(c.id));
-  const otherCourses = courses.filter(c => !favoriteIds.has(c.id));
-  const displayCourses = showAll ? courses : (favoriteCourses.length > 0 ? favoriteCourses : courses);
+  const favoriteCourses = matches.filter(c => favoriteIds.has(c.id));
+  const otherCourses = matches.filter(c => !favoriteIds.has(c.id));
+  const displayCourses = (filterQuery.length > 0 || showAll)
+    ? matches
+    : (favoriteCourses.length > 0 ? favoriteCourses : matches);
+
+  const localCourseOptions = courses.map(c => ({
+    id: c.id,
+    name: c.name,
+    location: c.location || '',
+  }));
 
   if (loading) {
     return (
