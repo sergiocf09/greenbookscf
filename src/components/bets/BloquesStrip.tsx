@@ -98,6 +98,16 @@ export const BloquesStrip: React.FC<Props> = ({
             Empate{!carryOverOnTie && ' (no cuenta)'}: {renderList(tiedResolved)}
           </div>
         )}
+        {inProgressBlocks.length > 0 && (
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+            <span>En curso: {renderList(inProgressBlocks)} (provisional)</span>
+            <span className={cn('tabular-nums font-semibold italic',
+              provisionalNet > 0 ? 'text-green-600/80' : provisionalNet < 0 ? 'text-destructive/80' : 'text-muted-foreground'
+            )}>
+              {provisionalNet === 0 ? '$0' : `${provisionalNet > 0 ? '+' : '-'}$${fmtMoney(Math.abs(provisionalNet))}`}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Block strip */}
