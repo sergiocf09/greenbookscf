@@ -3055,6 +3055,7 @@ export type Database = {
         Args: { total_rounds: number }
         Returns: number
       }
+      usga_whs_adjustment: { Args: { total_rounds: number }; Returns: number }
     }
     Enums: {
       bet_type:
