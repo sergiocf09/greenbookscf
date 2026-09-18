@@ -764,9 +764,9 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                 onClick={toggleActivity}
                 aria-hidden="true"
               />
-              <div className="absolute left-2 right-2 top-[max(0.5rem,env(safe-area-inset-top))] bg-card border border-border rounded-xl shadow-2xl shadow-black/40">
+              <div className="absolute bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-2 right-2 top-[max(0.5rem,env(safe-area-inset-top))] flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl shadow-black/40">
               {/* Encabezado con crucecita para cerrar */}
-              <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-border">
+              <div className="relative z-10 flex shrink-0 items-center justify-between border-b border-border bg-card px-4 pb-2 pt-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                   Mi Actividad · Últimos 12 meses
                 </p>
@@ -787,7 +787,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                   </p>
                 </div>
               ) : (
-                <ScrollArea className="max-h-[calc(100dvh-4rem)]">
+                <ScrollArea className="min-h-0 flex-1 overscroll-contain">
                   <div className="space-y-5 p-4">
 
                     {/* Gráfica 1: Rondas por mes */}
