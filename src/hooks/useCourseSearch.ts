@@ -60,7 +60,9 @@ export const useCourseSearch = () => {
     }
   }, []);
 
-  const importCourse = useCallback(async (apiId: string | number): Promise<string | null> => {
+  const importCourse = useCallback(async (
+    apiId: string | number
+  ): Promise<{ courseId: string; cached: boolean } | null> => {
     setImporting(true);
     setError(null);
 
@@ -88,7 +90,11 @@ export const useCourseSearch = () => {
       }
 
       const json = await res.json();
-      return json.courseId || null;
+      if (!json.courseId) return null;
+      return {
+        courseId: json.courseId as string,
+        cached: Boolean(json.cached || json.redirected),
+      };
     } catch (e: any) {
       devError('Course import error:', e);
       setError(e?.message || 'Error al importar campo');

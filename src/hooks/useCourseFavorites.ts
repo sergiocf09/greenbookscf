@@ -70,5 +70,23 @@ export const useCourseFavorites = () => {
     }
   }, [profile, favoriteIds]);
 
-  return { favoriteIds, loading, toggleFavorite };
+  /** Adds the course to the user's visible courses (idempotent). */
+  const ensureFavorite = useCallback(async (courseId: string) => {
+    if (!profile || favoriteIds.has(courseId)) return;
+
+    setFavoriteIds(prev => new Set(prev).add(courseId));
+
+    try {
+      await supabase
+        .from('course_favorites')
+        .upsert(
+          { profile_id: profile.id, course_id: courseId },
+          { onConflict: 'profile_id,course_id' }
+        );
+    } catch (e) {
+      devError('Error ensuring favorite:', e);
+    }
+  }, [profile, favoriteIds]);
+
+  return { favoriteIds, loading, toggleFavorite, ensureFavorite };
 };
