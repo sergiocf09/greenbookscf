@@ -30,6 +30,8 @@ const Auth = () => {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   const validatePassword = (pwd: string): { valid: boolean; message: string } => {
     if (pwd.length < 8) return { valid: false, message: 'La contraseña debe tener al menos 8 caracteres' };
@@ -46,8 +48,10 @@ const Auth = () => {
       return 'Esa contraseña es demasiado común. Elige una diferente.';
     if (m.includes('password should contain') || m.includes('password should be at least'))
       return 'La contraseña necesita al menos 8 caracteres, una mayúscula, una minúscula, un número y un signo.';
-    if (m.includes('for security purposes') || m.includes('rate limit') || m.includes('too many'))
-      return 'Demasiados intentos. Espera un momento antes de volver a intentar.';
+    if (m.includes('for security purposes') || m.includes('rate limit') || m.includes('too many') || m.includes('after'))
+      return 'Espera un minuto antes de pedir otro correo e intenta de nuevo.';
+    if (m.includes('token') && (m.includes('expired') || m.includes('not found') || m.includes('invalid')))
+      return 'El enlace de confirmación ya expiró o fue usado. Pide uno nuevo con "Reenviar correo de confirmación".';
     if (m.includes('already registered') || m.includes('already been registered') || m.includes('user already'))
       return 'Este correo ya está registrado. Inicia sesión o recupera tu contraseña.';
     if (m.includes('invalid login credentials'))
@@ -94,8 +98,11 @@ const Auth = () => {
     setIsLoading(true);
     const { error } = await signIn(email, password);
     if (error) {
+      const unconfirmed = (error.message || '').toLowerCase().includes('email not confirmed');
+      if (unconfirmed) setNeedsConfirmation(true);
       toast.error('Error al iniciar sesión', { description: translateAuthError(error.message) });
     } else {
+      setNeedsConfirmation(false);
       toast.success('¡Bienvenido!');
       const pending = sessionStorage.getItem('pendingReturnTo');
       if (pending) {
@@ -105,6 +112,27 @@ const Auth = () => {
       // If no pending, PublicRoute will redirect to /
     }
     setIsLoading(false);
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!email.trim()) {
+      toast.error('Ingresa tu correo electrónico');
+      return;
+    }
+    setIsResending(true);
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim(),
+      options: { emailRedirectTo: getAuthRedirectOrigin() },
+    });
+    if (error) {
+      toast.error('No pudimos reenviar el correo', { description: translateAuthError(error.message) });
+    } else {
+      toast.success('Correo reenviado', {
+        description: 'Revisa tu bandeja (y la carpeta de spam). Usa el enlace más reciente.',
+      });
+    }
+    setIsResending(false);
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
@@ -254,6 +282,23 @@ const Auth = () => {
                 >
                   ¿Olvidaste tu contraseña?
                 </button>
+
+                {needsConfirmation && (
+                  <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      Tu correo aún no está confirmado. Si no encuentras el mensaje o el enlace ya expiró, te enviamos uno nuevo.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={handleResendConfirmation}
+                      disabled={isResending}
+                    >
+                      {isResending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Reenviar correo de confirmación'}
+                    </Button>
+                  </div>
+                )}
 
                 <div className="relative my-2">
                   <Separator />
