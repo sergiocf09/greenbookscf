@@ -170,6 +170,7 @@ const Auth = () => {
     if (error) {
       toast.error('Error al registrarse', { description: translateAuthError(error.message) });
     } else {
+      setNeedsConfirmation(true);
       toast.success('¡Cuenta creada! Revisa tu correo para confirmar.');
     }
     setIsLoading(false);
