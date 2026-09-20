@@ -17,12 +17,29 @@ const BLOCKED_API_COURSE_IDS: Record<string, string> = {
 };
 const BLOCKED_NAME_PATTERNS: { pattern: RegExp; canonicalId: string }[] = [
   { pattern: /juriquilla/i, canonicalId: "252ee05a-50e6-4404-a08c-0150b7f3e155" },
+  // Zibatá (El Marqués) -> copia canónica unificada
+  { pattern: /zibat[aá]/i, canonicalId: "fdf1f12b-eda5-4b60-a7ba-08abc7dda06c" },
+  // San Gil (San Juan del Río) -> copia canónica unificada
+  { pattern: /san\s*gil/i, canonicalId: "aa5f4765-aa23-4310-8e84-a14a39615dfa" },
 ];
 
 const findCanonicalOverride = (name: string): string | null => {
   const match = BLOCKED_NAME_PATTERNS.find((b) => b.pattern.test(name));
   return match ? match.canonicalId : null;
 };
+
+// Nombre "limpio" para detectar el mismo club con distinta nomenclatura
+// ("Zibata Golf Course", "Club de Golf Zibatá", "Zibatá").
+const normalizeCourseName = (raw: string): string =>
+  (raw || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\b(golf|course|courses|club|campo|de|del|la|el|los|las|the|cc|country|links|resort)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
