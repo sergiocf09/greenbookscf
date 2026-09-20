@@ -227,14 +227,33 @@ Deno.serve(async (req) => {
       const country = courseData.location?.country || "";
       const locationStr = [city, state].filter(Boolean).join(", ");
 
-      // Dedupe por nombre + ciudad: el catálogo externo cambia ids del mismo campo
-      const { data: sameName } = await supabase
-        .from("golf_courses")
-        .select("id, name, location")
-        .ilike("name", courseName);
-      const dupe = (sameName || []).find((c: any) =>
-        !city || (c.location || "").toLowerCase().includes(city.toLowerCase())
+      // Dedupe por nombre normalizado + ciudad: el catálogo externo cambia ids
+      // y nomenclatura ("Zibata Golf Course") del mismo campo.
+      const dedupeClient = createClient(
+        supabaseUrl,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
       );
+      const { data: allCourses } = await dedupeClient
+        .from("golf_courses")
+        .select("id, name, location");
+      const targetName = normalizeCourseName(
+        `${courseData.club_name || ""} ${courseData.course_name || ""}`
+      );
+      const targetNameShort = normalizeCourseName(courseName);
+      const cityNorm = normalizeCourseName(city);
+      const dupe = (allCourses || []).find((c: any) => {
+        const n = normalizeCourseName(c.name);
+        if (!n) return false;
+        const nameMatch =
+          n === targetName ||
+          n === targetNameShort ||
+          (targetName && (targetName.includes(n) || n.includes(targetName))) ||
+          (targetNameShort && (targetNameShort.includes(n) || n.includes(targetNameShort)));
+        if (!nameMatch) return false;
+        if (!cityNorm) return true;
+        const loc = normalizeCourseName(c.location || "");
+        return !loc || loc.includes(cityNorm) || cityNorm.includes(loc);
+      });
       if (dupe) {
         await addToFavorites(dupe.id);
         return new Response(
@@ -242,6 +261,7 @@ Deno.serve(async (req) => {
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
 
       // Get tees - try male first, then female
       const maleTees: any[] = courseData.tees?.male || [];
