@@ -674,19 +674,21 @@ export const useBetConfigPersistence = ({
         roundHoles: config.roundHoles,
       } as RoundBetConfig & { roundHoles?: 9 | 18 };
 
-      // Concurrency guard: check updated_at before writing
+      // Concurrency awareness: the round row can be touched by other players or by
+      // unrelated updates (auto-close flags, status, etc.). Previously a newer
+      // remote updated_at discarded the local edit silently, which made per-pair
+      // amount changes (e.g. Medal 100/200/200) snap back to the previous values.
+      // Now we simply re-sync our timestamp and let the user's edit win.
       if (lastKnownUpdatedAtRef.current) {
         const { data: current, error: checkErr } = await supabase
           .from('rounds')
           .select('updated_at')
           .eq('id', roundId)
           .single();
-        
+
         if (!checkErr && current?.updated_at && current.updated_at !== lastKnownUpdatedAtRef.current) {
-          // Someone else updated — reload their config first, then re-merge
-          devWarn('Concurrency conflict detected on bet_config save. Reloading remote state.');
-          await loadBetConfig();
-          return;
+          devWarn('bet_config changed remotely; applying local edit on top.');
+          lastKnownUpdatedAtRef.current = current.updated_at;
         }
       }
 
