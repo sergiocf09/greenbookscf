@@ -17,12 +17,29 @@ const BLOCKED_API_COURSE_IDS: Record<string, string> = {
 };
 const BLOCKED_NAME_PATTERNS: { pattern: RegExp; canonicalId: string }[] = [
   { pattern: /juriquilla/i, canonicalId: "252ee05a-50e6-4404-a08c-0150b7f3e155" },
+  // Zibatá (El Marqués) -> copia canónica unificada
+  { pattern: /zibat[aá]/i, canonicalId: "fdf1f12b-eda5-4b60-a7ba-08abc7dda06c" },
+  // San Gil (San Juan del Río) -> copia canónica unificada
+  { pattern: /san\s*gil/i, canonicalId: "aa5f4765-aa23-4310-8e84-a14a39615dfa" },
 ];
 
 const findCanonicalOverride = (name: string): string | null => {
   const match = BLOCKED_NAME_PATTERNS.find((b) => b.pattern.test(name));
   return match ? match.canonicalId : null;
 };
+
+// Nombre "limpio" para detectar el mismo club con distinta nomenclatura
+// ("Zibata Golf Course", "Club de Golf Zibatá", "Zibatá").
+const normalizeCourseName = (raw: string): string =>
+  (raw || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\b(golf|course|courses|club|campo|de|del|la|el|los|las|the|cc|country|links|resort)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -210,14 +227,33 @@ Deno.serve(async (req) => {
       const country = courseData.location?.country || "";
       const locationStr = [city, state].filter(Boolean).join(", ");
 
-      // Dedupe por nombre + ciudad: el catálogo externo cambia ids del mismo campo
-      const { data: sameName } = await supabase
-        .from("golf_courses")
-        .select("id, name, location")
-        .ilike("name", courseName);
-      const dupe = (sameName || []).find((c: any) =>
-        !city || (c.location || "").toLowerCase().includes(city.toLowerCase())
+      // Dedupe por nombre normalizado + ciudad: el catálogo externo cambia ids
+      // y nomenclatura ("Zibata Golf Course") del mismo campo.
+      const dedupeClient = createClient(
+        supabaseUrl,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
       );
+      const { data: allCourses } = await dedupeClient
+        .from("golf_courses")
+        .select("id, name, location");
+      const targetName = normalizeCourseName(
+        `${courseData.club_name || ""} ${courseData.course_name || ""}`
+      );
+      const targetNameShort = normalizeCourseName(courseName);
+      const cityNorm = normalizeCourseName(city);
+      const dupe = (allCourses || []).find((c: any) => {
+        const n = normalizeCourseName(c.name);
+        if (!n) return false;
+        const nameMatch =
+          n === targetName ||
+          n === targetNameShort ||
+          (targetName && (targetName.includes(n) || n.includes(targetName))) ||
+          (targetNameShort && (targetNameShort.includes(n) || n.includes(targetNameShort)));
+        if (!nameMatch) return false;
+        if (!cityNorm) return true;
+        const loc = normalizeCourseName(c.location || "");
+        return !loc || loc.includes(cityNorm) || cityNorm.includes(loc);
+      });
       if (dupe) {
         await addToFavorites(dupe.id);
         return new Response(
@@ -225,6 +261,7 @@ Deno.serve(async (req) => {
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
 
       // Get tees - try male first, then female
       const maleTees: any[] = courseData.tees?.male || [];
