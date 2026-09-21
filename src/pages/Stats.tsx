@@ -7,6 +7,7 @@ import { usePlayerStats, type PlayerStats, type PlayerMilestone, type CourseSumm
 import { isPaywallActive } from '@/lib/paywallConfig';
 import { fmtPct, fmtAvg, fmtVsPar, vsParColor } from '@/lib/statsFormatters';
 import { getNumDifferentialsToUse } from '@/lib/usgaHandicap';
+import { useUSGAHandicap } from '@/hooks/useUSGAHandicap';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -30,37 +31,30 @@ export const StatsInlineView: React.FC = () => {
   const { isPro, isFounder } = useSubscription();
   const [courseId, setCourseId] = useState<string | null>(null);
   const { stats, milestones, courses, holeAvgs, recentRounds, loading, error } = usePlayerStats(courseId);
-  const [hcpInfo, setHcpInfo] = useState<{ totalRounds: number; used: number; lowScore: number | null; highScore: number | null } | null>(null);
 
   const canViewStats = isPro || isFounder || !isPaywallActive();
   const selectedCourse = courses.find(c => c.course_id === courseId);
 
-  // Fetch handicap index calculation details
-  useEffect(() => {
-    if (!profile?.id) return;
-    supabase
-      .from('handicap_history')
-      .select('gross_score, differential')
-      .eq('profile_id', profile.id)
-      .order('recorded_at', { ascending: false })
-      .limit(20)
-      .then(({ data }) => {
-        if (!data || data.length === 0) {
-          setHcpInfo(null);
-          return;
-        }
-        const totalRounds = data.length;
-        const used = getNumDifferentialsToUse(totalRounds);
-        const scores = data.map(d => d.gross_score).filter((s): s is number => s != null);
-        // Sort differentials to find which scores are "used" — the lowest differentials
-        const withDiff = data.filter(d => d.differential != null).sort((a, b) => a.differential! - b.differential!);
-        const usedEntries = withDiff.slice(0, used);
-        const usedScores = usedEntries.map(e => e.gross_score).filter((s): s is number => s != null);
-        const lowScore = usedScores.length > 0 ? Math.min(...usedScores) : (scores.length > 0 ? Math.min(...scores) : null);
-        const highScore = usedScores.length > 0 ? Math.max(...usedScores) : (scores.length > 0 ? Math.max(...scores) : null);
-        setHcpInfo({ totalRounds, used, lowScore, highScore });
-      });
-  }, [profile?.id]);
+  // Same live USGA computation used by the Handicap Calculator (single source of truth)
+  const { handicapIndex: liveIndex, differentials } = useUSGAHandicap(profile?.id ?? null);
+
+  const hcpInfo = React.useMemo(() => {
+    if (!differentials.length) return null;
+    const totalRounds = differentials.length;
+    const used = getNumDifferentialsToUse(totalRounds);
+    const usedScores = [...differentials]
+      .sort((a, b) => a.differential - b.differential)
+      .slice(0, used)
+      .map(d => d.totalStrokes)
+      .filter((s): s is number => s != null);
+    return {
+      totalRounds,
+      used,
+      lowScore: usedScores.length ? Math.min(...usedScores) : null,
+      highScore: usedScores.length ? Math.max(...usedScores) : null,
+    };
+  }, [differentials]);
+
 
   if (loading) {
     return (
@@ -103,7 +97,7 @@ export const StatsInlineView: React.FC = () => {
         </div>
       ) : (
         <>
-          <KPIGrid stats={stats} profile={profile} canViewStats={canViewStats} hcpInfo={hcpInfo} />
+          <KPIGrid stats={stats} profile={profile} canViewStats={canViewStats} hcpInfo={hcpInfo} liveIndex={liveIndex} />
 
           {!canViewStats && <UpgradeBanner onNavigate={() => navigate('/')} />}
 
@@ -134,8 +128,8 @@ const Stats: React.FC = () => {
 export default Stats;
 
 /* ═══════════════ KPI GRID ═══════════════ */
-function KPIGrid({ stats, profile, canViewStats, hcpInfo }: { stats: PlayerStats; profile: any; canViewStats: boolean; hcpInfo: { totalRounds: number; used: number; lowScore: number | null; highScore: number | null } | null }) {
-  const handicap = profile?.current_handicap;
+function KPIGrid({ stats, profile, canViewStats, hcpInfo, liveIndex }: { stats: PlayerStats; profile: any; canViewStats: boolean; hcpInfo: { totalRounds: number; used: number; lowScore: number | null; highScore: number | null } | null; liveIndex: number | null }) {
+  const handicap = liveIndex ?? profile?.current_handicap;
   const hcpColor = handicap == null ? 'text-muted-foreground' : handicap < 18 ? 'text-emerald-500' : handicap < 25 ? 'text-yellow-500' : 'text-red-500';
   const girColor = stats.gir_pct == null ? 'text-muted-foreground' : Number(stats.gir_pct) > 50 ? 'text-emerald-500' : Number(stats.gir_pct) > 30 ? 'text-yellow-500' : 'text-red-500';
 
