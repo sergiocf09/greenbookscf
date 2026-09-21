@@ -31,37 +31,30 @@ export const StatsInlineView: React.FC = () => {
   const { isPro, isFounder } = useSubscription();
   const [courseId, setCourseId] = useState<string | null>(null);
   const { stats, milestones, courses, holeAvgs, recentRounds, loading, error } = usePlayerStats(courseId);
-  const [hcpInfo, setHcpInfo] = useState<{ totalRounds: number; used: number; lowScore: number | null; highScore: number | null } | null>(null);
 
   const canViewStats = isPro || isFounder || !isPaywallActive();
   const selectedCourse = courses.find(c => c.course_id === courseId);
 
-  // Fetch handicap index calculation details
-  useEffect(() => {
-    if (!profile?.id) return;
-    supabase
-      .from('handicap_history')
-      .select('gross_score, differential')
-      .eq('profile_id', profile.id)
-      .order('recorded_at', { ascending: false })
-      .limit(20)
-      .then(({ data }) => {
-        if (!data || data.length === 0) {
-          setHcpInfo(null);
-          return;
-        }
-        const totalRounds = data.length;
-        const used = getNumDifferentialsToUse(totalRounds);
-        const scores = data.map(d => d.gross_score).filter((s): s is number => s != null);
-        // Sort differentials to find which scores are "used" — the lowest differentials
-        const withDiff = data.filter(d => d.differential != null).sort((a, b) => a.differential! - b.differential!);
-        const usedEntries = withDiff.slice(0, used);
-        const usedScores = usedEntries.map(e => e.gross_score).filter((s): s is number => s != null);
-        const lowScore = usedScores.length > 0 ? Math.min(...usedScores) : (scores.length > 0 ? Math.min(...scores) : null);
-        const highScore = usedScores.length > 0 ? Math.max(...usedScores) : (scores.length > 0 ? Math.max(...scores) : null);
-        setHcpInfo({ totalRounds, used, lowScore, highScore });
-      });
-  }, [profile?.id]);
+  // Same live USGA computation used by the Handicap Calculator (single source of truth)
+  const { handicapIndex: liveIndex, differentials } = useUSGAHandicap(profile?.id ?? null);
+
+  const hcpInfo = React.useMemo(() => {
+    if (!differentials.length) return null;
+    const totalRounds = differentials.length;
+    const used = getNumDifferentialsToUse(totalRounds);
+    const usedScores = [...differentials]
+      .sort((a, b) => a.differential - b.differential)
+      .slice(0, used)
+      .map(d => d.totalStrokes)
+      .filter((s): s is number => s != null);
+    return {
+      totalRounds,
+      used,
+      lowScore: usedScores.length ? Math.min(...usedScores) : null,
+      highScore: usedScores.length ? Math.max(...usedScores) : null,
+    };
+  }, [differentials]);
+
 
   if (loading) {
     return (
