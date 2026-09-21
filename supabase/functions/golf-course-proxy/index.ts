@@ -235,20 +235,22 @@ Deno.serve(async (req) => {
       );
       const { data: allCourses } = await dedupeClient
         .from("golf_courses")
-        .select("id, name, location");
+        .select("id, name, location")
+        .range(0, 4999);
       const targetName = normalizeCourseName(
         `${courseData.club_name || ""} ${courseData.course_name || ""}`
       );
       const targetNameShort = normalizeCourseName(courseName);
       const cityNorm = normalizeCourseName(city);
+      // Solo se considera duplicado si el nombre limpio coincide EXACTAMENTE
+      // (no por inclusión), para no bloquear un segundo recorrido del mismo club
+      // (ej. "Zibatá" vs "Zibatá Championship").
       const dupe = (allCourses || []).find((c: any) => {
         const n = normalizeCourseName(c.name);
         if (!n) return false;
         const nameMatch =
-          n === targetName ||
-          n === targetNameShort ||
-          (targetName && (targetName.includes(n) || n.includes(targetName))) ||
-          (targetNameShort && (targetNameShort.includes(n) || n.includes(targetNameShort)));
+          (targetName && n === targetName) ||
+          (targetNameShort && n === targetNameShort);
         if (!nameMatch) return false;
         if (!cityNorm) return true;
         const loc = normalizeCourseName(c.location || "");
