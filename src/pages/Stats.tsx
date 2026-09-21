@@ -97,7 +97,7 @@ export const StatsInlineView: React.FC = () => {
         </div>
       ) : (
         <>
-          <KPIGrid stats={stats} profile={profile} canViewStats={canViewStats} hcpInfo={hcpInfo} />
+          <KPIGrid stats={stats} profile={profile} canViewStats={canViewStats} hcpInfo={hcpInfo} liveIndex={liveIndex} />
 
           {!canViewStats && <UpgradeBanner onNavigate={() => navigate('/')} />}
 
@@ -128,8 +128,8 @@ const Stats: React.FC = () => {
 export default Stats;
 
 /* ═══════════════ KPI GRID ═══════════════ */
-function KPIGrid({ stats, profile, canViewStats, hcpInfo }: { stats: PlayerStats; profile: any; canViewStats: boolean; hcpInfo: { totalRounds: number; used: number; lowScore: number | null; highScore: number | null } | null }) {
-  const handicap = profile?.current_handicap;
+function KPIGrid({ stats, profile, canViewStats, hcpInfo, liveIndex }: { stats: PlayerStats; profile: any; canViewStats: boolean; hcpInfo: { totalRounds: number; used: number; lowScore: number | null; highScore: number | null } | null; liveIndex: number | null }) {
+  const handicap = liveIndex ?? profile?.current_handicap;
   const hcpColor = handicap == null ? 'text-muted-foreground' : handicap < 18 ? 'text-emerald-500' : handicap < 25 ? 'text-yellow-500' : 'text-red-500';
   const girColor = stats.gir_pct == null ? 'text-muted-foreground' : Number(stats.gir_pct) > 50 ? 'text-emerald-500' : Number(stats.gir_pct) > 30 ? 'text-yellow-500' : 'text-red-500';
 
