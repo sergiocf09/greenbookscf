@@ -7,6 +7,7 @@ import { usePlayerStats, type PlayerStats, type PlayerMilestone, type CourseSumm
 import { isPaywallActive } from '@/lib/paywallConfig';
 import { fmtPct, fmtAvg, fmtVsPar, vsParColor } from '@/lib/statsFormatters';
 import { getNumDifferentialsToUse } from '@/lib/usgaHandicap';
+import { useUSGAHandicap } from '@/hooks/useUSGAHandicap';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
