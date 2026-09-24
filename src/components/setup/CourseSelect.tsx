@@ -17,6 +17,7 @@ import { useCourseFavorites } from '@/hooks/useCourseFavorites';
 import { AddManualCourseDialog } from '@/components/courses/AddManualCourseDialog';
 import { CourseSearchDialog } from '@/components/courses/CourseSearchDialog';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface CourseSelectProps {
   selectedCourseId: string | null;
@@ -43,6 +44,7 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
   roundHolesDisabled = false,
   enabled = true,
 }) => {
+  const { t } = useTranslation();
   const { courses, loading, error, getCourseById, refresh } = useGolfCourses({ enabled });
   const { favoriteIds, toggleFavorite, ensureFavorite } = useCourseFavorites();
   const [showAll, setShowAll] = useState(false);
@@ -75,10 +77,10 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
   if (loading) {
     return (
       <div className="space-y-3">
-        <Label className="text-sm font-medium">Campo de Golf</Label>
+         <Label className="text-sm font-medium">{t('setup.golfCourse')}</Label>
         <div className="flex items-center gap-2 text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span className="text-sm">Cargando campos...</span>
+           <span className="text-sm">{t('setup.loadingCourses')}</span>
         </div>
       </div>
     );
@@ -87,7 +89,7 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
   if (error) {
     return (
       <div className="space-y-3">
-        <Label className="text-sm font-medium">Campo de Golf</Label>
+         <Label className="text-sm font-medium">{t('setup.golfCourse')}</Label>
         <p className="text-sm text-destructive">Error: {error}</p>
       </div>
     );
@@ -96,7 +98,7 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <Label className="text-sm font-medium">Campo de Golf</Label>
+         <Label className="text-sm font-medium">{t('setup.golfCourse')}</Label>
         <div className="flex gap-1">
           <Button
             variant="ghost"
@@ -105,7 +107,7 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
             onClick={() => setShowSearch(true)}
           >
             <Search className="h-3 w-3" />
-            Buscar
+             {t('setup.search')}
           </Button>
           <Button
             variant="ghost"
@@ -114,7 +116,7 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
             onClick={() => setShowAddCourse(true)}
           >
             <Plus className="h-3 w-3" />
-            Manual
+             {t('setup.manual')}
           </Button>
         </div>
       </div>
@@ -125,7 +127,7 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
           <Input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filtra entre los campos ya en GreenBook..."
+             placeholder={t('setup.filterCourses')}
             className="pl-8 h-8 text-xs"
           />
         </div>
@@ -133,14 +135,14 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
 
       <Select value={selectedCourseId || ''} onValueChange={onChange}>
         <SelectTrigger className="w-full">
-          <SelectValue placeholder="Selecciona un campo" />
+           <SelectValue placeholder={t('setup.selectCourse')} />
         </SelectTrigger>
         <SelectContent>
           {(filterQuery.length > 0 || showAll) ? (
             <>
               {favoriteCourses.length > 0 && (
                 <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-                  Mis campos
+                   {t('setup.myCourses')}
                 </div>
               )}
               {favoriteCourses.map((course) => (
@@ -148,14 +150,14 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
                   <div className="flex items-center gap-2">
                     <span>{course.name}</span>
                     {course.isManual && (
-                      <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">*Manual</Badge>
+                       <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">*{t('setup.manual')}</Badge>
                     )}
                   </div>
                 </SelectItem>
               ))}
               {otherCourses.length > 0 && (
                 <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-                  Otros campos en GreenBook
+                   {t('setup.otherCourses')}
                 </div>
               )}
               {otherCourses.map((course) => (
@@ -163,14 +165,14 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
                   <div className="flex items-center gap-2">
                     <span>{course.name}</span>
                     {course.isManual && (
-                      <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">*Manual</Badge>
+                       <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">*{t('setup.manual')}</Badge>
                     )}
                   </div>
                 </SelectItem>
               ))}
               {matches.length === 0 && (
                 <div className="px-2 py-3 text-xs text-muted-foreground">
-                  Ningún campo coincide. Usa "Buscar" para el catálogo mundial.
+                   {t('setup.noMatchingCourses')}
                 </div>
               )}
             </>
@@ -181,7 +183,7 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
                   <div className="flex items-center gap-2">
                     <span>{course.name}</span>
                     {course.isManual && (
-                      <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">*Manual</Badge>
+                       <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">*{t('setup.manual')}</Badge>
                     )}
                   </div>
                 </SelectItem>
@@ -195,7 +197,7 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
                       setShowAll(true);
                     }}
                   >
-                    Ver todos los campos ({otherCourses.length} más)
+                     {t('setup.viewAllCourses', { count: otherCourses.length })}
                   </button>
                 </div>
               )}
@@ -210,7 +212,7 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
                   setShowAll(false);
                 }}
               >
-                Solo mis campos visibles
+                 {t('setup.onlyMyCourses')}
               </button>
             </div>
           )}
@@ -227,13 +229,13 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
             {selectedCourse.isManual && (
               <>
                 <span className="mx-1">•</span>
-                <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">*Manual</Badge>
+                 <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">*{t('setup.manual')}</Badge>
               </>
             )}
             <button
               className="ml-auto p-0.5 hover:text-primary transition-colors"
               onClick={() => toggleFavorite(selectedCourse.id)}
-              title={favoriteIds.has(selectedCourse.id) ? 'Quitar de visibles' : 'Agregar a mis visibles'}
+               title={favoriteIds.has(selectedCourse.id) ? t('setup.removeFavorite') : t('setup.addFavorite')}
             >
               <Star
                 className={cn(
@@ -247,7 +249,7 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
           <div className="grid grid-cols-3 items-end gap-3">
             {onStartingHoleChange && (
               <div className="space-y-1 flex flex-col items-start">
-                <Label className="text-[10px] text-muted-foreground">Hoyo de inicio</Label>
+                 <Label className="text-[10px] text-muted-foreground">{t('setup.startingHole')}</Label>
                 <ToggleGroup
                   type="single"
                   value={String(startingHole)}
@@ -271,7 +273,7 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
 
             {onTeeColorChange && (
               <div className="space-y-1 flex flex-col items-center">
-                <Label className="text-[10px] text-muted-foreground">Tee de salida</Label>
+                 <Label className="text-[10px] text-muted-foreground">{t('setup.startingTee')}</Label>
                 <ToggleGroup
                   type="single"
                   value={teeColor}
@@ -287,7 +289,7 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
 
             {onRoundHolesChange && (
               <div className="space-y-1 flex flex-col items-end">
-                <Label className="text-[10px] text-muted-foreground">Hoyos a jugar</Label>
+                 <Label className="text-[10px] text-muted-foreground">{t('setup.holesToPlay')}</Label>
                 <ToggleGroup
                   type="single"
                   value={String(roundHoles)}

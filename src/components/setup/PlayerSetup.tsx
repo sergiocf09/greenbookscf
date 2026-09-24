@@ -12,6 +12,7 @@ import { USGAHandicapDialog } from './USGAHandicapDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { supabase } from '@/integrations/supabase/client';
+import { useTranslation } from 'react-i18next';
 
 const playerColors = [
   'bg-golf-green text-white',
@@ -66,6 +67,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
   organizerProfileId = null,
   roundId = null,
 }) => {
+  const { t } = useTranslation();
   const { profile } = useAuth();
   const [newPlayerName, setNewPlayerName] = useState('');
   const [activeGroupId, setActiveGroupId] = useState<string | null>(groups[0]?.id || null);
@@ -368,7 +370,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <Label className="text-sm font-medium">Jugadores ({players.length}/{maxPlayers})</Label>
+         <Label className="text-sm font-medium">{t('setup.players')} ({players.length}/{maxPlayers})</Label>
         <div className="flex items-center gap-1">
           {/* Bulk USGA Calculator */}
           {players.length >= 1 && (
@@ -378,7 +380,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
               className="h-7 w-7 text-muted-foreground hover:text-primary"
               onClick={handleBulkUSGACalculation}
               disabled={bulkCalculating}
-              title="Calcular handicap USGA para todos"
+               title={t('setup.calculateAllHandicaps')}
             >
               {bulkCalculating ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -395,7 +397,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
               className="h-8 text-xs gap-1"
             >
               <Users2 className="h-3.5 w-3.5" />
-              Agregar Grupo
+               {t('setup.addGroup')}
             </Button>
           )}
         </div>
@@ -471,7 +473,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                     });
                   }}
                   className="h-7 text-sm"
-                  placeholder="Nombre del jugador"
+                   placeholder={t('setup.playerName')}
                 />
               </div>
 
@@ -499,9 +501,9 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                   onChange={(e) => updatePlayer(player.id, { teeColor: e.target.value })}
                   className="h-7 w-20 text-xs rounded border border-border bg-background px-1"
                 >
-                  {TEE_OPTIONS.map((tee) => (
+                   {TEE_OPTIONS.map((tee) => (
                     <option key={tee.value} value={tee.value}>
-                      {tee.label}
+                       {t(`setup.${tee.value}`)}
                     </option>
                   ))}
                 </select>
@@ -522,7 +524,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                   size="icon"
                   className="h-7 w-7 text-muted-foreground hover:text-primary"
                   onClick={() => handleOpenUSGADialog(player)}
-                  title="Calcular handicap USGA"
+                   title={t('setup.calculateUsga')}
                 >
                   <Calculator className="h-3.5 w-3.5" />
                 </Button>
@@ -548,8 +550,8 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                     }
                   }}
                   className="ml-auto flex flex-col items-center leading-none shrink-0"
-                  title={player.isAdmin ? 'Co-admin: puede capturar scores del grupo' : 'Marcar como co-admin del grupo'}
-                  aria-label="Co-administrador del grupo"
+                   title={player.isAdmin ? t('setup.coAdminCanScore') : t('setup.markCoAdmin')}
+                   aria-label={t('setup.groupCoAdmin')}
                 >
                   {player.isAdmin
                     ? <ShieldCheck className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
@@ -575,13 +577,13 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
               value={newPlayerName}
               maxLength={100}
               onChange={(e) => setNewPlayerName(e.target.value.slice(0, 100))}
-              placeholder="Nombre del nuevo jugador"
+               placeholder={t('setup.newPlayerName')}
               className="flex-1"
               onKeyDown={(e) => e.key === 'Enter' && addPlayer()}
             />
             <Button onClick={addPlayer} disabled={!newPlayerName.trim()}>
               <Plus className="h-4 w-4 mr-1" />
-              Agregar
+               {t('setup.add')}
             </Button>
           </div>
           
@@ -593,7 +595,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
               className="w-full"
             >
               <UserPlus className="h-4 w-4 mr-2" />
-              Agregar desde Amigos
+               {t('setup.addFromFriends')}
             </Button>
           )}
         </div>
@@ -602,7 +604,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
       {players.length === 0 && (
         <div className="text-center py-6 text-muted-foreground">
           <User className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">Agrega jugadores para comenzar</p>
+           <p className="text-sm">{t('setup.addPlayersToStart')}</p>
         </div>
       )}
 
@@ -614,7 +616,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
           className="w-full mt-2"
         >
           <Users2 className="h-4 w-4 mr-2" />
-          Agregar Otro Grupo de Juego
+           {t('setup.addAnotherGroup')}
         </Button>
       )}
 

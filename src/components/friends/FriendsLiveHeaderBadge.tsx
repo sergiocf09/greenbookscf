@@ -3,6 +3,7 @@ import { useFriendsLive } from '@/hooks/useFriendsLive';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { cn } from '@/lib/utils';
 import { Radio, Swords } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /** Capitaliza cada palabra: "ALEJANDRO SERRANO" → "Alejandro Serrano" */
 const titleCase = (s: string) =>
@@ -23,14 +24,15 @@ const VsParLabel = ({ value }: { value: number }) => {
 };
 
 const HighlightsLine: React.FC<{ birdies: number[]; eagles: number[] }> = ({ birdies, eagles }) => {
+  const { t } = useTranslation();
   if (birdies.length === 0 && eagles.length === 0) return null;
 
   const parts: string[] = [];
   if (eagles.length > 0) {
-    parts.push(`🦅 ${eagles.length === 1 ? `Hoyo ${eagles[0]}` : `Hoyos ${eagles.join(', ')}`}`);
+     parts.push(`🦅 ${t(eagles.length === 1 ? 'menu.hole' : 'menu.holes')} ${eagles.join(', ')}`);
   }
   if (birdies.length > 0) {
-    parts.push(`🐦 ${birdies.length === 1 ? `Hoyo ${birdies[0]}` : `Hoyos ${birdies.join(', ')}`}`);
+     parts.push(`🐦 ${t(birdies.length === 1 ? 'menu.hole' : 'menu.holes')} ${birdies.join(', ')}`);
   }
 
   return (
@@ -45,6 +47,7 @@ interface FriendsLiveHeaderBadgeProps {
 }
 
 export const FriendsLiveHeaderBadge: React.FC<FriendsLiveHeaderBadgeProps> = ({ onCrossInvite }) => {
+  const { t } = useTranslation();
   const { liveRounds, refresh } = useFriendsLive();
   const [open, setOpen] = useState(false);
 
@@ -68,7 +71,7 @@ export const FriendsLiveHeaderBadge: React.FC<FriendsLiveHeaderBadgeProps> = ({ 
           )} />
         </span>
         <span className="text-[10px] text-primary-foreground/80 leading-none">
-          En Vivo
+           {t('menu.live')}
         </span>
         <span className="text-xs font-semibold text-primary-foreground leading-none">
           {liveRounds.length}
@@ -91,14 +94,14 @@ export const FriendsLiveHeaderBadge: React.FC<FriendsLiveHeaderBadgeProps> = ({ 
             <div className="px-4 pt-3 pb-1 flex items-center justify-between">
               <h3 className="font-semibold text-sm flex items-center gap-2">
                 <Radio className="h-4 w-4 text-green-500" />
-                Amigos jugando ahora
+                 {t('friendsLive.playingNow')}
               </h3>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 className="text-xs text-muted-foreground hover:text-foreground"
               >
-                Cerrar
+                 {t('friendsLive.close')}
               </button>
             </div>
             <div className="space-y-2 px-4 pb-4 pt-2">
@@ -129,11 +132,11 @@ export const FriendsLiveHeaderBadge: React.FC<FriendsLiveHeaderBadgeProps> = ({ 
                           onClick={(e) => { e.stopPropagation(); setOpen(false); onCrossInvite(r.profileId, r.displayName, r.initials, r.avatarColor, r.courseName, r.holesPlayed); }}
                           className="flex items-center gap-1 text-[10px] text-primary font-medium px-2 py-0.5 rounded-full border border-primary/30 hover:bg-primary/10 transition-colors">
                           <Swords className="h-3 w-3" />
-                          Cruzar
+                           {t('friendsLive.cross')}
                         </button>
                       )}
                       <p className="text-[11px] text-muted-foreground whitespace-nowrap">
-                        {r.holesPlayed > 0 ? `Hoyo ${r.holesPlayed}` : 'Iniciando'}
+                         {r.holesPlayed > 0 ? `${t('menu.hole')} ${r.holesPlayed}` : t('friendsLive.starting')}
                       </p>
                     </div>
                   </div>
