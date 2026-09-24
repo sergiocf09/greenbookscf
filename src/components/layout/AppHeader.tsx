@@ -37,6 +37,8 @@ import { FriendsLiveHeaderBadge } from '@/components/friends/FriendsLiveHeaderBa
 import { supabase } from '@/integrations/supabase/client';
 import { devError } from '@/lib/logger';
 import { formatPlayerName } from '@/lib/playerInput';
+import { useTranslation } from 'react-i18next';
+import { toggleLanguage } from '@/i18n';
 
 export type AppView =
   | 'setup'
@@ -120,6 +122,7 @@ interface AppHeaderProps {
 }
 
 export function AppHeader(props: AppHeaderProps) {
+  const { t, i18n } = useTranslation();
   const {
     view,
     course,
@@ -304,11 +307,15 @@ export function AppHeader(props: AppHeaderProps) {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => onOpenDialog('profileMenuHelp')}>
                   <HelpCircle className="h-4 w-4 mr-2" />
-                  ¿Qué hay en este menú?
+                  {t('menu.help')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onSetTheme(theme === 'dark' ? 'light' : 'dark')}>
                   {theme === 'dark' ? <Sun className="h-4 w-4 mr-2" /> : <Moon className="h-4 w-4 mr-2" />}
-                  {theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+                  {theme === 'dark' ? t('menu.lightMode') : t('menu.darkMode')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); toggleLanguage(); }}>
+                  <span className="h-4 w-4 mr-2 text-[10px] font-bold leading-4 text-center">{i18n.language === 'en' ? 'ES' : 'EN'}</span>
+                  {t('menu.language')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <div className="px-2 py-1.5">
@@ -318,11 +325,11 @@ export function AppHeader(props: AppHeaderProps) {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => onOpenDialog('profile')}>
                   <Settings className="h-4 w-4 mr-2" />
-                  Perfil
+                  {t('menu.profile')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onNavigate('/join')}>
                   <Hash className="h-4 w-4 mr-2" />
-                  Unirse con Código
+                  {t('menu.joinByCode')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onSetView('leaderboards')}>
                   <Trophy className="h-4 w-4 mr-2" />
@@ -334,7 +341,7 @@ export function AppHeader(props: AppHeaderProps) {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onOpenDialog('history')}>
                   <History className="h-4 w-4 mr-2" />
-                  Historial de Rondas
+                  {t('menu.history')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={async () => {
