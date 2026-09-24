@@ -68,8 +68,8 @@
     "createRound": "Crear Ronda y Obtener Link, QR & Código",
     "startRound": "Iniciar Ronda",
     "continueRound": "Continuar Ronda",
-    "roundStarted": "Ronda Iniciada"
-    ,"playerNeedsProfile": "Este jugador no tiene un perfil registrado con historial de rondas",
+    "roundStarted": "Ronda Iniciada",
+    "playerNeedsProfile": "Este jugador no tiene un perfil registrado con historial de rondas",
     "handicapApplied": "Handicap USGA {{handicap}} aplicado a {{name}}",
     "noRegisteredProfiles": "No se encontraron perfiles registrados para calcular handicaps",
     "handicapCalculated": "Handicap calculado para {{count}} jugador(es)",
