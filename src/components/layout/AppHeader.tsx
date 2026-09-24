@@ -37,6 +37,8 @@ import { FriendsLiveHeaderBadge } from '@/components/friends/FriendsLiveHeaderBa
 import { supabase } from '@/integrations/supabase/client';
 import { devError } from '@/lib/logger';
 import { formatPlayerName } from '@/lib/playerInput';
+import { useTranslation } from 'react-i18next';
+import { toggleLanguage } from '@/i18n';
 
 export type AppView =
   | 'setup'
@@ -120,6 +122,7 @@ interface AppHeaderProps {
 }
 
 export function AppHeader(props: AppHeaderProps) {
+  const { t, i18n } = useTranslation();
   const {
     view,
     course,
