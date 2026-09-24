@@ -1,0 +1,18 @@
+{
+  "menu": {
+    "help": "¿Qué hay en este menú?",
+    "lightMode": "Modo claro",
+    "darkMode": "Modo oscuro",
+    "language": "English",
+    "profile": "Perfil",
+    "joinByCode": "Unirse con Código",
+    "history": "Historial de Rondas"
+  },
+  "bets": {
+    "medal": "Medal", "pressures": "Presiones", "matchPlay": "Match Play", "bloques": "Bloques",
+    "skins": "Skins", "caros": "Caros", "oyeses": "Oyes", "units": "Unidades", "manchas": "Manchas",
+    "culebras": "Culebras", "pinguinos": "Pingüinos", "rayas": "Rayas", "carritos": "Carritos",
+    "coneja": "Coneja", "zoologico": "Zoológico", "wolf": "Loba", "sixes": "Sixes", "vegas": "Vegas",
+    "nines": "Nines", "foursomes": "Parejas", "sliding": "Sliding", "crossMatch": "Cruzar tarjeta"
+  }
+}
