@@ -115,7 +115,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
     const profileId = await getProfileIdForPlayer(player);
     
     if (!profileId) {
-      toast.error('Este jugador no tiene un perfil registrado con historial de rondas');
+       toast.error(t('setup.playerNeedsProfile'));
       return;
     }
 
@@ -132,7 +132,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
     if (!selectedPlayerForUSGA) return;
     
     updatePlayer(selectedPlayerForUSGA.id, { handicap });
-    toast.success(`Handicap USGA ${handicap} aplicado a ${selectedPlayerForUSGA.name}`);
+     toast.success(t('setup.handicapApplied', { handicap, name: selectedPlayerForUSGA.name }));
   };
 
   // Bulk calculate Course Handicaps for all players by recalculating from round history
@@ -157,7 +157,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
       }[];
 
       if (validPlayers.length === 0) {
-        toast.info('No se encontraron perfiles registrados para calcular handicaps');
+         toast.info(t('setup.noRegisteredProfiles'));
         setBulkCalculating(false);
         return;
       }
@@ -281,16 +281,16 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
       skipped += profileIdResults.filter(r => !r.profileId).length;
 
       if (updated > 0) {
-        toast.success(`Handicap calculado para ${updated} jugador${updated !== 1 ? 'es' : ''}`);
+         toast.success(t('setup.handicapCalculated', { count: updated }));
       }
       if (skipped > 0 && updated === 0) {
-        toast.info('No se encontraron handicaps USGA persistidos para los jugadores');
+         toast.info(t('setup.noSavedHandicaps'));
       } else if (skipped > 0) {
-        toast.info(`${skipped} jugador${skipped !== 1 ? 'es' : ''} sin Handicap Index`);
+         toast.info(t('setup.playersWithoutIndex', { count: skipped }));
       }
     } catch (err) {
       console.error('[BulkUSGA] Critical error:', err);
-      toast.error('Error al calcular handicaps');
+       toast.error(t('setup.handicapError'));
     } finally {
       setBulkCalculating(false);
     }
@@ -305,7 +305,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
       safeName = validatePlayerName(newPlayerName);
       initials = initialsFromPlayerName(safeName);
     } catch (e: any) {
-      toast.error(e?.message || 'Nombre inválido');
+       toast.error(t('setup.invalidName'));
       return;
     }
 
@@ -326,7 +326,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
     // Check if this player is the organizer - organizers cannot be removed
     const playerToRemove = players.find(p => p.id === id);
     if (playerToRemove && organizerProfileId && playerToRemove.profileId === organizerProfileId) {
-      toast.error('El organizador de la ronda no puede ser eliminado');
+       toast.error(t('setup.organizerCannotRemove'));
       return;
     }
     onChange(players.filter(p => p.id !== id));

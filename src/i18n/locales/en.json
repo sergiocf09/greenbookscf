@@ -69,6 +69,15 @@
     "startRound": "Start Round",
     "continueRound": "Continue Round",
     "roundStarted": "Round Started"
+    ,"playerNeedsProfile": "This player has no registered profile with round history",
+    "handicapApplied": "USGA handicap {{handicap}} applied to {{name}}",
+    "noRegisteredProfiles": "No registered profiles found to calculate handicaps",
+    "handicapCalculated": "Handicap calculated for {{count}} player(s)",
+    "noSavedHandicaps": "No saved USGA handicaps found for the players",
+    "playersWithoutIndex": "{{count}} player(s) without a Handicap Index",
+    "handicapError": "Could not calculate handicaps",
+    "invalidName": "Invalid name",
+    "organizerCannotRemove": "The round organizer cannot be removed"
   },
   "friendsLive": {
     "playingNow": "Friends playing now",
