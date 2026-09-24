@@ -70,6 +70,12 @@
     "continueRound": "Continuar Ronda",
     "roundStarted": "Ronda Iniciada"
   },
+  "friendsLive": {
+    "playingNow": "Amigos jugando ahora",
+    "close": "Cerrar",
+    "cross": "Cruzar",
+    "starting": "Iniciando"
+  },
   "bets": {
     "medal": "Medal", "pressures": "Presiones", "matchPlay": "Match Play", "bloques": "Bloques",
     "skins": "Skins", "caros": "Caros", "oyeses": "Oyes", "units": "Unidades", "manchas": "Manchas",

@@ -70,6 +70,12 @@
     "continueRound": "Continue Round",
     "roundStarted": "Round Started"
   },
+  "friendsLive": {
+    "playingNow": "Friends playing now",
+    "close": "Close",
+    "cross": "Challenge",
+    "starting": "Starting"
+  },
   "bets": {
     "medal": "Medal", "pressures": "Presses", "matchPlay": "Match Play", "bloques": "Blocks",
     "skins": "Skins", "caros": "High-Stakes Holes", "oyeses": "Closest to the Pin", "units": "Units",
