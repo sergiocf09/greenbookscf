@@ -185,7 +185,7 @@ export function AppHeader(props: AppHeaderProps) {
         <div className="flex-1 flex justify-center">
           {view !== 'setup' && course && currentHoleInfo ? (
             <div className="text-center">
-              <p className="text-xl font-bold text-primary-foreground">Hoyo {currentHole}</p>
+               <p className="text-xl font-bold text-primary-foreground">{t('menu.hole')} {currentHole}</p>
               <p className="text-sm font-bold text-primary-foreground/90">
                 Par {holePar} • SI {holeStrokeIndex}
                 {holeYards && <span> • {holeYards} yds</span>}
@@ -199,7 +199,7 @@ export function AppHeader(props: AppHeaderProps) {
             <FriendsLiveHeaderBadge onCrossInvite={onCrossInvite} />
           ) : view === 'leaderboards' || view === 'rankings' || view === 'stats' ? (
             <Badge variant="secondary" className="bg-primary-foreground/15 text-primary-foreground border-0 text-sm px-3 py-1">
-              {view === 'leaderboards' ? 'Leaderboards' : view === 'rankings' ? 'Rankings' : 'Estadísticas'}
+               {view === 'leaderboards' ? 'Leaderboards' : view === 'rankings' ? 'Rankings' : t('menu.statistics')}
             </Badge>
           ) : null}
         </div>
@@ -228,7 +228,7 @@ export function AppHeader(props: AppHeaderProps) {
             <div className="relative">
               <Button variant="ghost" size="icon"
                 className="rounded-full text-primary-foreground hover:bg-primary-foreground/10 h-8 w-8"
-                onClick={onOpenCrossInvitations} title="Invitaciones de cruce pendientes">
+                 onClick={onOpenCrossInvitations} title={t('menu.pendingCrossInvites')}>
                 <Swords className="h-5 w-5" />
               </Button>
               <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center pointer-events-none">
@@ -242,10 +242,10 @@ export function AppHeader(props: AppHeaderProps) {
               variant="ghost"
               className="rounded-full text-primary-foreground hover:bg-primary-foreground/10 h-auto w-auto px-2 py-1 flex flex-col items-center gap-0.5"
               onClick={() => onOpenDialog('friends')}
-              title="Amigos"
+               title={t('menu.friends')}
             >
               <Users className="h-5 w-5" />
-              <span className="text-[10px] leading-none font-medium">Amigos</span>
+               <span className="text-[10px] leading-none font-medium">{t('menu.friends')}</span>
             </Button>
           )}
           {/* Help + Refresh stacked vertically */}
@@ -265,8 +265,8 @@ export function AppHeader(props: AppHeaderProps) {
               size="icon"
               className="rounded-full text-primary-foreground hover:bg-primary-foreground/10 h-7 w-7"
               onClick={handleHardCacheCleanup}
-              aria-label="Limpiar caché y recargar"
-              title="Limpiar caché y recargar"
+               aria-label={t('menu.clearCache')}
+               title={t('menu.clearCache')}
             >
               <RefreshCw className="h-4 w-4" />
             </Button>
@@ -370,33 +370,33 @@ export function AppHeader(props: AppHeaderProps) {
                   }}
                 >
                   <DollarSign className="h-4 w-4 mr-2" />
-                  Balances Históricos
+                   {t('menu.historicalBalances')}
                 </DropdownMenuItem>
                 {pendingRounds && pendingRounds.length > 0 && (
                   <DropdownMenuItem onClick={() => onOpenDialog('pendingRound')}>
                     <Play className="h-4 w-4 mr-2 text-destructive" />
-                    <span>Rondas Pendientes</span>
+                     <span>{t('menu.pendingRounds')}</span>
                     <span className="ml-1 text-destructive font-semibold">({pendingRounds.length})</span>
                   </DropdownMenuItem>
                 )}
                 {crossInvitationsCount > 0 && (
                   <DropdownMenuItem onClick={() => { onSetProfileMenuOpen(false); onOpenCrossInvitations(); }}>
                     <Swords className="h-4 w-4 mr-2 text-primary" />
-                    <span>Cruces Pendientes</span>
+                     <span>{t('menu.pendingCrossMatches')}</span>
                     <span className="ml-1 text-primary font-semibold">({crossInvitationsCount})</span>
                   </DropdownMenuItem>
                 )}
                 {isRoundAdmin && roundState.id && roundState.status !== 'setup' && (
                   <DropdownMenuItem onClick={() => { onSetProfileMenuOpen(false); onOpenAuditLog(); }}>
                     <ClipboardList className="h-4 w-4 mr-2" />
-                    <span>Bitácora de Ronda</span>
+                     <span>{t('menu.roundLog')}</span>
                   </DropdownMenuItem>
                 )}
 
                 {attestationCount > 0 && (
                   <DropdownMenuItem onClick={() => { onSetProfileMenuOpen(false); onOpenAttestation(); }}>
                     <ScrollText className="h-4 w-4 mr-2 text-destructive" />
-                    <span>Scores Attestation</span>
+                     <span>{t('menu.attestations')}</span>
                     <span className="ml-1 text-destructive font-semibold">({attestationCount})</span>
                   </DropdownMenuItem>
                 )}
@@ -407,29 +407,29 @@ export function AppHeader(props: AppHeaderProps) {
                   }}
                 >
                   <BarChart2 className="h-4 w-4 mr-2" />
-                  Estadísticas
+                   {t('menu.statistics')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onOpenDialog('handicap')}>
                   <Calculator className="h-4 w-4 mr-2" />
-                  Calcular Handicap
+                   {t('menu.calculateHandicap')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onOpenDialog('handicapHistory')}>
                   <TrendingDown className="h-4 w-4 mr-2" />
-                  Historial de Handicap
+                   {t('menu.handicapHistory')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => onSignOut()} className="text-destructive">
                   <LogOut className="h-4 w-4 mr-2" />
-                  Cerrar Sesión
+                   {t('menu.signOut')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <div className="flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] text-muted-foreground">
                   <a href="/terms" target="_blank" rel="noopener noreferrer" className="hover:underline">
-                    Términos
+                     {t('menu.terms')}
                   </a>
                   <span>·</span>
                   <a href="/privacy" target="_blank" rel="noopener noreferrer" className="hover:underline">
-                    Privacidad
+                     {t('menu.privacy')}
                   </a>
                 </div>
               </DropdownMenuContent>
@@ -440,8 +440,8 @@ export function AppHeader(props: AppHeaderProps) {
                 size="icon"
                 className="rounded-full text-primary-foreground hover:bg-primary-foreground/10 h-7 w-7"
                 onClick={onOpenAuditLog}
-                aria-label="Bitácora de ronda"
-                title="Bitácora de ronda"
+                 aria-label={t('menu.roundLog')}
+                 title={t('menu.roundLog')}
               >
                 <ClipboardList className="h-4 w-4" />
               </Button>

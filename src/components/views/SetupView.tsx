@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { es, enUS } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Share2, Sliders, Play, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { devError } from '@/lib/logger';
+import { useTranslation } from 'react-i18next';
 
 type DialogName =
   | 'profile' | 'history' | 'balances' | 'handicap' | 'handicapHistory'
@@ -84,6 +85,7 @@ interface SetupViewProps {
 }
 
 export function SetupView(props: SetupViewProps) {
+  const { t, i18n } = useTranslation();
   const {
     players, playerGroups, selectedCourseId, teeColor, startingHole,
     roundHoles,
@@ -100,7 +102,7 @@ export function SetupView(props: SetupViewProps) {
     <>
       {/* Date Picker */}
       <div className="flex items-center justify-between bg-card border border-border rounded-lg p-3">
-        <span className="text-sm font-medium">Fecha de la Ronda</span>
+         <span className="text-sm font-medium">{t('setup.roundDate')}</span>
         <Popover>
           <PopoverTrigger asChild>
             <Button
@@ -111,7 +113,7 @@ export function SetupView(props: SetupViewProps) {
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {format(roundState.date, "d 'de' MMMM, yyyy", { locale: es })}
+               {format(roundState.date, i18n.language === 'en' ? 'MMMM d, yyyy' : "d 'de' MMMM, yyyy", { locale: i18n.language === 'en' ? enUS : es })}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="end">
@@ -165,18 +167,18 @@ export function SetupView(props: SetupViewProps) {
                     size="sm"
                     className="h-7 text-xs text-destructive hover:text-destructive"
                   >
-                    Eliminar
+                     {t('setup.delete')}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>¿Eliminar {group.name}?</AlertDialogTitle>
+                     <AlertDialogTitle>{t('setup.deleteGroupTitle', { name: group.name })}</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Se eliminarán todos los jugadores y scores de este grupo. Esta acción no se puede deshacer.
+                       {t('setup.deleteGroupDescription')}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                     <AlertDialogCancel>{t('setup.cancel')}</AlertDialogCancel>
                     <AlertDialogAction
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       onClick={async () => {
@@ -194,7 +196,7 @@ export function SetupView(props: SetupViewProps) {
                             if (rgErr) throw rgErr;
                           } catch (err: unknown) {
                             devError('Error deleting group from DB:', err);
-                            toast.error('Error al eliminar grupo');
+                             toast.error(t('setup.deleteGroupError'));
                             return;
                           }
                         }
@@ -214,10 +216,10 @@ export function SetupView(props: SetupViewProps) {
                           return next;
                         });
                         setPlayerGroups(prev => prev.filter(g => g.id !== group.id));
-                        toast.success(`${group.name} eliminado`);
+                         toast.success(t('setup.groupDeleted', { name: group.name }));
                       }}
                     >
-                      Eliminar
+                       {t('setup.delete')}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -247,7 +249,7 @@ export function SetupView(props: SetupViewProps) {
           className="w-full"
         >
           <Share2 className="h-4 w-4 mr-2" />
-          Invitar Jugadores (Link, QR, Código)
+           {t('setup.invitePlayers')}
         </Button>
       )}
 
@@ -259,7 +261,7 @@ export function SetupView(props: SetupViewProps) {
           className="w-full"
         >
           <Sliders className="h-4 w-4 mr-2" />
-          Definir Hándicaps entre Jugadores
+           {t('setup.defineHandicaps')}
         </Button>
       )}
 
@@ -273,7 +275,7 @@ export function SetupView(props: SetupViewProps) {
             variant="outline"
           >
             <Share2 className="h-4 w-4 mr-2" />
-            Crear Ronda y Obtener Link, QR & Código
+             {t('setup.createRound')}
           </Button>
         )}
 
@@ -284,7 +286,7 @@ export function SetupView(props: SetupViewProps) {
             className="w-full"
           >
             <Play className="h-4 w-4 mr-2" />
-            Iniciar Ronda
+             {t('setup.startRound')}
           </Button>
         ) : (
           <>
@@ -293,7 +295,7 @@ export function SetupView(props: SetupViewProps) {
               className="w-full"
             >
               <Play className="h-4 w-4 mr-2" />
-              Continuar Ronda
+               {t('setup.continueRound')}
             </Button>
             <Button
               variant="outline"
@@ -301,7 +303,7 @@ export function SetupView(props: SetupViewProps) {
               className="w-full opacity-50"
             >
               <Lock className="h-4 w-4 mr-2" />
-              Ronda Iniciada
+               {t('setup.roundStarted')}
             </Button>
           </>
         )}
