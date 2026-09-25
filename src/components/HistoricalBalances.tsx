@@ -1492,7 +1492,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                         : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
                     )}
                   >
-                     {f === '3m' ? '3M' : f === '6m' ? '6M' : f === '1y' ? '1Y' : trs('Todo')}
+                     {f === '3m' ? '3M' : f === '6m' ? '6M' : f === '1y' ? trs('1A') : trs('Todo')}
                   </button>
                 ))}
               </div>
@@ -1681,7 +1681,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                           ? 'bg-primary text-primary-foreground border-primary'
                           : 'bg-muted text-muted-foreground border-border'
                       )}>
-                       {f === '3m' ? '3M' : f === '6m' ? '6M' : f === '1y' ? '1Y' : trs('Todo')}
+                       {f === '3m' ? '3M' : f === '6m' ? '6M' : f === '1y' ? trs('1A') : trs('Todo')}
                     </button>
                   ))}
                 </div>
