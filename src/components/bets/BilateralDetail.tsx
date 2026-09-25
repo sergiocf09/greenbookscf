@@ -1819,7 +1819,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
             })}
           </div>
         ) : (
-          <span className="text-xs text-muted-foreground">Sin {type === 'units' ? 'unidades' : 'manchas'} registradas</span>
+          <span className="text-xs text-muted-foreground">{trs("Sin")}{' '}{type === 'units' ? 'unidades' : 'manchas'} {trs("registradas")}</span>
         )}
       </div>
     );
@@ -2237,7 +2237,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   >
                                     <span className="flex items-center gap-1.5">
                                       <Zap className={cn('h-3 w-3', mult > 1 && 'text-amber-500')} />
-                                      <span>Último bloque: {mult}x</span>
+                                      <span>{trs("Último bloque:")}{' '}{mult}x</span>
                                       <span className={cn('tabular-nums', mult > 1 && 'font-semibold')}>· ${baseAmt * mult}</span>
                                     </span>
                                     <span className="text-[10px] opacity-80">
@@ -2844,7 +2844,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             {/* Front 9 total */}
                             <div className="flex items-center justify-between text-sm bg-muted/30 rounded px-2 py-1">
                               <div className="flex items-center gap-2">
-                                <span className="text-muted-foreground">Total Front:</span>
+                                <span className="text-muted-foreground">{trs("Total Front:")}</span>
                                 <span className={cn('font-bold', frontTotalRayas > 0 ? 'text-green-600' : frontTotalRayas < 0 ? 'text-destructive' : '')}>
                                   {frontTotalRayas}
                                 </span>
@@ -2889,7 +2889,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             {/* Back 9 total */}
                             <div className="flex items-center justify-between text-sm bg-muted/30 rounded px-2 py-1">
                               <div className="flex items-center gap-2">
-                                <span className="text-muted-foreground">Total Back:</span>
+                                <span className="text-muted-foreground">{trs("Total Back:")}</span>
                                 <span className={cn('font-bold', backTotalRayas > 0 ? 'text-green-600' : backTotalRayas < 0 ? 'text-destructive' : '')}>
                                   {backTotalRayas}
                                 </span>
@@ -3430,7 +3430,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                             >
                                               <span className="flex items-center gap-1.5">
                                                 <Zap className={cn('h-3 w-3', mult > 1 && 'text-amber-500')} />
-                                                <span>Último bloque: {mult}x</span>
+                                                <span>{trs("Último bloque:")}{' '}{mult}x</span>
                                                 <span className={cn('tabular-nums', mult > 1 && 'font-semibold')}>· ${baseAmt * mult}</span>
                                               </span>
                                               <span className="text-[10px] opacity-80">
@@ -3620,7 +3620,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 </p>
                 <p>
                   Si aplicas este cambio, cada presión del Back valdrá{' '}
-                  <strong>{fmtMoney(pressuresCarryConfirm?.newBack ?? 0)}</strong> y el{' '}
+                  <strong>{fmtMoney(pressuresCarryConfirm?.newBack ?? 0)}</strong> {trs("y el")}{' '}
                   <strong>{trs("Total 18 se paga por separado")}</strong>{' '}{trs("con su propio importe.")}
                 </p>
                 <p className="text-muted-foreground">

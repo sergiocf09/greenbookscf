@@ -430,7 +430,7 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="font-medium text-sm">Hoyo {holeNumber}</span>
+        <span className="font-medium text-sm">{trs("Hoyo")}{' '}{holeNumber}</span>
         <span className="text-xs text-muted-foreground">Par {hole?.par}</span>
       </div>
       
@@ -2002,7 +2002,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
             {showCulebrasDetail && (culebrasResult.loser || culebrasResult.hasTie) && (
               <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 ml-6">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-muted-foreground">Hoyos con culebras:</span>
+                  <span className="text-xs text-muted-foreground">{trs("Hoyos con culebras:")}</span>
                   <span className="text-xs">${culebrasResult.valuePerOccurrence} c/u × {culebrasResult.totalCount} = ${culebrasResult.amountPerPlayer}/jug</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -2018,7 +2018,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                         <PopoverContent className="w-auto p-2" side="top">
                           <div className="text-xs">
                             <p className="font-medium">{formatPlayerName(player?.name || 'Jugador')}</p>
-                            <p className="text-muted-foreground">Hoyo {occ.holeNumber} - 3+ putts</p>
+                            <p className="text-muted-foreground">{trs("Hoyo")}{' '}{occ.holeNumber} - 3+ putts</p>
                           </div>
                         </PopoverContent>
                       </Popover>
@@ -2090,7 +2090,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               {showPinguinosDetail && (pinguinosResult.loser || pinguinosResult.hasTie) && (
                 <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 ml-6">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-muted-foreground">Hoyos con pingüinos:</span>
+                    <span className="text-xs text-muted-foreground">{trs("Hoyos con pingüinos:")}</span>
                     <span className="text-xs">${pinguinosResult.valuePerOccurrence} c/u × {pinguinosResult.totalCount} = ${pinguinosResult.amountPerPlayer}/jug</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
@@ -2106,7 +2106,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                           <PopoverContent className="w-auto p-2" side="top">
                             <div className="text-xs">
                               <p className="font-medium">{formatPlayerName(player?.name || 'Jugador')}</p>
-                              <p className="text-muted-foreground">Hoyo {occ.holeNumber} - +3 o más sobre par</p>
+                              <p className="text-muted-foreground">{trs("Hoyo")}{' '}{occ.holeNumber} {trs("- +3 o más sobre par")}</p>
                             </div>
                           </PopoverContent>
                         </Popover>
@@ -3286,7 +3286,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
             const key = `player${letter}Id` as keyof typeof vegasPlayers;
             return (
               <div key={letter} className="flex items-center gap-3">
-                <span className="text-sm font-medium w-20">Jugador {letter}</span>
+                <span className="text-sm font-medium w-20">{trs("Jugador")}{' '}{letter}</span>
                 <Select value={vegasPlayers[key]} onValueChange={v => setVegasPlayers(prev => ({ ...prev, [key]: v }))}>
                   <SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder={trs("Seleccionar")} /></SelectTrigger>
                   <SelectContent>

@@ -68,7 +68,7 @@ export default function ScorecardImporterPage() {
           </Button>
           <div>
             <h1 className="text-lg font-semibold">{trs("Importar tarjeta manual")}</h1>
-            <p className="text-xs text-muted-foreground">Paso {step} de 4</p>
+            <p className="text-xs text-muted-foreground">Paso {step} {trs("de 4")}</p>
           </div>
         </div>
         <div className="max-w-5xl mx-auto px-4 pb-3">

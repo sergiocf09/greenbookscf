@@ -323,7 +323,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
           <div className="rounded-lg border border-primary/30 bg-primary/5 p-2.5 flex items-center gap-2 mb-2">
             <PlayerAvatar initials={selfOption.initials} background={selfOption.avatarColor} size="sm" />
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold truncate">Tú: {formatPlayerName(selfOption.displayName)}</p>
+              <p className="text-xs font-semibold truncate">{trs("Tú:")}{' '}{formatPlayerName(selfOption.displayName)}</p>
               <p className="text-[10px] text-muted-foreground">{trs("Aún no estás en esta competencia")}</p>
             </div>
             <Button
@@ -522,7 +522,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
 
             {pendingGuests.length > 0 && (
               <div className="space-y-1.5 pt-2 border-t">
-                <p className="text-[10px] font-semibold text-muted-foreground">Invitados por agregar ({pendingGuests.length})</p>
+                <p className="text-[10px] font-semibold text-muted-foreground">{trs("Invitados por agregar (")}{pendingGuests.length})</p>
                 {pendingGuests.map((g, idx) => {
                   const teamName = g.team === teamA?.id ? teamA?.name : g.team === teamB?.id ? teamB?.name : 'Sin equipo';
                   return (

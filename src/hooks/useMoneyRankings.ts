@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -114,11 +115,11 @@ export function useMoneyRankings() {
       await supabase
         .from('money_ranking_members')
         .insert({ ranking_id: data.id, profile_id: profile.id, added_by: profile.id });
-      toast.success('Ranking creado');
+      toast.success(trs("Ranking creado"));
       invalidate();
       return data;
     } catch (err: any) {
-      toast.error('Error al crear ranking: ' + err.message);
+      toast.error(trs("Error al crear ranking: ") + err.message);
       return null;
     }
   }, [profile, invalidate]);
@@ -130,11 +131,11 @@ export function useMoneyRankings() {
         .from('money_ranking_members')
         .insert({ ranking_id: rankingId, profile_id: profileId, added_by: profile.id });
       if (error) throw error;
-      toast.success('Jugador agregado al ranking');
+      toast.success(trs("Jugador agregado al ranking"));
       invalidate();
       return true;
     } catch (err: any) {
-      toast.error('Error al agregar jugador: ' + err.message);
+      toast.error(trs("Error al agregar jugador: ") + err.message);
       return false;
     }
   }, [profile, invalidate]);
@@ -148,10 +149,10 @@ export function useMoneyRankings() {
         .eq('ranking_id', rankingId)
         .eq('profile_id', profile.id);
       if (error) throw error;
-      toast.success('Te desvinculaste del ranking');
+      toast.success(trs("Te desvinculaste del ranking"));
       invalidate();
     } catch (err: any) {
-      toast.error('Error: ' + err.message);
+      toast.error(trs("Error: ") + err.message);
     }
   }, [profile, invalidate]);
 
@@ -162,10 +163,10 @@ export function useMoneyRankings() {
         .delete()
         .eq('id', memberRowId);
       if (error) throw error;
-      toast.success('Jugador removido');
+      toast.success(trs("Jugador removido"));
       invalidate();
     } catch (err: any) {
-      toast.error('Error: ' + err.message);
+      toast.error(trs("Error: ") + err.message);
     }
   }, [invalidate]);
 
@@ -176,10 +177,10 @@ export function useMoneyRankings() {
         .delete()
         .eq('id', rankingId);
       if (error) throw error;
-      toast.success('Ranking eliminado');
+      toast.success(trs("Ranking eliminado"));
       invalidate();
     } catch (err: any) {
-      toast.error('Error al eliminar: ' + err.message);
+      toast.error(trs("Error al eliminar: ") + err.message);
     }
   }, [invalidate]);
 

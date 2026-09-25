@@ -35,7 +35,7 @@ export const HandicapCalculator: React.FC<HandicapCalculatorProps> = ({ onClose 
       <div className="text-center py-8 text-muted-foreground">
         <Calculator className="h-12 w-12 mx-auto mb-3 opacity-50" />
         <p>{trs("Se necesitan al menos 3 rondas")}</p>
-        <p className="text-sm">Tienes {totalRounds} ronda{totalRounds !== 1 ? 's' : ''} completada{totalRounds !== 1 ? 's' : ''}</p>
+        <p className="text-sm">Tienes {totalRounds} {trs("ronda")}{totalRounds !== 1 ? 's' : ''} completada{totalRounds !== 1 ? 's' : ''}</p>
       </div>
     );
   }

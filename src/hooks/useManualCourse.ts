@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -38,7 +39,7 @@ export const useManualCourse = () => {
 
   const saveCourse = useCallback(async (data: ManualCourseData): Promise<string | null> => {
     if (!profile) {
-      toast.error('Debes iniciar sesión');
+      toast.error(trs("Debes iniciar sesión"));
       return null;
     }
 
@@ -53,7 +54,7 @@ export const useManualCourse = () => {
     // Validate unique stroke indices
     const indices = data.holes.map(h => h.strokeIndex!);
     if (new Set(indices).size !== 18) {
-      toast.error('Los índices de hándicap deben ser únicos (1-18)');
+      toast.error(trs("Los índices de hándicap deben ser únicos (1-18)"));
       return null;
     }
 
@@ -122,11 +123,11 @@ export const useManualCourse = () => {
         course_id: courseId,
       });
 
-      toast.success('Campo manual creado');
+      toast.success(trs("Campo manual creado"));
       return courseId;
     } catch (e: any) {
       devError('Error saving manual course:', e);
-      toast.error('Error al guardar el campo', { description: e?.message });
+      toast.error(trs("Error al guardar el campo"), { description: e?.message });
       return null;
     } finally {
       setSaving(false);

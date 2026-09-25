@@ -258,7 +258,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                           : row.score_cuenta > 0 ? `+${row.score_cuenta}` : `${row.score_cuenta}`}
                     </div>
                     {rules.aggregation === 'best_n' && rules.best_n && (
-                      <div className="text-[10px] text-muted-foreground">mejor {rules.best_n}</div>
+                      <div className="text-[10px] text-muted-foreground">{trs("mejor")}{' '}{rules.best_n}</div>
                     )}
                   </div>
                 </button>

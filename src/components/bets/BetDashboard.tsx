@@ -3129,7 +3129,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                 <p className="font-semibold text-sm">{trs("Unidades — Detalle")}</p>
                                 <div className="grid grid-cols-[1fr_auto_1fr] gap-x-3">
                                   <div>
-                                    <p className="font-medium text-green-600 mb-1">Tu equipo ({unitsDetail.totalA})</p>
+                                    <p className="font-medium text-green-600 mb-1">{trs("Tu equipo (")}{unitsDetail.totalA})</p>
                                     {unitsDetail.hitsA.length === 0 && <p className="text-muted-foreground italic text-[10px]">—</p>}
                                     {unitsDetail.hitsA.map((h, hi) => (
                                       <p key={hi} className="text-green-600 text-[10px] flex items-center gap-1">
@@ -3195,7 +3195,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                 <p className="text-[10px] text-muted-foreground">{oyesesDetail.modality === 'sangron' ? trs("Sangrón") : trs("Acumulado")}</p>
                                 <div className="grid grid-cols-[1fr_auto_1fr] gap-x-3">
                                   <div>
-                                    <p className="font-medium text-green-600 mb-1">Tu equipo ({oyesesDetail.winsA})</p>
+                                    <p className="font-medium text-green-600 mb-1">{trs("Tu equipo (")}{oyesesDetail.winsA})</p>
                                     {oyesesDetail.par3Holes.map(holeNum => {
                                       const win = oyesesDetail.wins.find(w => w.holeNumber === holeNum);
                                       const isTeamAWin = win && resolvedTeamA.includes(win.winnerId);
@@ -3265,7 +3265,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                 <p className="font-semibold text-sm">{trs("Manchas — Detalle")}</p>
                                 <div className="grid grid-cols-[1fr_auto_1fr] gap-x-3">
                                   <div>
-                                    <p className="font-medium text-destructive mb-1">Tu equipo ({manchasDetail.totalA})</p>
+                                    <p className="font-medium text-destructive mb-1">{trs("Tu equipo (")}{manchasDetail.totalA})</p>
                                     {manchasDetail.hitsA.length === 0 && <p className="text-muted-foreground italic text-[10px]">—</p>}
                                     {manchasDetail.hitsA.map((h, hi) => (
                                       <p key={hi} className="text-[10px] flex items-center gap-1">
@@ -3389,7 +3389,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                             <PopoverTrigger asChild>{pill}</PopoverTrigger>
                             <PopoverContent side="top" className="w-[95vw] max-w-sm p-3">
                               <div className="text-xs space-y-1">
-                                <p className="font-medium">Hoyo {holeNum} • {rawDetail.net > 0 ? trs("Tu equipo") : rawDetail.net < 0 ? 'Rival' : trs("Empate")}</p>
+                                <p className="font-medium">{trs("Hoyo")}{' '}{holeNum} • {rawDetail.net > 0 ? trs("Tu equipo") : rawDetail.net < 0 ? 'Rival' : trs("Empate")}</p>
                                 <TeamHoleGrid
                                   teamAPlayers={displayTeamAPlayers}
                                   teamBPlayers={displayTeamBPlayers}
@@ -3477,7 +3477,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                 <PopoverTrigger asChild>{pill}</PopoverTrigger>
                                 <PopoverContent side="top" className="w-[95vw] max-w-sm p-3">
                                   <div className="text-xs space-y-1">
-                                    <p className="font-medium">Hoyo {holeNum} • {detail.net > 0 ? `+${detail.net}` : `${detail.net}`} pts</p>
+                                    <p className="font-medium">{trs("Hoyo")}{' '}{holeNum} • {detail.net > 0 ? `+${detail.net}` : `${detail.net}`} pts</p>
                                     <TeamHoleGrid
                                       teamAPlayers={displayTeamAPlayers}
                                       teamBPlayers={displayTeamBPlayers}
@@ -3572,7 +3572,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                 <PopoverTrigger asChild>{pill}</PopoverTrigger>
                                 <PopoverContent side="top" className="w-[95vw] max-w-sm p-3">
                                   <div className="text-xs space-y-1">
-                                    <p className="font-medium">Hoyo {holeNum} • {detail.net > 0 ? `+${detail.net}` : `${detail.net}`} pts</p>
+                                    <p className="font-medium">{trs("Hoyo")}{' '}{holeNum} • {detail.net > 0 ? `+${detail.net}` : `${detail.net}`} pts</p>
                                     <TeamHoleGrid
                                       teamAPlayers={displayTeamAPlayers}
                                       teamBPlayers={displayTeamBPlayers}

@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -51,7 +52,7 @@ export const useFriends = () => {
       setFriends(mapped);
     } catch (err: any) {
       console.error('Error fetching friends:', err);
-      toast.error('No se pudieron cargar los amigos');
+      toast.error(trs("No se pudieron cargar los amigos"));
     } finally {
       setLoading(false);
     }
@@ -86,7 +87,7 @@ export const useFriends = () => {
       setSearchResults(mapped);
     } catch (err: any) {
       console.error('Error searching profiles:', err);
-      toast.error('Error en la búsqueda');
+      toast.error(trs("Error en la búsqueda"));
     } finally {
       setSearching(false);
     }
@@ -105,7 +106,7 @@ export const useFriends = () => {
       
       if (error) {
         if (error.code === '23505') {
-          toast.info('Este jugador ya es tu amigo');
+          toast.info(trs("Este jugador ya es tu amigo"));
           return false;
         }
         throw error;
@@ -116,7 +117,7 @@ export const useFriends = () => {
       return true;
     } catch (err: any) {
       console.error('Error adding friend:', err);
-      toast.error('No se pudo agregar el amigo');
+      toast.error(trs("No se pudo agregar el amigo"));
       return false;
     }
   }, [profile?.id, fetchFriends]);
@@ -130,12 +131,12 @@ export const useFriends = () => {
       
       if (error) throw error;
       
-      toast.success('Amigo eliminado');
+      toast.success(trs("Amigo eliminado"));
       setFriends(prev => prev.filter(f => f.friendshipId !== friendshipId));
       return true;
     } catch (err: any) {
       console.error('Error removing friend:', err);
-      toast.error('No se pudo eliminar el amigo');
+      toast.error(trs("No se pudo eliminar el amigo"));
       return false;
     }
   }, []);

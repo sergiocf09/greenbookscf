@@ -427,7 +427,7 @@ function renderHolePill(
       <PopoverTrigger asChild>{pill}</PopoverTrigger>
       <PopoverContent side="top" className="w-[95vw] max-w-sm p-3">
         <div className="space-y-1">
-          <p className="text-xs font-medium">Hoyo {hd.holeNumber}</p>
+          <p className="text-xs font-medium">{trs("Hoyo")}{' '}{hd.holeNumber}</p>
           <div className="flex justify-between text-[10px] text-muted-foreground">
             <span>{trs("Tu equipo")}</span>
             <span>{trs("Rival")}</span>

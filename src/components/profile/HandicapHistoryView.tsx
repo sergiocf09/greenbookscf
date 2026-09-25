@@ -156,7 +156,7 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
             : 'text-muted-foreground';
         return (
           <div className="text-xs text-muted-foreground px-1">
-            Atestadas (últ. {total}): <span className={cn('font-medium', colorClass)}>{attestedCount} de {total} ({pct}%)</span>
+            Atestadas (últ. {total}): <span className={cn('font-medium', colorClass)}>{attestedCount} {trs("de")}{' '}{total} ({pct}%)</span>
           </div>
         );
       })()}

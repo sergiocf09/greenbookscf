@@ -134,7 +134,7 @@ export const HistoricalStrokeSummaryCard: React.FC<{ competition: HistoricalComp
               <span className="text-sm flex-1 min-w-0 truncate">
                 {s.display_name}
                 {s.isMe && (
-                  <span className="ml-1 text-xs text-primary font-medium">(tú)</span>
+                  <span className="ml-1 text-xs text-primary font-medium">{trs("(tú)")}</span>
                 )}
               </span>
               <span className={cn(

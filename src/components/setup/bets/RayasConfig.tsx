@@ -149,11 +149,11 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
           }
           onUpdateRayas(updates);
         }} />
-        <AmountInput label="Medal Total" value={rayas.medalTotalValue} onChange={(v) => onUpdateRayas({ medalTotalValue: v })} />
+        <AmountInput label={trs("Medal Total")} value={rayas.medalTotalValue} onChange={(v) => onUpdateRayas({ medalTotalValue: v })} />
       </div>
 
       {/* Configuration - collapsed by default */}
-      <CollapsibleSubSection label="Configuración" summary={configSummary}>
+      <CollapsibleSubSection label={trs("Configuración")} summary={configSummary}>
         <div className="space-y-4">
           {/* Skin variant (default) - immediately visible */}
           <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
@@ -241,7 +241,7 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
       
       {/* Bilateral overrides */}
       {rivals.length > 0 && (
-        <CollapsibleSubSection label="Personalizar por rival" summary={`${rivals.length} rivales`}>
+        <CollapsibleSubSection label={trs("Personalizar por rival")} summary={`${rivals.length} rivales`}>
           <p className="text-[10px] text-muted-foreground">
             {trs("La configuración de segmentos por par se ajusta en la pantalla de Resultados, en el detalle bilateral de cada par. Si dos jugadores tienen preferencias distintas, ahí se resuelve qué segmentos juegan.")}
           </p>

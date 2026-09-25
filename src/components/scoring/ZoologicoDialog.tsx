@@ -318,7 +318,7 @@ export const ZoologicoDialog: React.FC<ZoologicoDialogProps> = ({
                 </div>
               ))}
               <div className="border-t border-border pt-1 mt-1 flex justify-between font-bold">
-                <span>Total:</span>
+                <span>{trs("Total:")}</span>
                 <span className="text-destructive">${totalCost}</span>
               </div>
             </div>

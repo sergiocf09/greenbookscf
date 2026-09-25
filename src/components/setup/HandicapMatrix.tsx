@@ -756,7 +756,7 @@ const CellEditor: React.FC<CellEditorProps> = ({
         )}
         {isReceiving && (
           <><span className="font-semibold text-foreground">{rowFirstName}</span>{' '}
-          <span className="text-green-700 font-medium">recibe {Math.abs(strokes)}</span> de {colFirstName}</>
+          <span className="text-green-700 font-medium">recibe {Math.abs(strokes)}</span> {trs("de")}{' '}{colFirstName}</>
         )}
         {strokes === 0 && 'Scratch — sin ventaja'}
       </p>

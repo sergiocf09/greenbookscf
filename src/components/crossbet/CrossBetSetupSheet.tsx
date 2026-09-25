@@ -95,7 +95,7 @@ export const CrossBetSetupSheet: React.FC<CrossBetSetupSheetProps> = ({
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <MapPin className="h-3 w-3 shrink-0" />
                 <span className="truncate">{targetCourseName}</span>
-                {targetHolesPlayed && targetHolesPlayed > 0 && <span className="shrink-0">· Hoyo {targetHolesPlayed}</span>}
+                {targetHolesPlayed && targetHolesPlayed > 0 && <span className="shrink-0">{trs("· Hoyo")}{' '}{targetHolesPlayed}</span>}
               </div>
             )}
             {slidingLabel && (
@@ -118,7 +118,7 @@ export const CrossBetSetupSheet: React.FC<CrossBetSetupSheetProps> = ({
           onToggle={v => update('units', { enabled: v })}     onAmountChange={v => update('units', { amount: v })} />
         <BetToggleRow label="Manchas"    enabled={!!config.manchas?.enabled}   amount={config.manchas?.amount}
           onToggle={v => update('manchas', { enabled: v })}   onAmountChange={v => update('manchas', { amount: v })} />
-        <BetToggleRow label="Bloques"    enabled={!!config.bloques?.enabled}   amount={config.bloques?.amount}
+        <BetToggleRow label={trs("Bloques")}    enabled={!!config.bloques?.enabled}   amount={config.bloques?.amount}
           onToggle={v => update('bloques', { enabled: v })}   onAmountChange={v => update('bloques', { amount: v })} />
 
         <p className="text-[10px] text-muted-foreground mt-4 mb-4">

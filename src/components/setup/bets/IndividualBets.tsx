@@ -165,16 +165,16 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         <BetSection
           id="medal"
           title={trs("Medal")}
-          description="Score total por segmento"
+          description={trs("Score total por segmento")}
           enabled={config.medal.enabled}
           onToggle={(enabled) => onUpdateBet('medal', { enabled })}
           isExpanded={expandedSections.includes('medal')}
           onExpandChange={(open) => onToggleSection('medal', open)}
-          helpText="El jugador con menor score neto gana cada segmento. Se paga por Front 9, Back 9 y Total 18 por separado. En caso de empate no hay pago."
+          helpText={trs("El jugador con menor score neto gana cada segmento. Se paga por Front 9, Back 9 y Total 18 por separado. En caso de empate no hay pago.")}
         >
           <AmountInput label="Front 9" value={config.medal.frontAmount} onChange={(v) => onUpdateBet('medal', { frontAmount: v })} />
           {!isNineHole && <AmountInput label="Back 9" value={config.medal.backAmount} onChange={(v) => onUpdateBet('medal', { backAmount: v })} />}
-          {!isNineHole && <AmountInput label="Total 18" value={config.medal.totalAmount} onChange={(v) => onUpdateBet('medal', { totalAmount: v })} />}
+          {!isNineHole && <AmountInput label={trs("Total 18")} value={config.medal.totalAmount} onChange={(v) => onUpdateBet('medal', { totalAmount: v })} />}
         </BetSection>
       )}
 
@@ -188,7 +188,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           onToggle={(enabled) => onUpdateBet('pressures', { enabled })}
           isExpanded={expandedSections.includes('pressures')}
           onExpandChange={(open) => onToggleSection('pressures', open)}
-          helpText="Match play hoyo a hoyo. Se abre una nueva apuesta cada vez que un jugador va arriba por 2 hoyos. Al final del Front y del Back se suma la apuesta principal más todas las secundarias que se abrieron."
+          helpText={trs("Match play hoyo a hoyo. Se abre una nueva apuesta cada vez que un jugador va arriba por 2 hoyos. Al final del Front y del Back se suma la apuesta principal más todas las secundarias que se abrieron.")}
         >
           {!(config.pressures.onlyMatch && config.pressures.continua) && (
             <>
@@ -209,7 +209,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
                 <Switch checked={config.pressures.continua ?? false} onCheckedChange={(v) => onUpdateBet('pressures', { continua: v })} />
               </div>
               {config.pressures.continua ? (
-                <p className="text-[9px] text-muted-foreground">Match continuo del 1 al 18 sin corte. Se define cuando un jugador lleva más hoyos de ventaja que hoyos restantes (ej: 4&3).</p>
+                <p className="text-[9px] text-muted-foreground">{trs("Match continuo del 1 al 18 sin corte. Se define cuando un jugador lleva más hoyos de ventaja que hoyos restantes (ej: 4&3).")}</p>
               ) : (
                 <p className="text-[9px] text-muted-foreground">{trs("Solo se calcula la apuesta principal. No se abren secundarias.")}</p>
               )}
@@ -222,18 +222,18 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         <BetSection
           id="skins"
           title={trs("Skins")}
-          description="Mejor score neto por hoyo"
+          description={trs("Mejor score neto por hoyo")}
           enabled={config.skins.enabled}
           onToggle={(enabled) => onUpdateBet('skins', { enabled })}
           isExpanded={expandedSections.includes('skins')}
           onExpandChange={(open) => onToggleSection('skins', open)}
-          helpText="Gana el hoyo quien hace menos golpes netos. Si hay empate, el valor se acumula al siguiente hoyo. Modalidad Acumulados: el valor crece con los empates. Sin Acumular: se cuenta el número de hoyos ganados. Ganar todos los hoyos da un bonus 2x (zapato)."
+          helpText={trs("Gana el hoyo quien hace menos golpes netos. Si hay empate, el valor se acumula al siguiente hoyo. Modalidad Acumulados: el valor crece con los empates. Sin Acumular: se cuenta el número de hoyos ganados. Ganar todos los hoyos da un bonus 2x (zapato).")}
         >
-          <AmountInput label="Front 9 (por skin)" value={config.skins.frontValue} onChange={(v) => onUpdateBet('skins', { frontValue: v })} />
-          {!isNineHole && <AmountInput label="Back 9 (por skin)" value={config.skins.backValue} onChange={(v) => onUpdateBet('skins', { backValue: v })} />}
+          <AmountInput label={trs("Front 9 (por skin)")} value={config.skins.frontValue} onChange={(v) => onUpdateBet('skins', { frontValue: v })} />
+          {!isNineHole && <AmountInput label={trs("Back 9 (por skin)")} value={config.skins.backValue} onChange={(v) => onUpdateBet('skins', { backValue: v })} />}
 
           <CollapsibleSubSection
-            label="Configuración"
+            label={trs("Configuración")}
             summary={`${(config.skins.modality ?? 'acumulados') === 'acumulados' ? 'Acumulados' : 'Sin Acumular'}${config.skins.carryOver ? ' · Arrastre' : ''}`}
           >
             <div className="space-y-3">
@@ -267,10 +267,10 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           onToggle={(enabled) => onUpdateBet('caros', { enabled })}
           isExpanded={expandedSections.includes('caros')}
           onExpandChange={(open) => onToggleSection('caros', open)}
-          helpText="Match de score neto en un rango de hoyos configurable, contados en orden de juego (por defecto los últimos 4 hoyos de la ronda). El jugador con menor total neto en esos hoyos gana la apuesta."
+          helpText={trs("Match de score neto en un rango de hoyos configurable, contados en orden de juego (por defecto los últimos 4 hoyos de la ronda). El jugador con menor total neto en esos hoyos gana la apuesta.")}
         >
-          <AmountInput label="Importe total" value={config.caros.amount} onChange={(v) => onUpdateBet('caros', { amount: v })} />
-          <CollapsibleSubSection label="Configuración" summary={`Hoyos ${carosStart} a ${carosEnd}`}>
+          <AmountInput label={trs("Importe total")} value={config.caros.amount} onChange={(v) => onUpdateBet('caros', { amount: v })} />
+          <CollapsibleSubSection label={trs("Configuración")} summary={`Hoyos ${carosStart} a ${carosEnd}`}>
 
             <CarosRange
               maxHole={carosMaxHole}
@@ -289,7 +289,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         <BetSection
           id="oyeses"
           title={trs("Oyeses (Closest to the Pin)")}
-          description="Par 3 - cercanía a la bandera"
+          description={trs("Par 3 - cercanía a la bandera")}
           enabled={config.oyeses.enabled}
           onToggle={(enabled) => {
             if (enabled && config.oyeses.playerConfigs.length === 0) {
@@ -302,9 +302,9 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           isExpanded={expandedSections.includes('oyeses')}
           onExpandChange={(open) => onToggleSection('oyeses', open)}
           color="gold"
-          helpText="En hoyos par 3, gana quien queda más cerca al pin. Se registra el orden de proximidad al terminar el hoyo. Si hay acumulación activa, los hoyos empatados suman al siguiente. Ganar todos los oyeses del 9 da un bonus 2x (zapato)."
+          helpText={trs("En hoyos par 3, gana quien queda más cerca al pin. Se registra el orden de proximidad al terminar el hoyo. Si hay acumulación activa, los hoyos empatados suman al siguiente. Ganar todos los oyeses del 9 da un bonus 2x (zapato).")}
         >
-          <AmountInput label="Importe por Oyes" value={config.oyeses.amount} onChange={(v) => onUpdateBet('oyeses', { amount: v })} />
+          <AmountInput label={trs("Importe por Oyes")} value={config.oyeses.amount} onChange={(v) => onUpdateBet('oyeses', { amount: v })} />
 
           {/* Global toggles: Un solo ganador + Zapato */}
           <div className="space-y-2 mt-2">
@@ -334,7 +334,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
             </div>
           </div>
 
-          <CollapsibleSubSection label="Configuración" summary="Modalidad por jugador">
+          <CollapsibleSubSection label={trs("Configuración")} summary="Modalidad por jugador">
             <div className="space-y-2">
               <p className="text-[10px] text-muted-foreground mb-2">{trs("Acumulados: debe llegar al green en 1 golpe. Sangrón: todos compiten sin acumular.")}</p>
               {(() => {
@@ -379,14 +379,14 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
       {/* Units */}
       {show('units') && (
         <BetSection
-          id="units" title={trs("Unidades")} description="Birdie, Águila, Sandy Par, etc."
+          id="units" title={trs("Unidades")} description={trs("Birdie, Águila, Sandy Par, etc.")}
           enabled={config.units.enabled} onToggle={(enabled) => onUpdateBet('units', { enabled })}
           isExpanded={expandedSections.includes('units')} onExpandChange={(open) => onToggleSection('units', open)} color="gold"
-          helpText="Se gana 1 unidad por birdie, 2 por águila, 3 por albatros. También suman 1 unidad los marcadores manuales: Sandy Par (par desde bunker), Aqua Par (par tras caer al agua) y Hole Out (embocada desde fuera del green)."
+          helpText={trs("Se gana 1 unidad por birdie, 2 por águila, 3 por albatros. También suman 1 unidad los marcadores manuales: Sandy Par (par desde bunker), Aqua Par (par tras caer al agua) y Hole Out (embocada desde fuera del green).")}
         >
-          <AmountInput label="Valor por punto" value={config.units.valuePerPoint} onChange={(v) => onUpdateBet('units', { valuePerPoint: v })} />
+          <AmountInput label={trs("Valor por punto")} value={config.units.valuePerPoint} onChange={(v) => onUpdateBet('units', { valuePerPoint: v })} />
           <AmountInput
-            label="Valor por Unidad genérica"
+            label={trs("Valor por Unidad genérica")}
             value={config.units.valuePerGenericUnit ?? config.units.valuePerPoint}
             onChange={(v) => onUpdateBet('units', { valuePerGenericUnit: v })}
           />
@@ -402,11 +402,11 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           id="manchas" title={trs("Manchas")} description="Pinkie, Paloma, Trampa, Cuatriput, etc."
           enabled={config.manchas.enabled} onToggle={(enabled) => onUpdateBet('manchas', { enabled })}
           isExpanded={expandedSections.includes('manchas')} onExpandChange={(open) => onToggleSection('manchas', open)} color="red"
-          helpText="Se cobra por errores durante el hoyo. Son manchas: Doble OB, Trampa (bunker a bunker), Pinkies (tiro de damas), Retruje (golpe para atrás), Doble Agua, Paloma (swing en blanco), Par 3 GIR>3, Moreliana (salirse del green poteando) y Doble Dígito (10+ golpes). El cuatriput (4+ putts) también suma como mancha. Paga el diferencial: quien tiene más manchas paga la diferencia."
+          helpText={trs("Se cobra por errores durante el hoyo. Son manchas: Doble OB, Trampa (bunker a bunker), Pinkies (tiro de damas), Retruje (golpe para atrás), Doble Agua, Paloma (swing en blanco), Par 3 GIR>3, Moreliana (salirse del green poteando) y Doble Dígito (10+ golpes). El cuatriput (4+ putts) también suma como mancha. Paga el diferencial: quien tiene más manchas paga la diferencia.")}
         >
-          <AmountInput label="Valor por mancha" value={config.manchas.valuePerPoint} onChange={(v) => onUpdateBet('manchas', { valuePerPoint: v })} />
+          <AmountInput label={trs("Valor por mancha")} value={config.manchas.valuePerPoint} onChange={(v) => onUpdateBet('manchas', { valuePerPoint: v })} />
           <AmountInput
-            label="Valor por Mancha genérica"
+            label={trs("Valor por Mancha genérica")}
             value={config.manchas.valuePerGenericMancha ?? config.manchas.valuePerPoint}
             onChange={(v) => onUpdateBet('manchas', { valuePerGenericMancha: v })}
           />
@@ -419,14 +419,14 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
       {/* Putts */}
       {show('putts') && (
         <BetSection
-          id="putts" title={trs("Putts ⛳")} description="Comparación directa de putts (sin hándicap)"
+          id="putts" title={trs("Putts ⛳")} description={trs("Comparación directa de putts (sin hándicap)")}
           enabled={config.putts?.enabled ?? false} onToggle={(enabled) => onUpdateBet('putts', { enabled })}
           isExpanded={expandedSections.includes('putts')} onExpandChange={(open) => onToggleSection('putts', open)}
-          helpText="Comparación directa del total de putts entre cada par de jugadores, sin aplicar hándicap. Se paga por Front 9, Back 9 y Total 18 por separado. Quien tenga menos putts en cada segmento gana la apuesta. En empate no hay pago."
+          helpText={trs("Comparación directa del total de putts entre cada par de jugadores, sin aplicar hándicap. Se paga por Front 9, Back 9 y Total 18 por separado. Quien tenga menos putts en cada segmento gana la apuesta. En empate no hay pago.")}
         >
           <AmountInput label="Front 9" value={config.putts?.frontAmount ?? 50} onChange={(v) => onUpdateBet('putts', { frontAmount: v })} />
           {!isNineHole && <AmountInput label="Back 9" value={config.putts?.backAmount ?? 50} onChange={(v) => onUpdateBet('putts', { backAmount: v })} />}
-          {!isNineHole && <AmountInput label="Total 18" value={config.putts?.totalAmount ?? 100} onChange={(v) => onUpdateBet('putts', { totalAmount: v })} />}
+          {!isNineHole && <AmountInput label={trs("Total 18")} value={config.putts?.totalAmount ?? 100} onChange={(v) => onUpdateBet('putts', { totalAmount: v })} />}
           <p className="text-[9px] text-muted-foreground mt-2">{trs("⚠️ Esta apuesta NO utiliza hándicaps. Gana quien tenga menos putts en cada segmento.")}</p>
         </BetSection>
       )}
@@ -436,15 +436,15 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         <BetSection
           id="matchPlay"
           title={trs("Match Play")}
-          description="Match play bilateral 18 hoyos (independiente)"
+          description={trs("Match play bilateral 18 hoyos (independiente)")}
           enabled={config.matchPlay?.enabled ?? false}
           onToggle={(enabled) => onUpdateBet('matchPlay' as any, { enabled })}
           isExpanded={expandedSections.includes('matchPlay')}
           onExpandChange={(open) => onToggleSection('matchPlay', open)}
-          helpText="Match play individual a 18 hoyos. Se lleva el acumulado de hoyos ganados hoyo a hoyo. El resultado se expresa como 3&2 (ganó con 3 de ventaja y 2 por jugar), 1 UP (ganó al 18) o AS (empate). Se juega con el handicap bilateral configurado en la pantalla de hándicaps."
+          helpText={trs("Match play individual a 18 hoyos. Se lleva el acumulado de hoyos ganados hoyo a hoyo. El resultado se expresa como 3&2 (ganó con 3 de ventaja y 2 por jugar), 1 UP (ganó al 18) o AS (empate). Se juega con el handicap bilateral configurado en la pantalla de hándicaps.")}
         >
           <AmountInput
-            label="Monto por match"
+            label={trs("Monto por match")}
             value={config.matchPlay?.amount ?? 50}
             onChange={(v) => onUpdateBet('matchPlay' as any, { amount: v })}
           />
@@ -466,7 +466,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           onToggle={(enabled) => onUpdateBet('bloques' as any, { enabled })}
           isExpanded={expandedSections.includes('bloques')}
           onExpandChange={(open) => onToggleSection('bloques', open)}
-          helpText="Mini-medal por bloques. La suma neta de los hoyos del bloque define al ganador. Bloques de 3 hoyos por defecto (6 bloques). Configurable a 2 o 6 hoyos. Si un bloque queda empatado puede acumular su valor al siguiente."
+          helpText={trs("Mini-medal por bloques. La suma neta de los hoyos del bloque define al ganador. Bloques de 3 hoyos por defecto (6 bloques). Configurable a 2 o 6 hoyos. Si un bloque queda empatado puede acumular su valor al siguiente.")}
         >
           <div className="space-y-3">
             <div>
@@ -490,7 +490,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
                       )}
                     >
                       {n} hoyos
-                      <span className="block text-[9px] opacity-70">({(isNineHole ? 9 : 18) / n} bloques)</span>
+                      <span className="block text-[9px] opacity-70">({(isNineHole ? 9 : 18) / n} {trs("bloques)")}</span>
                     </button>
                   );
                 })}
@@ -498,7 +498,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
             </div>
 
             <AmountInput
-              label="Importe por bloque"
+              label={trs("Importe por bloque")}
               value={config.bloques?.amountPerBlock ?? 100}
               onChange={(v) => onUpdateBet('bloques' as any, { amountPerBlock: v })}
             />
@@ -521,7 +521,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           id="rayas" title={trs("Rayas")} description="Agregador: Skins + Unidades + Oyes + Medal"
           enabled={config.rayas?.enabled ?? false} onToggle={(enabled) => onUpdateBet('rayas', { enabled })}
           isExpanded={expandedSections.includes('rayas')} onExpandChange={(open) => onToggleSection('rayas', open)} color="gold"
-          helpText="Contador acumulado de eventos ganados a lo largo de la ronda. Suma rayas por: Skins ganados, Oyeses ganados, Unidades ganadas y Medal ganado. El valor por raya se configura por segmento Front y Back."
+          helpText={trs("Contador acumulado de eventos ganados a lo largo de la ronda. Suma rayas por: Skins ganados, Oyeses ganados, Unidades ganadas y Medal ganado. El valor por raya se configura por segmento Front y Back.")}
         >
           <RayasConfig config={config} players={players} basePlayerId={basePlayerId} onUpdateRayas={(updates) => onUpdateBet('rayas', updates)} />
         </BetSection>

@@ -2461,7 +2461,7 @@ const Index = () => {
                             {r.status === 'in_progress' ? trs("En progreso") : trs("En configuración")} •{' '}
                             {format(r.date, "d 'de' MMMM, yyyy", { locale: es })}
                             {s ? (
-                              <> • {s.holesPlayed} hoyos • {s.totalStrokes} golpes</>
+                              <> • {s.holesPlayed} {trs("hoyos •")}{' '}{s.totalStrokes} golpes</>
                             ) : null}
                           </div>
                         </div>
@@ -3061,7 +3061,7 @@ const Index = () => {
         <AlertDialog open={!!crossBetTarget} onOpenChange={(v) => { if (!v) setCrossBetTarget(null); }}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>¿Cruzar tarjeta con {crossBetTarget.name}?</AlertDialogTitle>
+              <AlertDialogTitle>{trs("¿Cruzar tarjeta con")}{' '}{crossBetTarget.name}?</AlertDialogTitle>
               <AlertDialogDescription>
                 {trs("Se enviará una invitación de cruce. Cuando la acepte, podrás elegir qué apuestas individuales incluir en este cruce desde la sección")}{' '}<strong>{trs("Apuestas de Cruce")}</strong> del dashboard.
                 {sendError && (
