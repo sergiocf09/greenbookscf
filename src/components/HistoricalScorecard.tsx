@@ -1,7 +1,8 @@
 import { trs } from '@/i18n/tr';
 import React from 'react';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { enUS, es } from 'date-fns/locale';
+import i18n from '@/i18n';
 import { cn } from '@/lib/utils';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { GolfCourse } from '@/types/golf';
@@ -109,9 +110,10 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
   const distinctTees = Array.from(
     new Set(players.map(p => p.teeColor).filter((t): t is string => !!t))
   );
+  const dateLocale = i18n.language === 'en' ? enUS : es;
   const teeLabel = distinctTees.length > 1
-    ? 'Tees varios'
-    : `Tee ${TEE_LABEL[distinctTees[0] ?? teeColor] ?? (distinctTees[0] ?? teeColor)}`;
+    ? trs('Tees varios')
+    : `Tee ${trs(TEE_LABEL[distinctTees[0] ?? teeColor] ?? (distinctTees[0] ?? teeColor))}`;
 
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden">
@@ -119,7 +121,7 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
       <div className="bg-primary/10 px-3 py-2 border-b border-border">
         <h3 className="text-sm font-semibold text-primary">{course.name}</h3>
         <p className="text-[10px] text-muted-foreground">
-          {format(parseLocalDate(date), "d 'de' MMMM, yyyy", { locale: es })} • {teeLabel}
+          {format(parseLocalDate(date), i18n.language === 'en' ? 'MMMM d, yyyy' : "d 'de' MMMM, yyyy", { locale: dateLocale })} • {teeLabel}
         </p>
       </div>
 
@@ -244,7 +246,7 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
 
       {/* Player Handicaps Summary */}
       <div className="border-t border-border p-3">
-        <p className="text-xs text-muted-foreground mb-2">Handicaps y tees utilizados:</p>
+        <p className="text-xs text-muted-foreground mb-2">{trs('Handicaps y tees utilizados:')}</p>
         <div className="flex flex-wrap gap-2">
           {players.map(player => {
             const tee = player.teeColor;
@@ -254,7 +256,7 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
               <div
                 key={player.playerId}
                 className="flex items-center gap-1.5 bg-muted/50 rounded-full px-2 py-1"
-                title={teeName ? `Tee ${teeName}` : undefined}
+                 title={teeName ? `Tee ${trs(teeName)}` : undefined}
               >
                 <div
                   className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white"

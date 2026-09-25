@@ -6,7 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { enUS, es } from 'date-fns/locale';
+import i18n from '@/i18n';
 import { Calendar, Users, MapPin, Trophy, ChevronDown, ChevronUp, Trash2, Eye, Loader2, Copy, RefreshCw, Lock, ImagePlus, AlertTriangle, BarChart2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -119,6 +120,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
   // no debe bloquear la lista de rondas al entrar.
   const [showActivity, setShowActivity] = useState<boolean>(false);
   const [selectedFieldPeriod, setSelectedFieldPeriod] = useState<3 | 6 | 12 | null>(null);
+  const dateLocale = i18n.language === 'en' ? enUS : es;
 
   const toggleActivity = () => setShowActivity(prev => !prev);
 
@@ -136,7 +138,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
       if (!r.totalStrokes || r.totalStrokes === 0) continue;
       const d = parseLocalDate(r.date);
       const key = format(d, 'yyyy-MM');
-      const label = format(d, 'MMM yy', { locale: es });
+      const label = format(d, 'MMM yy', { locale: dateLocale });
       if (!monthMap.has(key)) {
         monthMap.set(key, { label, rondas: 0, totalScore: 0, scoredRounds: 0, courses: new Set() });
       }
@@ -198,7 +200,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
     };
 
     return { points, globalAvg, fieldsByPeriod };
-  }, [rounds]);
+  }, [rounds, dateLocale]);
 
   const fetchRounds = async () => {
     if (!profile) return;
@@ -837,7 +839,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-xs text-muted-foreground">{trs("Score promedio por mes")}</p>
                         <span className="text-[11px] text-muted-foreground">
-                          Prom. global: <span className="font-semibold text-foreground">{activityData.globalAvg}</span>
+                          {trs('Prom. global:')} <span className="font-semibold text-foreground">{activityData.globalAvg}</span>
                         </span>
                       </div>
                       <ResponsiveContainer width="100%" height={150}>
@@ -876,10 +878,10 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                                 <div className="max-w-[220px] rounded-lg border border-border bg-popover px-3 py-2 text-popover-foreground shadow-lg">
                                   <p className="text-[11px] text-muted-foreground">{label}</p>
                                   <p className="mt-1 text-sm font-medium text-sky-500">
-                                    Promedio: {point.promScore}
+                                    {trs('Promedio:')} {point.promScore}
                                   </p>
                                   <p className="mt-0.5 text-xs text-muted-foreground">
-                                    {point.scoredRounds ?? 0} de {point.totalRounds ?? 0} rondas · 18 hoyos
+                                    {point.scoredRounds ?? 0} {trs('de')} {point.totalRounds ?? 0} {trs('rondas')} · {trs('18 hoyos')}
                                   </p>
                                 </div>
                               );
@@ -906,9 +908,9 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                       <p className="text-xs text-muted-foreground mb-2">{trs("Campos distintos jugados")}</p>
                       <div className="grid grid-cols-3 gap-2">
                         {[
-                          { label: '3 meses', period: 3 as const },
-                          { label: '6 meses', period: 6 as const },
-                          { label: '12 meses', period: 12 as const },
+                           { label: '3 meses', period: 3 as const },
+                           { label: '6 meses', period: 6 as const },
+                           { label: '12 meses', period: 12 as const },
                         ].map(({ label, period }) => (
                           <Button
                             key={period}
@@ -926,7 +928,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                             <span className="text-xl font-bold text-primary">
                               {activityData.fieldsByPeriod[period].length}
                             </span>
-                            <span className="text-[10px] font-normal text-muted-foreground">{label}</span>
+                             <span className="text-[10px] font-normal text-muted-foreground">{trs(label)}</span>
                             {selectedFieldPeriod === period
                               ? <ChevronUp className="mt-0.5 h-3 w-3" />
                               : <ChevronDown className="mt-0.5 h-3 w-3" />}
@@ -936,7 +938,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                       {selectedFieldPeriod && (
                         <div className="mt-2 rounded-lg border border-border bg-muted/20 px-3 py-2">
                           <p className="mb-1.5 text-[11px] font-medium text-foreground">
-                            Campos jugados · {selectedFieldPeriod} meses
+                             {trs('Campos jugados')} · {selectedFieldPeriod} {trs('meses')}
                           </p>
                           {activityData.fieldsByPeriod[selectedFieldPeriod].length > 0 ? (
                             <div className="space-y-1">
@@ -944,7 +946,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                                 <div key={field.name} className="flex items-start justify-between gap-3 text-xs">
                                   <span className="min-w-0 text-foreground">{field.name}</span>
                                   <span className="shrink-0 tabular-nums text-muted-foreground">
-                                    ({field.count} {field.count === 1 ? 'vez' : 'veces'})
+                                     ({field.count} {trs(field.count === 1 ? 'vez' : 'veces')})
                                   </span>
                                 </div>
                               ))}
@@ -981,7 +983,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                 >
                   <div className={cn('w-2 h-2 rounded-full flex-shrink-0', getTeeColorClass(round.teeColor))} />
                   <span className="text-xs text-muted-foreground flex-shrink-0">
-                    {format(parseLocalDate(round.date), "d MMM yy", { locale: es })}
+                    {format(parseLocalDate(round.date), "d MMM yy", { locale: dateLocale })}
                   </span>
                   <span className="text-xs text-muted-foreground flex-shrink-0">·</span>
                   <span className="text-xs truncate min-w-0" title={round.courseName}>
@@ -1142,7 +1144,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
             <AlertDialogTitle>{trs("¿Eliminar esta ronda?")}</AlertDialogTitle>
             <AlertDialogDescription>
               Esta acción no se puede deshacer. Se eliminarán todos los scores, 
-              transacciones y datos asociados a esta ronda del {roundToDelete && format(parseLocalDate(roundToDelete.date), "d 'de' MMMM, yyyy", { locale: es })}.
+              {trs('transacciones y datos asociados a esta ronda del')} {roundToDelete && format(parseLocalDate(roundToDelete.date), i18n.language === 'en' ? 'MMMM d, yyyy' : "d 'de' MMMM, yyyy", { locale: dateLocale })}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

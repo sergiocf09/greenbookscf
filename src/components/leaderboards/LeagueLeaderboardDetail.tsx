@@ -9,7 +9,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { enUS, es } from 'date-fns/locale';
+import i18n from '@/i18n';
 import {
   ArrowLeft, Trophy, Calendar, Users, Hash, Loader2,
   Star, CheckCircle, Clock, Share2, RefreshCw,
@@ -177,7 +178,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
         <div className="flex-1 min-w-0">
           <h1 className="text-base font-semibold truncate">{event?.name}</h1>
           <p className="text-xs text-muted-foreground truncate">
-            Liga · {scoringLabel} · {event?.status === 'completed' ? 'Cerrada' : 'Activa'}
+            {trs('Liga')} · {trs(scoringLabel)} · {trs(event?.status === 'completed' ? 'Cerrada' : 'Activa')}
           </p>
         </div>
         <Button variant="ghost" size="icon" onClick={handleShare} aria-label={trs("Compartir")}>
@@ -196,16 +197,16 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
         </Badge>
         <Badge variant="outline" className="gap-1">
           <Calendar className="h-3 w-3" />
-          Hasta {event?.end_date ? format(parseISO(event.end_date), 'dd/MM/yyyy') : '—'}
+           {trs('Hasta')} {event?.end_date ? format(parseISO(event.end_date), 'dd/MM/yyyy') : '—'}
         </Badge>
         <Badge variant="outline" className="gap-1">
           <Users className="h-3 w-3" />
-          {standings.length} participantes
+           {standings.length} {trs('participantes')}
         </Badge>
         {rules.min_rounds_to_qualify > 0 && (
           <Badge variant="outline" className="gap-1">
             <CheckCircle className="h-3 w-3" />
-            Mín. {rules.min_rounds_to_qualify} jornadas
+             {trs('Mín.')} {rules.min_rounds_to_qualify} {trs('jornadas')}
           </Badge>
         )}
       </div>
@@ -240,7 +241,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate">{row.display_name}</div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>{row.jornadas_jugadas} jornada{row.jornadas_jugadas !== 1 ? 's' : ''}</span>
+                       <span>{row.jornadas_jugadas} {trs(row.jornadas_jugadas === 1 ? 'jornada' : 'jornadas')}</span>
                       {!row.qualifies && rules.min_rounds_to_qualify > 0 && (
                         <span className="flex items-center gap-1 text-amber-600">
                           <Clock className="h-3 w-3" />
@@ -281,7 +282,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                   <div className="flex items-center gap-2 px-3 py-2 bg-muted/40 border-b border-border">
                     <Trophy className="h-4 w-4 text-primary" />
                     <div className="text-sm font-semibold">
-                      Jornada {jornadas.length - idx} — {format(parseISO(jornada.date), "d 'de' MMMM yyyy", { locale: es })}
+                       {trs('Jornada')} {jornadas.length - idx} — {format(parseISO(jornada.date), i18n.language === 'en' ? 'MMMM d, yyyy' : "d 'de' MMMM yyyy", { locale: i18n.language === 'en' ? enUS : es })}
                     </div>
                   </div>
                   <div className="divide-y divide-border">
@@ -345,7 +346,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                     </div>
                     <div className="bg-card border border-border rounded-xl p-3">
                       <div className="text-[11px] text-muted-foreground uppercase tracking-wide">
-                        {rules.scoring_system === 'points' ? 'Puntos' : scoringLabel}
+                         {rules.scoring_system === 'points' ? trs('Puntos') : trs(scoringLabel)}
                       </div>
                       <div className="text-2xl font-bold">
                         {rules.scoring_system === 'points'
@@ -362,7 +363,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                       <div className={cn('text-lg font-bold', selectedStanding.qualifies ? 'text-primary' : 'text-amber-600')}>
                         {selectedStanding.qualifies
                           ? trs("✓ Sí")
-                          : `Faltan ${rules.min_rounds_to_qualify - selectedStanding.jornadas_jugadas}`}
+                           : `${trs('Faltan')} ${rules.min_rounds_to_qualify - selectedStanding.jornadas_jugadas}`}
                       </div>
                     </div>
                   </div>
@@ -385,7 +386,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                             {j.result!.position}°
                           </div>
                           <div className="flex-1 text-sm">
-                            {format(parseISO(j.date), 'd MMM yyyy', { locale: es })}
+                             {format(parseISO(j.date), 'd MMM yyyy', { locale: i18n.language === 'en' ? enUS : es })}
                           </div>
                           <div className="text-right">
                             <div className="text-sm font-semibold">

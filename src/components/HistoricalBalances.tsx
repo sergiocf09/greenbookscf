@@ -16,7 +16,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { enUS, es } from 'date-fns/locale';
+import i18n from '@/i18n';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -205,6 +206,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   onClose 
 }, ref) => {
   const { profile } = useAuth();
+  const dateLocale = i18n.language === 'en' ? enUS : es;
   const { canAccessHistory } = useSubscription();
   const [loading, setLoading] = useState(true);
   const [rivals, setRivals] = useState<RivalBalance[]>([]);
@@ -670,7 +672,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
       cumulative += r.netAmount;
       const d = parseLocalDate(r.date);
       return {
-        date: format(d, 'MMM', { locale: es }),
+        date: format(d, 'MMM', { locale: dateLocale }),
         monthKey: format(d, 'yyyy-MM'),
         fullDate: format(d, 'dd/MM/yy', { locale: es }),
         acumulado: Math.round(cumulative),
@@ -690,7 +692,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     // Gráfica por mes: agrupar y sumar
     const monthMap = new Map<string, number>();
     for (const r of filtered) {
-      const key = format(parseLocalDate(r.date), 'MMM yy', { locale: es });
+      const key = format(parseLocalDate(r.date), 'MMM yy', { locale: dateLocale });
       monthMap.set(key, (monthMap.get(key) ?? 0) + r.netAmount);
     }
 
@@ -700,7 +702,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     }));
 
     return { cumulativePoints, cumulativeTicks, monthlyPoints };
-  }, [myRounds, evolutionFilter, evolutionRivalFilter, allSnapshots, profile]);
+  }, [myRounds, evolutionFilter, evolutionRivalFilter, allSnapshots, profile, dateLocale]);
 
   const betCategoryData = useMemo((): BetCategoryData[] => {
     if (!profile) return [];
@@ -918,7 +920,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
             <div className="min-w-0 flex-1">
               <p className="font-semibold truncate text-sm">{selectedRival.rivalName}</p>
               <p className="text-xs text-muted-foreground truncate">
-                {sharedRounds.length} ronda{sharedRounds.length !== 1 ? 's' : ''} compartida{sharedRounds.length !== 1 ? 's' : ''}
+                 {sharedRounds.length} {trs(sharedRounds.length === 1 ? 'ronda compartida' : 'rondas compartidas')}
               </p>
             </div>
           </div>
@@ -1006,7 +1008,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     {/* Line 1: Date · Club · $Result */}
                     <div className="grid grid-cols-[auto_auto_minmax(0,1fr)_max-content] items-center gap-1.5 whitespace-nowrap overflow-hidden">
                       <span className="text-xs text-muted-foreground flex-shrink-0">
-                        {format(parseLocalDate(round.date), "d MMM yy", { locale: es })}
+                         {format(parseLocalDate(round.date), "d MMM yy", { locale: dateLocale })}
                       </span>
                       <span className="text-xs text-muted-foreground flex-shrink-0">·</span>
                       <span className="text-sm truncate min-w-0 overflow-hidden" title={round.courseName}>
@@ -1031,7 +1033,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                       </span>
                       <span className="flex-shrink-0">&nbsp;</span>
                       {hasScores ? (
-                        <span>Yo: {round.userGross} vs {round.rivalGross}</span>
+                         <span>{trs('Yo')}: {round.userGross} vs {round.rivalGross}</span>
                       ) : (
                         <span className="italic">{trs("Sin datos")}</span>
                       )}
@@ -1106,11 +1108,11 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1">
                   <Users className="h-3.5 w-3.5" />
-                  {rivals.length} rival{rivals.length !== 1 ? 'es' : ''}
+                   {rivals.length} {trs(rivals.length === 1 ? 'rival' : 'rivales')}
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="h-3.5 w-3.5" />
-                  {totalRounds} ronda{totalRounds !== 1 ? 's' : ''}
+                   {totalRounds} {trs(totalRounds === 1 ? 'ronda' : 'rondas')}
                 </div>
               </div>
               {rivals.some(r => r.isGuest) && (
@@ -1120,7 +1122,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     className="flex items-center gap-1 text-[10px] text-muted-foreground/70 hover:text-muted-foreground transition-colors"
                   >
                     {showGuests ? <UserX className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
-                    {showGuests ? 'Ocultar invitados' : trs("Ver invitados")}
+                     {showGuests ? trs('Ocultar invitados') : trs("Ver invitados")}
                   </button>
                   {showGuests && (
                     <p className="text-[11px] text-muted-foreground px-1">
@@ -1266,11 +1268,11 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <div className="flex items-center gap-1">
                 <Users className="h-3.5 w-3.5" />
-                {rivals.length} rival{rivals.length !== 1 ? 'es' : ''}
+                 {rivals.length} {trs(rivals.length === 1 ? 'rival' : 'rivales')}
               </div>
               <div className="flex items-center gap-1">
                 <Calendar className="h-3.5 w-3.5" />
-                {myRounds.length} ronda{myRounds.length !== 1 ? 's' : ''}
+                 {myRounds.length} {trs(myRounds.length === 1 ? 'ronda' : 'rondas')}
               </div>
             </div>
           </div>
@@ -1291,7 +1293,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                   >
                     <div className="grid grid-cols-[58px_24px_minmax(0,1fr)_max-content] items-center gap-1.5 whitespace-nowrap overflow-hidden">
                       <span className="text-xs text-muted-foreground">
-                        {format(parseLocalDate(round.date), "dd MMM yy", { locale: es })}
+                         {format(parseLocalDate(round.date), "dd MMM yy", { locale: dateLocale })}
                       </span>
                       <span className="font-bold text-sm text-center">{round.score}</span>
                       <span
@@ -1342,7 +1344,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                 <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <span className="text-green-700 dark:text-green-500 font-semibold">−{totalReceived}</span>
-                    <span>recibes ({receivers.length})</span>
+                     <span>{trs('recibes')} ({receivers.length})</span>
                   </div>
                   {evens.length > 0 && (
                     <div className="flex items-center gap-1">
@@ -1351,7 +1353,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     </div>
                   )}
                   <div className="flex items-center gap-1">
-                    <span>das ({givers.length})</span>
+                     <span>{trs('das')} ({givers.length})</span>
                     <span className="text-destructive font-semibold">+{totalGiven}</span>
                   </div>
                 </div>
@@ -1361,7 +1363,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
           {/* Sort control */}
           <div className="flex items-center gap-1.5 px-1">
-            <span className="text-[10px] text-muted-foreground font-medium">Ordenar:</span>
+             <span className="text-[10px] text-muted-foreground font-medium">{trs('Ordenar:')}</span>
             {([
               { key: 'name', label: 'A-Z' },
               { key: 'strokes_desc', label: 'Mayor→Menor' },
@@ -1430,7 +1432,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                 <div className="grid grid-cols-2 gap-2 pr-1">
                   <div className="space-y-1">
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-green-700 dark:text-green-500 px-1">
-                      Recibes ({receives.length})
+                       {trs('Recibes')} ({receives.length})
                     </p>
                     {receives.length === 0 ? (
                       <p className="text-[10px] text-muted-foreground px-1 italic">—</p>
@@ -1440,7 +1442,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                   </div>
                   <div className="space-y-1">
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-destructive px-1 text-right">
-                      Das ({gives.length})
+                       {trs('Das')} ({gives.length})
                     </p>
                     {gives.length === 0 ? (
                       <p className="text-[10px] text-muted-foreground px-1 italic text-right">—</p>
@@ -1490,7 +1492,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                         : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
                     )}
                   >
-                    {f === '3m' ? '3M' : f === '6m' ? '6M' : f === '1y' ? '1A' : 'Todo'}
+                     {f === '3m' ? '3M' : f === '6m' ? '6M' : f === '1y' ? '1Y' : trs('Todo')}
                   </button>
                 ))}
               </div>
@@ -1550,7 +1552,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                       labelStyle={{ color: '#e2e8f0', fontSize: '10px' }}
                       formatter={(value: number, name: string) => [
                         `${value >= 0 ? '+' : '-'}$${fmtMoney(Math.abs(value))}`,
-                        name === 'acumulado' ? 'Acumulado' : 'Ronda',
+                         name === 'acumulado' ? trs('Acumulado') : trs('Ronda'),
                       ]}
                       labelFormatter={(_, p: any[]) => p?.[0]?.payload?.fullDate ?? ''}
                     />
@@ -1630,7 +1632,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                         labelStyle={{ color: '#e2e8f0', fontSize: '10px' }}
                         formatter={(value: number) => [
                           `${value >= 0 ? '+' : '-'}$${fmtMoney(Math.abs(value))}`,
-                          'Mes',
+                           trs('Mes'),
                         ]}
                       />
                       <Bar dataKey="total" radius={[4, 4, 0, 0]}>
@@ -1679,7 +1681,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                           ? 'bg-primary text-primary-foreground border-primary'
                           : 'bg-muted text-muted-foreground border-border'
                       )}>
-                      {f === '3m' ? '3M' : f === '6m' ? '6M' : f === '1y' ? '1A' : 'Todo'}
+                       {f === '3m' ? '3M' : f === '6m' ? '6M' : f === '1y' ? '1Y' : trs('Todo')}
                     </button>
                   ))}
                 </div>
@@ -1705,7 +1707,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                           { label: worst?.category ?? '—', value: worst?.totalAmount ?? 0, prefix: '↓ ' },
                         ].map(({ label, value, prefix = '' }) => (
                           <div key={label} className="bg-card border border-border rounded-xl p-2.5 text-center">
-                            <p className="text-[10px] text-muted-foreground mb-1 truncate">{prefix}{label}</p>
+                             <p className="text-[10px] text-muted-foreground mb-1 truncate">{prefix}{trs(label)}</p>
                             <p className={cn(
                               'text-sm font-bold tabular-nums',
                               value > 0 ? 'text-green-500' : value < 0 ? 'text-destructive' : 'text-muted-foreground'
@@ -1740,7 +1742,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                               >
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-2">
-                                    <span className="text-sm font-semibold">{cat.category}</span>
+                                     <span className="text-sm font-semibold">{trs(cat.category)}</span>
                                     {cat.isTeamBet && (
                                       <span className="text-[9px] text-muted-foreground border border-border rounded px-1">{trs("parejas")}</span>
                                     )}
@@ -1769,7 +1771,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                                 {/* Incidencias para apuestas relevantes */}
                                 {INCIDENT_CATEGORIES.has(cat.category) && (cat.incidentsWon + cat.incidentsLost > 0) && (
                                   <p className="text-[10px] text-muted-foreground">
-                                    {cat.incidentsWon} cobradas · {cat.incidentsLost} pagadas
+                                     {cat.incidentsWon} {trs('cobradas')} · {cat.incidentsLost} {trs('pagadas')}
                                   </p>
                                 )}
                               </button>
@@ -1795,7 +1797,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                       <ArrowLeft className="h-4 w-4" />{' '}{trs("Volver")}
                     </button>
                     <p className="text-sm text-muted-foreground text-center py-8">
-                      Sin movimientos de {selectedBetCategory} con este rival en el período
+                       {trs('Sin movimientos de')} {trs(selectedBetCategory)} {trs('con este rival en el período')}
                     </p>
                   </div>
                 );
@@ -1816,14 +1818,14 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                       <ArrowLeft className="h-4 w-4" />
                     </button>
                     <div className="flex-1">
-                      <p className="text-sm font-bold">{cat.category}</p>
+                       <p className="text-sm font-bold">{trs(cat.category)}</p>
                       <p className={cn(
                         'text-xs font-semibold tabular-nums',
                         cat.totalAmount > 0 ? 'text-green-500' : cat.totalAmount < 0 ? 'text-destructive' : 'text-muted-foreground'
                       )}>
                         {cat.totalAmount > 0 ? '+' : ''}${fmtMoney(Math.abs(cat.totalAmount))} total
                         {INCIDENT_CATEGORIES.has(cat.category) && (cat.incidentsWon + cat.incidentsLost > 0) &&
-                          ` · ${cat.incidentsWon} cobradas / ${cat.incidentsLost} pagadas`}
+                           ` · ${cat.incidentsWon} ${trs('cobradas')} / ${cat.incidentsLost} ${trs('pagadas')}`}
                       </p>
                     </div>
                   </div>
@@ -1843,7 +1845,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                       <button
                         type="button"
                         onClick={() => setRivalSortDesc(v => !v)}
-                        title={rivalSortDesc ? 'Orden: mayor a menor' : 'Orden: menor a mayor'}
+                         title={trs(rivalSortDesc ? 'Orden: mayor a menor' : 'Orden: menor a mayor')}
                         className="shrink-0 flex items-center justify-center h-8 w-8 rounded-lg bg-muted border border-border text-muted-foreground hover:text-foreground transition-colors"
                       >
                         <ArrowUpDown className="h-3.5 w-3.5" />
@@ -1864,7 +1866,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                               <p className="text-sm font-semibold truncate">{rival.rivalName}</p>
                               {INCIDENT_CATEGORIES.has(cat.category) && (rival.incidentsWon + rival.incidentsLost > 0) && (
                                 <p className="text-[10px] text-muted-foreground">
-                                  {rival.incidentsWon} cobradas · {rival.incidentsLost} pagadas
+                                   {rival.incidentsWon} {trs('cobradas')} · {rival.incidentsLost} {trs('pagadas')}
                                 </p>
                               )}
                             </div>
