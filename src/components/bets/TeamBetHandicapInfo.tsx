@@ -315,17 +315,17 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
         <div className="space-y-2">
           <div className="font-semibold text-xs flex items-center gap-1.5">
             <Info className="h-3.5 w-3.5 text-primary" />
-            {title}
+             {trs(title)}
           </div>
 
           {modalityLine && (
             <div className="text-[11px] text-muted-foreground">
-              <span className="font-medium text-foreground">Modalidad:</span> {modalityLine}
+               <span className="font-medium text-foreground">{trs("Modalidad:")}</span> {trs(modalityLine)}
             </div>
           )}
           <div className="text-[11px] text-muted-foreground">
             <span className="font-medium text-foreground">HCP:</span>{' '}
-            {useHandicap ? HANDICAP_MODE_LABELS[mode] : 'Sin hándicap (gross)'}
+             {useHandicap ? trs(HANDICAP_MODE_LABELS[mode]) : trs('Sin hándicap (gross)')}
           </div>
 
           {segmentData.length > 0 ? (
@@ -335,14 +335,14 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
                 const last = seg.holes[seg.holes.length - 1];
                 const diff = Math.abs(sA - sB);
                 const advantage = sA === sB ? null : sA > sB ? 'A' : 'B';
-                const labelA = seg.teamALabel ?? 'Equipo 1';
-                const labelB = seg.teamBLabel ?? 'Equipo 2';
+                 const labelA = trs(seg.teamALabel ?? 'Equipo 1');
+                 const labelB = trs(seg.teamBLabel ?? 'Equipo 2');
                 return (
                   <div key={seg.label} className="space-y-1">
                     <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground">
                       {trs(String(seg.label))}
                       <span className="ml-1 font-normal normal-case text-muted-foreground">
-                        · Hoyos {first}–{last}
+                         · {trs("Hoyos")} {first}–{last}
                       </span>
                     </div>
                     <div className="rounded-md border border-border overflow-hidden grid grid-cols-2 divide-x divide-border">
@@ -351,11 +351,11 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
                     </div>
                     {useHandicap && (
                       <div className="text-[10px] text-muted-foreground tabular-nums px-0.5">
-                        Ventaja del tramo:{' '}
+                         {trs("Ventaja del tramo:")}{' '}
                         <span className="font-semibold text-foreground">
                           {advantage
                             ? `${advantage === 'A' ? labelA : labelB} +${fmtHcp(diff)}`
-                            : 'parejo (0)'}
+                             : trs('parejo (0)')}
                         </span>
                       </div>
                     )}
@@ -363,18 +363,18 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
                 );
               })}
               <div className="text-[10px] text-center text-muted-foreground">
-                Cada línea: <span className="text-foreground">{trs("jugador · HCP campo · golpes en el tramo")}</span>
+                 {trs("Cada línea:")} <span className="text-foreground">{trs("jugador · HCP campo · golpes en el tramo")}</span>
               </div>
             </div>
           ) : grouped ? (
 
             <div className="space-y-1.5">
               <div className="rounded-md border border-border overflow-hidden grid grid-cols-2 divide-x divide-border">
-                <TeamColumn label={teamALabel} teamRows={rowsA} align="left" />
-                <TeamColumn label={teamBLabel} teamRows={rowsB} align="right" />
+                 <TeamColumn label={trs(teamALabel)} teamRows={rowsA} align="left" />
+                 <TeamColumn label={trs(teamBLabel)} teamRows={rowsB} align="right" />
               </div>
               <div className="text-[10px] text-center text-muted-foreground">
-                Cada línea: <span className="text-foreground">{trs("jugador · HCP campo · golpes")}</span>
+                 {trs("Cada línea:")} <span className="text-foreground">{trs("jugador · HCP campo · golpes")}</span>
               </div>
               {useHandicap && (
                 <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5 text-[10px] tabular-nums flex items-center justify-between">
@@ -385,7 +385,7 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
                   <span className="font-semibold">
                     {higherTeam
                       ? `Δ ${fmtHcp(diffTeams)} → ${higherTeam === 'A' ? teamALabel : teamBLabel}`
-                      : 'Δ 0 (parejo)'}
+                       : trs('Δ 0 (parejo)')}
                   </span>
                 </div>
               )}
@@ -405,7 +405,7 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
                 >
                   <span className="truncate">{getName(player)}</span>
                   <span className="text-center text-muted-foreground">
-                    {player.teeColor ? (TEE_LABELS[player.teeColor] ?? player.teeColor) : '—'}
+                     {player.teeColor ? trs(TEE_LABELS[player.teeColor] ?? player.teeColor) : '—'}
                   </span>
                   <span className="text-right">{fmtHcp(courseHcp)}</span>
                   <span className={cn('text-right font-semibold', strokes > 0 ? 'text-primary' : 'text-muted-foreground')}>
