@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
@@ -55,6 +56,7 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
   zooCounts,
   onZooCountChange,
 }) => {
+  const { t } = useTranslation();
   const initials = playerInitials || playerName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   const isLoggedInUser = playerId && basePlayerId ? playerId === basePlayerId : false;
   const latestMarkersRef = React.useRef(markers);
@@ -154,7 +156,7 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
         {/* Golpes Row */}
         <div className="flex items-center gap-2">
           <ScoreStepper
-            label="Golpes"
+            label={t('play.strokes')}
             value={strokes}
             min={1}
             onChange={onStrokesChange}
@@ -333,7 +335,7 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
                   <>
                     <div className="border-t border-border my-1" />
                     <div className="px-3 py-0.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-                      🐾 Zoológico
+                      🐾 {t('bets.zoologico')}
                     </div>
                     {(['camello', 'pez', 'gorila'] as ZooAnimalType[])
                       .filter(a => zooEnabledAnimals.includes(a))

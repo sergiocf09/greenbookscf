@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Player, GolfCourse, PlayerScore, MarkerState, PlayerGroup, BetConfig, DEFAULT_STABLEFORD_POINTS } from '@/types/golf';
@@ -43,6 +44,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
   betConfig,
   onQuickScoreClick,
 }) => {
+  const { t } = useTranslation();
   // Auto-detect user's group for default selection
   const userGroupIndex = useMemo(() => {
     if (!basePlayerId || playerGroups.length === 0) return 0;
@@ -255,7 +257,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                 onClick={onAddPlayerClick}
               >
                 <Plus className="h-3.5 w-3.5 mr-1" />
-                Jugador
+                {t('play.player')}
               </Button>
             )}
           </div>
@@ -279,7 +281,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
           <thead>
             <tr className="bg-muted/50">
               <th className="text-left px-2 py-1.5 font-medium text-muted-foreground sticky left-0 bg-muted/50 min-w-[80px]">
-                Hoyo
+                {t('menu.hole')}
               </th>
               {firstNine.map(hole => (
                 <th 
@@ -339,7 +341,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                             </button>
                           </TooltipTrigger>
                           <TooltipContent side="right" className="text-xs">
-                            Captura rápida
+                            {t('play.quickEntry')}
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
@@ -381,7 +383,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
           <thead>
             <tr className="bg-muted/50">
               <th className="text-left px-2 py-1.5 font-medium text-muted-foreground sticky left-0 bg-muted/50 min-w-[80px]">
-                Hoyo
+                {t('menu.hole')}
               </th>
               {secondNine.map(hole => (
                 <th 
@@ -446,7 +448,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                               </button>
                             </TooltipTrigger>
                             <TooltipContent side="right" className="text-xs">
-                              Captura rápida
+                              {t('play.quickEntry')}
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
