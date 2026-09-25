@@ -227,7 +227,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
             </Button>
             <div className="flex-1 min-w-0">
               <h1 className="text-base font-semibold truncate text-accent">{ranking?.name ?? 'Ranking'}</h1>
-              <p className="text-xs text-primary-foreground/70">{members.length} {members.length === 1 ? 'miembro' : 'miembros'}</p>
+              <p className="text-xs text-primary-foreground/70">{members.length} {trs(members.length === 1 ? 'miembro' : 'miembros')}</p>
             </div>
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-white/20" onClick={() => window.location.reload()} aria-label={trs("Actualizar")}>
@@ -247,7 +247,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
             </Button>
             <div className="flex-1 min-w-0">
               <h2 className="text-sm font-semibold truncate">{ranking?.name ?? 'Ranking'}</h2>
-              <p className="text-[11px] text-muted-foreground">{members.length} {members.length === 1 ? 'miembro' : 'miembros'}</p>
+              <p className="text-[11px] text-muted-foreground">{members.length} {trs(members.length === 1 ? 'miembro' : 'miembros')}</p>
             </div>
           </div>
         )}
@@ -290,7 +290,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
                 {(Object.keys(PERIOD_LABELS) as RankingPeriod[]).map(p => (
                   <TabsTrigger key={p} value={p} className="flex-1 gap-1 text-xs">
                     {p === 'custom' && <CalendarRange className="h-3 w-3" />}
-                    {PERIOD_LABELS[p]}
+                     {trs(PERIOD_LABELS[p])}
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -298,7 +298,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
 
             {period === 'custom' && customDateFrom && (
               <button className="text-xs text-muted-foreground text-center w-full hover:underline" onClick={() => setShowCustomPeriod(true)}>
-                {customDateFrom} → {customDateTo || 'hoy'} · Editar
+                 {customDateFrom} → {customDateTo || trs('hoy')} · {trs('Editar')}
               </button>
             )}
             {loadingBalances ? (
@@ -313,7 +313,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm">
                     <DollarSign className="h-4 w-4 inline mr-1" />
-                    Posiciones · {members.length} miembros
+                     {trs('Posiciones')} · {members.length} {trs('miembros')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0 px-3">
@@ -340,7 +340,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
                                 {toTitleCase(entry.display_name)}
                                 {entry.profile_id === profile?.id && <span className="text-[10px] text-muted-foreground ml-1">{trs("(tú)")}</span>}
                               </p>
-                              <p className="text-[10px] text-muted-foreground">{entry.rounds_played} {entry.rounds_played === 1 ? 'ronda' : 'rondas'}</p>
+                               <p className="text-[10px] text-muted-foreground">{entry.rounds_played} {trs(entry.rounds_played === 1 ? 'ronda' : 'rondas')}</p>
                             </div>
                             <NetBadge amount={entry.net_balance} />
                             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -445,7 +445,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
                 <PopoverTrigger asChild>
                   <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !customDateTo && 'text-muted-foreground')}>
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {customDateTo ? format(new Date(customDateTo + 'T12:00:00'), 'dd/MM/yyyy') : 'Hoy'}
+                     {customDateTo ? format(new Date(customDateTo + 'T12:00:00'), 'dd/MM/yyyy') : trs('Hoy')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -506,7 +506,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
                 <div key={b.rival_profile_id} className="flex items-center gap-3 py-2">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{toTitleCase(b.display_name)}</p>
-                    <p className="text-[11px] text-muted-foreground">{b.rounds_together} {b.rounds_together === 1 ? 'ronda juntos' : 'rondas juntos'}</p>
+                     <p className="text-[11px] text-muted-foreground">{b.rounds_together} {trs(b.rounds_together === 1 ? 'ronda juntos' : 'rondas juntos')}</p>
                   </div>
                   <NetBadge amount={b.net_balance} />
                 </div>

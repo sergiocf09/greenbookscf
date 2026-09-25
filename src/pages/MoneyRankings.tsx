@@ -18,7 +18,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Plus, ArrowLeft, Loader2, Users, TrendingUp, Crown, LogOut, User, Award, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { enUS, es } from 'date-fns/locale';
+import i18n from '@/i18n';
 import GreenBookLogo from '@/components/GreenBookLogo';
 import { ProfileDialog } from '@/components/ProfileDialog';
 import { HandicapRankingHeader } from '@/components/handicap/HandicapRankingHeader';
@@ -80,7 +81,7 @@ const MoneyRankings = () => {
             <CardTitle className="text-base truncate">{r.name}</CardTitle>
             <CardDescription className="text-xs">
               {r.is_creator ? trs("Creado por ti") : `${trs("Creado por")} ${r.creator_name}`}
-              {' · '}{format(new Date(r.created_at), 'd MMM yyyy', { locale: es })}
+              {' · '}{format(new Date(r.created_at), 'd MMM yyyy', { locale: i18n.language === 'en' ? enUS : es })}
             </CardDescription>
           </div>
           {r.is_creator && (
@@ -94,7 +95,7 @@ const MoneyRankings = () => {
       <CardContent className="pt-0">
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <Users className="h-3.5 w-3.5" />
-          {r.member_count} {r.member_count === 1 ? 'miembro' : 'miembros'}
+          {r.member_count} {trs(r.member_count === 1 ? 'miembro' : 'miembros')}
         </div>
       </CardContent>
     </Card>
