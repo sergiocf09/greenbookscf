@@ -203,12 +203,12 @@ function ScoreDistribution({ stats }: { stats: PlayerStats }) {
     'rgba(234,179,8,.15)', 'rgba(249,115,22,.15)', 'rgba(239,68,68,.15)',
   ];
   const data = [
-    { name: 'Águilas', count: stats.eagles_count, pct: ((stats.eagles_count / total) * 100).toFixed(1), fill: fills[0], bg: bgFills[0], border: fills[0] },
+    { name: trs('Águilas'), count: stats.eagles_count, pct: ((stats.eagles_count / total) * 100).toFixed(1), fill: fills[0], bg: bgFills[0], border: fills[0] },
     { name: 'Birdies', count: stats.birdies_count, pct: ((stats.birdies_count / total) * 100).toFixed(1), fill: fills[1], bg: bgFills[1], border: fills[1] },
-    { name: 'Pares', count: stats.pars_count, pct: ((stats.pars_count / total) * 100).toFixed(1), fill: fills[2], bg: bgFills[2], border: fills[2] },
+    { name: trs('Pares'), count: stats.pars_count, pct: ((stats.pars_count / total) * 100).toFixed(1), fill: fills[2], bg: bgFills[2], border: fills[2] },
     { name: 'Bogeys', count: stats.bogeys_count, pct: ((stats.bogeys_count / total) * 100).toFixed(1), fill: fills[3], bg: bgFills[3], border: fills[3] },
-    { name: 'Dobles', count: stats.doubles_count, pct: ((stats.doubles_count / total) * 100).toFixed(1), fill: fills[4], bg: bgFills[4], border: fills[4] },
-    { name: '+3 o peor', count: stats.worse_count, pct: ((stats.worse_count / total) * 100).toFixed(1), fill: fills[5], bg: bgFills[5], border: fills[5] },
+    { name: trs('Dobles'), count: stats.doubles_count, pct: ((stats.doubles_count / total) * 100).toFixed(1), fill: fills[4], bg: bgFills[4], border: fills[4] },
+    { name: trs('+3 o peor'), count: stats.worse_count, pct: ((stats.worse_count / total) * 100).toFixed(1), fill: fills[5], bg: bgFills[5], border: fills[5] },
   ];
 
   return (
@@ -345,7 +345,7 @@ function Milestones({ milestones: m, roundsPlayed, courseName }: { milestones: P
     { emoji: '⛳', label: trs("Hoyos jugados"), value: m.total_holes },
     { emoji: '⛳', label: 'Hole in One', value: m.holes_in_one > 0 ? m.holes_in_one : '0', special: m.holes_in_one > 0 },
     { emoji: '🏌️‍♂️', label: '\n', value: `${m.rounds_no_bogey}`, sub: 'Doble Bogey+ Free', zero: true },
-    { emoji: '__arrow_down_green', label: '\n', value: m.rounds_sub_80, sub: "Rondas < 80's", zero: true },
+    { emoji: '__arrow_down_green', label: '\n', value: m.rounds_sub_80, sub: trs("Rondas < 80's"), zero: true },
     { emoji: '__arrow_right_amber', label: '\n', value: m.rounds_sub_90 - m.rounds_sub_80, sub: trs("Rondas 80–89"), zero: true },
     { emoji: '__arrow_up_red', label: '\n', value: m.rounds_sub_100 - m.rounds_sub_90, sub: trs("Rondas 90–99"), zero: true },
     { emoji: '💯', label: '> 100', value: Math.max(0, roundsPlayed - m.rounds_sub_100), zero: true },
