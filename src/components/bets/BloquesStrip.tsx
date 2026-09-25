@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 /**
  * Reusable visualization for Bloques bet results between two players.
  * - Two-line summary header (Ganados / Perdidos) with totals
@@ -37,6 +38,7 @@ export const BloquesStrip: React.FC<Props> = ({
   playerA, playerB, blocks, course, handicapA = 0, handicapB = 0, getStrokes,
   basePlayerId, allPlayers, carryOverOnTie = true, className,
 }) => {
+  const { t } = useTranslation();
   const strokesA = calculateStrokesPerHole(handicapA, course);
   const strokesB = calculateStrokesPerHole(handicapB, course);
 
@@ -95,12 +97,12 @@ export const BloquesStrip: React.FC<Props> = ({
         </div>
         {tiedResolved.length > 0 && (
           <div className={cn('text-[11px]', carryOverOnTie ? 'text-amber-600' : 'text-muted-foreground')}>
-            Empate{!carryOverOnTie && ' (no cuenta)'}: {renderList(tiedResolved)}
+            {t('dashboard.tie')}{!carryOverOnTie && t('dashboard.tieNoCount')}: {renderList(tiedResolved)}
           </div>
         )}
         {inProgressBlocks.length > 0 && (
           <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-            <span>En curso: {renderList(inProgressBlocks)} (provisional)</span>
+            <span>{t('dashboard.inProgress')}: {renderList(inProgressBlocks)} ({t('dashboard.provisional')})</span>
             <span className={cn('tabular-nums font-semibold italic',
               provisionalNet > 0 ? 'text-green-600/80' : provisionalNet < 0 ? 'text-destructive/80' : 'text-muted-foreground'
             )}>
@@ -181,7 +183,7 @@ export const BloquesStrip: React.FC<Props> = ({
                 <div className="text-xs space-y-2">
                   <div className="flex items-center justify-between">
                     <p className="font-medium flex items-center gap-1">
-                      Bloque {blk.blockNumber} · h{blk.startHole}-{blk.endHole}
+                      {t('dashboard.block')} {blk.blockNumber} · h{blk.startHole}-{blk.endHole}
                       {blk.multiplier > 1 && (
                         <span className="ml-1 px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[10px] font-bold">
                           {blk.multiplier}x
@@ -209,7 +211,7 @@ export const BloquesStrip: React.FC<Props> = ({
 
                   {inProgress && (
                     <p className="text-[10px] text-muted-foreground">
-                      En curso · {blk.holesPlayed} de {blk.holesInBlock} hoyos. El importe se define al cerrar el bloque.
+                      {t('dashboard.blockProgress', { p: blk.holesPlayed, n: blk.holesInBlock })}
                     </p>
                   )}
 
@@ -225,7 +227,7 @@ export const BloquesStrip: React.FC<Props> = ({
                       className="grid bg-muted/40 text-[11px] font-medium"
                       style={{ gridTemplateColumns: `minmax(40px,auto) repeat(${holes.length}, minmax(22px,1fr)) 36px` }}
                     >
-                      <div className="px-2 py-1.5">Hoyo</div>
+                      <div className="px-2 py-1.5">{t('dashboard.hole')}</div>
                       {holes.map(h => (
                         <div key={h} className="text-center py-1.5">{h}</div>
                       ))}
