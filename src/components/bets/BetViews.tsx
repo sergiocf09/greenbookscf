@@ -162,6 +162,7 @@ export const GeneralBetTable: React.FC<GeneralBetTableProps> = ({
   basePlayerId,
 }) => {
   const { t } = useTranslation();
+  const { t } = useTranslation();
   const getPlayerTotalBalance = (playerId: string): number => {
     return summaries
       .filter(b => b.playerId === playerId)
