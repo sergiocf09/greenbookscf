@@ -181,8 +181,8 @@ export const CourseSearchDialog: React.FC<Props> = ({
           >
             <Globe className="h-3.5 w-3.5" />
             {localMatches.length > 0
-              ? 'No es ninguno: buscar en el catálogo mundial'
-              : 'Buscar en el catálogo mundial'}
+              ? trs("No es ninguno: buscar en el catálogo mundial")
+              : trs("Buscar en el catálogo mundial")}
           </Button>
         )}
 

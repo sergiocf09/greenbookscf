@@ -229,7 +229,7 @@ const Leaderboards = () => {
                       className="flex-1"
                     >
                       {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                      Crear
+                      {trs("Crear")}
                     </Button>
                   </div>
                 </div>

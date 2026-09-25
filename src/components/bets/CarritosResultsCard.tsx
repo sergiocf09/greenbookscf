@@ -27,7 +27,7 @@ const TeamHoleGrid: React.FC<{
   };
 }> = ({ teamAPlayers, teamBPlayers, shortNames, detail }) => {
   const { t } = useTranslation();
-  const getName = (p?: { name: string; id: string }) => p ? (shortNames.get(p.id) || p.name.split(' ')[0]) : 'Jugador';
+  const getName = (p?: { name: string; id: string }) => p ? (shortNames.get(p.id) || p.name.split(' ')[0]) : trs("Jugador");
   return (
   <div className="space-y-0.5">
     <div className="flex justify-between text-[10px] text-muted-foreground">
@@ -296,7 +296,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                 size="icon"
                 className={cn('h-6 w-6', isDisabled ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-destructive')}
                 onClick={onToggleDisabled}
-                title={isDisabled ? 'Reactivar Carritos' : 'No considerar Carritos'}
+                title={isDisabled ? 'Reactivar Carritos' : trs("No considerar Carritos")}
               >
                 {isDisabled ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
               </Button>

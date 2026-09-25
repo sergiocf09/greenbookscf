@@ -177,7 +177,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                 size="icon"
                 className={cn('h-6 w-6', isDisabled ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-destructive')}
                 onClick={onToggleDisabled}
-                title={isDisabled ? 'Reactivar Sixes' : 'No considerar Sixes'}
+                title={isDisabled ? 'Reactivar Sixes' : trs("No considerar Sixes")}
               >
                 {isDisabled ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
               </Button>

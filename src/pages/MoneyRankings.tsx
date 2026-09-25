@@ -79,7 +79,7 @@ const MoneyRankings = () => {
           <div className="min-w-0">
             <CardTitle className="text-base truncate">{r.name}</CardTitle>
             <CardDescription className="text-xs">
-              {r.is_creator ? 'Creado por ti' : `Creado por ${r.creator_name}`}
+              {r.is_creator ? trs("Creado por ti") : `Creado por ${r.creator_name}`}
               {' · '}{format(new Date(r.created_at), 'd MMM yyyy', { locale: es })}
             </CardDescription>
           </div>
@@ -162,7 +162,7 @@ const MoneyRankings = () => {
               </p>
               <Button className="w-full" disabled={!formName.trim() || creating} onClick={handleCreate}>
                 {creating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Crear ranking
+                {trs("Crear ranking")}
               </Button>
             </div>
           </DialogContent>

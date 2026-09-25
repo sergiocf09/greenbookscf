@@ -478,7 +478,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
             {hasPendingChanges && (
               <Button onClick={saveAllChanges} disabled={saving} size="sm" className="gap-1.5">
                 {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                Guardar
+                {trs("Guardar")}
               </Button>
             )}
           </div>

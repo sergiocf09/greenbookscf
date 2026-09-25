@@ -299,7 +299,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
             disabled={!profile || saving}
             onClick={handleSaveHandicap}
           >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Guardar'}
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : trs("Guardar")}
           </Button>
         </div>
         <p className="text-[10px] text-muted-foreground">{trs("Sobreescribe el índice calculado por USGA.")}</p>
@@ -339,7 +339,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
       onOpenChange(false);
       await supabase.auth.signOut();
     } catch (err: any) {
-      toast.error(trs("Error al eliminar la cuenta: ") + (err.message ?? 'intenta de nuevo'));
+      toast.error(trs("Error al eliminar la cuenta: ") + (err.message ?? trs("intenta de nuevo")));
     } finally {
       setDeleting(false);
     }
@@ -365,7 +365,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
         <Input
           id="delete-confirm-email"
           type="email"
-          placeholder={user?.email ?? 'tu@email.com'}
+          placeholder={user?.email ?? trs("tu@email.com")}
           value={deleteConfirmEmail}
           onChange={(e) => setDeleteConfirmEmail(e.target.value)}
           className="mt-1"
@@ -380,7 +380,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
         onClick={handleDeleteAccount}
       >
         {deleting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-        Eliminar mi cuenta
+        {trs("Eliminar mi cuenta")}
       </Button>
       <Button
         variant="ghost"
@@ -441,7 +441,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
           disabled={!newName.trim() || newName.trim().length < 2 || saving}
           onClick={handleSaveName}
         >
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Guardar'}
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : trs("Guardar")}
         </Button>
       </div>
     </div>
@@ -472,7 +472,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
           disabled={!newEmail.trim() || !currentPassword || saving}
           onClick={handleSaveEmail}
         >
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Guardar'}
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : trs("Guardar")}
         </Button>
       </div>
     </div>
@@ -512,7 +512,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
           disabled={!newPassword || newPassword.length < 6 || saving}
           onClick={handleSavePassword}
         >
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Actualizar contraseña'}
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : trs("Actualizar contraseña")}
         </Button>
       </div>
     </div>

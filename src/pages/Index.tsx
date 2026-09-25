@@ -713,7 +713,7 @@ const Index = () => {
 
         const next = new Map<string, { courseName: string; holesPlayed: number; totalStrokes: number }>();
         for (const r of pendingRounds) {
-          const courseName = r.courseName ?? 'Campo';
+          const courseName = r.courseName ?? trs("Campo");
           const myRpId = myRpByRoundId.get(r.roundId);
           const list = myRpId ? scoresByRpId.get(myRpId) ?? [] : [];
           const holesPlayed = list.filter((s) => typeof s.strokes === 'number' && Number.isFinite(s.strokes)).length;
@@ -2450,7 +2450,7 @@ const Index = () => {
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <div className="text-sm font-medium text-foreground">
-                            {s?.courseName ?? 'Campo'}
+                            {s?.courseName ?? trs("Campo")}
                             {r.isOrganizer ? (
                               <span className="ml-2 text-[10px] uppercase tracking-wide bg-primary/15 text-primary px-1.5 py-0.5 rounded">{trs("Organizador")}</span>
                             ) : (

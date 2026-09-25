@@ -642,7 +642,7 @@ function CoursePicker({
           >
             <Search className="mr-2 h-4 w-4 opacity-70" />
             <span className="truncate">
-              {courseId ? (courseName || 'Campo seleccionado') : 'Selecciona un campo…'}
+              {courseId ? (courseName || 'Campo seleccionado') : trs("Selecciona un campo…")}
             </span>
           </Button>
         </PopoverTrigger>
@@ -819,7 +819,7 @@ function Step3Mapping(props: {
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <span className="text-muted-foreground text-xs uppercase tracking-wide">
-                  En la tarjeta:
+                  {trs("En la tarjeta:")}
                 </span>
                 {p.nameInCard || <em className="text-muted-foreground">{trs("Sin nombre")}</em>}
               </CardTitle>

@@ -361,7 +361,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                       <div className="text-[11px] text-muted-foreground uppercase tracking-wide">{trs("Clasifica")}</div>
                       <div className={cn('text-lg font-bold', selectedStanding.qualifies ? 'text-primary' : 'text-amber-600')}>
                         {selectedStanding.qualifies
-                          ? '✓ Sí'
+                          ? trs("✓ Sí")
                           : `Faltan ${rules.min_rounds_to_qualify - selectedStanding.jornadas_jugadas}`}
                       </div>
                     </div>

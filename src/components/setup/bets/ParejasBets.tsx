@@ -1632,11 +1632,11 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
       {/* Info note */}
       <div className="text-[10px] text-muted-foreground bg-muted/50 rounded p-1.5">
         {bet.scoringType === 'matchOnly' && bet.continua
-          ? '💡 Match Play continuo: corre del 1 al 18, solo cuenta la bola baja, se define cuando la ventaja supera los hoyos restantes'
+          ? trs("💡 Match Play continuo: corre del 1 al 18, solo cuenta la bola baja, se define cuando la ventaja supera los hoyos restantes")
           : bet.scoringType === 'matchOnly'
-          ? '💡 Match Play: solo cuenta la bola baja del equipo, sin apertura de presiones'
+          ? trs("💡 Match Play: solo cuenta la bola baja del equipo, sin apertura de presiones")
           : bet.scoringType === 'combined'
-          ? '💡 Combinado: abre presión cuando diferencia > 2'
+          ? trs("💡 Combinado: abre presión cuando diferencia > 2")
           : `💡 ${bet.scoringType === 'lowBall' ? 'Bola Baja' : 'Bola Alta'}: abre presión cuando diferencia = 2`}
       </div>
     </div>

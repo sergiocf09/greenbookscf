@@ -134,7 +134,7 @@ export const CupDaysEditor: React.FC<Props> = ({ days, onChange, lockedSlots }) 
               <div key={si} className="flex items-center gap-1.5">
                 <span className="text-[10px] text-muted-foreground w-8 shrink-0">S{si + 1}</span>
                 <Input
-                  placeholder={day.sessions.length > 1 ? 'Matutina' : 'Sesión'}
+                  placeholder={day.sessions.length > 1 ? 'Matutina' : trs("Sesión")}
                   value={s.label ?? ''}
                   onChange={e => updateSession(idx, si, { label: e.target.value })}
                   className="h-7 text-xs flex-1 min-w-0"

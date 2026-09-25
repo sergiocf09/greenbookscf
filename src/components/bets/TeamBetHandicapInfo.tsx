@@ -254,7 +254,7 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
           <div className={cn('text-[9px] text-muted-foreground', align === 'right' ? 'text-right' : 'text-left')}>
             {r.segStrokes > 0
               ? `hoyos ${r.segHoles.join(', ')}${r.halfHole ? ` · ½ en ${r.halfHole}` : ''}`
-              : 'sin golpes en este tramo'}
+              : trs("sin golpes en este tramo")}
             {` · total ${fmtHcp(r.total)}`}
           </div>
         </div>
@@ -290,7 +290,7 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
       case 'slidingEquipo': {
         const half = handicapConfig?.slidingHalfPointMode === 'halfPoint';
         const list = receivers.map(r => `${getName(r.player)} +${fmtHcp(r.strokes)}`).join(', ');
-        return `Sliding Equipo: se toman los cuatro cruces bilaterales (A-C, A-D, B-C, B-D) de la matriz de hándicaps y se consolidan en la ventaja del equipo${list ? ` (${list})` : ''}. Medio punto: ${half ? 'sí' : 'no (se redondea hacia abajo)'}.`;
+        return `Sliding Equipo: se toman los cuatro cruces bilaterales (A-C, A-D, B-C, B-D) de la matriz de hándicaps y se consolidan en la ventaja del equipo${list ? ` (${list})` : ''}. Medio punto: ${half ? trs("sí") : trs("no (se redondea hacia abajo)")}.`;
       }
       default:
         return 'Full Hándicap: cada jugador juega su hándicap de campo completo (según su tee), sin ajustes entre equipos.';

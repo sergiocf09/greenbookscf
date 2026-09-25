@@ -330,7 +330,7 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
             className="h-8 w-full text-xs"
           >
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
-            {hasChanges ? 'Guardar cambios' : 'Cerrar'}
+            {hasChanges ? trs("Guardar cambios") : trs("Cerrar")}
           </Button>
         </DialogHeader>
 
@@ -398,7 +398,7 @@ const UnassignedSection: React.FC<UnassignedProps> = ({ players, groups, onAssig
         <div className="flex-1 min-w-0">
           <p className="text-xs font-medium truncate">{p.display_name}</p>
           <p className="text-[10px] text-muted-foreground">
-            HCP {p.handicap_for_leaderboard} · {p.tee_color ?? 'sin tee'}
+            HCP {p.handicap_for_leaderboard} · {p.tee_color ?? trs("sin tee")}
           </p>
         </div>
         {groups.length === 0 ? (
@@ -473,7 +473,7 @@ const GroupSection: React.FC<GroupSectionProps> = ({
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium truncate">{p.display_name}</p>
             <p className="text-[10px] text-muted-foreground">
-              HCP {p.match_handicap} · {p.tee_color ?? 'sin tee'}
+              HCP {p.match_handicap} · {p.tee_color ?? trs("sin tee")}
             </p>
           </div>
           <Popover>

@@ -170,7 +170,7 @@ export const EditMultiDayConfigDialog: React.FC<Props> = ({ open, onOpenChange, 
                     className="h-6 w-6 shrink-0"
                     onClick={() => removeDay(idx)}
                     disabled={days.length <= 2 || isLinked}
-                    title={isLinked ? 'Hay rondas vinculadas con esta fecha' : undefined}
+                    title={isLinked ? trs("Hay rondas vinculadas con esta fecha") : undefined}
                   >
                     <X className="h-3 w-3" />
                   </Button>
@@ -237,7 +237,7 @@ export const EditMultiDayConfigDialog: React.FC<Props> = ({ open, onOpenChange, 
             onClick={handleSave}
           >
             {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Guardar
+            {trs("Guardar")}
           </Button>
         </DialogFooter>
       </DialogContent>

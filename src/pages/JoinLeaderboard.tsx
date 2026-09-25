@@ -207,10 +207,10 @@ const JoinLeaderboard = () => {
           {trs("Únete al Leaderboard")}
         </h1>
         <p className="text-sm text-muted-foreground max-w-xs">
-          Te invitaron a un leaderboard en GreenBook.
+          {trs("Te invitaron a un leaderboard en GreenBook.")}
           {notFound
-            ? ' Sin embargo, el código ya no es válido o expiró.'
-            : ' Abre la app para continuar.'}
+            ? trs(" Sin embargo, el código ya no es válido o expiró.")
+            : trs(" Abre la app para continuar.")}
         </p>
       </div>
 

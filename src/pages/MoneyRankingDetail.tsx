@@ -396,7 +396,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
             <Button variant="outline" onClick={() => setShowRenameDialog(false)}>{trs("Cancelar")}</Button>
             <Button disabled={!renameValue.trim() || renaming} onClick={handleRename}>
               {renaming && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Guardar
+              {trs("Guardar")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -431,7 +431,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
                 <PopoverTrigger asChild>
                   <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !customDateFrom && 'text-muted-foreground')}>
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {customDateFrom ? format(new Date(customDateFrom + 'T12:00:00'), 'dd/MM/yyyy') : 'Seleccionar fecha'}
+                    {customDateFrom ? format(new Date(customDateFrom + 'T12:00:00'), 'dd/MM/yyyy') : trs("Seleccionar fecha")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -492,7 +492,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               {selectedEntry && <PlayerAvatar initials={selectedEntry.initials} background={selectedEntry.avatar_color} size="sm" />}
-              {selectedEntry?.display_name ? toTitleCase(selectedEntry.display_name) : 'Jugador'}
+              {selectedEntry?.display_name ? toTitleCase(selectedEntry.display_name) : trs("Jugador")}
               <NetBadge amount={selectedEntry?.net_balance ?? 0} />
             </SheetTitle>
           </SheetHeader>

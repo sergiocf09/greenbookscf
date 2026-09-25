@@ -183,7 +183,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         <BetSection
           id="pressures"
           title={trs("Presiones")}
-          description={config.pressures.onlyMatch ? undefined : 'Se abre con diferencia de 2'}
+          description={config.pressures.onlyMatch ? undefined : trs("Se abre con diferencia de 2")}
           enabled={config.pressures.enabled}
           onToggle={(enabled) => onUpdateBet('pressures', { enabled })}
           isExpanded={expandedSections.includes('pressures')}
@@ -479,7 +479,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
                       key={n}
                       type="button"
                       disabled={disabled}
-                      title={disabled ? 'No aplica en ronda de 9 hoyos' : undefined}
+                      title={disabled ? trs("No aplica en ronda de 9 hoyos") : undefined}
                       onClick={() => { if (disabled) return; onUpdateBet('bloques' as any, { holesPerBlock: n }); }}
                       className={cn(
                         'flex-1 px-2 py-1.5 text-xs rounded transition-colors',

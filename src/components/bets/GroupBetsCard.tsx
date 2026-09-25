@@ -330,7 +330,7 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
             </span>
           </div>
           <span className="text-xs text-muted-foreground">
-            {conejaResult.amount > 0 ? `$${fmtMoney(conejaResult.amount)} c/set` : 'Sin importe'}
+            {conejaResult.amount > 0 ? `$${fmtMoney(conejaResult.amount)} c/set` : trs("Sin importe")}
           </span>
         </div>
         
@@ -590,7 +590,7 @@ const MedalResultBlock: React.FC<{
     return (
       <div className="text-xs text-muted-foreground p-2 bg-muted/20 rounded">
         {label && <span className="font-medium mr-1">{label}:</span>}
-        Sin scores confirmados suficientes
+        {trs("Sin scores confirmados suficientes")}
       </div>
     );
   }

@@ -183,8 +183,8 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
               course={course}
               segments={hcpSegments}
               note={vegasConfig.variant === 'fixed'
-                ? 'Las parejas son fijas las 18 hoyos; los golpes caen según el índice del campo, por eso cada vuelta puede tener ventajas distintas.'
-                : 'Las parejas rotan por tramo de 6 hoyos. El total de golpes de cada jugador no cambia, pero los golpes caen según el índice del campo, por lo que cada tramo puede tener ventajas distintas.'}
+                ? trs("Las parejas son fijas las 18 hoyos; los golpes caen según el índice del campo, por eso cada vuelta puede tener ventajas distintas.")
+                : trs("Las parejas rotan por tramo de 6 hoyos. El total de golpes de cada jugador no cambia, pero los golpes caen según el índice del campo, por lo que cada tramo puede tener ventajas distintas.")}
             />
 
           </div>
@@ -203,7 +203,7 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
                 size="icon"
                 className={cn('h-6 w-6', isDisabled ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-destructive')}
                 onClick={onToggleDisabled}
-                title={isDisabled ? 'Reactivar Vegas' : 'No considerar Vegas'}
+                title={isDisabled ? 'Reactivar Vegas' : trs("No considerar Vegas")}
               >
                 {isDisabled ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
               </Button>

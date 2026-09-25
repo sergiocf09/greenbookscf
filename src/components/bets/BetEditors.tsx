@@ -168,7 +168,7 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
           </p>
           <div className="text-xs text-center text-muted-foreground italic">
             {unitsAdvantage === 0
-              ? '— Sin ventaja —'
+              ? trs("— Sin ventaja —")
               : unitsAdvantage > 0
                 ? `Tú das ${unitsAdvantage} unidad${unitsAdvantage !== 1 ? 'es' : ''}`
                 : `Rival da ${Math.abs(unitsAdvantage)} unidad${Math.abs(unitsAdvantage) !== 1 ? 'es' : ''}`}

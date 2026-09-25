@@ -179,7 +179,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-medium">
-                        {entry.year ? String(entry.year) : 'Sin año'}
+                        {entry.year ? String(entry.year) : trs("Sin año")}
                       </span>
                       {entry.note && (
                         <span className="text-[11px] text-muted-foreground truncate">{entry.note}</span>
@@ -289,7 +289,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
                   </Button>
                   <Button className="flex-1" onClick={handleSubmit} disabled={saving}>
                     {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
-                    {editingId ? 'Actualizar' : 'Guardar'}
+                    {editingId ? 'Actualizar' : trs("Guardar")}
                   </Button>
                 </div>
               </div>

@@ -201,7 +201,7 @@ export const BloquesStrip: React.FC<Props> = ({
                           ? `=$${fmtMoney(blk.amountAtStake)}`
                           : `${provisionalA ? '+' : '-'}$${fmtMoney(blk.amountAtStake)}`
                         : isNeutralizedTie
-                          ? '— (no cuenta)'
+                          ? trs("— (no cuenta)")
                           : isTie
                             ? `=$${fmtMoney(blk.amountAtStake)}`
                             : aWon

@@ -131,7 +131,7 @@ const ResetPassword = () => {
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Actualizar Contraseña'}
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : trs("Actualizar Contraseña")}
             </Button>
           </form>
         </CardContent>

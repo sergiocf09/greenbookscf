@@ -89,7 +89,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
             {loading === "anual" && (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             )}
-            Suscribirse — $999 MXN / año
+            {trs("Suscribirse — $999 MXN / año")}
           </Button>
 
           <Button

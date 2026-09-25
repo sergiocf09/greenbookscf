@@ -317,7 +317,7 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
         existingRoundId: existingRoundId ?? null,
         targetSlot: isMultiSlot ? slot : null,
       });
-      toast.success(existingRoundId ? 'Foursomes recreados' : 'Ronda creada y vinculada');
+      toast.success(existingRoundId ? 'Foursomes recreados' : trs("Ronda creada y vinculada"));
       queryClient.invalidateQueries({ queryKey: ['leaderboard_events'] });
       onCreated(roundId);
       onClose();
@@ -680,7 +680,7 @@ const ReviewGroups: React.FC<ReviewGroupsProps> = ({
         </Button>
         <Button className="flex-1" onClick={onConfirm} disabled={submitting}>
           {submitting && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
-          Confirmar y Crear
+          {trs("Confirmar y Crear")}
         </Button>
       </div>
     </div>

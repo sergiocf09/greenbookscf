@@ -165,7 +165,7 @@ export const HistoricalCupSummaryCard: React.FC<Props> = ({
         {teamA && teamB && slotStandings && (
           <div>
             <div className="text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">
-              Marcador {slotLabel ? `· ${slotLabel}` : 'de la jornada'}
+              Marcador {slotLabel ? `· ${slotLabel}` : trs("de la jornada")}
             </div>
             <div className="flex items-center justify-between gap-2 rounded-lg bg-muted/40 px-3 py-2">
               <div className="flex items-center gap-2 min-w-0">
@@ -200,7 +200,7 @@ export const HistoricalCupSummaryCard: React.FC<Props> = ({
                     {partnerName && <span className="text-muted-foreground"> + {partnerName}</span>}
                   </div>
                   <div className="text-xs text-muted-foreground truncate">
-                    vs {rivalNames.length > 0 ? rivalNames.join(' + ') : 'Por definir'}
+                    vs {rivalNames.length > 0 ? rivalNames.join(' + ') : trs("Por definir")}
                   </div>
                 </div>
                 <div className="text-right shrink-0 leading-none">

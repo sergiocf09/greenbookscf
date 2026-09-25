@@ -293,7 +293,7 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
                 )}
               >
                 <Zap className="h-3.5 w-3.5 text-golf-gold fill-golf-gold" />
-                Sangrón
+                {trs("Sangrón")}
                 {sangronSetCount > 0 && (
                   <span className={cn(
                     "text-[10px] rounded-full w-4 h-4 flex items-center justify-center",

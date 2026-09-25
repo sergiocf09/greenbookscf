@@ -301,7 +301,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                   className="w-full"
                 >
                   {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Crear
+                  {trs("Crear")}
                 </Button>
               </div>
             )}
@@ -420,7 +420,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                   className="w-full"
                 >
                   {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Crear Multi-día
+                  {trs("Crear Multi-día")}
                 </Button>
               </div>
             )}
