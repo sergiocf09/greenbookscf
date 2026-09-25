@@ -276,7 +276,7 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
 
   const calcText = useMemo(() => {
     if (!useHandicap) {
-      return 'Esta apuesta se juega a score gross: nadie recibe golpes.';
+      return trs('Esta apuesta se juega a score gross: nadie recibe golpes.');
     }
     switch (mode) {
       case 'baseCero': {
@@ -293,7 +293,7 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
         return `${trs("Sliding Equipo: se toman los cuatro cruces bilaterales (A-C, A-D, B-C, B-D) de la matriz de hándicaps y se consolidan en la ventaja del equipo")}${list ? ` (${list})` : ''}. ${trs("Medio punto")}: ${half ? trs("sí") : trs("no (se redondea hacia abajo)")}.`;
       }
       default:
-        return 'Full Hándicap: cada jugador juega su hándicap de campo completo (según su tee), sin ajustes entre equipos.';
+        return trs('Full Hándicap: cada jugador juega su hándicap de campo completo (según su tee), sin ajustes entre equipos.');
     }
   }, [mode, useHandicap, rows, minHcp, receivers, handicapConfig?.slidingHalfPointMode]);
 
