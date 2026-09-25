@@ -25,6 +25,7 @@ interface WolfResultsCardProps {
 export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
   players, wolfConfig, holeStates, scores, course, basePlayerId, isDisabled, onToggleDisabled,
 }) => {
+  const { t } = useTranslation();
   const [openSection, setOpenSection] = useState<string | null>(null);
 
   // Filter out contaminated hole states (players not in current participantIds)

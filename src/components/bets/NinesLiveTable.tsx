@@ -19,6 +19,7 @@ export const NinesLiveTable: React.FC<NinesLiveTableProps> = ({
   course,
   confirmedHoles,
 }) => {
+  const { t } = useTranslation();
   const summaries = useMemo(() => {
     // Filter scores to only confirmed holes
     const filteredScores = new Map<string, PlayerScore[]>();

@@ -36,6 +36,7 @@ interface HolePointData {
 export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
   players, ninesConfig, scores, course, basePlayerId,
 }) => {
+  const { t } = useTranslation();
   const activePlayers = useMemo(() =>
     players.filter(p => ninesConfig.playerIds.includes(p.id)),
     [players, ninesConfig.playerIds]

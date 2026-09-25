@@ -29,6 +29,7 @@ interface VegasResultsCardProps {
 export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
   players, vegasConfig, scores, course, basePlayerId, isDisabled, onToggleDisabled, startingHole = 1,
 }) => {
+  const { t } = useTranslation();
   const [detailOpen, setDetailOpen] = useState(false);
   const [expandedSet, setExpandedSet] = useState<number | null>(null);
 

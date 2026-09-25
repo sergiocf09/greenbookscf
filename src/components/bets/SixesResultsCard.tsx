@@ -27,6 +27,7 @@ interface SixesResultsCardProps {
 export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
   players, sixesConfig, scores, course, basePlayerId, isDisabled, onToggleDisabled,
 }) => {
+  const { t } = useTranslation();
   const [expandedSet, setExpandedSet] = useState<number | null>(null);
 
   const needsConfig = !sixesConfig.sets || sixesConfig.sets.length < 3;
