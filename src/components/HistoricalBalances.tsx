@@ -1378,7 +1378,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     : 'bg-muted text-muted-foreground border-border'
                 )}
               >
-                {opt.label}
+                {trs(String(opt.label))}
               </button>
             ))}
           </div>
@@ -1474,7 +1474,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     className="flex-1 min-w-0 max-w-[52%] mr-auto h-7 text-[11px] bg-muted border border-border rounded-full px-2 text-foreground"
                   >
                     {betsRivalOptions.map(o => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
+                      <option key={o.value} value={o.value}>{trs(String(o.label))}</option>
                     ))}
                   </select>
                 )}
@@ -1665,7 +1665,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     className="flex-1 min-w-0 max-w-[52%] h-7 text-[11px] bg-muted border border-border rounded-full px-2 text-foreground"
                   >
                     {betsRivalOptions.map(o => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
+                      <option key={o.value} value={o.value}>{trs(String(o.label))}</option>
                     ))}
                   </select>
                 )}
@@ -1837,7 +1837,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                         className="flex-1 min-w-0 text-xs bg-muted border border-border rounded-lg px-3 py-2 text-foreground"
                       >
                         {betsRivalOptions.map(o => (
-                          <option key={o.value} value={o.value}>{o.label}</option>
+                          <option key={o.value} value={o.value}>{trs(String(o.label))}</option>
                         ))}
                       </select>
                       <button

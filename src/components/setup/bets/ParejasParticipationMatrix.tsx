@@ -254,7 +254,7 @@ export const ParejasParticipationMatrix: React.FC<ParejasParticipationMatrixProp
                         onCheckedChange={() => handleRowToggle(bet.key)}
                         className="h-3.5 w-3.5"
                       />
-                      <span className="font-medium text-[11px] whitespace-nowrap">{bet.label}</span>
+                      <span className="font-medium text-[11px] whitespace-nowrap">{trs(String(bet.label))}</span>
                     </div>
                   </td>
                   {players.map(player => {

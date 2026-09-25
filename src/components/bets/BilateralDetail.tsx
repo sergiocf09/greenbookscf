@@ -1940,7 +1940,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                     )}
                     <div className="flex flex-col">
                       <span className={cn('font-semibold text-sm', isDisabled && 'line-through')}>
-                        {group.label}
+                        {trs(String(group.label))}
                       </span>
                       {group.isInfoOnly && !isDisabled && (
                         <span className="text-[9px] text-muted-foreground">{trs("Solo conteo")}</span>
@@ -2124,7 +2124,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   {skinsSegData && (
                                     <div className="space-y-2">
                                       <div className="flex items-center justify-between gap-4">
-                                        <span className="font-medium text-sm">{segment.label}</span>
+                                        <span className="font-medium text-sm">{trs(String(segment.label))}</span>
                                       </div>
                                       <div className="overflow-x-auto">
                                         <div className="flex gap-0.5 min-w-max">

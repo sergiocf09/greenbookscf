@@ -142,7 +142,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
                     <button key={animal} type="button"
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); const current = config.zoologico?.enabledAnimals ?? ['camello', 'pez', 'gorila']; const newAnimals = isEnabled ? current.filter(a => a !== animal) : [...current, animal]; onUpdateBet('zoologico', { enabledAnimals: newAnimals }); }}
                       className={cn("flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium transition-all border", isEnabled ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground border-border hover:bg-muted/80")}>
-                      <span className="text-base">{info.emoji}</span>{info.label}{isEnabled && <Check className="h-3 w-3" />}
+                      <span className="text-base">{info.emoji}</span>{trs(String(info.label))}{isEnabled && <Check className="h-3 w-3" />}
                     </button>
                   );
                 })}

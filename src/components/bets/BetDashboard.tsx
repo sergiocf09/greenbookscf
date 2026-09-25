@@ -3896,7 +3896,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                 onChange={(e) => { void toggleIncluded(b.key, e.target.checked); }}
                               />
                               <span className={cn('font-medium', !included && 'text-muted-foreground line-through')}>
-                                {b.label}
+                                {trs(String(b.label))}
                               </span>
                             </span>
                             {b.amount !== undefined && b.amount > 0 && (

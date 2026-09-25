@@ -214,7 +214,7 @@ const Leaderboards = () => {
                             checked={formModes.includes(mode.key)}
                             onCheckedChange={() => toggleMode(mode.key)}
                           />
-                          <span className="text-sm">{mode.label}</span>
+                          <span className="text-sm">{trs(String(mode.label))}</span>
                         </label>
                       ))}
                     </div>

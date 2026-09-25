@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React from 'react';
 import { cn } from '@/lib/utils';
 
@@ -53,7 +54,7 @@ export const TeePicker: React.FC<Props> = ({ value, onChange, size = 'xs', class
             aria-label={`Tee ${c}`}
             title={`Tee ${c}`}
           >
-            {meta.label}
+            {trs(String(meta.label))}
           </button>
         );
       })}

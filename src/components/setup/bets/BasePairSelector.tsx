@@ -218,7 +218,7 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
                 <SelectContent>
                   {playerOptions.map((o) => (
                     <SelectItem key={o.value} value={o.value} className="text-xs">
-                      {o.label}
+                      {trs(String(o.label))}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { useTranslation } from 'react-i18next';
 import React from 'react';
 import { cn } from '@/lib/utils';
@@ -212,7 +213,7 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
                     return (
                       <div key={marker.key} className="flex items-center gap-2 px-3 py-1.5">
                         <span>{marker.emoji}</span>
-                        <span className="text-sm flex-1">{marker.label}</span>
+                        <span className="text-sm flex-1">{trs(String(marker.label))}</span>
                         <div className="flex items-center gap-1">
                           <button onClick={() => incrementMarker('unidadGenerica', -1)} disabled={val === 0} className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-sm font-bold disabled:opacity-30">−</button>
                           <span className={cn("w-5 text-center text-sm font-semibold", val > 0 ? "text-green-700 dark:text-green-300" : "text-muted-foreground")}>{val}</span>
@@ -233,7 +234,7 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
                       )}
                     >
                       <span>{marker.emoji}</span>
-                      <span>{marker.label}</span>
+                      <span>{trs(String(marker.label))}</span>
                     </button>
                   );
                 })}
@@ -304,7 +305,7 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
                     return (
                       <div key={marker.key} className="flex items-center gap-2 px-3 py-1.5">
                         <span>{marker.emoji}</span>
-                        <span className="text-sm flex-1">{marker.label}</span>
+                        <span className="text-sm flex-1">{trs(String(marker.label))}</span>
                         <div className="flex items-center gap-1">
                           <button onClick={() => incrementMarker('manchaGenerica', -1)} disabled={val === 0} className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-sm font-bold disabled:opacity-30">−</button>
                           <span className={cn("w-5 text-center text-sm font-semibold", val > 0 ? "text-red-700 dark:text-red-300" : "text-muted-foreground")}>{val}</span>
@@ -325,7 +326,7 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
                       )}
                     >
                       <span>{marker.emoji}</span>
-                      <span>{marker.label}</span>
+                      <span>{trs(String(marker.label))}</span>
                     </button>
                   );
                 })}
@@ -345,7 +346,7 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
                         return (
                           <div key={animal} className="flex items-center gap-2 px-3 py-1.5">
                             <span>{info.emoji}</span>
-                            <span className="text-sm flex-1">{info.label}</span>
+                            <span className="text-sm flex-1">{trs(String(info.label))}</span>
                             <div className="flex items-center gap-1">
                               <button
                                 onClick={() => onZooCountChange(animal, Math.max(0, val - 1))}

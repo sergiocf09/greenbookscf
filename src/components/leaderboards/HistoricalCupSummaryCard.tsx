@@ -215,7 +215,7 @@ export const HistoricalCupSummaryCard: React.FC<Props> = ({
                   'inline-block rounded-full px-2 py-0.5 text-xs font-medium',
                   outcome.cls,
                 )}>
-                  {outcome.label}
+                  {trs(String(outcome.label))}
                 </div>
               )}
             </div>

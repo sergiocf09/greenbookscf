@@ -224,7 +224,7 @@ export const EditMultiDayConfigDialog: React.FC<Props> = ({ open, onOpenChange, 
               {MODES.map(m => (
                 <label key={m.key} className="flex cursor-pointer items-center gap-2">
                   <Checkbox checked={modes.includes(m.key)} onCheckedChange={() => toggleMode(m.key)} />
-                  <span className="text-sm">{m.label}</span>
+                  <span className="text-sm">{trs(String(m.label))}</span>
                 </label>
               ))}
             </div>

@@ -361,7 +361,7 @@ function Step2Validate(props: {
               </SelectTrigger>
               <SelectContent>
                 {TEE_OPTIONS.map(t => (
-                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  <SelectItem key={t.value} value={t.value}>{trs(String(t.label))}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

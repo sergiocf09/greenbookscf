@@ -380,7 +380,7 @@ function Milestones({ milestones: m, roundsPlayed, courseName }: { milestones: P
                   <p className={cn("text-xl font-bold", it.special && "text-amber-500")}>{it.value}</p>
                </div>
                {it.sub && <p className="text-muted-foreground leading-tight text-sm">{it.sub}</p>}
-               <p className="text-muted-foreground leading-tight text-sm">{it.label}</p>
+               <p className="text-muted-foreground leading-tight text-sm">{trs(String(it.label))}</p>
              </div>
           );
         })}

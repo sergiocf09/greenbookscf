@@ -1132,7 +1132,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                       : 'bg-background text-muted-foreground border-border hover:bg-muted'
                   }`}
                 >
-                  {o.label}
+                  {trs(String(o.label))}
                   {s2 && s2.matches_total > 0 && (
                     <span className="ml-1 opacity-80">{s2.points_a}–{s2.points_b}</span>
                   )}
@@ -1292,7 +1292,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <p className="text-lg font-bold truncate">{o.label}</p>
+                      <p className="text-lg font-bold truncate">{trs(String(o.label))}</p>
                     </div>
                     <Badge variant="outline" className={`text-[10px] shrink-0 ${statusClass}`}>
                       {status}

@@ -182,7 +182,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
                 <SelectContent>
                   {PERIOD_OPTIONS.map(o => (
                     <SelectItem key={o.value} value={String(o.value)}>
-                      {o.label}
+                      {trs(String(o.label))}
                     </SelectItem>
                   ))}
                 </SelectContent>

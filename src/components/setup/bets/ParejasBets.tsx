@@ -1019,7 +1019,7 @@ const PlayerWithHcp: React.FC<PlayerWithHcpProps> = ({
         </SelectTrigger>
         <SelectContent>
           {playerOptions.map((opt) => (
-            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+            <SelectItem key={opt.value} value={opt.value}>{trs(String(opt.label))}</SelectItem>
           ))}
         </SelectContent>
       </Select>

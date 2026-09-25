@@ -412,7 +412,7 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
                   className="h-8 rounded-md border border-input bg-background px-2 text-xs max-w-[60%]"
                 >
                   {slotOptions.map(o => (
-                    <option key={o.key} value={o.key}>{o.label}</option>
+                    <option key={o.key} value={o.key}>{trs(String(o.label))}</option>
                   ))}
                 </select>
               </div>

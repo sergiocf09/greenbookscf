@@ -340,7 +340,7 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
                 return (
                   <div key={seg.label} className="space-y-1">
                     <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground">
-                      {seg.label}
+                      {trs(String(seg.label))}
                       <span className="ml-1 font-normal normal-case text-muted-foreground">
                         · Hoyos {first}–{last}
                       </span>

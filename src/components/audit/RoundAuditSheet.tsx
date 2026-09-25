@@ -157,7 +157,7 @@ export const RoundAuditSheet: React.FC<RoundAuditSheetProps> = ({
                     : 'bg-muted text-muted-foreground border-border'
                 )}
               >
-                {g.label}
+                {trs(String(g.label))}
               </button>
             ))}
           </div>
