@@ -517,7 +517,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
                       : "bg-muted text-muted-foreground border-transparent hover:bg-muted/80",
                   )}
                 >
-                  Grupo {idx + 1}
+                    {trs('Grupo')} {idx + 1}
                 </button>
               ))}
               {hasCrossGroupData && (
