@@ -9,12 +9,12 @@ import GreenBookLogo from '@/components/GreenBookLogo';
 const steps = [
   {
     icon: <GreenBookLogo className="h-16 w-16" />,
-    title: 'Bienvenido a GreenBook by SCF',
+    title: trs("Bienvenido a GreenBook by SCF"),
     description: trs("La forma más fácil de llevar tus rondas y apuestas de golf."),
   },
   {
     icon: <Settings className="h-12 w-12 text-primary" />,
-    title: 'Setup',
+    title: trs("Setup"),
     description: 'Selecciona el campo y el tee. Agrega hasta 6 jugadores por grupo. Si son más jugadores, crea grupos adicionales con el botón \'+\' — todos quedan vinculados a la misma ronda y pueden participar en apuestas entre grupos.',
   },
   {

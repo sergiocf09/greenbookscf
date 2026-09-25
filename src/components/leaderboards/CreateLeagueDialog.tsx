@@ -130,9 +130,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
   };
 
   const systemIcon: Record<string, React.ReactNode> = {
-    strokes: <Target className="h-5 w-5" />,
-    stableford: <TrendingUp className="h-5 w-5" />,
-    points: <Trophy className="h-5 w-5" />,
+    strokes: <Target className="h-5 w-5" />{trs(", stableford:")}{' '}<TrendingUp className="h-5 w-5" />{trs(", points:")}{' '}<Trophy className="h-5 w-5" />,
   };
 
   return (
@@ -212,7 +210,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
                   >
                     {systemIcon[sys]}
                     <span>
-                      {sys === 'points' ? 'Puntos' : sys === 'strokes' ? 'Golpes' : 'Stableford'}
+                      {sys === 'points' ? 'Puntos' : sys === 'strokes' ? trs("Golpes") : trs("Stableford")}
                     </span>
                   </button>
                 ))}
@@ -236,7 +234,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
                           : 'bg-muted text-muted-foreground border-border'
                       )}
                     >
-                      {b === 'gross' ? 'Gross (sin handicap)' : 'Neto (con handicap)'}
+                      {b === 'gross' ? trs("Gross (sin handicap)") : trs("Neto (con handicap)")}
                     </button>
                   ))}
                 </div>
@@ -257,7 +255,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
                         className="h-8 text-sm"
                         inputMode="numeric"
                       />
-                      <span className="text-[11px] text-muted-foreground">pts</span>
+                      <span className="text-[11px] text-muted-foreground">{trs("pts")}</span>
                       {pointsPerPosition.length > 1 && (
                         <button
                           type="button"
@@ -303,7 +301,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
                       className="h-8 w-20 text-sm"
                       inputMode="numeric"
                     />
-                    <span className="text-xs">jornadas</span>
+                    <span className="text-xs">{trs("jornadas")}</span>
                   </div>
                 )}
               </div>
@@ -331,7 +329,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
                       className="h-8 w-20 text-sm"
                       inputMode="numeric"
                     />
-                    <span className="text-xs">jornadas</span>
+                    <span className="text-xs">{trs("jornadas")}</span>
                   </div>
                 )}
               </div>
@@ -348,7 +346,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
                   inputMode="numeric"
                 />
                 <span className="text-xs text-muted-foreground">
-                  {parseInt(minRounds) === 0 ? '(sin mínimo)' : 'jornadas jugadas'}
+                  {parseInt(minRounds) === 0 ? trs("(sin mínimo)") : trs("jornadas jugadas")}
                 </span>
               </div>
             </div>

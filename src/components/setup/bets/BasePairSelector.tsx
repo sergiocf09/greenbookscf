@@ -157,13 +157,13 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
       <div className="flex items-center gap-1.5">
         <Users className="h-3.5 w-3.5 text-primary shrink-0" />
         <p className="text-xs font-medium text-foreground">
-          {isSix ? 'Generar 3 partidos (6 jugadores)' : 'Pareja base (5 jugadores)'}
+          {isSix ? trs("Generar 3 partidos (6 jugadores)") : trs("Pareja base (5 jugadores)")}
         </p>
       </div>
       <p className="text-[10px] text-muted-foreground leading-tight">
         {isSix
-          ? 'Elige la terna de parejas con el Shuffle, define la configuración común y genera los 3 partidos (todos contra todos). Después puedes editar cada partido.'
-          : 'Elige los 2 jugadores que se mantienen juntos, define la configuración común y genera los 3 matches contra todas las combinaciones de los otros 3. Después puedes editar o eliminar cada match.'}
+          ? trs("Elige la terna de parejas con el Shuffle, define la configuración común y genera los 3 partidos (todos contra todos). Después puedes editar cada partido.")
+          : trs("Elige los 2 jugadores que se mantienen juntos, define la configuración común y genera los 3 matches contra todas las combinaciones de los otros 3. Después puedes editar o eliminar cada match.")}
       </p>
 
       {isSix ? (
@@ -186,7 +186,7 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
                 title={`Ciclar combinaciones (${combos.length} opciones)`}
               >
                 <Shuffle className="h-3 w-3" />
-                Shuffle
+                {trs("Shuffle")}
                 <span className="text-[9px] text-muted-foreground ml-0.5">
                   {comboIdx + 1}/{combos.length}
                 </span>
@@ -237,7 +237,7 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
 
 
         <div className="flex items-center justify-between">
-          <Label className="text-[10px] font-semibold text-primary">Modalidad Juego</Label>
+          <Label className="text-[10px] font-semibold text-primary">{trs("Modalidad Juego")}</Label>
           <Select
             value={scoringType}
             onValueChange={(v) => setScoringType(v as BasePairDefaults['scoringType'])}
@@ -246,11 +246,11 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="lowBall">Bola Baja</SelectItem>
-              <SelectItem value="highBall">Bola Alta</SelectItem>
-              <SelectItem value="combined">Bola Baja + Bola Alta</SelectItem>
+              <SelectItem value="lowBall">{trs("Bola Baja")}</SelectItem>
+              <SelectItem value="highBall">{trs("Bola Alta")}</SelectItem>
+              <SelectItem value="combined">{trs("Bola Baja + Bola Alta")}</SelectItem>
               {isFoursomes ? (
-                <SelectItem value="matchOnly">Match Play</SelectItem>
+                <SelectItem value="matchOnly">{trs("Match Play")}</SelectItem>
               ) : (
                 <SelectItem value="all">{trs("Suma Total (Todos)")}</SelectItem>
               )}
@@ -259,7 +259,7 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
         </div>
 
         <div className="flex items-center justify-between">
-          <Label className="text-[10px] font-semibold text-primary">Modalidad HCP</Label>
+          <Label className="text-[10px] font-semibold text-primary">{trs("Modalidad HCP")}</Label>
           <Select
             value={handicapMode}
             onValueChange={(v) => setHandicapMode(v as TeamHandicapMode)}
@@ -269,7 +269,7 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="individual">{trs("Full Hándicap")}</SelectItem>
-              <SelectItem value="baseCero">Base Cero</SelectItem>
+              <SelectItem value="baseCero">{trs("Base Cero")}</SelectItem>
               <SelectItem value="diferencialEquipo">{trs("Diferencial Equipo")}</SelectItem>
               <SelectItem value="slidingEquipo">{trs("Sliding Equipo")}</SelectItem>
             </SelectContent>
@@ -295,7 +295,7 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
         ) : isNineHole ? (
           <div className="space-y-1">
             <Label className="text-[10px] text-muted-foreground text-center block">
-              Front 9
+              {trs("Front 9")}
             </Label>
             <AmountInput label="" value={frontAmount} onChange={setFrontAmount} />
           </div>
@@ -303,13 +303,13 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
           <div className="grid grid-cols-3 gap-2">
             <div className="space-y-1">
               <Label className="text-[10px] text-muted-foreground text-center block">
-                Front 9
+                {trs("Front 9")}
               </Label>
               <AmountInput label="" value={frontAmount} onChange={setFrontAmount} />
             </div>
             <div className="space-y-1">
               <Label className="text-[10px] text-muted-foreground text-center block">
-                Back 9
+                {trs("Back 9")}
               </Label>
               <AmountInput label="" value={backAmount} onChange={setBackAmount} />
             </div>
@@ -325,7 +325,7 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
         {isFoursomes && (
           <>
             <div className="flex items-center justify-between pt-1">
-              <Label className="text-[10px] text-muted-foreground">⭐ Unidades</Label>
+              <Label className="text-[10px] text-muted-foreground">{trs("⭐ Unidades")}</Label>
               <Switch
                 checked={unitsEnabled}
                 onCheckedChange={setUnitsEnabled}
@@ -337,7 +337,7 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
             )}
 
             <div className="flex items-center justify-between">
-              <Label className="text-[10px] text-muted-foreground">Oyeses</Label>
+              <Label className="text-[10px] text-muted-foreground">{trs("Oyeses")}</Label>
               <Switch
                 checked={oyesesEnabled}
                 onCheckedChange={setOyesesEnabled}
@@ -348,7 +348,7 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
               <div className="space-y-2">
                 <AmountInput label="" value={oyesesValue} onChange={setOyesesValue} />
                 <div className="flex items-center justify-between">
-                  <Label className="text-[10px] text-muted-foreground">Modalidad Oyeses</Label>
+                  <Label className="text-[10px] text-muted-foreground">{trs("Modalidad Oyeses")}</Label>
                   <Select
                     value={oyesesModality}
                     onValueChange={(v) => setOyesesModality(v as 'acumulados' | 'sangron')}
@@ -357,7 +357,7 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="acumulados">Acumulados</SelectItem>
+                      <SelectItem value="acumulados">{trs("Acumulados")}</SelectItem>
                       <SelectItem value="sangron">{trs("Sangrón")}</SelectItem>
                     </SelectContent>
                   </Select>
@@ -376,13 +376,13 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
         onClick={handleClick}
       >
         <Wand2 className="h-3.5 w-3.5" />
-        {isSix ? 'Generar 3 partidos' : 'Generar 3 matches'}
+        {isSix ? trs("Generar 3 partidos") : trs("Generar 3 matches")}
       </Button>
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Ya hay partidos configurados</AlertDialogTitle>
+            <AlertDialogTitle>{trs("Ya hay partidos configurados")}</AlertDialogTitle>
             <AlertDialogDescription>
               Puedes reemplazar los {existingCount} partidos existentes por los 3
               generados con esta configuración, o agregar únicamente los que falten sin
@@ -399,7 +399,7 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
               {trs("Agregar faltantes")}
             </AlertDialogAction>
             <AlertDialogAction onClick={() => run('replace')}>
-              Reemplazar
+              {trs("Reemplazar")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

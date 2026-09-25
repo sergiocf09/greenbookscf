@@ -180,10 +180,10 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
             Liga · {scoringLabel} · {event?.status === 'completed' ? 'Cerrada' : 'Activa'}
           </p>
         </div>
-        <Button variant="ghost" size="icon" onClick={handleShare} aria-label="Compartir">
+        <Button variant="ghost" size="icon" onClick={handleShare} aria-label={trs("Compartir")}>
           <Share2 className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={handleRefresh} disabled={refreshing} aria-label="Refrescar">
+        <Button variant="ghost" size="icon" onClick={handleRefresh} disabled={refreshing} aria-label={trs("Refrescar")}>
           <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
         </Button>
       </div>
@@ -213,9 +213,9 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
       {/* Tabs */}
       <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v as any)} className="flex-1 flex flex-col min-h-0">
         <TabsList className="grid grid-cols-3 mx-3 mt-2 shrink-0">
-          <TabsTrigger value="standings">Standings</TabsTrigger>
-          <TabsTrigger value="jornadas">Jornadas</TabsTrigger>
-          <TabsTrigger value="detalle">Detalle</TabsTrigger>
+          <TabsTrigger value="standings">{trs("Standings")}</TabsTrigger>
+          <TabsTrigger value="jornadas">{trs("Jornadas")}</TabsTrigger>
+          <TabsTrigger value="detalle">{trs("Detalle")}</TabsTrigger>
         </TabsList>
 
         {/* TAB: STANDINGS */}
@@ -354,11 +354,11 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                       </div>
                     </div>
                     <div className="bg-card border border-border rounded-xl p-3">
-                      <div className="text-[11px] text-muted-foreground uppercase tracking-wide">Jornadas jugadas</div>
+                      <div className="text-[11px] text-muted-foreground uppercase tracking-wide">{trs("Jornadas jugadas")}</div>
                       <div className="text-2xl font-bold">{selectedStanding.jornadas_jugadas}</div>
                     </div>
                     <div className="bg-card border border-border rounded-xl p-3">
-                      <div className="text-[11px] text-muted-foreground uppercase tracking-wide">Clasifica</div>
+                      <div className="text-[11px] text-muted-foreground uppercase tracking-wide">{trs("Clasifica")}</div>
                       <div className={cn('text-lg font-bold', selectedStanding.qualifies ? 'text-primary' : 'text-amber-600')}>
                         {selectedStanding.qualifies
                           ? '✓ Sí'

@@ -65,7 +65,7 @@ export const EditLeaderboardConfigDialog: React.FC<Props> = ({ open, onOpenChang
       onSaved?.();
       onOpenChange(false);
     } catch (err: any) {
-      toast.error('Error: ' + err.message);
+      toast.error(trs("Error: ") + err.message);
     } finally {
       setSaving(false);
     }
@@ -92,7 +92,7 @@ export const EditLeaderboardConfigDialog: React.FC<Props> = ({ open, onOpenChang
             <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
           </div>
           <div>
-            <Label>Modalidades *</Label>
+            <Label>{trs("Modalidades *")}</Label>
             <div className="mt-1 flex flex-col gap-2">
               {MODES.map(m => (
                 <label key={m.key} className="flex cursor-pointer items-center gap-2">

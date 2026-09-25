@@ -321,10 +321,10 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
         {/* Column Headers */}
         <div className="grid grid-cols-[2.5rem_2rem_1fr_1fr_3rem] items-center gap-1 px-2 py-1.5 bg-muted/50 text-xs font-medium text-muted-foreground border-b shrink-0">
           <span className="text-center">{trs("Hoyo")}</span>
-          <span className="text-center">Par</span>
+          <span className="text-center">{trs("Par")}</span>
           <span className="text-center">{trs("Golpes")}</span>
-          <span className="text-center">Putts</span>
-          <span className="text-center">OK</span>
+          <span className="text-center">{trs("Putts")}</span>
+          <span className="text-center">{trs("OK")}</span>
         </div>
 
         <div className="flex-1 min-h-0 overflow-auto">
@@ -332,7 +332,7 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
           {showFront && (
             <>
               <div className="text-[10px] font-semibold text-muted-foreground px-2 py-1 bg-muted/30">
-                IDA (1-9)
+                {trs("IDA (1-9)")}
               </div>
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(h => (
                 <HoleRow
@@ -350,7 +350,7 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
                 />
               ))}
               <div className="text-right text-xs font-medium px-3 py-1 bg-muted/20 border-b">
-                OUT: <span className="text-primary font-bold">{frontTotal}</span>
+                {trs("OUT:")}{' '}<span className="text-primary font-bold">{frontTotal}</span>
               </div>
             </>
           )}
@@ -359,7 +359,7 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
           {showBack && (
             <>
               <div className="text-[10px] font-semibold text-muted-foreground px-2 py-1 bg-muted/30">
-                VUELTA (10-18)
+                {trs("VUELTA (10-18)")}
               </div>
               {[10, 11, 12, 13, 14, 15, 16, 17, 18].map(h => (
                 <HoleRow
@@ -377,7 +377,7 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
                 />
               ))}
               <div className="text-right text-xs font-medium px-3 py-1 bg-muted/20">
-                IN: <span className="text-primary font-bold">{backTotal}</span>
+                {trs("IN:")}{' '}<span className="text-primary font-bold">{backTotal}</span>
               </div>
             </>
           )}
@@ -402,7 +402,7 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
             className="w-full h-9"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Regresar
+            {trs("Regresar")}
           </Button>
         </div>
       </DialogContent>

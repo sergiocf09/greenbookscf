@@ -163,7 +163,7 @@ const CrossGroupHandicapWidget: React.FC<CrossGroupHandicapWidgetProps> = ({
             )}
             {slidingSuggestion !== null && localStrokes === slidingSuggestion && (
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-600 border border-amber-400/30">
-                ✨ Usando Sliding
+                {trs("✨ Usando Sliding")}
               </span>
             )}
           </div>

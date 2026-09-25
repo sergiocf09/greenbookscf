@@ -205,7 +205,7 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="text-lg">🏆 Leaderboard General</DialogTitle>
+          <DialogTitle className="text-lg">{trs("🏆 Leaderboard General")}</DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 overflow-auto">
@@ -219,7 +219,7 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
                 <tr className="text-xs border-b">
                   <th className="h-9 w-7 text-center px-1 py-1.5 align-middle font-medium text-muted-foreground">#</th>
                   <th className="h-9 px-1 py-1.5 text-left align-middle font-medium text-muted-foreground">{trs("Jugador")}</th>
-                  <th className="h-9 text-center w-8 px-1 py-1.5 align-middle font-medium text-muted-foreground">Grp</th>
+                  <th className="h-9 text-center w-8 px-1 py-1.5 align-middle font-medium text-muted-foreground">{trs("Grp")}</th>
                   <th className="h-9 text-center w-9 px-1 py-1.5 align-middle font-medium text-muted-foreground">{trs("Hoyo")}</th>
                   <th 
                     className={cn(

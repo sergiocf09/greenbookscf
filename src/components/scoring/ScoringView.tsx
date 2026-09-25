@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { useTranslation } from 'react-i18next';
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { disambiguateInitials } from '@/lib/playerInput';
@@ -451,7 +452,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
           const idx = activeHoles.indexOf(currentHole);
           if (idx > 0) setCurrentHole(activeHoles[idx - 1]);
         }} disabled={currentHole === minHole} className="flex-1 px-2 text-sm">
-          ← Ant
+          {trs("← Ant")}
         </Button>
         
         {/* Side Bets Button */}
@@ -497,7 +498,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
           const idx = activeHoles.indexOf(currentHole);
           if (idx >= 0 && idx < activeHoles.length - 1) setCurrentHole(activeHoles[idx + 1]);
         }} disabled={currentHole === maxHole} className="flex-1 px-2 text-sm">
-          Sig →
+          {trs("Sig →")}
         </Button>
       </div>
     </>

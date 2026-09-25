@@ -276,7 +276,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
       toast.success(trs("Ronda vinculada al leaderboard"));
       onOpenChange(false);
     } catch (err: any) {
-      toast.error('Error: ' + err.message);
+      toast.error(trs("Error: ") + err.message);
     } finally {
       setSubmitting(false);
     }
@@ -313,7 +313,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
               </Button>
             )}
             <Trophy className="h-5 w-5 text-amber-500" />
-            {step === 'select-leaderboard' ? 'Unir Ronda a Leaderboard' : 'Seleccionar Participantes'}
+            {step === 'select-leaderboard' ? trs("Unir Ronda a Leaderboard") : trs("Seleccionar Participantes")}
           </DialogTitle>
         </DialogHeader>
 
@@ -480,7 +480,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
                               )}
                             </div>
                             <div className="flex items-center gap-1">
-                              <span className="text-xs text-muted-foreground">Hcp:</span>
+                              <span className="text-xs text-muted-foreground">{trs("Hcp:")}</span>
                               <Input
                                 type="number"
                                 value={hcp}
@@ -540,7 +540,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
               ))}
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1" onClick={handleLinkMatch}>
-                  {selectedMatchId ? 'Vincular al match' : 'No vincular ahora'}
+                  {selectedMatchId ? trs("Vincular al match") : trs("No vincular ahora")}
                 </Button>
               </div>
             </div>

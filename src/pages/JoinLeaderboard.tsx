@@ -137,7 +137,7 @@ const JoinLeaderboard = () => {
         <GreenBookLogo height={64} />
         <div className="text-center space-y-2">
           <h1 className="text-xl font-bold flex items-center justify-center gap-2">
-            🏆 Teams Cup
+            {trs("🏆 Teams Cup")}
           </h1>
           <p className="text-sm text-muted-foreground max-w-xs">
             {trs("¿A qué equipo perteneces?")}
@@ -184,7 +184,7 @@ const JoinLeaderboard = () => {
       return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
           <p className="text-muted-foreground">No se encontró un leaderboard con el código "{code}"</p>
-          <Button onClick={() => navigate('/leaderboards')}>Ir a Leaderboards</Button>
+          <Button onClick={() => navigate('/leaderboards')}>{trs("Ir a Leaderboards")}</Button>
         </div>
       );
     }
@@ -230,7 +230,7 @@ const JoinLeaderboard = () => {
       )}
 
       <Button variant="outline" onClick={() => navigate('/leaderboards')}>
-        Ir a Leaderboards
+        {trs("Ir a Leaderboards")}
       </Button>
     </div>
   );

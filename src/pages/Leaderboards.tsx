@@ -96,7 +96,7 @@ const Leaderboards = () => {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <GreenBookLogo height={24} />
-          <h1 className="text-lg font-bold">Leaderboards</h1>
+          <h1 className="text-lg font-bold">{trs("Leaderboards")}</h1>
         </div>
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" onClick={() => window.location.reload()}>
@@ -154,7 +154,7 @@ const Leaderboards = () => {
                   >
                     <Trophy className="h-5 w-5 text-amber-500 shrink-0" />
                     <div>
-                      <div className="font-medium text-sm">Leaderboard</div>
+                      <div className="font-medium text-sm">{trs("Leaderboard")}</div>
                       <div className="text-xs text-muted-foreground">{trs("Tabla de posiciones individual (Medal, Stableford)")}</div>
                     </div>
                   </button>
@@ -167,7 +167,7 @@ const Leaderboards = () => {
                   >
                     <span className="text-lg shrink-0">🏆</span>
                     <div>
-                      <div className="font-medium text-sm">Teams Cup</div>
+                      <div className="font-medium text-sm">{trs("Teams Cup")}</div>
                       <div className="text-xs text-muted-foreground">{trs("Competencia por equipos estilo Ryder Cup")}</div>
                     </div>
                   </button>
@@ -202,7 +202,7 @@ const Leaderboards = () => {
                     />
                   </div>
                   <div>
-                    <Label>Modalidades *</Label>
+                    <Label>{trs("Modalidades *")}</Label>
                     <div className="flex flex-col gap-2 mt-1">
                       {[
                         { key: 'gross', label: 'Medal Gross' },
@@ -245,7 +245,7 @@ const Leaderboards = () => {
             </DialogTrigger>
             <DialogContent className="max-w-sm">
               <DialogHeader>
-                <DialogTitle>Unirse a Leaderboard</DialogTitle>
+                <DialogTitle>{trs("Unirse a Leaderboard")}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
@@ -268,7 +268,7 @@ const Leaderboards = () => {
         {/* Tabs: Active / History */}
         <Tabs defaultValue="active">
           <TabsList className="w-full">
-            <TabsTrigger value="active" className="flex-1">Activos</TabsTrigger>
+            <TabsTrigger value="active" className="flex-1">{trs("Activos")}</TabsTrigger>
             <TabsTrigger value="history" className="flex-1">{trs("Historial")}</TabsTrigger>
           </TabsList>
 
@@ -296,7 +296,7 @@ const Leaderboards = () => {
                         <div className="flex items-center gap-1.5">
                           <CardTitle className="text-base">{ev.name}</CardTitle>
                           {(ev as any).competition_type === 'teams_cup' && (
-                            <Badge className="bg-emerald-100 text-emerald-700 text-[10px]">TEAMS CUP</Badge>
+                            <Badge className="bg-emerald-100 text-emerald-700 text-[10px]">{trs("TEAMS CUP")}</Badge>
                           )}
                         </div>
                         {ev.description && (

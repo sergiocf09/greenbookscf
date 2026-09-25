@@ -736,7 +736,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
               onClick={() => navigate('/import-scorecard')}
             >
               <ImagePlus className="h-4 w-4 mr-2" />
-              Importar Tarjeta
+              {trs("Importar Tarjeta")}
             </Button>
             <Button
               variant={showActivity ? 'default' : 'outline'}
@@ -837,7 +837,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-xs text-muted-foreground">{trs("Score promedio por mes")}</p>
                         <span className="text-[11px] text-muted-foreground">
-                          Prom. global: <span className="font-semibold text-foreground">{activityData.globalAvg}</span>
+                          {trs("Prom. global:")}{' '}<span className="font-semibold text-foreground">{activityData.globalAvg}</span>
                         </span>
                       </div>
                       <ResponsiveContainer width="100%" height={150}>
@@ -903,7 +903,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
 
                     {/* Campos distintos por período */}
                     <div>
-                      <p className="text-xs text-muted-foreground mb-2">Campos distintos jugados</p>
+                      <p className="text-xs text-muted-foreground mb-2">{trs("Campos distintos jugados")}</p>
                       <div className="grid grid-cols-3 gap-2">
                         {[
                           { label: '3 meses', period: 3 as const },
@@ -1012,7 +1012,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                       title={trs("Cerrada automáticamente. Reabre para completar scores y calcular handicap.")}
                     >
                       <AlertTriangle className="h-2.5 w-2.5" />
-                      Incompleta
+                      {trs("Incompleta")}
                     </span>
                   ) : (
                     <span className="font-bold text-sm ml-auto flex-shrink-0 mr-1">
@@ -1079,7 +1079,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                             ) : (
                               <Copy className="h-4 w-4 mr-1 flex-shrink-0" />
                             )}
-                            <span className="truncate">Duplicar</span>
+                            <span className="truncate">{trs("Duplicar")}</span>
                           </Button>
                         )}
                         <Button
@@ -1155,7 +1155,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
               {deleting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Eliminando...
+                  {trs("Eliminando...")}
                 </>
               ) : (
                 'Eliminar'
@@ -1184,7 +1184,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
               {reopening ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Re-abriendo...
+                  {trs("Re-abriendo...")}
                 </>
               ) : (
                 'Confirmar re-apertura'

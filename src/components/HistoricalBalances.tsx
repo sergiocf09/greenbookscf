@@ -962,10 +962,10 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     rivalProfileId: selectedRival.profileId ?? null,
                   })}
                   className="flex items-center gap-1 text-[11px] text-primary border border-primary/30 rounded-md px-2 py-1 hover:bg-primary/5 transition-colors"
-                  title="Cargar balance pre-GB"
+                  title={trs("Cargar balance pre-GB")}
                 >
                   <History className="h-3 w-3" />
-                  Pre-GB
+                  {trs("Pre-GB")}
                 </button>
               </div>
             );
@@ -1024,7 +1024,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <span className="flex-shrink-0 w-[62px] text-left">
                         {slidingDisplay ? (
-                          <span className="text-foreground/70"><span className="text-[9px]">SLDG</span> <span className="font-semibold">{slidingDisplay}</span></span>
+                          <span className="text-foreground/70"><span className="text-[9px]">{trs("SLDG")}</span> <span className="font-semibold">{slidingDisplay}</span></span>
                         ) : (
                           <span>&nbsp;</span>
                         )}
@@ -1075,7 +1075,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
         <TabsList className="w-full">
           <TabsTrigger value="rivals" className="flex-1 text-xs">{trs("Vs Rivales")}</TabsTrigger>
           <TabsTrigger value="rounds" className="flex-1 text-xs">{trs("Mis Rondas")}</TabsTrigger>
-          <TabsTrigger value="sliding" className="flex-1 text-xs">Sliding</TabsTrigger>
+          <TabsTrigger value="sliding" className="flex-1 text-xs">{trs("Sliding")}</TabsTrigger>
           <TabsTrigger value="evolution" className="flex-1 text-xs">
             <BarChart2 className="h-3 w-3" />
           </TabsTrigger>
@@ -1168,7 +1168,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     )}
                   >
                     <History className="h-3 w-3" />
-                    Pre-GB
+                    {trs("Pre-GB")}
                   </button>
                 )}
               </div>
@@ -1221,7 +1221,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     />
                     <span className="text-xs font-medium truncate min-w-0">
                       {rival.rivalName}
-                      {rival.isGuest && <span className="text-muted-foreground font-normal"> inv</span>}
+                      {rival.isGuest && <span className="text-muted-foreground font-normal">{' '}{trs("inv")}</span>}
                     </span>
                     <span className="text-[10px] text-muted-foreground flex-shrink-0">({rival.roundsPlayed})</span>
                     {(() => {
@@ -1330,7 +1330,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                 <div className="flex items-center justify-between mb-2 gap-2">
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     <Trophy className="h-4 w-4 text-primary" />
-                    <span className="text-xs font-medium">Sliding Neto</span>
+                    <span className="text-xs font-medium">{trs("Sliding Neto")}</span>
                   </div>
                   <div className={cn(
                     'text-xl font-bold tabular-nums',
@@ -1347,7 +1347,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                   {evens.length > 0 && (
                     <div className="flex items-center gap-1">
                       <span className="font-semibold">{evens.length}</span>
-                      <span>scratch</span>
+                      <span>{trs("scratch")}</span>
                     </div>
                   )}
                   <div className="flex items-center gap-1">
@@ -1361,7 +1361,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
           {/* Sort control */}
           <div className="flex items-center gap-1.5 px-1">
-            <span className="text-[10px] text-muted-foreground font-medium">Ordenar:</span>
+            <span className="text-[10px] text-muted-foreground font-medium">{trs("Ordenar:")}</span>
             {([
               { key: 'name', label: 'A-Z' },
               { key: 'strokes_desc', label: 'Mayor→Menor' },
@@ -1498,7 +1498,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
               {/* Gráfica 1: Balance Acumulado */}
               <div className="bg-card border border-border rounded-xl p-3">
                 <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
-                  Balance Acumulado
+                  {trs("Balance Acumulado")}
                 </p>
                 <ResponsiveContainer width="100%" height={180}>
                   <AreaChart

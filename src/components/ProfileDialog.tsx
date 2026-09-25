@@ -207,7 +207,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
     setSaving(true);
     try {
       await updateProfile({ current_handicap: parsed });
-      toast.success('Handicap actualizado');
+      toast.success(trs("Handicap actualizado"));
       setSection('menu');
     } catch (e: any) {
       toast.error(trs("No se pudo actualizar"), { description: e?.message });
@@ -270,7 +270,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
       </div>
 
       <div className="border-t border-border pt-4 space-y-1">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Golf</p>
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">{trs("Golf")}</p>
 
         <button
           className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent transition-colors text-left"
@@ -285,7 +285,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
       </div>
 
       <div className="border-t border-border pt-4 space-y-2">
-        <Label htmlFor="manual-handicap">Handicap (manual)</Label>
+        <Label htmlFor="manual-handicap">{trs("Handicap (manual)")}</Label>
         <div className="flex gap-2">
           <Input
             id="manual-handicap"
@@ -306,14 +306,14 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
       </div>
 
       <div className="border-t border-border pt-4 space-y-1">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Rankings</p>
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">{trs("Rankings")}</p>
         <button
           className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent transition-colors text-left"
           onClick={() => { onOpenChange(false); navigate('/rankings'); }}
         >
           <span className="flex items-center gap-2.5">
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">Rankings</span>
+            <span className="text-sm">{trs("Rankings")}</span>
           </span>
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </button>

@@ -55,7 +55,7 @@ interface ParejasBetsProps {
   players: Player[];
   expandedSections: string[];
   onToggleSection: (section: string, open: boolean) => void;
-  onUpdateBet: <K extends keyof BetConfig>(betType: K, updates: Partial<BetConfig[K]>) => void;
+  onUpdateBet: <K extends keyof BetConfig>{trs("(betType: K, updates: Partial")}<BetConfig[K]>) => void;
   onUpdateConfig: (config: BetConfig) => void;
   getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
   getLocalPairStrokeState?: (localIdA: string, localIdB: string) => { strokes: number; hasExplicitOverride: boolean };
@@ -403,7 +403,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
   /** Unique pairs currently configured across matches (used to detect combo index). */
   const uniquePairsOf = (
     matches: Array<{ teamA: [string, string]; teamB: [string, string] }>
-  ): Array<[string, string]> => {
+  {trs("): Array")}<[string, string]> => {
     const seen = new Map<string, [string, string]>();
     matches.forEach((m) => {
       [m.teamA, m.teamB].forEach((t) => {
@@ -454,7 +454,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       {config.teamPressures.enabled && (
       <BetSection
         id="teamPressures"
-         title="Foursomes"
+         title={trs("Foursomes")}
          description="Match play por equipos, apertura automática"
         enabled={config.teamPressures.enabled}
         onToggle={(enabled) => {
@@ -663,7 +663,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       {/* Sixes — only if enabled */}
       {(config.sixesEnabled ?? ((config.sixesBets?.length ?? 0) > 0)) && (
       <BetSection
-        id="sixes" title="Sixes"
+        id="sixes" title={trs("Sixes")}
         description="3 sets de 6 hoyos con cambio de parejas"
         enabled={config.sixesEnabled ?? ((config.sixesBets?.length ?? 0) > 0)}
         onToggle={(enabled) => {
@@ -821,14 +821,14 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
             onChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, amountPerHole: v } as any)} />
 
           <div className="flex items-center justify-between mt-2">
-            <Label className="text-[10px] font-semibold text-primary">Modalidad</Label>
+            <Label className="text-[10px] font-semibold text-primary">{trs("Modalidad")}</Label>
             <Select value={config.wolfSetup?.scoringMode ?? 'lowBall'}
               onValueChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, scoringMode: v as WolfScoringMode } as any)}>
               <SelectTrigger className="h-7 w-36 text-[11px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="lowBall">Bola Baja</SelectItem>
-                <SelectItem value="lowHighBall">Bola Baja + Alta</SelectItem>
-                <SelectItem value="stroke">Score Neto</SelectItem>
+                <SelectItem value="lowBall">{trs("Bola Baja")}</SelectItem>
+                <SelectItem value="lowHighBall">{trs("Bola Baja + Alta")}</SelectItem>
+                <SelectItem value="stroke">{trs("Score Neto")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -880,7 +880,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                     <SelectTrigger className="h-7 w-36 text-[11px]"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="individual">{trs("Full Hándicap")}</SelectItem>
-                      <SelectItem value="baseCero">Base Cero</SelectItem>
+                      <SelectItem value="baseCero">{trs("Base Cero")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -952,7 +952,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                 const shuffled = [...activeIds].sort(() => Math.random() - 0.5);
                 onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, playerOrder: shuffled } as any);
               }}>
-                🎲 Sortear orden
+                {trs("🎲 Sortear orden")}
               </Button>
             </div>
             {(() => {
@@ -1144,7 +1144,7 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
               title={`Ciclar combinaciones (${combos.length} opciones)`}
             >
               <Shuffle className="h-3 w-3" />
-              Shuffle
+              {trs("Shuffle")}
               <span className="text-[9px] text-muted-foreground ml-0.5">
                 {baseIdx >= 0 ? `${baseIdx + 1}/${combos.length}` : `×${combos.length}`}
               </span>
@@ -1327,7 +1327,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
 
       {/* Scoring type */}
       <div className="flex items-center justify-between">
-        <Label className="text-[10px] font-semibold text-primary">Modalidad Juego</Label>
+        <Label className="text-[10px] font-semibold text-primary">{trs("Modalidad Juego")}</Label>
         <Select
           value={bet.scoringType}
           onValueChange={(v: 'lowBall' | 'highBall' | 'combined' | 'matchOnly') => onUpdate({ scoringType: v })}
@@ -1336,10 +1336,10 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="lowBall">Bola Baja</SelectItem>
-            <SelectItem value="highBall">Bola Alta</SelectItem>
-            <SelectItem value="combined">Bola Baja + Bola Alta</SelectItem>
-            <SelectItem value="matchOnly">Match Play</SelectItem>
+            <SelectItem value="lowBall">{trs("Bola Baja")}</SelectItem>
+            <SelectItem value="highBall">{trs("Bola Alta")}</SelectItem>
+            <SelectItem value="combined">{trs("Bola Baja + Bola Alta")}</SelectItem>
+            <SelectItem value="matchOnly">{trs("Match Play")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -1358,17 +1358,17 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
         </div>
       ) : isNineHole ? (
         <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground text-center block">Front 9</Label>
+          <Label className="text-[10px] text-muted-foreground text-center block">{trs("Front 9")}</Label>
           <AmountInput label="" value={bet.frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-2">
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground text-center block">Front 9</Label>
+            <Label className="text-[10px] text-muted-foreground text-center block">{trs("Front 9")}</Label>
             <AmountInput label="" value={bet.frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
           </div>
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground text-center block">Back 9</Label>
+            <Label className="text-[10px] text-muted-foreground text-center block">{trs("Back 9")}</Label>
             <AmountInput label="" value={bet.backAmount} onChange={(v) => onUpdate({ backAmount: v })} />
           </div>
           <div className="space-y-1">
@@ -1380,12 +1380,12 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
 
       {/* Modalidades Adicionales */}
       <div className="space-y-2 pt-2 border-t border-border/30">
-        <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Modalidades Adicionales</Label>
+        <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{trs("Modalidades Adicionales")}</Label>
         
         {/* Units Toggle & Config */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label className="text-xs">Unidades</Label>
+            <Label className="text-xs">{trs("Unidades")}</Label>
             <Switch
               checked={bet.unitsConfig?.enabled ?? false}
               onCheckedChange={(enabled) => onUpdate({
@@ -1530,7 +1530,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
         {/* Oyeses Toggle & Config */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label className="text-xs">Oyeses</Label>
+            <Label className="text-xs">{trs("Oyeses")}</Label>
             <Switch
               checked={bet.oyesesConfig?.enabled ?? false}
               onCheckedChange={(enabled) => onUpdate({
@@ -1550,7 +1550,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
                 })} />
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] text-muted-foreground">Modalidad</Label>
+                <Label className="text-[10px] text-muted-foreground">{trs("Modalidad")}</Label>
                 <RadioGroup
                   value={bet.oyesesConfig.modality}
                   onValueChange={(v) => onUpdate({
@@ -1560,7 +1560,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
                 >
                   <label className="flex items-center gap-1.5 text-[11px] cursor-pointer">
                     <RadioGroupItem value="acumulados" className="h-3.5 w-3.5" />
-                    Acumulado
+                    {trs("Acumulado")}
                   </label>
                   <label className="flex items-center gap-1.5 text-[11px] cursor-pointer">
                     <RadioGroupItem value="sangron" className="h-3.5 w-3.5" />
@@ -1575,7 +1575,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
         {/* Manchas Toggle & Config */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label className="text-xs">⬛ Manchas</Label>
+            <Label className="text-xs">{trs("⬛ Manchas")}</Label>
             <Switch
               checked={bet.manchasConfig?.enabled ?? false}
               onCheckedChange={(enabled) => onUpdate({
@@ -1762,7 +1762,7 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
 
       {/* Scoring Type - after players, consistent with Presiones */}
       <div className="flex items-center justify-between">
-        <Label className="text-[10px] font-semibold text-primary">Modalidad Juego</Label>
+        <Label className="text-[10px] font-semibold text-primary">{trs("Modalidad Juego")}</Label>
         <Select
           value={scoringType}
           onValueChange={(v: 'lowBall' | 'highBall' | 'combined' | 'all') => onUpdate({ scoringType: v })}
@@ -1771,9 +1771,9 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="lowBall">Low Ball</SelectItem>
-            <SelectItem value="highBall">High Ball</SelectItem>
-            <SelectItem value="combined">Bola Baja + Bola Alta</SelectItem>
+            <SelectItem value="lowBall">{trs("Low Ball")}</SelectItem>
+            <SelectItem value="highBall">{trs("High Ball")}</SelectItem>
+            <SelectItem value="combined">{trs("Bola Baja + Bola Alta")}</SelectItem>
             <SelectItem value="all">{trs("Todos")}</SelectItem>
           </SelectContent>
         </Select>
@@ -1782,17 +1782,17 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
       {/* Amounts - 3 columns */}
       {isNineHole ? (
         <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground text-center block">Front 9</Label>
+          <Label className="text-[10px] text-muted-foreground text-center block">{trs("Front 9")}</Label>
           <AmountInput label="" value={frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-2">
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground text-center block">Front 9</Label>
+            <Label className="text-[10px] text-muted-foreground text-center block">{trs("Front 9")}</Label>
             <AmountInput label="" value={frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
           </div>
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground text-center block">Back 9</Label>
+            <Label className="text-[10px] text-muted-foreground text-center block">{trs("Back 9")}</Label>
             <AmountInput label="" value={backAmount} onChange={(v) => onUpdate({ backAmount: v })} />
           </div>
           <div className="space-y-1">
@@ -1976,14 +1976,14 @@ const HandicapModeSelector: React.FC<{
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <Label className="text-[10px] font-semibold text-primary">Modalidad HCP</Label>
+        <Label className="text-[10px] font-semibold text-primary">{trs("Modalidad HCP")}</Label>
         <Select value={mode} onValueChange={(v) => applyMode(v as TeamHandicapMode)}>
           <SelectTrigger className="h-7 w-44 text-[11px]">
             <SelectValue placeholder={trs("Seleccionar")} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="individual">{trs("Full Hándicap")}</SelectItem>
-            <SelectItem value="baseCero">Base Cero</SelectItem>
+            <SelectItem value="baseCero">{trs("Base Cero")}</SelectItem>
             <SelectItem value="diferencialEquipo">{trs("Diferencial Equipo")}</SelectItem>
             <SelectItem value="slidingEquipo">{trs("Sliding Equipo")}</SelectItem>
           </SelectContent>
@@ -1991,7 +1991,7 @@ const HandicapModeSelector: React.FC<{
       </div>
       {mode === 'slidingEquipo' && slidingHasHalf && (
         <div className="flex items-center justify-between bg-muted/40 rounded-md px-2 py-1.5">
-          <Label className="text-[10px] text-muted-foreground">Jugar medio punto</Label>
+          <Label className="text-[10px] text-muted-foreground">{trs("Jugar medio punto")}</Label>
           <Switch
             checked={currentHalfMode === 'halfPoint'}
             onCheckedChange={toggleHalfPoint}
@@ -2041,19 +2041,19 @@ const SixesBetCard: React.FC<{
     </div>
 
     <div className="flex items-center justify-between">
-      <Label className="text-[10px] font-semibold text-primary">Modalidad</Label>
+      <Label className="text-[10px] font-semibold text-primary">{trs("Modalidad")}</Label>
       <Select value={bet.scoringMode} onValueChange={(v) => onUpdate({ scoringMode: v as SixesScoringMode })}>
         <SelectTrigger className="h-7 w-36 text-[11px]"><SelectValue /></SelectTrigger>
         <SelectContent>
-          <SelectItem value="lowBall">Bola Baja</SelectItem>
-          <SelectItem value="lowHighBall">Bola Baja + Alta</SelectItem>
-          <SelectItem value="stroke">Score Neto</SelectItem>
+          <SelectItem value="lowBall">{trs("Bola Baja")}</SelectItem>
+          <SelectItem value="lowHighBall">{trs("Bola Baja + Alta")}</SelectItem>
+          <SelectItem value="stroke">{trs("Score Neto")}</SelectItem>
         </SelectContent>
       </Select>
     </div>
 
     <div className="flex items-center justify-between">
-      <Label className="text-[10px] font-semibold text-primary">Cobro</Label>
+      <Label className="text-[10px] font-semibold text-primary">{trs("Cobro")}</Label>
       <Select value={bet.cobro} onValueChange={(v) => onUpdate({ cobro: v as SixesCobro })}>
         <SelectTrigger className="h-7 w-36 text-[11px]"><SelectValue /></SelectTrigger>
         <SelectContent>
@@ -2126,7 +2126,7 @@ const SixesBetCard: React.FC<{
           <>
             {/* Set 1 - always editable */}
             <div className="space-y-2 p-2 rounded-lg bg-muted/30">
-              <Label className="text-[10px] font-semibold text-primary">Set 1 · H1–6</Label>
+              <Label className="text-[10px] font-semibold text-primary">{trs("Set 1 · H1–6")}</Label>
               <TeamColumns teamA={set1?.team1 ?? ['', '']} teamB={set1?.team2 ?? ['', '']}
                 allPlayerOptions={playerOptions.length === 4 ? playerOptions : undefined}
                 onShuffleTeams={(a, b) => {
@@ -2234,12 +2234,12 @@ const VegasBetCard: React.FC<{
 
     {/* Modalidad FIRST */}
     <div className="flex items-center justify-between">
-      <Label className="text-[10px] font-semibold text-primary">Modalidad</Label>
+      <Label className="text-[10px] font-semibold text-primary">{trs("Modalidad")}</Label>
       <Select value={bet.variant} onValueChange={(v) => onUpdate({ variant: v as VegasVariant })}>
         <SelectTrigger className="h-7 w-44 text-[11px]"><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value="fixed">{trs("Fija — una pareja toda la ronda")}</SelectItem>
-          <SelectItem value="rotating">Rotatoria — 3 sets</SelectItem>
+          <SelectItem value="rotating">{trs("Rotatoria — 3 sets")}</SelectItem>
         </SelectContent>
       </Select>
     </div>
@@ -2252,7 +2252,7 @@ const VegasBetCard: React.FC<{
         onCheckedChange={(v) => onUpdate({ useSegmentAmounts: v })}
       />
       <Label className="text-xs">
-        {bet.variant === 'fixed' ? 'Monto diferente Front/Back' : 'Monto diferente por set'}
+        {bet.variant === 'fixed' ? trs("Monto diferente Front/Back") : trs("Monto diferente por set")}
       </Label>
     </div>
 
@@ -2298,7 +2298,7 @@ const VegasBetCard: React.FC<{
 
     <div className="flex items-center gap-2">
       <Switch checked={bet.birdieMultiplier} onCheckedChange={(v) => onUpdate({ birdieMultiplier: v })} />
-      <Label className="text-xs">Multiplicador Birdie (×2)</Label>
+      <Label className="text-xs">{trs("Multiplicador Birdie (×2)")}</Label>
     </div>
 
     {/* Handicap Mode Selector — only when useHandicap is on and we have 4 players */}
@@ -2343,19 +2343,19 @@ const VegasBetCard: React.FC<{
           <Label className="text-[9px] font-semibold text-muted-foreground">{trs("Rotación automática")}</Label>
           <div className="grid grid-cols-3 gap-1 text-[9px] text-center">
             <div className="bg-background rounded p-1">
-              <div className="font-semibold text-primary">H1–6</div>
+              <div className="font-semibold text-primary">{trs("H1–6")}</div>
               <div>{A}+{B}</div>
               <div className="text-muted-foreground">{trs("vs")}</div>
               <div>{C}+{D}</div>
             </div>
             <div className="bg-background rounded p-1">
-              <div className="font-semibold text-primary">H7–12</div>
+              <div className="font-semibold text-primary">{trs("H7–12")}</div>
               <div>{A}+{C}</div>
               <div className="text-muted-foreground">{trs("vs")}</div>
               <div>{B}+{D}</div>
             </div>
             <div className="bg-background rounded p-1">
-              <div className="font-semibold text-primary">H13–18</div>
+              <div className="font-semibold text-primary">{trs("H13–18")}</div>
               <div>{A}+{D}</div>
               <div className="text-muted-foreground">{trs("vs")}</div>
               <div>{B}+{C}</div>

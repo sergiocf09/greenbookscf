@@ -301,7 +301,7 @@ const JoinRound = () => {
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="max-w-md w-full">
           <CardHeader className="text-center">
-            <CardTitle className="text-destructive">Error</CardTitle>
+            <CardTitle className="text-destructive">{trs("Error")}</CardTitle>
             <CardDescription>{error}</CardDescription>
           </CardHeader>
           <CardContent>
@@ -396,7 +396,7 @@ const JoinRound = () => {
                               </div>
                               <span className="text-xs">{formatPlayerName(p.display_name)}</span>
                               {p.is_guest && (
-                                <span className="text-[10px] text-muted-foreground">(inv)</span>
+                                <span className="text-[10px] text-muted-foreground">{trs("(inv)")}</span>
                               )}
                             </div>
                           ))}
@@ -458,8 +458,8 @@ const JoinRound = () => {
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {roundInfo.status === 'completed' 
-                      ? 'La ronda ha finalizado' 
-                      : 'Esperando a que el organizador cierre la ronda...'}
+                      ? trs("La ronda ha finalizado") 
+                      : trs("Esperando a que el organizador cierre la ronda...")}
                   </div>
                 </div>
                 {roundInfo.status === 'completed' && (

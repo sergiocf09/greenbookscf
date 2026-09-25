@@ -130,7 +130,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
                     className="flex-1"
                     onClick={() => setRedemptionMode('declined')}
                   >
-                    Declinar
+                    {trs("Declinar")}
                   </Button>
                 </div>
               </div>
@@ -204,7 +204,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
                     setEditing(false);
                   }}
                 >
-                  🐺 Ir Sola ×2
+                  {trs("🐺 Ir Sola ×2")}
                 </Button>
               </div>
             </div>
@@ -219,7 +219,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
             <div className="flex flex-wrap items-center gap-2">
               {holeState.wentSolo ? (
                 <Badge className="bg-amber-500/20 text-amber-700 border-amber-500/40">
-                  🐺 Sola ×2
+                  {trs("🐺 Sola ×2")}
                 </Badge>
               ) : (
                 holeState.partnerIds.map(id => {
@@ -253,7 +253,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
                   setRedemptionMode('pending');
                 }}
               >
-                Cambiar
+                {trs("Cambiar")}
               </Button>
             )}
           </div>
@@ -281,7 +281,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
                   ↔ Empate
                   {wolfConfig.carryover && (
                     <Badge className="bg-amber-500/20 text-amber-700 border-amber-500/40 text-[10px]">
-                      ↑ Carry
+                      {trs("↑ Carry")}
                     </Badge>
                   )}
                 </span>
@@ -299,7 +299,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
                   setRedemptionMode('pending');
                 }}
               >
-                Cambiar
+                {trs("Cambiar")}
               </Button>
             )}
           </div>

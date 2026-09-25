@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { BetConfig, Player, BetCategory } from '@/types/golf';
 import { BetCategoryTabs } from './BetCategoryTabs';
@@ -78,9 +79,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
   };
 
   // For secondary groups editing their own overrides
-  const updateBetForMyGroup = <K extends keyof BetConfig>(
-    betType: K,
-    updates: Partial<BetConfig[K]>
+  const updateBetForMyGroup = <K extends keyof BetConfig>{trs("( betType: K, updates: Partial")}<BetConfig[K]>
   ) => {
     if (isSecondaryGroup && userGroupId) {
       const updated = setGroupBetOverride(config, userGroupId, betType, updates);
@@ -102,9 +101,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
   };
 
   // Read-only no-op for inherited view
-  const noOpUpdateBet = <K extends keyof BetConfig>(
-    _betType: K,
-    _updates: Partial<BetConfig[K]>
+  const noOpUpdateBet = <K extends keyof BetConfig>{trs("( _betType: K, _updates: Partial")}<BetConfig[K]>
   ) => {
     // Read-only — do nothing
   };

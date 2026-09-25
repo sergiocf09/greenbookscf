@@ -50,8 +50,8 @@ const MorelianaIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 
 // Manual unit markers (shown on strokes row) - LARGER SIZE
 export const manualUnitMarkers: MarkerConfig[] = [
-  { key: 'sandyPar', icon: Flag, label: 'Sandy Par', description: 'Par desde bunker', type: 'unidad', emoji: '⛳', points: 1 },
-  { key: 'holeOut', icon: Target, label: 'Hole Out', description: 'Embocada desde fuera', type: 'unidad', emoji: '🎯', points: 1 },
+  { key: 'sandyPar', icon: Flag, label: 'Sandy Par', description: trs("Par desde bunker"), type: 'unidad', emoji: '⛳', points: 1 },
+  { key: 'holeOut', icon: Target, label: 'Hole Out', description: trs("Embocada desde fuera"), type: 'unidad', emoji: '🎯', points: 1 },
   { key: 'aquaPar', icon: Waves, label: 'Aqua Par', description: trs("Par después de agua"), type: 'unidad', emoji: '💧', points: 1 },
   { key: 'unidadGenerica', icon: Star, label: 'Unidad', description: trs("Unidad genérica"), type: 'unidad', emoji: '⭐' },
 ];
@@ -60,7 +60,7 @@ export const manualUnitMarkers: MarkerConfig[] = [
 // Removed cuatriput from manual markers - now auto-detected based on putts >= 4
 export const manualStainMarkers: MarkerConfig[] = [
   { key: 'par3GirMas3', icon: CircleDot, label: 'Par 3 GIR>3', description: trs("Par 3 sin GIR en 3+"), type: 'mancha', emoji: '🔴' },
-  { key: 'trampa', icon: Hourglass, label: 'Trampa', description: 'Bunker a bunker', type: 'mancha', emoji: '⏳' },
+  { key: 'trampa', icon: Hourglass, label: 'Trampa', description: trs("Bunker a bunker"), type: 'mancha', emoji: '⏳' },
   { key: 'ladies', icon: PinkiesHeelIcon, label: 'Pinkies', description: trs("Tiro de damas"), type: 'mancha', emoji: '👠' },
   { key: 'retruje', icon: Repeat, label: 'Retruje', description: trs("Golpe para atrás"), type: 'mancha', emoji: '🔄' },
   { key: 'dobleAgua', icon: Droplets, label: 'Doble Agua', description: trs("2+ veces en agua"), type: 'mancha', emoji: '💦' },

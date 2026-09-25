@@ -391,7 +391,7 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Users className="h-4 w-4" /> {existingRoundId ? 'Recrear Foursomes' : 'Crear Ronda y Grupos de Juego'}
+            <Users className="h-4 w-4" /> {existingRoundId ? trs("Recrear Foursomes") : trs("Crear Ronda y Grupos de Juego")}
           </DialogTitle>
         </DialogHeader>
 
@@ -477,7 +477,7 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
                   type="button"
                   title={trs("Respetar matches y armar foursomes")}
                 >
-                  <Sparkles className="h-3 w-3" /> Auto-armar
+                  <Sparkles className="h-3 w-3" />{' '}{trs("Auto-armar")}
                 </Button>
               </div>
             </div>
@@ -561,7 +561,7 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
                   }}
                   disabled={submitting || !courseId || playingCount === 0}
                 >
-                  Revisar Grupos
+                  {trs("Revisar Grupos")}
                 </Button>
               </div>
               <p className="text-[10px] text-muted-foreground text-center -mt-1">

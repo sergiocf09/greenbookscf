@@ -145,7 +145,7 @@ export const HistoricalCupSummaryCard: React.FC<Props> = ({
           <div className="flex-1 min-w-0">
             <CardTitle className="text-base truncate">{name}</CardTitle>
             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-              <Badge variant="secondary" className="text-xs">Teams Cup</Badge>
+              <Badge variant="secondary" className="text-xs">{trs("Teams Cup")}</Badge>
               {slotLabel && (
                 <Badge variant="outline" className="text-xs">{slotLabel}</Badge>
               )}
@@ -153,7 +153,7 @@ export const HistoricalCupSummaryCard: React.FC<Props> = ({
                 variant={status === 'completed' ? 'outline' : 'default'}
                 className="text-xs"
               >
-                {status === 'completed' ? 'Finalizada' : 'Activa'}
+                {status === 'completed' ? trs("Finalizada") : trs("Activa")}
               </Badge>
             </div>
           </div>

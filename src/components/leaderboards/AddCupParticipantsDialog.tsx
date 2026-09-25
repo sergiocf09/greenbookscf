@@ -357,8 +357,8 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
             ) : availableFriends.length === 0 ? (
               <p className="text-xs text-muted-foreground italic text-center py-4">
                 {friends.length === 0
-                  ? 'Aún no tienes amigos. Usa Buscar para encontrar jugadores.'
-                  : 'Todos tus amigos ya están en esta competencia.'}
+                  ? trs("Aún no tienes amigos. Usa Buscar para encontrar jugadores.")
+                  : trs("Todos tus amigos ya están en esta competencia.")}
               </p>
             ) : (
               availableFriends.map(f => {
@@ -384,8 +384,8 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
                           value={sel!.hcp}
                           onChange={(e) => updateFriend(f.profileId, { hcp: parseIndex(e.target.value) })}
                           className="w-14 h-7 px-1 text-center text-xs shrink-0"
-                          aria-label="Index"
-                          title="HCP Index"
+                          aria-label={trs("Index")}
+                          title={trs("HCP Index")}
                         />
                       </>
                     )}
@@ -437,8 +437,8 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
                             value={sel!.hcp}
                             onChange={(e) => updateSearch(r.id, { hcp: parseIndex(e.target.value) })}
                             className="w-14 h-7 px-1 text-center text-xs shrink-0"
-                            aria-label="Index"
-                            title="HCP Index"
+                            aria-label={trs("Index")}
+                            title={trs("HCP Index")}
                           />
                         </>
                       )}
@@ -462,7 +462,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <Label className="text-[10px]">Iniciales</Label>
+                  <Label className="text-[10px]">{trs("Iniciales")}</Label>
                   <Input
                     value={guestInitials}
                     onChange={(e) => { setGuestInitialsTouched(true); setGuestInitials(e.target.value.toUpperCase().slice(0, 3)); }}
@@ -471,7 +471,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
                   />
                 </div>
                 <div>
-                  <Label className="text-[10px]">Index</Label>
+                  <Label className="text-[10px]">{trs("Index")}</Label>
                   <Input
                     type="number"
                     step="0.1"
@@ -488,7 +488,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
                 <TeePicker value={guestTee} onChange={setGuestTee} size="sm" />
               </div>
               <div>
-                <Label className="text-[10px]">Color</Label>
+                <Label className="text-[10px]">{trs("Color")}</Label>
                 <div className="flex gap-1.5 flex-wrap">
                   {GUEST_COLORS.map(c => (
                     <button

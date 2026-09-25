@@ -163,7 +163,7 @@ export const CourseSearchDialog: React.FC<Props> = ({
                       </div>
                     )}
                   </div>
-                  <span className="text-xs font-medium text-primary shrink-0 mt-0.5">Usar</span>
+                  <span className="text-xs font-medium text-primary shrink-0 mt-0.5">{trs("Usar")}</span>
                 </div>
               </button>
             ))}

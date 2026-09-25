@@ -452,7 +452,7 @@ const Index = () => {
       window.history.replaceState({}, '', '/');
     }
     if (params.get('payment') === 'cancelled') {
-      toast.info('Pago cancelado. Puedes suscribirte cuando quieras.');
+      toast.info(trs("Pago cancelado. Puedes suscribirte cuando quieras."));
       window.history.replaceState({}, '', '/');
     }
 
@@ -2438,7 +2438,7 @@ const Index = () => {
       <AlertDialog open={dialogs.pendingRound && visiblePendingRounds.length > 0 && !isRestoring} onOpenChange={(v: boolean) => setDialog('pendingRound', v)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Tarjeta pendiente</AlertDialogTitle>
+            <AlertDialogTitle>{trs("Tarjeta pendiente")}</AlertDialogTitle>
             <AlertDialogDescription>
               {trs("Encontramos rondas sin “Cerrar Tarjeta”. Elige cómo continuar.")}
 
@@ -2452,13 +2452,13 @@ const Index = () => {
                           <div className="text-sm font-medium text-foreground">
                             {s?.courseName ?? 'Campo'}
                             {r.isOrganizer ? (
-                              <span className="ml-2 text-[10px] uppercase tracking-wide bg-primary/15 text-primary px-1.5 py-0.5 rounded">Organizador</span>
+                              <span className="ml-2 text-[10px] uppercase tracking-wide bg-primary/15 text-primary px-1.5 py-0.5 rounded">{trs("Organizador")}</span>
                             ) : (
-                              <span className="ml-2 text-[10px] uppercase tracking-wide bg-muted text-muted-foreground px-1.5 py-0.5 rounded">Participante</span>
+                              <span className="ml-2 text-[10px] uppercase tracking-wide bg-muted text-muted-foreground px-1.5 py-0.5 rounded">{trs("Participante")}</span>
                             )}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {r.status === 'in_progress' ? 'En progreso' : 'En configuración'} •{' '}
+                            {r.status === 'in_progress' ? trs("En progreso") : trs("En configuración")} •{' '}
                             {format(r.date, "d 'de' MMMM, yyyy", { locale: es })}
                             {s ? (
                               <> • {s.holesPlayed} hoyos • {s.totalStrokes} golpes</>
@@ -2476,7 +2476,7 @@ const Index = () => {
                               handleRestorePendingRound(r.roundId);
                             }}
                           >
-                            Restaurar
+                            {trs("Restaurar")}
                           </Button>
                           {r.isOrganizer ? (
                             <Button
@@ -2579,7 +2579,7 @@ const Index = () => {
             className="text-xs h-7 border-amber-400 text-amber-800 hover:bg-amber-100 dark:text-amber-200 dark:border-amber-600 dark:hover:bg-amber-900/40"
             onClick={() => navigate('/auth', { state: { returnTo: '/' } })}
           >
-            Registrarme
+            {trs("Registrarme")}
           </Button>
         </div>
       )}
@@ -2590,10 +2590,10 @@ const Index = () => {
           <div className="max-w-md mx-auto">
             <Tabs value={view === 'scoring' ? 'scoring' : view} onValueChange={(v) => { setView(v as AppView); if (v !== 'leaderboards') setLeaderboardDetailId(null); if (v !== 'rankings') setRankingDetailId(null); }}>
               <TabsList className="w-full grid grid-cols-5 h-14">
-                <TabsTrigger value="setup" className="text-xs flex flex-col items-center gap-0.5 py-1"><Settings className="h-4 w-4" /><span className="text-[10px] leading-tight">Setup</span></TabsTrigger>
+                <TabsTrigger value="setup" className="text-xs flex flex-col items-center gap-0.5 py-1"><Settings className="h-4 w-4" /><span className="text-[10px] leading-tight">{trs("Setup")}</span></TabsTrigger>
                 <TabsTrigger value="handicaps" className="text-xs flex flex-col items-center gap-0.5 py-1"><RefreshCw className="h-4 w-4" /><span className="text-[10px] leading-tight">{trs("Hándicaps")}</span></TabsTrigger>
                 <TabsTrigger value="betsetup" className="text-xs flex flex-col items-center gap-0.5 py-1"><Dices className="h-4 w-4" /><span className="text-[10px] leading-tight">{trs("Apuestas")}</span></TabsTrigger>
-                <TabsTrigger value="scorecard" className="text-xs flex flex-col items-center gap-0.5 py-1"><Trophy className="h-4 w-4" /><span className="text-[10px] leading-tight">Scorecard</span></TabsTrigger>
+                <TabsTrigger value="scorecard" className="text-xs flex flex-col items-center gap-0.5 py-1"><Trophy className="h-4 w-4" /><span className="text-[10px] leading-tight">{trs("Scorecard")}</span></TabsTrigger>
                 <TabsTrigger value="bets" className="text-xs flex flex-col items-center gap-0.5 py-1"><CoinDollarIcon className="h-4 w-4" /><span className="text-[10px] leading-tight">{trs("Resultados")}</span></TabsTrigger>
               </TabsList>
             </Tabs>
@@ -3067,8 +3067,8 @@ const Index = () => {
                 {sendError && (
                   <span className="block mt-2 text-destructive text-xs">
                     {(sendError as any)?.message?.includes('subscription_required')
-                      ? 'Ambos jugadores necesitan suscripción Pro para cruzar tarjeta.'
-                      : 'Error al enviar la invitación. Intenta de nuevo.'}
+                      ? trs("Ambos jugadores necesitan suscripción Pro para cruzar tarjeta.")
+                      : trs("Error al enviar la invitación. Intenta de nuevo.")}
                   </span>
                 )}
               </AlertDialogDescription>
@@ -3087,7 +3087,7 @@ const Index = () => {
                   }
                 }}
               >
-                {isSending ? 'Enviando…' : 'Enviar invitación'}
+                {isSending ? trs("Enviando…") : trs("Enviar invitación")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

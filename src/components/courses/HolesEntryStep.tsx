@@ -87,7 +87,7 @@ export const HolesEntryStep: React.FC<Props> = ({ data, onChange, onBack, onNext
           <>
             <span>•</span>
             <span className={cn(phase === 'yards' && 'font-bold text-foreground')}>
-              Yardas
+              {trs("Yardas")}
             </span>
           </>
         )}
@@ -197,7 +197,7 @@ export const HolesEntryStep: React.FC<Props> = ({ data, onChange, onBack, onNext
       {/* YARDS phase */}
       {phase === 'yards' && data.captureYards && (
         <div className="space-y-2">
-          <Label className="text-sm">Yardas</Label>
+          <Label className="text-sm">{trs("Yardas")}</Label>
           <Input
             type="number"
             inputMode="numeric"
@@ -238,7 +238,7 @@ export const HolesEntryStep: React.FC<Props> = ({ data, onChange, onBack, onNext
       {/* Navigation */}
       <div className="flex gap-2">
         <Button variant="outline" onClick={onBack} className="flex-1">
-          ← Datos base
+          {trs("← Datos base")}
         </Button>
         <Button disabled={!canContinue} onClick={onNext} className="flex-1">
           {trs("Revisar campo")}

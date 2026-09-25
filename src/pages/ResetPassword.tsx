@@ -89,7 +89,7 @@ const ResetPassword = () => {
           <CardHeader className="text-center">
             <CheckCircle className="h-12 w-12 text-primary mx-auto mb-2" />
             <CardTitle className="text-xl text-primary">{trs("¡Contraseña actualizada!")}</CardTitle>
-            <CardDescription>Redirigiendo...</CardDescription>
+            <CardDescription>{trs("Redirigiendo...")}</CardDescription>
           </CardHeader>
         </Card>
       </div>

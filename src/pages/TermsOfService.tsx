@@ -56,7 +56,7 @@ const TermsOfService = () => {
           {trs("Estos Términos de Servicio se rigen por las leyes de los Estados Unidos Mexicanos. Para cualquier controversia, las partes se someten a la jurisdicción de los tribunales competentes de la Ciudad de México.")}
         </p>
 
-        <h2 className="text-lg font-semibold mt-6 mb-2">8. Contacto</h2>
+        <h2 className="text-lg font-semibold mt-6 mb-2">{trs("8. Contacto")}</h2>
         <p className="text-sm text-muted-foreground leading-relaxed">
           {trs("Para consultas legales: soporte@golfgreenbookscf.com")}
         </p>

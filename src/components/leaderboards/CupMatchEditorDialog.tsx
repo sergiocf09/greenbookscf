@@ -345,7 +345,7 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
           {/* Auto-computed handicap summary */}
           <div className="bg-muted/50 rounded-lg p-2 text-xs space-y-1">
             <p className="text-muted-foreground">
-              {format === 'match_individual' ? 'Cálculo automático (diferencia de HCP):' : 'Cálculo automático (Full HCP — suma por pareja):'}
+              {format === 'match_individual' ? trs("Cálculo automático (diferencia de HCP):") : trs("Cálculo automático (Full HCP — suma por pareja):")}
             </p>
             <p className="font-medium">
               {advantageSide === 'none' || strokesAdvantage === 0
@@ -368,8 +368,8 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
             <div>
               <Label className="text-xs">
                 {fourballInfo.tied
-                  ? '¿Quién lleva los strokes? (HCP empatados)'
-                  : 'Lleva los strokes (mayor HCP de la pareja)'}
+                  ? trs("¿Quién lleva los strokes? (HCP empatados)")
+                  : trs("Lleva los strokes (mayor HCP de la pareja)")}
               </Label>
               <Select
                 value={strokeReceiverId || (fourballInfo.pair[0]?.id ?? '')}
@@ -405,7 +405,7 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
               <Select value={advantageSide} onValueChange={v => { setAdvantageSide(v as any); setHcpManuallyEdited(true); }}>
                 <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Scratch</SelectItem>
+                  <SelectItem value="none">{trs("Scratch")}</SelectItem>
                   <SelectItem value="a">{teamALabel}</SelectItem>
                   <SelectItem value="b">{teamBLabel}</SelectItem>
                 </SelectContent>
@@ -416,7 +416,7 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
           {/* Points per match + Result override (compact row) */}
           <div className="flex items-end justify-between gap-3">
             <div className="flex items-center gap-2">
-              <Label className="text-xs whitespace-nowrap">Pts P/Match</Label>
+              <Label className="text-xs whitespace-nowrap">{trs("Pts P/Match")}</Label>
               <Input
                 type="number"
                 min={0}
@@ -448,7 +448,7 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
                 </Select>
               </div>
               <div>
-                <Label className="text-xs">Detalle</Label>
+                <Label className="text-xs">{trs("Detalle")}</Label>
                 <Input
                   placeholder="3&2, 1UP"
                   value={resultDetail}

@@ -50,7 +50,7 @@ export const HistoricalStrokeSummaryCard: React.FC<{ competition: HistoricalComp
                 variant={lb.status === 'completed' ? 'outline' : 'default'}
                 className="text-xs"
               >
-                {lb.status === 'completed' ? 'Finalizada' : 'Activa'}
+                {lb.status === 'completed' ? trs("Finalizada") : trs("Activa")}
               </Badge>
             </div>
           </div>

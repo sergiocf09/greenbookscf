@@ -460,7 +460,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
               onClick={() => setShowShare(true)}
             >
               <Share2 className="h-3 w-3 mr-1" />
-              Compartir
+              {trs("Compartir")}
             </Button>
           </div>
         )}
@@ -477,7 +477,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
         <TabsList className={`grid w-full ${roundLeaderboards.length > 0 ? 'grid-cols-3' : 'grid-cols-2'}`}>
           <TabsTrigger value="scorecard" className="text-sm">
             <LayoutGrid className="h-4 w-4 mr-1.5" />
-            Scorecard
+            {trs("Scorecard")}
           </TabsTrigger>
           <TabsTrigger value="bets" className="text-sm">
             <Trophy className="h-4 w-4 mr-1.5" />
@@ -486,7 +486,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
           {roundLeaderboards.length > 0 && (
             <TabsTrigger value="leaderboards" className="text-sm">
               <Trophy className="h-4 w-4 mr-1.5" />
-              Competencias
+              {trs("Competencias")}
             </TabsTrigger>
           )}
         </TabsList>
@@ -530,7 +530,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
                       : "bg-muted text-muted-foreground border-transparent hover:bg-muted/80",
                   )}
                 >
-                  ⚡ Cruzadas
+                  {trs("⚡ Cruzadas")}
                 </button>
               )}
             </div>

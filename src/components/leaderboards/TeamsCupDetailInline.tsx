@@ -220,8 +220,7 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
   const renderHoleCell = (h: CupHoleBreakdown) => {
     const text = formatRunning(h.running_a_up);
     const color =
-      h.running_a_up > 0 ? colorA :
-      h.running_a_up < 0 ? colorB :
+      h.running_a_up >{' '}{trs("0 ? colorA : h.running_a_up")}{' '}< 0 ? colorB :
       'hsl(var(--muted-foreground))';
     return (
       <div
@@ -628,7 +627,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     if (event?.code) {
       const url = `${window.location.origin}/leaderboards/join/${event.code}`;
       navigator.clipboard.writeText(url);
-      toast.success('Link copiado');
+      toast.success(trs("Link copiado"));
     }
   };
 
@@ -647,7 +646,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         .delete()
         .eq('id', leaderboardId);
       if (error) throw error;
-      toast.success('Competencia eliminada');
+      toast.success(trs("Competencia eliminada"));
       queryClient.invalidateQueries({ queryKey: ['leaderboard_events'] });
       onBack();
     } catch (err: any) {
@@ -1020,7 +1019,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             {unlinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unlink className="h-4 w-4" />}
           </Button>
         )}
-        <Button variant="ghost" size="icon" onClick={copyShareLink} aria-label="Compartir">
+        <Button variant="ghost" size="icon" onClick={copyShareLink} aria-label={trs("Compartir")}>
           <Share2 className="h-4 w-4" />
         </Button>
         {event?.code && (
@@ -1064,7 +1063,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
               onClick={reopenLeaderboard}
             >
               <RefreshCw className="h-3.5 w-3.5" />
-              Reactivar competencia
+              {trs("Reactivar competencia")}
             </Button>
           )
         )}
@@ -1229,7 +1228,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
               ) : null}
             </div>
             <p className="text-xs text-muted-foreground text-center mt-2">
-              {isMultiSlot && <span className="font-medium">Acumulado · </span>}
+              {isMultiSlot && <span className="font-medium">{trs("Acumulado ·")}{' '}</span>}
               {st.matches_total} matches · {st.matches_completed} completados
               {st.has_in_progress && <span className="ml-1 italic">{trs("· en vivo")}</span>}
             </p>
@@ -1351,7 +1350,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
 
 
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-base font-semibold">Matches</h2>
+          <h2 className="text-base font-semibold">{trs("Matches")}</h2>
           {isCreator && (
             <Button
               variant="outline"
@@ -1441,7 +1440,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
               className="w-full gap-1"
               onClick={() => setShowCreateRound(true)}
             >
-              <Plus className="h-3.5 w-3.5" /> {effectiveRoundId ? 'Recrear Foursomes' : 'Crear Ronda desde esta Cup'}
+              <Plus className="h-3.5 w-3.5" /> {effectiveRoundId ? trs("Recrear Foursomes") : trs("Crear Ronda desde esta Cup")}
             </Button>
           </CardContent>
         </Card>
@@ -1499,7 +1498,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       <Collapsible open={participantsOpen} onOpenChange={setParticipantsOpen}>
         <div className="flex items-center justify-between gap-2">
           <CollapsibleTrigger className="flex items-center gap-1.5 text-base font-semibold">
-            Participantes
+            {trs("Participantes")}
             <ChevronDown className={cn('h-4 w-4 transition-transform', participantsOpen && 'rotate-180')} />
           </CollapsibleTrigger>
           {isCreator && (
@@ -1607,7 +1606,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                   <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
                   <span className="text-xs font-medium truncate flex-1 min-w-0">{formatPlayerName(p.display_name)}</span>
                   <Badge variant="outline" className="text-[9px] bg-amber-50 text-amber-700 border-amber-200 ml-auto shrink-0">
-                    Pendiente
+                    {trs("Pendiente")}
                   </Badge>
                   {isCreator && (
                     <Button
@@ -1702,8 +1701,8 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                     }}
                     onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
                     className="w-9 h-6 px-0.5 text-center text-xs shrink-0"
-                    aria-label="HCP Index"
-                    title="HCP Index"
+                    aria-label={trs("HCP Index")}
+                    title={trs("HCP Index")}
                   />
                   <Button
                     variant="ghost"
@@ -1728,14 +1727,14 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
               <div className="flex items-center gap-0.5 px-1 pb-0.5 min-w-0">
                 <span className="flex-1 min-w-0" />
                 <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground text-center" style={{ width: teamA && teamB ? '2.125rem' : '1.125rem' }}>
-                  Eq.
+                  {trs("Eq.")}
                 </span>
                 <span className="w-px shrink-0 mx-0.5" />
                 <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground text-center" style={{ width: '4.5rem' }}>
-                  Tee
+                  {trs("Tee")}
                 </span>
                 <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground text-center" style={{ width: '2.25rem' }}>
-                  HCP
+                  {trs("HCP")}
                 </span>
                 <span className="w-5 shrink-0" />
               </div>
@@ -1757,7 +1756,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                       {refreshingIndexes
                         ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
                         : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
-                      <span className="truncate">Actualizar Index</span>
+                      <span className="truncate">{trs("Actualizar Index")}</span>
                     </Button>
                     <Button
                       size="sm"

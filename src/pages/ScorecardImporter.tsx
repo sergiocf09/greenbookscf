@@ -67,7 +67,7 @@ export default function ScorecardImporterPage() {
             {trs("Volver")}
           </Button>
           <div>
-            <h1 className="text-lg font-semibold">Importar tarjeta manual</h1>
+            <h1 className="text-lg font-semibold">{trs("Importar tarjeta manual")}</h1>
             <p className="text-xs text-muted-foreground">Paso {step} de 4</p>
           </div>
         </div>
@@ -202,7 +202,7 @@ function Step1Upload({
                 className="text-xs text-muted-foreground underline cursor-pointer inline-flex items-center gap-1"
               >
                 <ImageIcon className="h-3 w-3" />
-                Cambiar foto
+                {trs("Cambiar foto")}
               </label>
               <input
                 id="scorecard-file-replace"
@@ -233,15 +233,15 @@ function Step1Upload({
           {imagePreparing ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Preparando foto…
+              {trs("Preparando foto…")}
             </>
           ) : analyzing ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Analizando tarjeta…
+              {trs("Analizando tarjeta…")}
             </>
           ) : (
-            <>Analizar tarjeta <ArrowRight className="h-4 w-4 ml-2" /></>
+            <>{trs("Analizar tarjeta")}{' '}<ArrowRight className="h-4 w-4 ml-2" /></>
           )}
         </Button>
       </CardContent>
@@ -397,7 +397,7 @@ function Step2Validate(props: {
 
       <Card>
         <CardHeader>
-          <CardTitle>Scores detectados</CardTitle>
+          <CardTitle>{trs("Scores detectados")}</CardTitle>
           <p className="text-xs text-muted-foreground">
             {trs("Score arriba, putts abajo. Si no capturas los putts, se guardarán 2 por hoyo.")}
           </p>
@@ -458,8 +458,8 @@ function Step2Validate(props: {
                 {editablePlayers.map((p) => (
                   <th key={p.key} className="px-1 py-1">
                     <div className="flex justify-around">
-                      <span>Score</span>
-                      <span>Putts</span>
+                      <span>{trs("Score")}</span>
+                      <span>{trs("Putts")}</span>
                     </div>
                   </th>
                 ))}
@@ -525,10 +525,10 @@ function Step2Validate(props: {
       <div className="flex items-center justify-between gap-3">
         <Button variant="outline" onClick={onBack}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Regresar
+          {trs("Regresar")}
         </Button>
         <Button onClick={onContinue} disabled={!canContinue}>
-          Continuar
+          {trs("Continuar")}
           <ArrowRight className="h-4 w-4 ml-2" />
         </Button>
       </div>
@@ -659,7 +659,7 @@ function CoursePicker({
           <div className="max-h-72 overflow-auto">
             {/* Section: user's known courses */}
             <div className="px-3 pt-2 pb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-              Tus campos
+              {trs("Tus campos")}
             </div>
             {loadingKnown && (
               <div className="p-3 text-xs text-muted-foreground flex items-center gap-2">
@@ -668,7 +668,7 @@ function CoursePicker({
             )}
             {!loadingKnown && filteredKnown.length === 0 && (
               <div className="px-3 py-2 text-xs text-muted-foreground">
-                {query ? 'Sin coincidencias en tus campos' : 'Aún no tienes campos guardados'}
+                {query ? trs("Sin coincidencias en tus campos") : trs("Aún no tienes campos guardados")}
               </div>
             )}
             {filteredKnown.map((c) => (
@@ -702,7 +702,7 @@ function CoursePicker({
                 </div>
                 {searching && (
                   <div className="p-3 text-xs text-muted-foreground flex items-center gap-2">
-                    <Loader2 className="h-3 w-3 animate-spin" /> Buscando…
+                    <Loader2 className="h-3 w-3 animate-spin" />{' '}{trs("Buscando…")}
                   </div>
                 )}
                 {!searching && results.length === 0 && (
@@ -802,7 +802,7 @@ function Step3Mapping(props: {
         <User className="h-4 w-4" />
         <AlertDescription>
           {capturistIsPlayer ? (
-            <>{trs("Asigna cada nombre detectado a un jugador. Exactamente uno debe ser")}{' '}<strong>"Soy yo"</strong>.</>
+            <>{trs("Asigna cada nombre detectado a un jugador. Exactamente uno debe ser")}{' '}<strong>{trs("\"Soy yo\"")}</strong>.</>
           ) : (
             <>{trs("Asigna cada nombre detectado a un jugador registrado o invitado.")}</>
           )}
@@ -839,7 +839,7 @@ function Step3Mapping(props: {
                     <User className="h-4 w-4 mr-2" />
                     Soy yo
                     {disableSelf && (
-                      <span className="ml-auto text-[10px] opacity-70">ya asignado</span>
+                      <span className="ml-auto text-[10px] opacity-70">{trs("ya asignado")}</span>
                     )}
                   </Button>
                 )}
@@ -850,7 +850,7 @@ function Step3Mapping(props: {
                   className="justify-start"
                 >
                   <Users className="h-4 w-4 mr-2" />
-                  Registrado
+                  {trs("Registrado")}
                 </Button>
                 <Button
                   variant={kind === 'guest' ? 'default' : 'outline'}
@@ -897,7 +897,7 @@ function Step3Mapping(props: {
       <div className="flex items-center justify-between gap-3">
         <Button variant="outline" onClick={onBack}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Regresar
+          {trs("Regresar")}
         </Button>
         <Button onClick={onConfirm} disabled={!mappingsValid}>
           {trs("Confirmar y guardar")}
@@ -906,8 +906,8 @@ function Step3Mapping(props: {
       {!mappingsValid && (
         <p className="text-xs text-muted-foreground text-right">
           {capturistIsPlayer
-            ? 'Cada jugador debe estar mapeado y uno debe ser "Soy yo".'
-            : 'Cada jugador debe estar mapeado como registrado o invitado.'}
+            ? trs("Cada jugador debe estar mapeado y uno debe ser \"Soy yo\".")
+            : trs("Cada jugador debe estar mapeado como registrado o invitado.")}
         </p>
       )}
     </div>
@@ -950,7 +950,7 @@ function RegisteredPicker({
       )}
       {searching && (
         <div className="text-xs text-muted-foreground flex items-center gap-1">
-          <Loader2 className="h-3 w-3 animate-spin" /> Buscando…
+          <Loader2 className="h-3 w-3 animate-spin" />{' '}{trs("Buscando…")}
         </div>
       )}
       <div className="max-h-40 overflow-auto rounded-md border border-border/60 divide-y divide-border/40">
@@ -1005,7 +1005,7 @@ function Step4Saving({
               {trs("Ver ronda")}
             </Button>
             <Button variant="outline" onClick={onStartOver} className="w-full sm:w-auto">
-              Importar otra
+              {trs("Importar otra")}
             </Button>
           </div>
         </CardContent>
@@ -1040,7 +1040,7 @@ function Step4Saving({
 
         {progress.stage === 'error' && (
           <div className="flex gap-2">
-            <Button onClick={onRetry}>Reintentar</Button>
+            <Button onClick={onRetry}>{trs("Reintentar")}</Button>
             <Button variant="outline" onClick={onStartOver}>
               {trs("Volver al inicio")}
             </Button>

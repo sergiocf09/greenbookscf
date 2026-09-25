@@ -139,10 +139,10 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
                   {hole.number}
                 </th>
               ))}
-              <th className="px-1 py-1.5 font-semibold text-center bg-muted min-w-[28px]">OUT</th>
+              <th className="px-1 py-1.5 font-semibold text-center bg-muted min-w-[28px]">{trs("OUT")}</th>
             </tr>
             <tr className="bg-muted/30 text-muted-foreground">
-              <td className="px-1 py-1 sticky left-0 bg-muted/30">Par</td>
+              <td className="px-1 py-1 sticky left-0 bg-muted/30">{trs("Par")}</td>
               {frontNine.map(hole => (
                 <td key={hole.number} className="text-center px-0 py-1">{hole.par}</td>
               ))}
@@ -194,11 +194,11 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
                       {hole.number}
                     </th>
                   ))}
-                  <th className="px-1 py-1.5 font-semibold text-center bg-muted min-w-[28px]">IN</th>
-                  <th className="px-1 py-1.5 font-semibold text-center bg-primary/20 text-primary min-w-[30px]">TOT</th>
+                  <th className="px-1 py-1.5 font-semibold text-center bg-muted min-w-[28px]">{trs("IN")}</th>
+                  <th className="px-1 py-1.5 font-semibold text-center bg-primary/20 text-primary min-w-[30px]">{trs("TOT")}</th>
                 </tr>
                 <tr className="bg-muted/30 text-muted-foreground">
-                  <td className="px-1 py-1 sticky left-0 bg-muted/30">Par</td>
+                  <td className="px-1 py-1 sticky left-0 bg-muted/30">{trs("Par")}</td>
                   {backNine.map(hole => (
                     <td key={hole.number} className="text-center px-0 py-1">{hole.par}</td>
                   ))}

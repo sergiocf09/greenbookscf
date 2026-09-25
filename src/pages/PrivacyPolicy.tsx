@@ -26,7 +26,7 @@ const PrivacyPolicy = () => {
           {trs("GreenBook by SCF, accesible en golfgreenbookscf.com, es responsable del tratamiento de tus datos personales.")}
         </p>
 
-        <h2 className="text-lg font-semibold mt-6 mb-2">2. Datos recopilados</h2>
+        <h2 className="text-lg font-semibold mt-6 mb-2">{trs("2. Datos recopilados")}</h2>
         <p className="text-sm text-muted-foreground leading-relaxed">
           {trs("Recopilamos los siguientes datos: correo electrónico, nombre de usuario y scores de golf capturados en la plataforma. Adicionalmente, nuestro proveedor de autenticación recopila de forma automática metadata de sesión que puede incluir información del dispositivo y sistema operativo utilizado para acceder al servicio.")}
         </p>
@@ -46,7 +46,7 @@ const PrivacyPolicy = () => {
           {trs("Utilizamos los siguientes proveedores que pueden tener acceso a datos para operar el servicio: infraestructura de base de datos y autenticación en la nube, Stripe (procesamiento de pagos), Sentry (monitoreo de errores técnicos). Cada proveedor cuenta con su propia política de privacidad y cumple con estándares de seguridad internacionales.")}
         </p>
 
-        <h2 className="text-lg font-semibold mt-6 mb-2">6. Derechos ARCO (LFPDPPP)</h2>
+        <h2 className="text-lg font-semibold mt-6 mb-2">{trs("6. Derechos ARCO (LFPDPPP)")}</h2>
         <p className="text-sm text-muted-foreground leading-relaxed">
           {trs("Conforme al artículo 22 de la Ley Federal de Protección de Datos Personales en Posesión de los Particulares, tienes derecho a Acceder, Rectificar, Cancelar u Oponerte al tratamiento de tus datos personales (derechos ARCO). Para ejercer estos derechos, escríbenos a: soporte@golfgreenbookscf.com")}
         </p>
@@ -61,7 +61,7 @@ const PrivacyPolicy = () => {
           {trs("Los datos de identificación personal se eliminan al momento de cancelar la cuenta. Los registros anonimizados de actividad se conservan para mantener la integridad del historial de otros usuarios.")}
         </p>
 
-        <h2 className="text-lg font-semibold mt-6 mb-2">9. Seguridad</h2>
+        <h2 className="text-lg font-semibold mt-6 mb-2">{trs("9. Seguridad")}</h2>
         <p className="text-sm text-muted-foreground leading-relaxed">
           {trs("Implementamos medidas técnicas de seguridad incluyendo conexiones cifradas HTTPS/TLS y control de acceso mediante Row Level Security en base de datos.")}
         </p>
@@ -71,7 +71,7 @@ const PrivacyPolicy = () => {
           {trs("Notificaremos cualquier cambio material a esta Política de Privacidad mediante correo electrónico con al menos 15 días de anticipación.")}
         </p>
 
-        <h2 className="text-lg font-semibold mt-6 mb-2">11. Contacto</h2>
+        <h2 className="text-lg font-semibold mt-6 mb-2">{trs("11. Contacto")}</h2>
         <p className="text-sm text-muted-foreground leading-relaxed">
           {trs("Para ejercer tus derechos o resolver dudas sobre privacidad: soporte@golfgreenbookscf.com")}
         </p>

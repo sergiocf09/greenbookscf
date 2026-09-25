@@ -114,7 +114,7 @@ export const CupDaysEditor: React.FC<Props> = ({ days, onChange, lockedSlots }) 
               className="h-7 text-xs flex-1 min-w-0"
             />
             <Input
-              placeholder="Etiqueta"
+              placeholder={trs("Etiqueta")}
               value={day.label ?? ''}
               onChange={e => updateDay(idx, { label: e.target.value })}
               className="h-7 text-xs flex-1 min-w-0"
@@ -147,8 +147,8 @@ export const CupDaysEditor: React.FC<Props> = ({ days, onChange, lockedSlots }) 
                     <SelectValue>{FORMAT_LABEL[s.format]}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="match_individual">Individual</SelectItem>
-                    <SelectItem value="fourball">Fourball</SelectItem>
+                    <SelectItem value="match_individual">{trs("Individual")}</SelectItem>
+                    <SelectItem value="fourball">{trs("Fourball")}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button

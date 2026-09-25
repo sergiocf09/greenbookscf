@@ -112,7 +112,7 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
               <Users className="h-3.5 w-3.5 mr-1" />
               {trs("Amigos")}
             </TabsTrigger>
-            <TabsTrigger value="invite">Link</TabsTrigger>
+            <TabsTrigger value="invite">{trs("Link")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="guest" className="mt-4 space-y-4">
@@ -148,7 +148,7 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
                 />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground">Color</label>
+                <label className="text-xs text-muted-foreground">{trs("Color")}</label>
                 <Input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="h-10 w-20 p-1" />
               </div>
             </div>
@@ -162,7 +162,7 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
                 {trs("Cancelar")}
               </Button>
               <Button onClick={handleSaveGuest} disabled={!canSave || saving}>
-                {saving ? 'Guardando…' : 'Agregar y confirmar'}
+                {saving ? trs("Guardando…") : trs("Agregar y confirmar")}
               </Button>
             </div>
           </TabsContent>
@@ -193,10 +193,10 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
                 variant="outline"
                 onClick={async () => {
                   await navigator.clipboard.writeText(shareLink);
-                  toast.success('Link copiado');
+                  toast.success(trs("Link copiado"));
                 }}
               >
-                Copiar
+                {trs("Copiar")}
               </Button>
             </div>
           </TabsContent>

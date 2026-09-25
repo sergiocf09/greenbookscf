@@ -1943,7 +1943,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         {group.label}
                       </span>
                       {group.isInfoOnly && !isDisabled && (
-                        <span className="text-[9px] text-muted-foreground">Solo conteo</span>
+                        <span className="text-[9px] text-muted-foreground">{trs("Solo conteo")}</span>
                       )}
                       {/* Presiones histórico: mostrar resultado del Match (18 hoyos) inline */}
                       {isHistorical && group.key === 'hist_presiones' && !isDisabled && (() => {
@@ -1968,7 +1968,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                     </div>
                     {isDisabled && (
                       <span className="text-[10px] text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">
-                        Cancelada
+                        {trs("Cancelada")}
                       </span>
                     )}
                   </div>
@@ -2049,7 +2049,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             )}>
                               {hasConflict && (
                                 <p className="text-[10px] text-muted-foreground mb-1">
-                                  {formatPlayerName(player.name)}: <span className="font-medium">{variantA === 'acumulados' ? 'Acum' : 'Sin Acum'}</span> · {formatPlayerName(rival.name)}: <span className="font-medium">{variantB === 'acumulados' ? 'Acum' : 'Sin Acum'}</span>
+                                  {formatPlayerName(player.name)}: <span className="font-medium">{variantA === 'acumulados' ? trs("Acum") : trs("Sin Acum")}</span> · {formatPlayerName(rival.name)}: <span className="font-medium">{variantB === 'acumulados' ? trs("Acum") : trs("Sin Acum")}</span>
                                 </p>
                               )}
                               <div className="flex items-center gap-3">
@@ -2064,7 +2064,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     )}
                                     onClick={() => setVariant('acumulados')}
                                   >
-                                    Acumulados
+                                    {trs("Acumulados")}
                                   </button>
                                   <button
                                     className={cn(
@@ -2080,7 +2080,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                 </div>
                                 {/* Zapato toggle - right side, vertically centered */}
                                 <div className="flex items-center gap-2 shrink-0">
-                                  <span className="text-xs text-muted-foreground">Zapato</span>
+                                  <span className="text-xs text-muted-foreground">{trs("Zapato")}</span>
                                   <Switch
                                     checked={betConfig.skins.zapatoEnabled !== false}
                                     onCheckedChange={(checked) => {
@@ -2152,9 +2152,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                         <span>{rival.initials}: <span className="font-bold text-destructive">{skinsSegData.totalSkinsB}</span></span>
                                       </div>
                                       <div className="flex flex-wrap gap-2 text-[8px] text-muted-foreground pt-1 border-t border-border/30">
-                                        <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-green-100"></span>Ganado</span>
-                                        <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-red-100"></span>Perdido</span>
-                                        <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-muted"></span>Acum.</span>
+                                        <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-green-100"></span>{trs("Ganado")}</span>
+                                        <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-red-100"></span>{trs("Perdido")}</span>
+                                        <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-muted"></span>{trs("Acum.")}</span>
                                         <span>• = Empate</span>
                                       </div>
                                     </div>
@@ -2200,7 +2200,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         return (
                           <div className="px-4 py-3 bg-background/50">
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-xs font-medium">Modalidad</span>
+                              <span className="text-xs font-medium">{trs("Modalidad")}</span>
                               <span className="text-[10px] text-muted-foreground">
                                 {`${effCarry ? 'Carry   ' : ''}${effectiveBetConfig.bloques.holesPerBlock} Hoyos   $${effAmt} p/bloque`}
                               </span>
@@ -2342,7 +2342,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       : "text-muted-foreground hover:text-foreground"
                                   )}
                                 >
-                                  Acumulado
+                                  {trs("Acumulado")}
                                 </button>
                                 <button
                                   type="button"
@@ -2375,7 +2375,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               const checked = pairOverride !== undefined ? pairOverride : globalZapato;
                               return (
                                 <div className="flex items-center justify-between">
-                                  <span className="text-xs font-medium">Zapato</span>
+                                  <span className="text-xs font-medium">{trs("Zapato")}</span>
                                   <Switch
                                     checked={checked}
                                     onCheckedChange={(next) => {
@@ -2413,7 +2413,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   hasConflict && !pairOverride ? "bg-amber-500/10 border-amber-500/30" : "bg-muted/30 border-border/50"
                                 )}>
                                   <div className="flex flex-col gap-0.5">
-                                    <span className="text-[10px] font-medium">Modalidad Oyes (este par)</span>
+                                    <span className="text-[10px] font-medium">{trs("Modalidad Oyes (este par)")}</span>
                                     {hasConflict && !pairOverride && (
                                       <span className="text-[9px] text-amber-600">
                                         {getShortName(player)}: {modalityA === 'sangron' ? 'Sangrón' : 'Acum'} · {getShortName(rival)}: {modalityB === 'sangron' ? 'Sangrón' : 'Acum'}
@@ -2436,7 +2436,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                             ? mod === 'sangron' ? 'bg-destructive text-destructive-foreground font-medium' : 'bg-golf-gold text-golf-dark font-medium'
                                             : 'bg-muted text-muted-foreground hover:bg-muted/80'
                                         )}>
-                                        {mod === 'acumulados' ? 'Acumulado' : 'Sangrón'}
+                                        {mod === 'acumulados' ? trs("Acumulado") : trs("Sangrón")}
                                       </button>
                                     ))}
                                   </div>
@@ -2656,7 +2656,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               )}>
                                 {skinConflict.hasConflict && (
                                   <p className="text-[10px] text-muted-foreground mb-1">
-                                    {formatPlayerName(player.name)}: <span className="font-medium">{playerVariantA === 'acumulados' ? 'Acum' : 'Sin Acum'}</span> · {formatPlayerName(rival.name)}: <span className="font-medium">{playerVariantB === 'acumulados' ? 'Acum' : 'Sin Acum'}</span>
+                                    {formatPlayerName(player.name)}: <span className="font-medium">{playerVariantA === 'acumulados' ? trs("Acum") : trs("Sin Acum")}</span> · {formatPlayerName(rival.name)}: <span className="font-medium">{playerVariantB === 'acumulados' ? trs("Acum") : trs("Sin Acum")}</span>
                                   </p>
                                 )}
                                 <div className="flex items-center justify-center gap-3">
@@ -2681,7 +2681,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                         });
                                       }}
                                     >
-                                      Acumulados
+                                      {trs("Acumulados")}
                                     </button>
                                     <button
                                       className={cn(
@@ -2763,7 +2763,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   {/* Oyes modality toggle within Rayas */}
                                   {segConflicts.find(s => s.segmentKey === 'oyes')?.effectiveEnabled && (
                                     <div className="flex items-center justify-between pt-2 border-t border-border/20 mt-1">
-                                      <span className="text-[10px] text-muted-foreground">Oyes modalidad:</span>
+                                      <span className="text-[10px] text-muted-foreground">{trs("Oyes modalidad:")}</span>
                                       <div className="flex gap-1">
                                         {(['acumulados', 'sangron'] as const).map(mod => {
                                           const oyesPairKey = getPairKey(player.id, rival.id);
@@ -2786,7 +2786,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                                   ? mod === 'sangron' ? 'bg-destructive text-destructive-foreground font-medium' : 'bg-golf-gold text-golf-dark font-medium'
                                                   : 'bg-muted text-muted-foreground hover:bg-muted/80'
                                               )}>
-                                              {mod === 'acumulados' ? 'Acumulado' : 'Sangrón'}
+                                              {mod === 'acumulados' ? trs("Acumulado") : trs("Sangrón")}
                                             </button>
                                           );
                                         })}
@@ -2804,11 +2804,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             })()}
                             {/* Header row */}
                             <div className="grid grid-cols-5 gap-1 text-[10px] font-medium text-muted-foreground border-b border-border/30 pb-1">
-                              <div>Fuente</div>
-                              <div className="text-center">Skins</div>
-                              <div className="text-center">Unidades</div>
-                              <div className="text-center">Oyes</div>
-                              <div className="text-center">Medal</div>
+                              <div>{trs("Fuente")}</div>
+                              <div className="text-center">{trs("Skins")}</div>
+                              <div className="text-center">{trs("Unidades")}</div>
+                              <div className="text-center">{trs("Oyes")}</div>
+                              <div className="text-center">{trs("Medal")}</div>
                             </div>
                             
                             {/* Front 9 row - wrapped in popover */}
@@ -2825,7 +2825,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               startingHole={startingHole}
                             >
                             <div className="grid grid-cols-5 gap-1 items-center text-sm py-1 cursor-pointer hover:bg-muted/20 rounded transition-colors">
-                              <div className="font-medium text-muted-foreground text-xs flex items-center gap-0.5">Front 9</div>
+                              <div className="font-medium text-muted-foreground text-xs flex items-center gap-0.5">{trs("Front 9")}</div>
                               <div className={cn('text-center font-bold', skinsNet.front > 0 ? 'text-green-600' : skinsNet.front < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                                 {skinsNet.front !== 0 ? skinsNet.front : '-'}
                               </div>
@@ -2870,7 +2870,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               startingHole={startingHole}
                             >
                             <div className="grid grid-cols-5 gap-1 items-center text-sm py-1 border-t border-border/20 pt-2 cursor-pointer hover:bg-muted/20 rounded transition-colors">
-                              <div className="font-medium text-muted-foreground text-xs flex items-center gap-0.5">Back 9</div>
+                              <div className="font-medium text-muted-foreground text-xs flex items-center gap-0.5">{trs("Back 9")}</div>
                               <div className={cn('text-center font-bold', skinsNet.back > 0 ? 'text-green-600' : skinsNet.back < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                                 {skinsNet.back !== 0 ? skinsNet.back : '-'}
                               </div>
@@ -2963,7 +2963,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     : 'Sin Presiones'}
                                 </span>
                                 {isOverridden && (
-                                  <span className="text-[9px] text-amber-500 bg-amber-500/10 rounded px-1">✱ este par</span>
+                                  <span className="text-[9px] text-amber-500 bg-amber-500/10 rounded px-1">{trs("✱ este par")}</span>
                                 )}
                               </div>
                               <Switch
@@ -3128,7 +3128,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   {isMatchPlay && matchPlayEvolution && (
                                     <div className="space-y-2">
                                       <div className="flex items-center justify-between gap-4">
-                                        <span className="font-medium text-sm">Match Play 18</span>
+                                        <span className="font-medium text-sm">{trs("Match Play 18")}</span>
                                         <span className="text-xs text-muted-foreground">
                                           {getShortName(player)} vs {getShortName(rival)}
                                         </span>
@@ -3168,7 +3168,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                         </div>
                                       </div>
                                       <div className="text-[10px] text-center pt-1 border-t border-border/50">
-                                        Final: <span className="font-bold">{matchPlayEvolution.total.finalDisplay}</span>
+                                        {trs("Final:")}{' '}<span className="font-bold">{matchPlayEvolution.total.finalDisplay}</span>
                                       </div>
                                     </div>
                                   )}
@@ -3241,8 +3241,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       )}
                                       {/* Final result */}
                                       <div className="text-[10px] text-center pt-1 border-t border-border/50">
-                                        Final: <span className="font-bold">{pressureSegmentData.finalDisplay}</span>
-                                        {pressureSegmentData.hasCarry && <span className="ml-1 text-amber-600">(Carry)</span>}
+                                        {trs("Final:")}{' '}<span className="font-bold">{pressureSegmentData.finalDisplay}</span>
+                                        {pressureSegmentData.hasCarry && <span className="ml-1 text-amber-600">{trs("(Carry)")}</span>}
                                       </div>
                                     </div>
                                   )}
@@ -3251,7 +3251,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       <div className="flex items-center justify-between gap-4">
                                         <span className="font-medium text-sm">Skins {segment.label}</span>
                                         <span className="text-xs text-muted-foreground">
-                                          {betConfig.skins.modality === 'sinAcumular' ? 'Sin acumular' : 'Acumulados'}
+                                          {betConfig.skins.modality === 'sinAcumular' ? trs("Sin acumular") : trs("Acumulados")}
                                         </span>
                                       </div>
                                       {/* Holes grid */}
@@ -3284,9 +3284,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       </div>
                                       {/* Legend */}
                                       <div className="flex flex-wrap gap-2 text-[8px] text-muted-foreground pt-1 border-t border-border/30">
-                                        <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-green-100"></span>Ganado</span>
-                                        <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-red-100"></span>Perdido</span>
-                                        <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-muted"></span>Acum.</span>
+                                        <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-green-100"></span>{trs("Ganado")}</span>
+                                        <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-red-100"></span>{trs("Perdido")}</span>
+                                        <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded bg-muted"></span>{trs("Acum.")}</span>
                                         <span>• = Empate</span>
                                       </div>
                                     </div>
@@ -3316,7 +3316,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                               {holes.map(x => (
                                                 <div key={x.h} className="w-7 text-center text-[8px] text-muted-foreground">{x.h}</div>
                                               ))}
-                                              <div className="w-9 text-center text-[8px] text-muted-foreground font-semibold">Tot</div>
+                                              <div className="w-9 text-center text-[8px] text-muted-foreground font-semibold">{trs("Tot")}</div>
                                             </div>
                                             {/* Player row: name left + putts per hole + total */}
                                             <div className="flex gap-0.5 items-center mt-0.5">
@@ -3394,7 +3394,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     return (
                                       <div className="space-y-2">
                                         <div className="flex items-center justify-between">
-                                          <span className="font-medium text-sm">Modalidad</span>
+                                          <span className="font-medium text-sm">{trs("Modalidad")}</span>
                                           <span className="text-[10px] text-muted-foreground">
                                             {`${effCarry2 ? 'Carry   ' : ''}${effectiveBetConfig.bloques.holesPerBlock} Hoyos   $${effAmt2} p/bloque`}
                                           </span>
@@ -3640,7 +3640,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 setEditingBetType(null);
               }}
             >
-              Aplicar override fuerte
+              {trs("Aplicar override fuerte")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

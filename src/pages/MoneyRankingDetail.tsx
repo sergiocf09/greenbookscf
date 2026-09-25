@@ -42,7 +42,7 @@ const PERIOD_LABELS: Record<RankingPeriod, string> = {
 };
 
 const NetBadge = ({ amount }: { amount: number }) => {
-  if (amount > 0) return <span className="text-green-600 dark:text-green-400 font-semibold text-sm">+${fmtMoney(amount)}</span>;
+  if (amount >{' '}{trs("0) return")}{' '}<span className="text-green-600 dark:text-green-400 font-semibold text-sm">+${fmtMoney(amount)}</span>;
   if (amount < 0) return <span className="text-red-600 dark:text-red-400 font-semibold text-sm">-${fmtMoney(Math.abs(amount))}</span>;
   return <span className="text-muted-foreground font-semibold text-sm">$0</span>;
 };
@@ -230,7 +230,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
               <p className="text-xs text-primary-foreground/70">{members.length} {members.length === 1 ? 'miembro' : 'miembros'}</p>
             </div>
             <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-white/20" onClick={() => window.location.reload()} aria-label="Actualizar">
+              <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-white/20" onClick={() => window.location.reload()} aria-label={trs("Actualizar")}>
                 <RefreshCw className="h-5 w-5" />
               </Button>
               <GreenBookLogo />
@@ -275,7 +275,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
         <Tabs value={rankingView} onValueChange={(v) => setRankingView(v as RankingView)}>
           <TabsList className="w-full">
             <TabsTrigger value="money" className="flex-1 gap-1">
-              <DollarSign className="h-3.5 w-3.5" /> Dinero
+              <DollarSign className="h-3.5 w-3.5" />{' '}{trs("Dinero")}
             </TabsTrigger>
             <TabsTrigger value="handicap" className="flex-1 gap-1">
               <Award className="h-3.5 w-3.5" />{' '}{trs("Hándicap")}
@@ -426,7 +426,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <Label className="text-sm">Desde</Label>
+              <Label className="text-sm">{trs("Desde")}</Label>
               <Popover open={dateFromOpen} onOpenChange={setDateFromOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !customDateFrom && 'text-muted-foreground')}>
@@ -440,7 +440,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
               </Popover>
             </div>
             <div>
-              <Label className="text-sm">Hasta</Label>
+              <Label className="text-sm">{trs("Hasta")}</Label>
               <Popover open={dateToOpen} onOpenChange={setDateToOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !customDateTo && 'text-muted-foreground')}>
@@ -457,7 +457,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
           <p className="text-xs text-muted-foreground">{trs("Deja «Hasta» vacío para que sea hasta hoy.")}</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCustomPeriod(false)}>{trs("Cancelar")}</Button>
-            <Button disabled={!customDateFrom} onClick={applyCustomPeriod}>Aplicar</Button>
+            <Button disabled={!customDateFrom} onClick={applyCustomPeriod}>{trs("Aplicar")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

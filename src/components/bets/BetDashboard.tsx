@@ -1855,7 +1855,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         <CardHeader className="py-3 space-y-2">
           <CardTitle className="text-sm flex items-center justify-between">
             <span className="flex items-center gap-2">
-              Balance General
+              {trs("Balance General")}
               <RoundHolesBadge holes={betConfig.roundHoles as 9 | 18 | undefined} />
             </span>
             <span className="flex items-center gap-1">
@@ -1905,7 +1905,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               
               {/* SECOND: Toggle between "Solo Grupo" and "Todos los Grupos" */}
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Vista:</span>
+                <span className="text-xs text-muted-foreground">{trs("Vista:")}</span>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
@@ -2127,21 +2127,21 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                               {/* Show breakdown when there are pair bets */}
                               {(vsCarritosBalance !== 0 || vsTeamPressuresBalance !== 0 || vsWolfBalance !== 0 || vsSixesBalance !== 0 || vsVegasBalance !== 0) && (
                                 <span className="text-xs text-muted-foreground flex flex-wrap gap-x-1">
-                                  <span>Ind: <span className={cn(vsIndividualBalance > 0 ? 'text-green-600' : vsIndividualBalance < 0 ? 'text-destructive' : '')}>{vsIndividualBalance >= 0 ? '+' : ''}{vsIndividualBalance}</span></span>
+                                  <span>{trs("Ind:")}{' '}<span className={cn(vsIndividualBalance > 0 ? 'text-green-600' : vsIndividualBalance < 0 ? 'text-destructive' : '')}>{vsIndividualBalance >= 0 ? '+' : ''}{vsIndividualBalance}</span></span>
                                   {vsCarritosBalance !== 0 && (
-                                    <span>| Car: <span className={cn(vsCarritosBalance > 0 ? 'text-green-600' : vsCarritosBalance < 0 ? 'text-destructive' : '')}>{vsCarritosBalance >= 0 ? '+' : ''}{vsCarritosBalance}</span></span>
+                                    <span>{trs("| Car:")}{' '}<span className={cn(vsCarritosBalance > 0 ? 'text-green-600' : vsCarritosBalance < 0 ? 'text-destructive' : '')}>{vsCarritosBalance >= 0 ? '+' : ''}{vsCarritosBalance}</span></span>
                                   )}
                                   {vsTeamPressuresBalance !== 0 && (
-                                    <span>| Pres: <span className={cn(vsTeamPressuresBalance > 0 ? 'text-green-600' : vsTeamPressuresBalance < 0 ? 'text-destructive' : '')}>{vsTeamPressuresBalance >= 0 ? '+' : ''}{vsTeamPressuresBalance}</span></span>
+                                    <span>{trs("| Pres:")}{' '}<span className={cn(vsTeamPressuresBalance > 0 ? 'text-green-600' : vsTeamPressuresBalance < 0 ? 'text-destructive' : '')}>{vsTeamPressuresBalance >= 0 ? '+' : ''}{vsTeamPressuresBalance}</span></span>
                                   )}
                                   {vsWolfBalance !== 0 && (
                                     <span>| 🐺: <span className={cn(vsWolfBalance > 0 ? 'text-green-600' : 'text-destructive')}>{vsWolfBalance >= 0 ? '+' : ''}${fmtMoney(Math.abs(vsWolfBalance))}</span></span>
                                   )}
                                   {vsSixesBalance !== 0 && (
-                                    <span>| 6s: <span className={cn(vsSixesBalance > 0 ? 'text-green-600' : 'text-destructive')}>{vsSixesBalance >= 0 ? '+' : ''}${fmtMoney(Math.abs(vsSixesBalance))}</span></span>
+                                    <span>{trs("| 6s:")}{' '}<span className={cn(vsSixesBalance > 0 ? 'text-green-600' : 'text-destructive')}>{vsSixesBalance >= 0 ? '+' : ''}${fmtMoney(Math.abs(vsSixesBalance))}</span></span>
                                   )}
                                   {vsVegasBalance !== 0 && (
-                                    <span>| LV: <span className={cn(vsVegasBalance > 0 ? 'text-green-600' : 'text-destructive')}>{vsVegasBalance >= 0 ? '+' : ''}${fmtMoney(Math.abs(vsVegasBalance))}</span></span>
+                                    <span>{trs("| LV:")}{' '}<span className={cn(vsVegasBalance > 0 ? 'text-green-600' : 'text-destructive')}>{vsVegasBalance >= 0 ? '+' : ''}${fmtMoney(Math.abs(vsVegasBalance))}</span></span>
                                   )}
                                 </span>
                               )}
@@ -2176,14 +2176,14 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               const rounded = roundGroupToNearest5Map(raws);
               return Array.from(rounded.values()).reduce((s, v) => s + v, 0);
             })()}`}
-            <span className="ml-1">(debe ser $0)</span>
+            <span className="ml-1">{trs("(debe ser $0)")}</span>
           </div>
           {tablaGeneralPlayers.some(p => p.isFounder) && (
             <div className="flex items-center justify-center gap-1.5 py-1 text-xs text-golf-gold">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor"/>
               </svg>
-              <span className="font-medium">Miembro Fundador</span>
+              <span className="font-medium">{trs("Miembro Fundador")}</span>
             </div>
           )}
         </CardContent>
@@ -2193,7 +2193,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       <Card>
         <CardHeader className="py-3 pb-0">
           <CardTitle className="text-sm flex items-center gap-2 min-w-0">
-            <span className="text-muted-foreground">Balance</span>
+            <span className="text-muted-foreground">{trs("Balance")}</span>
             <span className="font-bold truncate">{formatPlayerName(basePlayer?.name || '—')}</span>
             <span className="text-muted-foreground">{trs("vs")}</span>
           </CardTitle>
@@ -2210,7 +2210,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           <div className="flex items-stretch gap-0">
             {/* BASE column - left side */}
             <div className="flex flex-col items-center gap-2 pr-3">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Base</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{trs("Base")}</span>
               {balanceVsPlayers.map((p) => {
                 const isActive = p.id === balanceBasePlayerId;
                 return (
@@ -2386,7 +2386,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         onClick={() => setShowCrossGroupPicker(false)}
                         className="w-full mt-2"
                       >
-                        Listo
+                        {trs("Listo")}
                       </Button>
                     </DialogContent>
                   </Dialog>
@@ -2469,7 +2469,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           return (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">🏎️ Carritos</CardTitle>
+                <CardTitle className="text-sm">{trs("🏎️ Carritos")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
@@ -2522,7 +2522,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           return (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Foursomes</CardTitle>
+                <CardTitle className="text-sm">{trs("Foursomes")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
@@ -3011,7 +3011,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 <div className="flex items-center gap-2">
 
                   {pressureDisabled ? (
-                    <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
+                    <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">{trs("Cancelada")}</div>
                   ) : (
                     <span className={cn('text-base font-bold tabular-nums', grandTotalBase > 0 ? 'text-green-600' : grandTotalBase < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                       {grandTotalBase >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(grandTotalBase))}
@@ -3126,7 +3126,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                             </PopoverTrigger>
                             <PopoverContent side="top" className="w-80 p-3">
                               <div className="text-xs space-y-2">
-                                <p className="font-semibold text-sm">Unidades — Detalle</p>
+                                <p className="font-semibold text-sm">{trs("Unidades — Detalle")}</p>
                                 <div className="grid grid-cols-[1fr_auto_1fr] gap-x-3">
                                   <div>
                                     <p className="font-medium text-green-600 mb-1">Tu equipo ({unitsDetail.totalA})</p>
@@ -3153,7 +3153,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                   </div>
                                 </div>
                                 <div className="border-t border-border pt-1 space-y-0.5">
-                                  <p className="flex justify-between"><span>Diferencial unidades</span><span className="tabular-nums font-semibold">{unitsDetail.diff >= 0 ? `+${unitsDetail.diff}` : unitsDetail.diff}</span></p>
+                                  <p className="flex justify-between"><span>{trs("Diferencial unidades")}</span><span className="tabular-nums font-semibold">{unitsDetail.diff >= 0 ? `+${unitsDetail.diff}` : unitsDetail.diff}</span></p>
                                   {unitsDetail.unitsAdv > 0 && unitsDetail.unitsAdvTeam !== 'none' && (
                                     <p className="flex justify-between text-[10px]">
                                       <span className="text-muted-foreground">
@@ -3165,9 +3165,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                     </p>
                                   )}
                                   {unitsDetail.netAdvantage !== 0 && (
-                                    <p className="flex justify-between"><span>Diferencial ajustado</span><span className="tabular-nums font-semibold">{unitsDetail.adjustedDiff >= 0 ? `+${unitsDetail.adjustedDiff}` : unitsDetail.adjustedDiff}</span></p>
+                                    <p className="flex justify-between"><span>{trs("Diferencial ajustado")}</span><span className="tabular-nums font-semibold">{unitsDetail.adjustedDiff >= 0 ? `+${unitsDetail.adjustedDiff}` : unitsDetail.adjustedDiff}</span></p>
                                   )}
-                                  <p className="flex justify-between"><span>Valor unidad</span><span className="tabular-nums">${bet.unitsConfig?.valuePerUnit}</span></p>
+                                  <p className="flex justify-between"><span>{trs("Valor unidad")}</span><span className="tabular-nums">${bet.unitsConfig?.valuePerUnit}</span></p>
                                   <p className="flex justify-between font-semibold">
                                     <span>{trs("Resultado")}</span>
                                     <span className={cn('tabular-nums', unitsMoneyBase > 0 ? 'text-green-600' : unitsMoneyBase < 0 ? 'text-destructive' : '')}>
@@ -3191,8 +3191,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                             </PopoverTrigger>
                             <PopoverContent side="top" className="w-80 p-3">
                               <div className="text-xs space-y-2">
-                                <p className="font-semibold text-sm">Oyeses — Detalle</p>
-                                <p className="text-[10px] text-muted-foreground">{oyesesDetail.modality === 'sangron' ? 'Sangrón' : 'Acumulado'}</p>
+                                <p className="font-semibold text-sm">{trs("Oyeses — Detalle")}</p>
+                                <p className="text-[10px] text-muted-foreground">{oyesesDetail.modality === 'sangron' ? trs("Sangrón") : trs("Acumulado")}</p>
                                 <div className="grid grid-cols-[1fr_auto_1fr] gap-x-3">
                                   <div>
                                     <p className="font-medium text-green-600 mb-1">Tu equipo ({oyesesDetail.winsA})</p>
@@ -3237,8 +3237,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                   </div>
                                 </div>
                                 <div className="border-t border-border pt-1 space-y-0.5">
-                                  <p className="flex justify-between"><span>Diferencial</span><span className="tabular-nums font-semibold">{oyesesDetail.diff >= 0 ? `+${oyesesDetail.diff}` : oyesesDetail.diff}</span></p>
-                                  <p className="flex justify-between"><span>Valor oyes</span><span className="tabular-nums">${oyesesDetail.valuePerOyes}</span></p>
+                                  <p className="flex justify-between"><span>{trs("Diferencial")}</span><span className="tabular-nums font-semibold">{oyesesDetail.diff >= 0 ? `+${oyesesDetail.diff}` : oyesesDetail.diff}</span></p>
+                                  <p className="flex justify-between"><span>{trs("Valor oyes")}</span><span className="tabular-nums">${oyesesDetail.valuePerOyes}</span></p>
                                   <p className="flex justify-between font-semibold">
                                     <span>{trs("Resultado")}</span>
                                     <span className={cn('tabular-nums', oyesesMoneyBase > 0 ? 'text-green-600' : oyesesMoneyBase < 0 ? 'text-destructive' : '')}>
@@ -3262,7 +3262,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                             </PopoverTrigger>
                             <PopoverContent side="top" className="w-80 p-3">
                               <div className="text-xs space-y-2">
-                                <p className="font-semibold text-sm">Manchas — Detalle</p>
+                                <p className="font-semibold text-sm">{trs("Manchas — Detalle")}</p>
                                 <div className="grid grid-cols-[1fr_auto_1fr] gap-x-3">
                                   <div>
                                     <p className="font-medium text-destructive mb-1">Tu equipo ({manchasDetail.totalA})</p>
@@ -3289,8 +3289,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                   </div>
                                 </div>
                                 <div className="border-t border-border pt-1 space-y-0.5">
-                                  <p className="flex justify-between"><span>Diferencial manchas</span><span className="tabular-nums font-semibold">{manchasDetail.diffStd >= 0 ? `+${manchasDetail.diffStd}` : manchasDetail.diffStd}</span></p>
-                                  <p className="flex justify-between"><span>Valor mancha</span><span className="tabular-nums">${manchasDetail.valueStd}</span></p>
+                                  <p className="flex justify-between"><span>{trs("Diferencial manchas")}</span><span className="tabular-nums font-semibold">{manchasDetail.diffStd >= 0 ? `+${manchasDetail.diffStd}` : manchasDetail.diffStd}</span></p>
+                                  <p className="flex justify-between"><span>{trs("Valor mancha")}</span><span className="tabular-nums">${manchasDetail.valueStd}</span></p>
                                   {manchasDetail.includeGeneric && (
                                     <>
                                       <p className="flex justify-between"><span>{trs("Diferencial genéricas")}</span><span className="tabular-nums font-semibold">{manchasDetail.diffGen >= 0 ? `+${manchasDetail.diffGen}` : manchasDetail.diffGen}</span></p>
@@ -3316,7 +3316,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   <p className="text-[10px] text-muted-foreground">
                     {bet.scoringType === 'lowBall' ? 'Bola Baja' :
                      bet.scoringType === 'highBall' ? 'Bola Alta' :
-                     bet.scoringType === 'matchOnly' ? 'Match Play' : 'Bola Baja + Bola Alta'}
+                     bet.scoringType === 'matchOnly' ? trs("Match Play") : trs("Bola Baja + Bola Alta")}
                   </p>
                 </div>
 
@@ -3426,7 +3426,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     {/* Front 9 */}
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium">Front 9</span>
+                        <span className="text-xs font-medium">{trs("Front 9")}</span>
                         <div className="flex items-center gap-2">
                           <span className={cn('text-xs tabular-nums', frontTotal > 0 ? 'text-green-600' : frontTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                             {frontBetsDisplay}
@@ -3486,10 +3486,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                     />
                                     <div className="pt-1 border-t border-border/50">
                                       {(bet.scoringType === 'lowBall' || bet.scoringType === 'combined') && (
-                                        <p className="flex justify-between"><span>Bola Baja</span><span className="tabular-nums">{detail.lowBallWinner === 'A' ? 'Tu equipo' : detail.lowBallWinner === 'B' ? 'Rival' : 'Empate'}</span></p>
+                                        <p className="flex justify-between"><span>{trs("Bola Baja")}</span><span className="tabular-nums">{detail.lowBallWinner === 'A' ? 'Tu equipo' : detail.lowBallWinner === 'B' ? trs("Rival") : trs("Empate")}</span></p>
                                       )}
                                       {(bet.scoringType === 'highBall' || bet.scoringType === 'combined') && (
-                                        <p className="flex justify-between"><span>Bola Alta</span><span className="tabular-nums">{detail.highBallWinner === 'A' ? 'Tu equipo' : detail.highBallWinner === 'B' ? 'Rival' : 'Empate'}</span></p>
+                                        <p className="flex justify-between"><span>{trs("Bola Alta")}</span><span className="tabular-nums">{detail.highBallWinner === 'A' ? 'Tu equipo' : detail.highBallWinner === 'B' ? trs("Rival") : trs("Empate")}</span></p>
                                       )}
                                       <p className="flex justify-between font-medium"><span>{trs("Puntos")}</span><span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span></p>
                                     </div>
@@ -3507,7 +3507,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     {/* Back 9 */}
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium">Back 9</span>
+                        <span className="text-xs font-medium">{trs("Back 9")}</span>
                         <div className="flex items-center gap-2">
                           <span className={cn('text-xs tabular-nums', backTotal > 0 ? 'text-green-600' : backTotal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                             {backBetsDisplay}
@@ -3581,10 +3581,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                     />
                                     <div className="pt-1 border-t border-border/50">
                                       {(bet.scoringType === 'lowBall' || bet.scoringType === 'combined') && (
-                                        <p className="flex justify-between"><span>Bola Baja</span><span className="tabular-nums">{detail.lowBallWinner === 'A' ? 'Tu equipo' : detail.lowBallWinner === 'B' ? 'Rival' : 'Empate'}</span></p>
+                                        <p className="flex justify-between"><span>{trs("Bola Baja")}</span><span className="tabular-nums">{detail.lowBallWinner === 'A' ? 'Tu equipo' : detail.lowBallWinner === 'B' ? trs("Rival") : trs("Empate")}</span></p>
                                       )}
                                       {(bet.scoringType === 'highBall' || bet.scoringType === 'combined') && (
-                                        <p className="flex justify-between"><span>Bola Alta</span><span className="tabular-nums">{detail.highBallWinner === 'A' ? 'Tu equipo' : detail.highBallWinner === 'B' ? 'Rival' : 'Empate'}</span></p>
+                                        <p className="flex justify-between"><span>{trs("Bola Alta")}</span><span className="tabular-nums">{detail.highBallWinner === 'A' ? 'Tu equipo' : detail.highBallWinner === 'B' ? trs("Rival") : trs("Empate")}</span></p>
                                       )}
                                       <p className="flex justify-between font-medium"><span>{trs("Puntos")}</span><span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span></p>
                                     </div>
@@ -3865,7 +3865,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     <PlayerAvatar initials={partner.initials} background={partner.color} size="sm" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{partner.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{isInitiator ? 'Tú invitaste' : 'Te invitó'}</p>
+                      <p className="text-[10px] text-muted-foreground">{isInitiator ? trs("Tú invitaste") : trs("Te invitó")}</p>
                     </div>
                   </div>
 

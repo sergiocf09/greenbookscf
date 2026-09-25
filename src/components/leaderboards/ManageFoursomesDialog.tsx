@@ -266,7 +266,7 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
         if (error) console.warn('Could not delete group:', error.message);
       }
 
-      toast.success('Foursomes actualizados');
+      toast.success(trs("Foursomes actualizados"));
       onChanged();
       onClose();
     } catch (err: any) {
@@ -407,7 +407,7 @@ const UnassignedSection: React.FC<UnassignedProps> = ({ players, groups, onAssig
           <Popover>
             <PopoverTrigger asChild>
               <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1">
-                <Plus className="h-3 w-3" /> Asignar
+                <Plus className="h-3 w-3" />{' '}{trs("Asignar")}
               </Button>
             </PopoverTrigger>
             <PopoverContent align="end" className="w-36 p-1">
@@ -478,7 +478,7 @@ const GroupSection: React.FC<GroupSectionProps> = ({
           </div>
           <Popover>
             <PopoverTrigger asChild>
-              <Button size="icon" variant="ghost" className="h-6 w-6" title="Mover">
+              <Button size="icon" variant="ghost" className="h-6 w-6" title={trs("Mover")}>
                 <ArrowRightLeft className="h-3 w-3" />
               </Button>
             </PopoverTrigger>

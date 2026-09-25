@@ -134,7 +134,7 @@ export const CupSettingsDialog: React.FC<Props> = ({
         if (Object.keys(patch).length > 0) await onUpdateTeam(teamB.id, patch);
       }
 
-      toast.success('Cambios guardados');
+      toast.success(trs("Cambios guardados"));
       onOpenChange(false);
       await onSaved();
     } catch (err: any) {
@@ -171,7 +171,7 @@ export const CupSettingsDialog: React.FC<Props> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Configurar competencia</DialogTitle>
+          <DialogTitle>{trs("Configurar competencia")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -189,7 +189,7 @@ export const CupSettingsDialog: React.FC<Props> = ({
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Opcional"
+              placeholder={trs("Opcional")}
               rows={2}
             />
           </div>
@@ -203,7 +203,7 @@ export const CupSettingsDialog: React.FC<Props> = ({
             </p>
             <div className="w-20">
 
-              <Label className="whitespace-nowrap">Pts P/Match</Label>
+              <Label className="whitespace-nowrap">{trs("Pts P/Match")}</Label>
               <Input
                 type="number"
                 min={0}

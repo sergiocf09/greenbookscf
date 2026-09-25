@@ -65,7 +65,7 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
         <Card>
           <CardContent className="p-4">
             <p className="text-sm text-muted-foreground">
-              {trs("Estás en")}{' '}<span className="font-medium">modo preview</span>{trs(". Las rondas creadas aquí no existen en el sitio publicado. Para invitar a otros sin problemas, publica la app y crea la ronda desde el sitio publicado antes de compartir.")}
+              {trs("Estás en")}{' '}<span className="font-medium">{trs("modo preview")}</span>{trs(". Las rondas creadas aquí no existen en el sitio publicado. Para invitar a otros sin problemas, publica la app y crea la ronda desde el sitio publicado antes de compartir.")}
             </p>
           </CardContent>
         </Card>
@@ -139,7 +139,7 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
         onClick={() => setShowQR(!showQR)}
       >
         <QrCode className="h-4 w-4 mr-2" />
-        {showQR ? 'Ocultar QR' : 'Mostrar QR'}
+        {showQR ? trs("Ocultar QR") : trs("Mostrar QR")}
       </Button>
 
       {/* QR Code Section - Collapsible */}

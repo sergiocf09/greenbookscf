@@ -131,7 +131,7 @@ export function PlayViews(props: PlayViewsProps) {
       {showReadOnlyBanner && (
         <Alert className="mb-3 border-amber-500/40 bg-amber-500/10">
           <AlertCircle className="h-4 w-4 text-amber-600" />
-          <AlertTitle className="text-amber-700 dark:text-amber-400">Modo solo lectura</AlertTitle>
+          <AlertTitle className="text-amber-700 dark:text-amber-400">{trs("Modo solo lectura")}</AlertTitle>
           <AlertDescription className="text-amber-700/90 dark:text-amber-400/90 text-xs">
             {trs("Solo el organizador o un co-administrador de tu grupo pueden capturar scores y editar handicaps. Las apuestas bilaterales (lápiz / X) sí se pueden editar normalmente desde el dashboard.")}
           </AlertDescription>

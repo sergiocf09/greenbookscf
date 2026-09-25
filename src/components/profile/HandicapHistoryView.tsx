@@ -239,7 +239,7 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
           return (
             <p className="text-[11px] text-muted-foreground px-1 -mt-1 flex items-center gap-1">
               <Check className="h-3 w-3" />
-              Atestadas: <span className={cn('font-medium', colorClass)}>
+              {trs("Atestadas:")}{' '}<span className={cn('font-medium', colorClass)}>
                 {attestationStats.attestedRounds} de {attestationStats.totalRounds} ({pct}%)
               </span>
             </p>
@@ -280,9 +280,9 @@ const RoundRow: React.FC<{ entry: HandicapHistoryEntry; isUsed: boolean }> = ({ 
             title={`Tee ${entry.teeColor}`}
           />
           {entry.isAttested ? (
-            <Check className="h-3 w-3 text-emerald-500 shrink-0" aria-label="Atestada" />
+            <Check className="h-3 w-3 text-emerald-500 shrink-0" aria-label={trs("Atestada")} />
           ) : (
-            <Clock className="h-3 w-3 text-muted-foreground shrink-0" aria-label="Pendiente" />
+            <Clock className="h-3 w-3 text-muted-foreground shrink-0" aria-label={trs("Pendiente")} />
           )}
         </div>
         <div className="flex items-center gap-1.5 text-muted-foreground mt-0.5">

@@ -317,7 +317,7 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
                   <span>{trs("Modalidad Sangrón")}</span>
                 </>
               ) : (
-                <span>Modalidad Acumulado</span>
+                <span>{trs("Modalidad Acumulado")}</span>
               )}
             </div>
           )}
@@ -337,7 +337,7 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
           {hasDuplicates && (
             <div className="flex items-center gap-2 text-xs text-destructive bg-destructive/10 px-3 py-2 rounded-md">
               <AlertCircle className="h-4 w-4 shrink-0" />
-              <span>Hay posiciones duplicadas</span>
+              <span>{trs("Hay posiciones duplicadas")}</span>
             </div>
           )}
           
@@ -453,7 +453,7 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
             <span />
           )}
 
-          <Button onClick={() => setOpen(false)}>Listo</Button>
+          <Button onClick={() => setOpen(false)}>{trs("Listo")}</Button>
         </div>
       </DialogContent>
     </Dialog>

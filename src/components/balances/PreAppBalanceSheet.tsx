@@ -101,7 +101,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
           amount,
           note: note.trim() || null,
         });
-        toast.success('Registro actualizado');
+        toast.success(trs("Registro actualizado"));
       } else {
         await onAdd({
           rival_profile_id: rivalProfileId,
@@ -110,11 +110,11 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
           amount,
           note: note.trim() || undefined,
         });
-        toast.success('Registro guardado');
+        toast.success(trs("Registro guardado"));
       }
       resetForm();
     } catch {
-      toast.error('Error guardando registro');
+      toast.error(trs("Error guardando registro"));
     } finally {
       setSaving(false);
     }
@@ -124,10 +124,10 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
     setDeletingId(id);
     try {
       await onDelete(id);
-      toast.success('Registro eliminado');
+      toast.success(trs("Registro eliminado"));
       if (editingId === id) resetForm();
     } catch {
-      toast.error('Error eliminando registro');
+      toast.error(trs("Error eliminando registro"));
     } finally {
       setDeletingId(null);
     }
@@ -220,7 +220,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
             {showForm && (
               <div className="p-3 bg-card border border-border rounded-lg space-y-3">
                 <div className="text-xs font-medium text-muted-foreground">
-                  {editingId ? 'Editando registro' : 'Nuevo registro'}
+                  {editingId ? trs("Editando registro") : trs("Nuevo registro")}
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -274,7 +274,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs">Nota (opcional)</Label>
+                  <Label className="text-xs">{trs("Nota (opcional)")}</Label>
                   <Input
                     value={note}
                     onChange={(e) => setNote(e.target.value)}

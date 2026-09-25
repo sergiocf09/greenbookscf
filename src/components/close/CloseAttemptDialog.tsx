@@ -30,7 +30,7 @@ export const CloseAttemptDialog: React.FC<CloseAttemptDialogProps> = ({
     try {
       setCopying(true);
       await navigator.clipboard.writeText(text);
-      toast.success('Reporte copiado');
+      toast.success(trs("Reporte copiado"));
     } catch {
       toast.error(trs("No se pudo copiar el reporte"));
     } finally {
@@ -54,7 +54,7 @@ export const CloseAttemptDialog: React.FC<CloseAttemptDialogProps> = ({
                 <span className="text-muted-foreground">{trs("Ronda:")}</span> {report.roundId}
               </div>
               <div>
-                <span className="text-muted-foreground">Etapa fallida:</span> {failedStage ?? '—'}
+                <span className="text-muted-foreground">{trs("Etapa fallida:")}</span> {failedStage ?? '—'}
               </div>
               {report.invalidProfileIds.length > 0 && (
                 <div className="mt-2">
@@ -83,12 +83,12 @@ export const CloseAttemptDialog: React.FC<CloseAttemptDialogProps> = ({
             <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={copy} disabled={copying || !text}>
                 <Copy className="h-4 w-4 mr-2" />
-                Copiar reporte
+                {trs("Copiar reporte")}
               </Button>
               {onRetry && (
                 <Button type="button" onClick={onRetry}>
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Reintentar
+                  {trs("Reintentar")}
                 </Button>
               )}
             </div>

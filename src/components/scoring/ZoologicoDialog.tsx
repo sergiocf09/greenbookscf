@@ -138,14 +138,14 @@ export const ZoologicoDialog: React.FC<ZoologicoDialogProps> = ({
             {trs("🐾 Zoológico")}
           </DialogTitle>
           <DialogDescription>
-            Registra eventos: Camello (bunker), Pez (agua), Gorila (OB)
+            {trs("Registra eventos: Camello (bunker), Pez (agua), Gorila (OB)")}
           </DialogDescription>
         </DialogHeader>
 
         {/* Existing Events List */}
         {sortedEvents.length > 0 && !editingEventId && (
           <div className="space-y-2 border-b border-border pb-3">
-            <Label className="text-xs font-medium text-muted-foreground">Eventos Registrados</Label>
+            <Label className="text-xs font-medium text-muted-foreground">{trs("Eventos Registrados")}</Label>
             {sortedEvents.map(event => {
               const player = players.find(p => p.id === event.playerId);
               const animal = ZOO_ANIMALS[event.animalType];

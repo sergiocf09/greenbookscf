@@ -35,7 +35,7 @@ export const CourseInfoStep: React.FC<Props> = ({ data, onChange, onNext }) => {
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label>Ciudad</Label>
+          <Label>{trs("Ciudad")}</Label>
           <Input
             value={data.city}
             onChange={e => update({ city: e.target.value })}
@@ -71,7 +71,7 @@ export const CourseInfoStep: React.FC<Props> = ({ data, onChange, onNext }) => {
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label>Slope</Label>
+          <Label>{trs("Slope")}</Label>
           <Input
             type="number"
             inputMode="numeric"
@@ -81,7 +81,7 @@ export const CourseInfoStep: React.FC<Props> = ({ data, onChange, onNext }) => {
           />
         </div>
         <div className="space-y-1.5">
-          <Label>Rating</Label>
+          <Label>{trs("Rating")}</Label>
           <Input
             type="number"
             inputMode="decimal"
@@ -94,7 +94,7 @@ export const CourseInfoStep: React.FC<Props> = ({ data, onChange, onNext }) => {
       </div>
 
       <Button className="w-full" disabled={!isValid} onClick={onNext}>
-        Continuar
+        {trs("Continuar")}
       </Button>
     </div>
   );

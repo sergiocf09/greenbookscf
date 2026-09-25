@@ -183,7 +183,7 @@ export const RoundAuditSheet: React.FC<RoundAuditSheetProps> = ({
               {modifications.length > 0 && (
                 <div className={firstCaptures.length > 0 ? 'mt-3' : ''}>
                   <div className="text-[10px] font-bold uppercase text-amber-600 dark:text-amber-400 tracking-wider pt-2 pb-1">
-                    ✏️ Modificaciones
+                    {trs("✏️ Modificaciones")}
                   </div>
                   {renderEntries(modifications)}
                 </div>

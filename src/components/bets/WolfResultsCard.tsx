@@ -174,7 +174,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
             {/* Team labels */}
             <div className="flex justify-between text-[10px] text-muted-foreground">
               <span>{t('dashboard.wolfTeam')}</span>
-              <span>Rivales</span>
+              <span>{trs("Rivales")}</span>
             </div>
 
             {/* Player scores */}
@@ -242,7 +242,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
             <div className="pt-1 border-t border-border/50 text-xs space-y-0.5">
               {wolfConfig.scoringMode === 'lowBall' && detail.teamWolfScore !== null && detail.teamRivalScore !== null && (
                 <p className="flex justify-between">
-                  <span>Bola Baja</span>
+                  <span>{trs("Bola Baja")}</span>
                   <span>
                     {detail.lowBallWinner === 'wolf' ? t('dashboard.wolf') : detail.lowBallWinner === 'rival' ? t('dashboard.rival') : t('dashboard.tie')}
                     {' · '}{detail.teamWolfScore} vs {detail.teamRivalScore}
@@ -251,14 +251,14 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
               )}
               {wolfConfig.scoringMode === 'stroke' && detail.teamWolfScore !== null && detail.teamRivalScore !== null && (
                 <p className="flex justify-between">
-                  <span>Score Neto</span>
+                  <span>{trs("Score Neto")}</span>
                   <span>{detail.teamWolfScore} vs {detail.teamRivalScore}</span>
                 </p>
               )}
               {wolfConfig.scoringMode === 'lowHighBall' && (
                 <>
                   <p className="flex justify-between">
-                    <span>Bola Baja</span>
+                    <span>{trs("Bola Baja")}</span>
                     <span>
                       {detail.lowBallWinner === 'wolf' ? t('dashboard.wolf') : detail.lowBallWinner === 'rival' ? t('dashboard.rival') : t('dashboard.tie')}
                       {detail.teamWolfScore !== null && detail.teamRivalScore !== null && ` · ${detail.teamWolfScore} vs ${detail.teamRivalScore}`}
@@ -269,7 +269,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
                 </>
               )}
               {(detail.carryoverHoles ?? 0) > 0 && (
-                <p className="flex justify-between"><span>Carryover</span><span>+{detail.carryoverHoles} hoyo(s)</span></p>
+                <p className="flex justify-between"><span>{trs("Carryover")}</span><span>+{detail.carryoverHoles} hoyo(s)</span></p>
               )}
               {detail.wentSolo && wolfConfig.scoringMode !== 'lowBall' && (
                 <p className="text-[9px] text-amber-600 mt-1">
@@ -298,7 +298,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
           <span>🐺 {t('dashboard.wolf')}</span>
           <div className="flex items-center gap-2">
             {isDisabled ? (
-              <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
+              <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">{trs("Cancelada")}</div>
             ) : (
               <span className={cn('text-base font-bold tabular-nums', getNetTone(totalBalance))}>
                 {totalBalance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(totalBalance))}
@@ -329,7 +329,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
             )}
             onClick={() => setOpenSection(openSection === 'f9' ? null : 'f9')}
           >
-            Front 9
+            {trs("Front 9")}
           </button>
           <button
             className={cn(
@@ -338,7 +338,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
             )}
             onClick={() => setOpenSection(openSection === 'b9' ? null : 'b9')}
           >
-            Back 9
+            {trs("Back 9")}
           </button>
         </div>
 

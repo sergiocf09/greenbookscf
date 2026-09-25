@@ -460,7 +460,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
                 className="gap-1.5 border-amber-400 text-amber-700 hover:bg-amber-50"
               >
                 <Sparkles className="h-3.5 w-3.5" />
-                Aplicar Sliding
+                {trs("Aplicar Sliding")}
               </Button>
             )}
             {slidingApplied && slidingSuggestions.size > 0 && (
@@ -594,7 +594,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
                               const s = getSlidingForPair(row.id, col.id);
                               if (s.hasSliding) {
                                 setCellStrokes(row.id, col.id, s.strokes);
-                                toast.success('Sliding aplicado');
+                                toast.success(trs("Sliding aplicado"));
                               }
                             }}
                             disambiguated={disambiguated}
@@ -620,7 +620,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
             </div>
             <div className="flex items-center gap-1">
               <div className="w-3 h-3 rounded bg-muted/40 border border-border" />
-              <span>Scratch</span>
+              <span>{trs("Scratch")}</span>
             </div>
             {slidingSuggestions.size > 0 && (
               <div className="flex items-center gap-1">

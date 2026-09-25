@@ -9,7 +9,7 @@ interface ParejasParticipationMatrixProps {
   config: BetConfig;
   players: Player[];
   onUpdateConfig: (config: BetConfig) => void;
-  onUpdateBet: <K extends keyof BetConfig>(betType: K, updates: Partial<BetConfig[K]>) => void;
+  onUpdateBet: <K extends keyof BetConfig>{trs("(betType: K, updates: Partial")}<BetConfig[K]>) => void;
 }
 
 const PAREJAS_BETS = [

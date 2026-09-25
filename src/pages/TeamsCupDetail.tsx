@@ -41,7 +41,7 @@ const TeamsCupDetail = () => {
             variant="ghost"
             size="icon"
             onClick={() => window.location.reload()}
-            aria-label="Actualizar"
+            aria-label={trs("Actualizar")}
           >
             <RefreshCw className="h-5 w-5" />
           </Button>

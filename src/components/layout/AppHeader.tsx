@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { GolfCourse, HoleInfo } from '@/types/golf';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -214,8 +215,8 @@ export function AppHeader(props: AppHeaderProps) {
                 size="icon"
                 className="rounded-full text-primary-foreground hover:bg-primary-foreground/10"
                 onClick={onOpenAttestation}
-                aria-label="Scores Attestation"
-                title="Scores Attestation"
+                aria-label={trs("Scores Attestation")}
+                title={trs("Scores Attestation")}
               >
                 <ScrollText className="h-5 w-5" />
               </Button>
@@ -314,7 +315,7 @@ export function AppHeader(props: AppHeaderProps) {
                   {theme === 'dark' ? t('menu.lightMode') : t('menu.darkMode')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={(e) => { e.preventDefault(); toggleLanguage(); }}>
-                  <span className="h-4 w-4 mr-2 text-[10px] font-bold leading-4 text-center">{i18n.language === 'en' ? 'ES' : 'EN'}</span>
+                  <span className="h-4 w-4 mr-2 text-[10px] font-bold leading-4 text-center">{i18n.language === 'en' ? trs("ES") : trs("EN")}</span>
                   {t('menu.language')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -333,11 +334,11 @@ export function AppHeader(props: AppHeaderProps) {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onSetView('leaderboards')}>
                   <Trophy className="h-4 w-4 mr-2" />
-                  Leaderboards
+                  {trs("Leaderboards")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onSetView('rankings')}>
                   <TrendingDown className="h-4 w-4 mr-2" />
-                  Rankings
+                  {trs("Rankings")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onOpenDialog('history')}>
                   <History className="h-4 w-4 mr-2" />

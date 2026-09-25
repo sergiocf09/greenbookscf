@@ -68,7 +68,7 @@ export function DeleteRoundButton({ roundId, onDeleted, disabled }: DeleteRoundB
             <AlertDialogDescription asChild>
               <div className="space-y-2 text-sm">
                 <p>
-                  {trs("Se borra")}{' '}<strong>todo</strong>{' '}{trs("lo que se configuró y capturó: jugadores, hándicaps, scores, apuestas y balances.")}
+                  {trs("Se borra")}{' '}<strong>{trs("todo")}</strong>{' '}{trs("lo que se configuró y capturó: jugadores, hándicaps, scores, apuestas y balances.")}
                 </p>
                 <p>
                   <strong>{trs("No se guarda nada")}</strong>{' '}{trs("en el historial, ni en estadísticas, ni en balances entre jugadores. Es irreversible.")}
@@ -79,7 +79,7 @@ export function DeleteRoundButton({ roundId, onDeleted, disabled }: DeleteRoundB
 
           <div className="space-y-2">
             <Label htmlFor="delete-round-confirm" className="text-xs">
-              Escribe <strong>{trs("ELIMINAR")}</strong>{' '}{trs("para confirmar")}
+              {trs("Escribe")}{' '}<strong>{trs("ELIMINAR")}</strong>{' '}{trs("para confirmar")}
             </Label>
             <Input
               id="delete-round-confirm"
@@ -98,7 +98,7 @@ export function DeleteRoundButton({ roundId, onDeleted, disabled }: DeleteRoundB
               onClick={handleDelete}
               disabled={!canDelete || deleting}
             >
-              {deleting ? 'Eliminando...' : 'Eliminar definitivamente'}
+              {deleting ? trs("Eliminando...") : trs("Eliminar definitivamente")}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

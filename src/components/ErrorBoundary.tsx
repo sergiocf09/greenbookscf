@@ -56,7 +56,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
           </div>
           <Button variant="outline" onClick={this.handleReset}>
             <RefreshCw className="h-4 w-4 mr-2" />
-            Reintentar
+            {trs("Reintentar")}
           </Button>
         </div>
       );
@@ -73,7 +73,7 @@ export const RouteErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ ch
       <div className="flex flex-col items-center justify-center min-h-screen gap-6 p-8 bg-background">
         <AlertTriangle className="h-16 w-16 text-destructive" />
         <div className="text-center space-y-2 max-w-md">
-          <h1 className="text-xl font-bold text-foreground">Error inesperado</h1>
+          <h1 className="text-xl font-bold text-foreground">{trs("Error inesperado")}</h1>
           <p className="text-sm text-muted-foreground">
             {trs("Ocurrió un error. Si el problema persiste, cierra y vuelve a abrir la aplicación.")}
           </p>
@@ -85,7 +85,7 @@ export const RouteErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ ch
         </div>
         <Button variant="outline" onClick={() => window.location.reload()}>
           <RefreshCw className="h-4 w-4 mr-2" />
-          Reintentar
+          {trs("Reintentar")}
         </Button>
       </div>
     )}

@@ -95,7 +95,7 @@ export const BetTemplatesDialog: React.FC<BetTemplatesDialogProps> = ({
       return;
     }
     if (result.success) {
-      toast.success('Plantilla guardada');
+      toast.success(trs("Plantilla guardada"));
       handleClose(false);
     } else {
       toast.error(trs("Error al guardar la plantilla"));
@@ -108,7 +108,7 @@ export const BetTemplatesDialog: React.FC<BetTemplatesDialogProps> = ({
     const ok = await overwriteTemplate(saveName.trim(), betConfig);
     setIsSaving(false);
     if (ok) {
-      toast.success('Plantilla actualizada');
+      toast.success(trs("Plantilla actualizada"));
       handleClose(false);
     } else {
       toast.error(trs("Error al actualizar"));
@@ -130,7 +130,7 @@ export const BetTemplatesDialog: React.FC<BetTemplatesDialogProps> = ({
 
   const handleDelete = async (id: string) => {
     const ok = await deleteTemplate(id);
-    if (ok) toast.success('Plantilla eliminada');
+    if (ok) toast.success(trs("Plantilla eliminada"));
     else toast.error(trs("Error al eliminar"));
     setDeleteConfirmId(null);
   };
@@ -190,7 +190,7 @@ export const BetTemplatesDialog: React.FC<BetTemplatesDialogProps> = ({
               >
                 <Download className="h-5 w-5 text-primary" />
                 <div className="text-left">
-                  <div className="font-medium">Cargar plantilla</div>
+                  <div className="font-medium">{trs("Cargar plantilla")}</div>
                   <div className="text-xs text-muted-foreground">{trs("Aplica una configuración guardada")}</div>
                 </div>
               </Button>
@@ -221,7 +221,7 @@ export const BetTemplatesDialog: React.FC<BetTemplatesDialogProps> = ({
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label htmlFor="template-fav" className="text-sm">Marcar como favorita</Label>
+                <Label htmlFor="template-fav" className="text-sm">{trs("Marcar como favorita")}</Label>
                 <Switch
                   id="template-fav"
                   checked={saveFavorite}
@@ -365,14 +365,14 @@ export const BetTemplatesDialog: React.FC<BetTemplatesDialogProps> = ({
       <AlertDialog open={showOverwriteConfirm} onOpenChange={setShowOverwriteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Plantilla existente</AlertDialogTitle>
+            <AlertDialogTitle>{trs("Plantilla existente")}</AlertDialogTitle>
             <AlertDialogDescription>
               Ya tienes una plantilla llamada "{saveName.trim()}". ¿Deseas sobrescribirla con la configuración actual?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{trs("Cancelar")}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleOverwrite}>Sobrescribir</AlertDialogAction>
+            <AlertDialogAction onClick={handleOverwrite}>{trs("Sobrescribir")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

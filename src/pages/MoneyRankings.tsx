@@ -86,7 +86,7 @@ const MoneyRankings = () => {
           {r.is_creator && (
             <Badge variant="secondary" className="text-[10px] shrink-0">
               <Crown className="h-3 w-3 mr-1" />
-              Tuyo
+              {trs("Tuyo")}
             </Badge>
           )}
         </div>
@@ -111,11 +111,11 @@ const MoneyRankings = () => {
             <GreenBookLogo />
           </div>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-white/20" onClick={() => window.location.reload()} aria-label="Actualizar">
+            <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-white/20" onClick={() => window.location.reload()} aria-label={trs("Actualizar")}>
               <RefreshCw className="h-5 w-5" />
             </Button>
             <TrendingUp className="h-5 w-5 text-accent" />
-            <span className="font-semibold text-sm text-accent">Rankings</span>
+            <span className="font-semibold text-sm text-accent">{trs("Rankings")}</span>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -176,7 +176,7 @@ const MoneyRankings = () => {
           <Tabs defaultValue="mine">
             <TabsList className="w-full">
               <TabsTrigger value="mine" className="flex-1">{trs("Mis Rankings")}</TabsTrigger>
-              <TabsTrigger value="global" className="flex-1">Global</TabsTrigger>
+              <TabsTrigger value="global" className="flex-1">{trs("Global")}</TabsTrigger>
             </TabsList>
             <TabsContent value="mine" className="space-y-3 mt-3">
               {visibleRankings.length === 0 ? (

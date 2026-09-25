@@ -43,9 +43,9 @@ export const CourseReviewStep: React.FC<Props> = ({ data, saving, onBack, onSave
           <thead>
             <tr className="border-b border-border text-muted-foreground">
               <th className="py-1 text-left">{trs("Hoyo")}</th>
-              <th className="py-1 text-center">Par</th>
-              <th className="py-1 text-center">HCP</th>
-              {data.captureYards && <th className="py-1 text-center">Yds</th>}
+              <th className="py-1 text-center">{trs("Par")}</th>
+              <th className="py-1 text-center">{trs("HCP")}</th>
+              {data.captureYards && <th className="py-1 text-center">{trs("Yds")}</th>}
             </tr>
           </thead>
           <tbody>
@@ -59,7 +59,7 @@ export const CourseReviewStep: React.FC<Props> = ({ data, saving, onBack, onSave
             ))}
             {/* Totals */}
             <tr className="font-bold border-t-2 border-border">
-              <td className="py-1">OUT</td>
+              <td className="py-1">{trs("OUT")}</td>
               <td className="py-1 text-center">{frontPar}</td>
               <td className="py-1 text-center">—</td>
               {data.captureYards && (
@@ -69,7 +69,7 @@ export const CourseReviewStep: React.FC<Props> = ({ data, saving, onBack, onSave
               )}
             </tr>
             <tr className="font-bold">
-              <td className="py-1">IN</td>
+              <td className="py-1">{trs("IN")}</td>
               <td className="py-1 text-center">{backPar}</td>
               <td className="py-1 text-center">—</td>
               {data.captureYards && (

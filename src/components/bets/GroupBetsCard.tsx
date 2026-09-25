@@ -324,9 +324,9 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-lg">🐰</span>
-            <span className="font-medium text-sm">Coneja</span>
+            <span className="font-medium text-sm">{trs("Coneja")}</span>
             <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 bg-muted rounded">
-              {betConfig.coneja?.handicapMode === 'bilateral' ? 'Sliding' : 'USGA'}
+              {betConfig.coneja?.handicapMode === 'bilateral' ? trs("Sliding") : trs("USGA")}
             </span>
           </div>
           <span className="text-xs text-muted-foreground">
@@ -440,7 +440,7 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
           <thead>
             {/* Row 1: Label + Gross scores above column headers */}
             <tr>
-              <th className="p-1.5 text-[10px] text-muted-foreground font-normal">Gross</th>
+              <th className="p-1.5 text-[10px] text-muted-foreground font-normal">{trs("Gross")}</th>
               {matrix.playerIds.map(pid => (
                 <th key={`gross-${pid}`} className="p-1 text-center text-muted-foreground font-normal">
                   {matrix.playerGrossScores[pid] || '-'}
@@ -536,7 +536,7 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
         <div className="text-[10px] text-green-600 text-center pt-1 border-t-2 border-primary/40 flex items-center justify-center gap-1">
           <span>🐰</span>
           <span className="font-bold">{winnerPlayer.initials}</span>
-          <span>gana pata</span>
+          <span>{trs("gana pata")}</span>
         </div>
       ) : (
         <div className="text-[10px] text-muted-foreground text-center pt-1 border-t-2 border-primary/40">
@@ -715,7 +715,7 @@ const StablefordResultBlock: React.FC<{
             <div className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 text-[8px] text-muted-foreground">
               <div></div>
               {[1,2,3,4,5,6,7,8,9].map(h => <div key={h} className="text-center">{h}</div>)}
-              <div className="text-center font-semibold">F9</div>
+              <div className="text-center font-semibold">{trs("F9")}</div>
             </div>
             {results.map(r => (
               <div key={r.playerId} className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 items-center">
@@ -744,7 +744,7 @@ const StablefordResultBlock: React.FC<{
             <div className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 text-[8px] text-muted-foreground mt-2">
               <div></div>
               {[10,11,12,13,14,15,16,17,18].map(h => <div key={h} className="text-center">{h}</div>)}
-              <div className="text-center font-semibold">B9</div>
+              <div className="text-center font-semibold">{trs("B9")}</div>
             </div>
             {results.map(r => (
               <div key={`${r.playerId}-back`} className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 items-center">
@@ -825,7 +825,7 @@ const SkinsGrupalPopover: React.FC<{
                   {getPlayerAbbr(p)}
                 </th>
               ))}
-              <th className="p-1 text-center text-[10px] text-muted-foreground font-normal">Skin</th>
+              <th className="p-1 text-center text-[10px] text-muted-foreground font-normal">{trs("Skin")}</th>
             </tr>
           </thead>
           <tbody>
@@ -1294,7 +1294,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     return {
       enabled: true,
       type: 'culebras',
-      title: 'Culebras',
+      title: trs("Culebras"),
       emoji: '🐍',
       totalCount,
       valuePerOccurrence,
@@ -1411,7 +1411,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     return {
       enabled: true,
       type: 'pinguinos',
-      title: 'Pingüinos',
+      title: trs("Pingüinos"),
       emoji: '🐧',
       totalCount,
       valuePerOccurrence,
@@ -1735,7 +1735,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     };
 
     const processSegment = (holes: number[], amount: number, segment: 'front' | 'back') => {
-      const empty = { holes: [] as Array<{ holeNum: number; nets: Array<{ playerId: string; net: number; strokesReceived: number }>; winnerId: string | null; accumulated: number; skinValue: number }>, totalByPlayer: new Map<string, number>(), skinCountByPlayer: new Map<string, number>() };
+      const empty = { holes: [] as Array<{ holeNum: number; nets: Array<{ playerId: string; net: number; strokesReceived: number }>; winnerId: string | null; accumulated: number; skinValue: number }>{trs(", totalByPlayer: new Map")}<string, number>{trs("(), skinCountByPlayer: new Map")}<string, number>() };
       if (amount <= 0) return empty;
       
       const modality = cfg.modality ?? 'acumulados';
@@ -2180,7 +2180,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               {showZooDetail === result.animalType && (result.loser || result.hasTie) && result.events.length > 0 && (
                 <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 ml-6">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-muted-foreground">Incidencias:</span>
+                    <span className="text-xs text-muted-foreground">{trs("Incidencias:")}</span>
                     <span className="text-xs">${result.valuePerOccurrence} c/u × {result.totalOccurrences} = ${result.amountPerPlayer}/jug</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
@@ -2233,7 +2233,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   )}>
                     <Target className="h-5 w-5" strokeWidth={2} />
                   </div>
-                  <span className="text-[11px] font-medium text-muted-foreground">Oyeses</span>
+                  <span className="text-[11px] font-medium text-muted-foreground">{trs("Oyeses")}</span>
                   {oyesesSummary.totalPar3 > 0 && (
                     <span className="text-lg font-bold text-blue-600 leading-none">{oyesesSummary.holesWithData}/{oyesesSummary.totalPar3}</span>
                   )}
@@ -2257,7 +2257,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   )}>
                     <Check className="h-5 w-5" strokeWidth={2.5} />
                   </div>
-                  <span className="text-[11px] font-medium text-muted-foreground">Unidades</span>
+                  <span className="text-[11px] font-medium text-muted-foreground">{trs("Unidades")}</span>
                   {unidadesSummary.totalUnidades > 0 && (
                     <span className="text-lg font-bold text-green-600 leading-none">{unidadesSummary.totalUnidades}</span>
                   )}
@@ -2281,7 +2281,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   )}>
                     <X className="h-5 w-5" strokeWidth={2.5} />
                   </div>
-                  <span className="text-[11px] font-medium text-muted-foreground">Manchas</span>
+                  <span className="text-[11px] font-medium text-muted-foreground">{trs("Manchas")}</span>
                   {manchasSummary.totalManchas > 0 && (
                     <span className="text-lg font-bold text-destructive leading-none">{manchasSummary.totalManchas}</span>
                   )}
@@ -2422,7 +2422,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                               : 'text-muted-foreground hover:text-foreground'
                           )}
                         >
-                          Acumulado
+                          {trs("Acumulado")}
                         </button>
                         <button
                           onClick={() => setOyesesPanelTab('sangron')}
@@ -2458,7 +2458,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                         return (
                           <div className="space-y-1">
                             {!oyesesSummary.hasSangron && (
-                              <span className="text-[9px] text-muted-foreground">Modalidad Acumulado</span>
+                              <span className="text-[9px] text-muted-foreground">{trs("Modalidad Acumulado")}</span>
                             )}
                             <div className="grid w-full" style={{ gridTemplateColumns: `20px repeat(${acumHoles.length}, 1fr)` }}>
                               <div className="text-[9px] text-muted-foreground text-center pb-1" />
@@ -2682,14 +2682,14 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Trophy className="h-4 w-4 text-yellow-500" />
-                    <span className="font-medium text-sm">Medal General</span>
+                    <span className="font-medium text-sm">{trs("Medal General")}</span>
                     {hasMultipleGroups && medalScope !== 'global' && (
                       <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                        {medalScope === 'group' ? 'Grupo' : 'Ambas'}
+                        {medalScope === 'group' ? trs("Grupo") : trs("Ambas")}
                       </span>
                     )}
                     {medalSegmentMode === 'segments' && (
-                      <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">F9/B9/T18</span>
+                      <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{trs("F9/B9/T18")}</span>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
@@ -2757,7 +2757,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Trophy className="h-4 w-4 text-emerald-500" />
-                    <span className="font-medium text-sm">Putts General</span>
+                    <span className="font-medium text-sm">{trs("Putts General")}</span>
                   </div>
                   <button
                     onClick={() => setAuditSheet({ betKey: 'puttsGeneral' })}
@@ -2873,9 +2873,9 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Target className="h-4 w-4 text-sky-500" />
-                    <span className="font-medium text-sm">GIR General</span>
+                    <span className="font-medium text-sm">{trs("GIR General")}</span>
                     {girSegmentMode === 'segments' && (
-                      <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">F9/B9/T18</span>
+                      <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{trs("F9/B9/T18")}</span>
                     )}
                   </div>
                   <button
@@ -2956,10 +2956,10 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Star className="h-4 w-4 text-amber-500" />
-                  <span className="font-medium text-sm">Stableford</span>
+                  <span className="font-medium text-sm">{trs("Stableford")}</span>
                   {hasMultipleGroups && stablefordScope !== 'global' && (
                     <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                      {stablefordScope === 'group' ? 'Grupo' : 'Ambas'}
+                      {stablefordScope === 'group' ? trs("Grupo") : trs("Ambas")}
                     </span>
                   )}
                 </div>
@@ -3001,9 +3001,9 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Target className="h-4 w-4 text-emerald-500" />
-                  <span className="font-medium text-sm">Skins Grupal</span>
+                  <span className="font-medium text-sm">{trs("Skins Grupal")}</span>
                   <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                    {skinsGrupalResult.cfg.modality === 'sinAcumular' ? 'Sin Acum' : 'Acumulados'}
+                    {skinsGrupalResult.cfg.modality === 'sinAcumular' ? trs("Sin Acum") : trs("Acumulados")}
                   </span>
                 </div>
               </div>
@@ -3014,7 +3014,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   <PopoverTrigger asChild>
                     <div className="cursor-pointer hover:bg-muted/20 rounded-lg p-2 transition-colors space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium">Front 9</span>
+                        <span className="text-xs font-medium">{trs("Front 9")}</span>
                         <span className="text-xs text-muted-foreground">${skinsGrupalResult.cfg.frontAmount}/skin</span>
                       </div>
                       <div className="grid grid-cols-9 gap-0.5">
@@ -3049,7 +3049,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   <PopoverTrigger asChild>
                     <div className="cursor-pointer hover:bg-muted/20 rounded-lg p-2 transition-colors space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium">Back 9</span>
+                        <span className="text-xs font-medium">{trs("Back 9")}</span>
                         <span className="text-xs text-muted-foreground">${skinsGrupalResult.cfg.backAmount}/skin</span>
                       </div>
                       <div className="grid grid-cols-9 gap-0.5">

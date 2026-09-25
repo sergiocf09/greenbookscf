@@ -147,7 +147,7 @@ export const GuestConversionModal: React.FC<GuestConversionModalProps> = ({
                 onOpenChange(false);
               }}
             >
-              Entendido
+              {trs("Entendido")}
             </Button>
           </div>
         </DialogContent>
@@ -176,7 +176,7 @@ export const GuestConversionModal: React.FC<GuestConversionModalProps> = ({
               <Input id="guest-name" value={displayName} disabled className="bg-muted" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="guest-email">Email</Label>
+              <Label htmlFor="guest-email">{trs("Email")}</Label>
               <Input
                 id="guest-email"
                 type="email"

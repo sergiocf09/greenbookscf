@@ -181,7 +181,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                   <div className="flex items-center gap-3">
                     <Trophy className="h-5 w-5 text-primary" />
                     <div>
-                      <div className="font-medium text-foreground">Leaderboard</div>
+                      <div className="font-medium text-foreground">{trs("Leaderboard")}</div>
                       <div className="text-sm text-muted-foreground">
                         {trs("Tabla de posiciones individual (Medal, Stableford)")}
                       </div>
@@ -201,7 +201,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                   <div className="flex items-center gap-3">
                     <span className="text-lg leading-none">🏆</span>
                     <div>
-                      <div className="font-medium text-foreground">Teams Cup</div>
+                      <div className="font-medium text-foreground">{trs("Teams Cup")}</div>
                       <div className="text-sm text-muted-foreground">
                         {trs("Competencia por equipos estilo Ryder Cup")}
                       </div>
@@ -275,7 +275,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                   />
                 </div>
                 <div>
-                  <Label>Modalidades *</Label>
+                  <Label>{trs("Modalidades *")}</Label>
                   <div className="mt-1 flex flex-col gap-2">
                     {[
                       { key: 'gross', label: 'Medal Gross' },
@@ -337,7 +337,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                         className="h-8 text-xs flex-1"
                       />
                       <Input
-                        placeholder="Etiqueta"
+                        placeholder={trs("Etiqueta")}
                         value={day.label}
                         onChange={e => updateDay(idx, 'label', e.target.value)}
                         className="h-8 text-xs flex-1"
@@ -393,7 +393,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                 </div>
 
                 <div>
-                  <Label>Modalidades *</Label>
+                  <Label>{trs("Modalidades *")}</Label>
                   <div className="mt-1 flex flex-col gap-2">
                     {[
                       { key: 'gross', label: 'Medal Gross' },
@@ -436,7 +436,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
           </DialogTrigger>
           <DialogContent className="max-w-sm">
             <DialogHeader>
-              <DialogTitle>Unirse a Leaderboard</DialogTitle>
+              <DialogTitle>{trs("Unirse a Leaderboard")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -459,7 +459,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
       {/* Tabs: Active / History */}
       <Tabs defaultValue="active">
         <TabsList className="w-full">
-          <TabsTrigger value="active" className="flex-1">Activos</TabsTrigger>
+          <TabsTrigger value="active" className="flex-1">{trs("Activos")}</TabsTrigger>
           <TabsTrigger value="history" className="flex-1">{trs("Historial")}</TabsTrigger>
         </TabsList>
 
@@ -488,7 +488,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                         <CardTitle className="text-base">{ev.name}</CardTitle>
                         {(ev as any).competition_type === 'teams_cup' && (
                           <Badge variant="secondary" className="border border-primary/20 bg-primary/10 text-primary">
-                            TEAMS CUP
+                            {trs("TEAMS CUP")}
                           </Badge>
                         )}
                         {(ev as any).competition_type === 'league' && (
@@ -563,7 +563,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                     <CardTitle className="text-base">{ev.name}</CardTitle>
                     {(ev as any).competition_type === 'teams_cup' && (
                       <Badge variant="secondary" className="border border-primary/20 bg-primary/10 text-primary">
-                        TEAMS CUP
+                        {trs("TEAMS CUP")}
                       </Badge>
                     )}
                     {(ev as any).competition_type === 'league' && (

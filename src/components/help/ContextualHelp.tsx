@@ -66,7 +66,7 @@ const helpContent: Record<string, { icon: React.ReactNode; title: string; items:
   },
   scorecard: {
     icon: <Trophy className="h-5 w-5 text-primary" />,
-    title: '🏆 Scorecard',
+    title: trs("🏆 Scorecard"),
     items: [
       'El botón flotante 📓 con el número del hoyo actual está siempre visible — úsalo para ir a la pantalla de captura donde ingresas golpes y putts de todos los jugadores y confirmas el hoyo.',
       'El ícono ⚡ junto al nombre de cada jugador permite captura rápida de su score sin salir del scorecard.',
@@ -77,7 +77,7 @@ const helpContent: Record<string, { icon: React.ReactNode; title: string; items:
   },
   bets: {
     icon: <CoinDollarIcon className="h-5 w-5 text-primary" />,
-    title: '💰 Balance General',
+    title: trs("💰 Balance General"),
     items: [
       'SECCIÓN SUPERIOR — Balance General: el saldo neto de cada jugador, es decir lo que ganó o perdió contra todos los demás en conjunto. Al desplegar un jugador ves su resultado contra cada rival, ya con todo incluido: sus apuestas individuales más la parte que le corresponde de las apuestas de parejas y grupales.',
       'SEGUNDA SECCIÓN — detalle bilateral: toca un jugador para fijarlo como base y luego toca al rival contra quien quieres comparar. Se despliegan todas las apuestas que están jugando entre ellos, organizadas en Individuales (Medal, Skins, Presiones, Rayas, Unidades, Manchas, Oyeses, Coneja...), Parejas (Carritos, Presiones Parejas, Loba, Sixes, Vegas) y Grupales (Medal General, Stableford, Nines, Culebras, Pingüinos...).',
@@ -90,7 +90,7 @@ const helpContent: Record<string, { icon: React.ReactNode; title: string; items:
   },
   leaderboards: {
     icon: <Trophy className="h-5 w-5 text-primary" />,
-    title: '🏆 Leaderboards',
+    title: trs("🏆 Leaderboards"),
     items: [
       'Los Leaderboards son torneos o competencias entre amigos que abarcan múltiples rondas. Crea uno, comparte el código y los participantes se unen automáticamente.',
       'Al cerrar una ronda, puedes vincularla a un Leaderboard existente. Los scores de esa ronda se suman al ranking acumulado del torneo.',
@@ -100,7 +100,7 @@ const helpContent: Record<string, { icon: React.ReactNode; title: string; items:
   },
   rankings: {
     icon: <BarChart3 className="h-5 w-5 text-primary" />,
-    title: '📊 Rankings',
+    title: trs("📊 Rankings"),
     items: [
       'Los Rankings se dividen en dos pestañas: Scoring (hándicap y estadísticas) y Dinero (balances económicos entre jugadores).',
       'SCORING — muestra el Índice de Hándicap calculado con la fórmula USGA, el promedio de score gross y el mejor score de cada jugador. Se alimenta automáticamente de todas las rondas cerradas.',
@@ -128,7 +128,7 @@ const ContextualHelp: React.FC<ContextualHelpProps> = ({ view, open, onClose }) 
             {content.icon}
             <SheetTitle>{content.title}</SheetTitle>
           </div>
-          <SheetDescription className="sr-only">Ayuda contextual</SheetDescription>
+          <SheetDescription className="sr-only">{trs("Ayuda contextual")}</SheetDescription>
         </SheetHeader>
         <ul className="mt-4 space-y-3">
           {content.items.map((item, i) => (

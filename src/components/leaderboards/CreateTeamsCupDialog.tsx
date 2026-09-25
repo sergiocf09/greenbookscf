@@ -100,7 +100,7 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
       ]).select();
       if (teamsErr) throw teamsErr;
 
-      toast.success('Teams Cup creada');
+      toast.success(trs("Teams Cup creada"));
       queryClient.invalidateQueries({ queryKey: ['leaderboard_events'] });
       setCreatedEvent({ id: ev.id, teams: (createdTeams as any[]) || [] });
       setStep(3);
@@ -143,7 +143,7 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
             <div>
               <Label>{trs("Descripción")}</Label>
               <Input
-                placeholder="Opcional"
+                placeholder={trs("Opcional")}
                 value={description}
                 onChange={e => setDescription(e.target.value)}
               />

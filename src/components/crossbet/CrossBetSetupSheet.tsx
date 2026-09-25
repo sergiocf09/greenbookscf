@@ -83,7 +83,7 @@ export const CrossBetSetupSheet: React.FC<CrossBetSetupSheetProps> = ({
         <SheetHeader className="pb-4">
           <div className="flex items-center gap-2">
             <Swords className="h-5 w-5 text-primary" />
-            <SheetTitle className="text-base">Cruzar tarjeta</SheetTitle>
+            <SheetTitle className="text-base">{trs("Cruzar tarjeta")}</SheetTitle>
           </div>
         </SheetHeader>
 
@@ -128,8 +128,8 @@ export const CrossBetSetupSheet: React.FC<CrossBetSetupSheetProps> = ({
         {sendError && (
           <p className="text-xs text-destructive mb-2 text-center">
             {(sendError as any)?.message?.includes('subscription_required')
-              ? 'Ambos jugadores necesitan suscripción Pro para cruzar tarjeta.'
-              : 'Error al enviar invitación. Intenta de nuevo.'}
+              ? trs("Ambos jugadores necesitan suscripción Pro para cruzar tarjeta.")
+              : trs("Error al enviar invitación. Intenta de nuevo.")}
           </p>
         )}
 

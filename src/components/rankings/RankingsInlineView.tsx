@@ -79,7 +79,7 @@ export const RankingsInlineView: React.FC<RankingsInlineViewProps> = ({ onNaviga
           {r.is_creator && (
             <Badge variant="secondary" className="text-[10px] shrink-0">
               <Crown className="h-3 w-3 mr-1" />
-              Tuyo
+              {trs("Tuyo")}
             </Badge>
           )}
         </div>
@@ -97,7 +97,7 @@ export const RankingsInlineView: React.FC<RankingsInlineViewProps> = ({ onNaviga
     return (
       <div className="text-center py-12 space-y-4">
         <Trophy className="h-10 w-10 mx-auto text-muted-foreground" />
-        <p className="font-semibold">Rankings grupales</p>
+        <p className="font-semibold">{trs("Rankings grupales")}</p>
         <p className="text-sm text-muted-foreground">
           {trs("Consulta quién va ganando en dinero y hándicap en tu grupo. Disponible con GreenBook Pro.")}
         </p>
@@ -152,7 +152,7 @@ export const RankingsInlineView: React.FC<RankingsInlineViewProps> = ({ onNaviga
         <Tabs defaultValue="mine">
           <TabsList className="w-full">
             <TabsTrigger value="mine" className="flex-1">{trs("Mis Rankings")}</TabsTrigger>
-            <TabsTrigger value="global" className="flex-1">Global</TabsTrigger>
+            <TabsTrigger value="global" className="flex-1">{trs("Global")}</TabsTrigger>
           </TabsList>
           <TabsContent value="mine" className="space-y-3 mt-3">
             {rankings.length === 0 ? (

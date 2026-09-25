@@ -344,7 +344,7 @@ const SelectablePlayerCard: React.FC<SelectablePlayerCardProps> = ({
           }}
           className="text-xs h-7 text-muted-foreground"
         >
-          + Amigo
+          {trs("+ Amigo")}
         </Button>
       )}
     </div>

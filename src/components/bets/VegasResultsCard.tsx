@@ -191,7 +191,7 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
 
           <div className="flex items-center gap-2">
           {isDisabled ? (
-              <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
+              <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">{trs("Cancelada")}</div>
             ) : (
               <span className={cn('text-base font-bold tabular-nums', getNetTone(totalBalance))}>
                 {totalBalance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(totalBalance))}
@@ -430,7 +430,7 @@ function renderHolePill(
           <p className="text-xs font-medium">Hoyo {hd.holeNumber}</p>
           <div className="flex justify-between text-[10px] text-muted-foreground">
             <span>{trs("Tu equipo")}</span>
-            <span>Rival</span>
+            <span>{trs("Rival")}</span>
           </div>
           {[0, 1].map(i => {
             const myS = getNet(i, true);
@@ -466,7 +466,7 @@ function renderHolePill(
               <p className="text-[10px] text-amber-600">🐦 Birdie → ×2 ({hd.multiplierApplied === (myTeam1 ? 'team1' : 'team2') ? 'Tu equipo' : 'Rival'})</p>
             )}
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Diferencia</span>
+              <span className="text-muted-foreground">{trs("Diferencia")}</span>
               <span className={cn('font-bold', myDiff > 0 ? 'text-green-600' : myDiff < 0 ? 'text-destructive' : '')}>
                 {myDiff > 0 ? '+' : ''}{myDiff} → ${fmtMoney(hd.amountThisHole)}
               </span>

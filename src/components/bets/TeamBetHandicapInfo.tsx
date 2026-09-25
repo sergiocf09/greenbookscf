@@ -159,7 +159,7 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
           align === 'right' ? 'flex-row-reverse text-right' : 'text-left',
         )}
       >
-        <span className="flex-1 min-w-0 text-muted-foreground uppercase text-[9px]">Suma</span>
+        <span className="flex-1 min-w-0 text-muted-foreground uppercase text-[9px]">{trs("Suma")}</span>
         <span className="shrink-0">{fmtHcp(sum(teamRows))}</span>
         <span className={cn('shrink-0 w-9 text-primary', align === 'right' ? 'text-left' : 'text-right')}>
           {sumStrokes(teamRows) > 0 ? `+${fmtHcp(sumStrokes(teamRows))}` : '0'}
@@ -265,7 +265,7 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
           align === 'right' ? 'flex-row-reverse text-right' : 'text-left',
         )}
       >
-        <span className="flex-1 min-w-0 text-muted-foreground uppercase text-[9px]">Tramo</span>
+        <span className="flex-1 min-w-0 text-muted-foreground uppercase text-[9px]">{trs("Tramo")}</span>
         <span className={cn('shrink-0 w-9 text-primary', align === 'right' ? 'text-left' : 'text-right')}>
           {segTotal > 0 ? `+${fmtHcp(segTotal)}` : '0'}
         </span>
@@ -320,11 +320,11 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
 
           {modalityLine && (
             <div className="text-[11px] text-muted-foreground">
-              <span className="font-medium text-foreground">Modalidad:</span> {modalityLine}
+              <span className="font-medium text-foreground">{trs("Modalidad:")}</span> {modalityLine}
             </div>
           )}
           <div className="text-[11px] text-muted-foreground">
-            <span className="font-medium text-foreground">HCP:</span>{' '}
+            <span className="font-medium text-foreground">{trs("HCP:")}</span>{' '}
             {useHandicap ? HANDICAP_MODE_LABELS[mode] : 'Sin hándicap (gross)'}
           </div>
 
@@ -394,7 +394,7 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
             <div className="rounded-md border border-border overflow-hidden">
               <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 px-2 py-1 bg-muted/60 text-[9px] uppercase tracking-wide text-muted-foreground">
                 <span>{trs("Jugador")}</span>
-                <span className="text-center">Tee</span>
+                <span className="text-center">{trs("Tee")}</span>
                 <span className="text-right">{trs("HCP campo")}</span>
                 <span className="text-right">{trs("Golpes")}</span>
               </div>

@@ -606,15 +606,15 @@ export function AppDialogs(props: AppDialogsProps) {
             <DialogTitle>{trs("Menú de perfil")}</DialogTitle>
           </DialogHeader>
           <ul className="space-y-3 mt-2 overflow-y-auto flex-1 pr-1">
-            <li className="flex gap-3 text-sm"><span>🌙</span><span><strong>Modo oscuro / Modo claro</strong>{' '}{trs("— Alterna entre el tema oscuro y claro de la app. Tu preferencia se guarda automáticamente.")}</span></li>
+            <li className="flex gap-3 text-sm"><span>🌙</span><span><strong>{trs("Modo oscuro / Modo claro")}</strong>{' '}{trs("— Alterna entre el tema oscuro y claro de la app. Tu preferencia se guarda automáticamente.")}</span></li>
             <li className="flex gap-3 text-sm"><span>⚙️</span><span><strong>{trs("Perfil")}</strong>{' '}{trs("— Edita tu nombre, iniciales, color de avatar y handicap actual")}</span></li>
             <li className="flex gap-3 text-sm"><span>#️⃣</span><span><strong>{trs("Unirse con Código")}</strong>{' '}{trs("— Ingresa el código o escanea el QR de una ronda para unirte como jugador")}</span></li>
-            <li className="flex gap-3 text-sm"><span>🏆</span><span><strong>Leaderboards</strong>{' '}{trs("— Crea tus propios leaderboards e invita a otros jugadores a unirse a tu competencia con un código. Consulta rankings, resultados acumulados y el desempeño de cada participante ronda a ronda.")}</span></li>
-            <li className="flex gap-3 text-sm"><span>📊</span><span><strong>Rankings</strong>{' '}{trs("— Consulta el Scoring Ranking (Handicap Index USGA, promedio y mejor score) y crea Rankings de Dinero para rastrear balances bilaterales entre los miembros de tu grupo con filtros por período.")}</span></li>
+            <li className="flex gap-3 text-sm"><span>🏆</span><span><strong>{trs("Leaderboards")}</strong>{' '}{trs("— Crea tus propios leaderboards e invita a otros jugadores a unirse a tu competencia con un código. Consulta rankings, resultados acumulados y el desempeño de cada participante ronda a ronda.")}</span></li>
+            <li className="flex gap-3 text-sm"><span>📊</span><span><strong>{trs("Rankings")}</strong>{' '}{trs("— Consulta el Scoring Ranking (Handicap Index USGA, promedio y mejor score) y crea Rankings de Dinero para rastrear balances bilaterales entre los miembros de tu grupo con filtros por período.")}</span></li>
             <li className="flex gap-3 text-sm"><span>📋</span><span><strong>{trs("Historial de Rondas")}</strong>{' '}{trs("— Consulta todas tus rondas anteriores con scorecard y resultados de apuestas")}</span></li>
             <li className="flex gap-3 text-sm"><span>💰</span><span><strong>{trs("Balances Históricos")}</strong>{' '}{trs("— Ve cuánto has ganado o perdido con cada jugador a lo largo del tiempo")}</span></li>
             <li className="flex gap-3 text-sm"><span>▶️</span><span><strong>{trs("Rondas Pendientes")}</strong>{' '}{trs("— Rondas que iniciaste y no has cerrado todavía (aparece solo si hay pendientes)")}</span></li>
-            <li className="flex gap-3 text-sm"><span>🧮</span><span><strong>Calcular Handicap</strong>{' '}{trs("— Calcula tu Handicap Index USGA con tus rondas recientes")}</span></li>
+            <li className="flex gap-3 text-sm"><span>🧮</span><span><strong>{trs("Calcular Handicap")}</strong>{' '}{trs("— Calcula tu Handicap Index USGA con tus rondas recientes")}</span></li>
             <li className="flex gap-3 text-sm"><span>📉</span><span><strong>{trs("Historial de Handicap")}</strong>{' '}{trs("— Ve cómo ha evolucionado tu handicap ronda a ronda")}</span></li>
             <li className="flex gap-3 text-sm"><span>🚪</span><span><strong>{trs("Cerrar Sesión")}</strong></span></li>
           </ul>

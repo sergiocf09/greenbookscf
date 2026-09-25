@@ -69,13 +69,13 @@ export const HandicapCalculator: React.FC<HandicapCalculatorProps> = ({ onClose 
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Info className="h-3 w-3" />
-          Reglas USGA
+          {trs("Reglas USGA")}
         </div>
       </div>
 
       {/* Calculated Handicap Display */}
       <div className="bg-primary/10 rounded-xl p-4 text-center">
-        <p className="text-sm text-muted-foreground mb-1">Handicap Index</p>
+        <p className="text-sm text-muted-foreground mb-1">{trs("Handicap Index")}</p>
         <p className="text-4xl font-bold text-primary">
           {handicapIndex !== null ? handicapIndex : '--'}
         </p>
@@ -120,9 +120,9 @@ export const HandicapCalculator: React.FC<HandicapCalculatorProps> = ({ onClose 
       <div className="space-y-1">
         <div className="grid grid-cols-4 text-xs text-muted-foreground px-2 py-1">
           <span>{trs("Fecha")}</span>
-          <span className="text-center">Gross</span>
-          <span className="text-center">Dif.</span>
-          <span className="text-right">Usado</span>
+          <span className="text-center">{trs("Gross")}</span>
+          <span className="text-center">{trs("Dif.")}</span>
+          <span className="text-right">{trs("Usado")}</span>
         </div>
         <div className="space-y-1 max-h-48 overflow-y-auto">
           {differentials.map((round) => {

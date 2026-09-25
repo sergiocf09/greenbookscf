@@ -80,7 +80,7 @@ export const BloquesStrip: React.FC<Props> = ({
       <div className="space-y-0.5 text-xs">
         <div className="flex items-center justify-between">
           <span className="text-muted-foreground">
-            <span className="text-green-600 font-semibold">Ganados:</span>{' '}
+            <span className="text-green-600 font-semibold">{trs("Ganados:")}</span>{' '}
             {wonA.length > 0 ? renderList(wonA) : '—'}
           </span>
           <span className="font-bold tabular-nums text-green-600">
@@ -89,7 +89,7 @@ export const BloquesStrip: React.FC<Props> = ({
         </div>
         <div className="flex items-center justify-between">
           <span className="text-muted-foreground">
-            <span className="text-destructive font-semibold">Perdidos:</span>{' '}
+            <span className="text-destructive font-semibold">{trs("Perdidos:")}</span>{' '}
             {wonB.length > 0 ? renderList(wonB) : '—'}
           </span>
           <span className="font-bold tabular-nums text-destructive">
@@ -238,7 +238,7 @@ export const BloquesStrip: React.FC<Props> = ({
                       className="grid text-[13px]"
                       style={{ gridTemplateColumns: `minmax(40px,auto) repeat(${holes.length}, minmax(22px,1fr)) 36px` }}
                     >
-                      <div className="px-2 py-1.5 text-muted-foreground text-[11px]">Par</div>
+                      <div className="px-2 py-1.5 text-muted-foreground text-[11px]">{trs("Par")}</div>
                       {holes.map(h => {
                         const par = course.holes[h - 1]?.par ?? 4;
                         return <div key={h} className="text-center py-1.5 text-muted-foreground tabular-nums">{par}</div>;
@@ -295,7 +295,7 @@ export const BloquesStrip: React.FC<Props> = ({
                   </div>
 
                   <div className="flex items-center justify-between pt-1 border-t border-border/50 text-[11px]">
-                    <span className="text-muted-foreground">{inProgress ? 'Suma neta (parcial)' : 'Suma neta'}</span>
+                    <span className="text-muted-foreground">{inProgress ? trs("Suma neta (parcial)") : trs("Suma neta")}</span>
                     <span className="tabular-nums font-medium">
                       {blk.playerNetSum} <span className="text-muted-foreground">{trs("vs")}</span> {blk.rivalNetSum}
                     </span>

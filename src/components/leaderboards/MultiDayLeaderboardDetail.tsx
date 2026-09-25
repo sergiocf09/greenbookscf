@@ -337,16 +337,16 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
       await supabase.from('leaderboard_participants').delete().eq('leaderboard_id', event.id);
       const { error } = await supabase.from('leaderboard_events').delete().eq('id', event.id);
       if (error) throw error;
-      toast.success('Leaderboard eliminado');
+      toast.success(trs("Leaderboard eliminado"));
       onBack?.();
-    } catch (err: any) { toast.error('Error: ' + err.message); }
+    } catch (err: any) { toast.error(trs("Error: ") + err.message); }
   };
 
   const handleCloseLeaderboard = async () => {
     if (!event) return;
     const { error } = await supabase.rpc('close_leaderboard', { p_leaderboard_id: event.id });
     if (error) return toast.error(error.message);
-    toast.success('Competencia cerrada');
+    toast.success(trs("Competencia cerrada"));
     setShowClose(false);
     fetchAll();
   };
@@ -355,7 +355,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
     if (!event) return;
     const { error } = await supabase.rpc('reopen_leaderboard', { p_leaderboard_id: event.id });
     if (error) return toast.error(error.message);
-    toast.success('Competencia reactivada');
+    toast.success(trs("Competencia reactivada"));
     fetchAll();
   };
 
@@ -410,7 +410,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
       await fetchLinkedRounds();
       fetchAll();
     } catch (err: any) {
-      toast.error('Error: ' + err.message);
+      toast.error(trs("Error: ") + err.message);
     } finally {
       setUnlinkingId(null);
     }
@@ -446,7 +446,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
   const copyShareLink = () => {
     if (event?.code) {
       navigator.clipboard.writeText(`${window.location.origin}/leaderboards/join/${event.code}`);
-      toast.success('Link copiado');
+      toast.success(trs("Link copiado"));
     }
   };
 
@@ -475,10 +475,10 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
         <tr className="text-xs border-b">
           <th className="h-8 w-8 text-center font-medium text-muted-foreground">#</th>
           <th className="h-8 text-left font-medium text-muted-foreground">{trs("Jugador")}</th>
-          <th className="h-8 w-10 text-center font-medium text-muted-foreground">Hcp</th>
+          <th className="h-8 w-10 text-center font-medium text-muted-foreground">{trs("Hcp")}</th>
           <th className="h-8 w-10 text-center font-medium text-muted-foreground">{trs("Hoyos")}</th>
           <th className="h-8 w-14 text-center font-medium text-muted-foreground">
-            {sortMode === 'stableford' ? 'Pts' : 'Score'}
+            {sortMode === 'stableford' ? trs("Pts") : trs("Score")}
           </th>
         </tr>
       </thead>
@@ -667,7 +667,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
               <Link2Off className="h-4 w-4" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={copyShareLink} aria-label="Compartir">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={copyShareLink} aria-label={trs("Compartir")}>
             <Share2 className="h-4 w-4" />
           </Button>
           {event?.code && (
@@ -706,7 +706,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                   </DropdownMenuItem>
                 ) : (
                   <DropdownMenuItem onClick={handleReopen}>
-                    <RefreshCw className="h-4 w-4 mr-2" /> Reactivar competencia
+                    <RefreshCw className="h-4 w-4 mr-2" />{' '}{trs("Reactivar competencia")}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
@@ -753,11 +753,11 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
               <Tabs value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
                 <TabsList className="w-full h-7">
                   {availableModes.includes('gross') &&
-                    <TabsTrigger value="gross" className="flex-1 text-[11px] h-6">Gross</TabsTrigger>}
+                    <TabsTrigger value="gross" className="flex-1 text-[11px] h-6">{trs("Gross")}</TabsTrigger>}
                   {availableModes.includes('net') &&
-                    <TabsTrigger value="net" className="flex-1 text-[11px] h-6">Neto</TabsTrigger>}
+                    <TabsTrigger value="net" className="flex-1 text-[11px] h-6">{trs("Neto")}</TabsTrigger>}
                   {availableModes.includes('stableford') &&
-                    <TabsTrigger value="stableford" className="flex-1 text-[11px] h-6">Stableford</TabsTrigger>}
+                    <TabsTrigger value="stableford" className="flex-1 text-[11px] h-6">{trs("Stableford")}</TabsTrigger>}
                 </TabsList>
               </Tabs>
             </div>
@@ -770,7 +770,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                   value="all"
                   className="sticky left-0 z-10 bg-muted text-xs h-7 min-w-[88px] font-semibold shrink-0 data-[state=active]:bg-background"
                 >
-                  Acumulado
+                  {trs("Acumulado")}
                 </TabsTrigger>
                 {rules.days.map(d => {
                   const isToday = d.date === todayStr;
@@ -792,7 +792,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                   <div className="text-[11px] text-muted-foreground mb-1.5 px-1">
                     {d.label ? <span className="font-medium text-foreground">{d.label} · </span> : null}
                     {d.date ? format(parseLocalDate(d.date), "d 'de' MMM yyyy", { locale: es }) : ''}
-                    {d.date === todayStr && <span className="ml-1 text-primary font-semibold">· Hoy</span>}
+                    {d.date === todayStr && <span className="ml-1 text-primary font-semibold">{trs("· Hoy")}</span>}
                   </div>
                   {renderStandingsTable(sortDay(standingsByDay[d.day_number] || []))}
                 </TabsContent>
@@ -908,7 +908,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                     >
                       {unlinkingId === r.round_id
                         ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        : <><Link2Off className="h-3.5 w-3.5 mr-1" /> Desvincular</>}
+                        : <><Link2Off className="h-3.5 w-3.5 mr-1" />{' '}{trs("Desvincular")}</>}
                     </Button>
                   </div>
                 ))}

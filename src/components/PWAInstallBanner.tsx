@@ -92,14 +92,14 @@ export const PWAInstallBanner = () => {
     <>
       <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-md animate-in slide-in-from-bottom-4 duration-300">
         <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-lg">
-          <img src="/pwa-icon-192.png" alt="GreenBook" className="h-10 w-10 rounded-lg" />
+          <img src="/pwa-icon-192.png" alt={trs("GreenBook")} className="h-10 w-10 rounded-lg" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-card-foreground">Instalar GreenBook</p>
+            <p className="text-sm font-semibold text-card-foreground">{trs("Instalar GreenBook")}</p>
             <p className="text-xs text-muted-foreground truncate">{trs("Acceso rápido desde tu pantalla")}</p>
           </div>
           <Button size="sm" onClick={handleInstall} className="shrink-0 gap-1.5">
             <Download className="h-4 w-4" />
-            Instalar
+            {trs("Instalar")}
           </Button>
           <button
             onClick={handleDismiss}
@@ -121,7 +121,7 @@ export const PWAInstallBanner = () => {
           </DialogHeader>
 
           <div className="flex flex-col items-center gap-1 pb-2">
-            <img src="/pwa-icon-192.png" alt="GreenBook" className="h-16 w-16 rounded-2xl shadow-md" />
+            <img src="/pwa-icon-192.png" alt={trs("GreenBook")} className="h-16 w-16 rounded-2xl shadow-md" />
             <p className="text-xs text-muted-foreground">{trs("Tu ronda. Tus apuestas.")}</p>
           </div>
 
@@ -133,7 +133,7 @@ export const PWAInstallBanner = () => {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-foreground">
-                  {trs("Toca el botón de")}{' '}<strong>Compartir</strong>
+                  {trs("Toca el botón de")}{' '}<strong>{trs("Compartir")}</strong>
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {trs("Es el ícono")}{' '}<SquareArrowOutUpRight className="inline h-3.5 w-3.5 align-text-bottom" />{' '}{trs("en la barra inferior de Safari.")}
@@ -163,7 +163,7 @@ export const PWAInstallBanner = () => {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-foreground">
-                  Toca <strong>{trs("\"Agregar\"")}</strong>{' '}{trs("para confirmar")}
+                  {trs("Toca")}{' '}<strong>{trs("\"Agregar\"")}</strong>{' '}{trs("para confirmar")}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {trs("¡Listo! GreenBook aparecerá en tu pantalla de inicio.")}

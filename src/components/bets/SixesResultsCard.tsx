@@ -117,7 +117,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
     return (
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Sixes</CardTitle>
+          <CardTitle className="text-sm">{trs("Sixes")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
@@ -148,7 +148,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
       <CardHeader className="py-3">
         <CardTitle className="text-sm flex items-center justify-between">
           <span className="flex items-center gap-1">
-            Sixes
+            {trs("Sixes")}
             <TeamBetHandicapInfo
               players={sixesParticipants}
               effectiveHandicaps={sixesConfig.teamHandicaps}
@@ -165,7 +165,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
 
           <div className="flex items-center gap-2">
             {isDisabled ? (
-              <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
+              <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">{trs("Cancelada")}</div>
             ) : (
               <span className={cn('text-base font-bold tabular-nums', getNetTone(basePlayerBalance))}>
                 {basePlayerBalance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(basePlayerBalance))}
@@ -276,7 +276,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                           <p className="text-xs font-medium">Hoyo {hd.holeNumber} · {diff > 0 ? `+${diff}` : `${diff}`} pts</p>
                           <div className="flex justify-between text-[10px] text-muted-foreground">
                             <span>{trs("Tu equipo")}</span>
-                            <span>Rival</span>
+                            <span>{trs("Rival")}</span>
                           </div>
                           {[0, 1].map(i => {
                             const my = myScores[i];

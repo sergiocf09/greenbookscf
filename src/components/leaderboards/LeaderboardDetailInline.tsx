@@ -104,7 +104,7 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
     if (event?.code) {
       const url = `${window.location.origin}/leaderboards/join/${event.code}`;
       navigator.clipboard.writeText(url);
-      toast.success('Link copiado');
+      toast.success(trs("Link copiado"));
     }
   };
 
@@ -121,7 +121,7 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
       setShowRenameDialog(false);
       fetchDetail();
     } catch (err: any) {
-      toast.error('Error: ' + err.message);
+      toast.error(trs("Error: ") + err.message);
     } finally {
       setRenaming(false);
     }
@@ -136,10 +136,10 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
       await supabase.from('leaderboard_participants').delete().eq('leaderboard_id', event.id);
       const { error } = await supabase.from('leaderboard_events').delete().eq('id', event.id);
       if (error) throw error;
-      toast.success('Leaderboard eliminado');
+      toast.success(trs("Leaderboard eliminado"));
       onBack();
     } catch (err: any) {
-      toast.error('Error: ' + err.message);
+      toast.error(trs("Error: ") + err.message);
     }
   };
 
@@ -192,7 +192,7 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
               <Unlink className="h-4 w-4" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" onClick={copyShareLink} aria-label="Compartir">
+          <Button variant="ghost" size="icon" onClick={copyShareLink} aria-label={trs("Compartir")}>
             <Share2 className="h-4 w-4" />
           </Button>
           {isCreator && (
@@ -238,7 +238,7 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
                 onClick={reopenLeaderboard}
               >
                 <RefreshCw className="h-3.5 w-3.5" />
-                Reactivar competencia
+                {trs("Reactivar competencia")}
               </Button>
             )
           )}
@@ -261,7 +261,7 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
       <Card>
         <CardHeader className="pb-1 pt-3 px-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Leaderboard</CardTitle>
+            <CardTitle className="text-base">{trs("Leaderboard")}</CardTitle>
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <Users className="h-3.5 w-3.5" />
               {participants.length}
@@ -274,13 +274,13 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
               <Tabs value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
                 <TabsList className="w-full h-8">
                   {availableModes.includes('gross') && (
-                    <TabsTrigger value="gross" className="flex-1 text-xs h-7">Gross</TabsTrigger>
+                    <TabsTrigger value="gross" className="flex-1 text-xs h-7">{trs("Gross")}</TabsTrigger>
                   )}
                   {availableModes.includes('net') && (
-                    <TabsTrigger value="net" className="flex-1 text-xs h-7">Neto</TabsTrigger>
+                    <TabsTrigger value="net" className="flex-1 text-xs h-7">{trs("Neto")}</TabsTrigger>
                   )}
                   {availableModes.includes('stableford') && (
-                    <TabsTrigger value="stableford" className="flex-1 text-xs h-7">Stableford</TabsTrigger>
+                    <TabsTrigger value="stableford" className="flex-1 text-xs h-7">{trs("Stableford")}</TabsTrigger>
                   )}
                 </TabsList>
               </Tabs>
@@ -297,10 +297,10 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
                 <tr className="text-xs border-b">
                   <th className="h-8 w-8 text-center px-1 py-1 font-medium text-muted-foreground">#</th>
                   <th className="h-8 px-1 py-1 text-left font-medium text-muted-foreground">{trs("Jugador")}</th>
-                  <th className="h-8 text-center w-10 px-1 py-1 font-medium text-muted-foreground">Hcp</th>
+                  <th className="h-8 text-center w-10 px-1 py-1 font-medium text-muted-foreground">{trs("Hcp")}</th>
                   <th className="h-8 text-center w-10 px-1 py-1 font-medium text-muted-foreground">{trs("Hoyos")}</th>
                   <th className="h-8 text-center w-14 px-1 py-1 font-medium text-muted-foreground">
-                    {sortMode === 'stableford' ? 'Pts' : 'Score'}
+                    {sortMode === 'stableford' ? trs("Pts") : trs("Score")}
                   </th>
                 </tr>
               </thead>

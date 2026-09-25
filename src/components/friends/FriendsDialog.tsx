@@ -177,7 +177,7 @@ const FriendCard: React.FC<FriendCardProps> = ({ friend, onRemove, onAddToRound 
         size="icon"
         onClick={onRemove}
         className="h-7 w-7 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-        title="Quitar amigo"
+        title={trs("Quitar amigo")}
       >
         <UserMinus className="h-4 w-4" />
       </Button>

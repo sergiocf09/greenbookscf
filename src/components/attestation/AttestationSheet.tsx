@@ -47,7 +47,7 @@ export const AttestationSheet: React.FC<AttestationSheetProps> = ({
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <ScrollText className="h-5 w-5 text-primary" />
-            Scores Attestation
+            {trs("Scores Attestation")}
           </SheetTitle>
           <SheetDescription>
             {trs("Confirma los scores de tus compañeros de ronda. No puedes atestar tu propio score.")}
@@ -108,7 +108,7 @@ export const AttestationSheet: React.FC<AttestationSheetProps> = ({
                         ) : (
                           <>
                             <Check className="h-3.5 w-3.5" />
-                            Atestar
+                            {trs("Atestar")}
                           </>
                         )}
                       </Button>
