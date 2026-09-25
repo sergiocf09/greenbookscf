@@ -1861,5 +1861,8 @@
  "transacciones y datos asociados a esta ronda del": "transactions and data associated with this round from",
  "vez": "time",
  "veces": "times",
- "Este año": "This Year"
+ "Este año": "This Year",
+ "Hoy": "Today",
+ "Resultado de esta ronda": "Result for this round",
+ "golpes brutos": "gross strokes"
 }

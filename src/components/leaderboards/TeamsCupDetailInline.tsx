@@ -1545,7 +1545,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                     <span className="text-xs font-medium truncate block">{formatPlayerName(p.display_name)}</span>
                     <span className="text-[10px] text-muted-foreground">
                       Index {formatIndex(p.handicap_for_leaderboard)}
-                      {p.tee_color && ` · ${TEE_LABEL_ES[p.tee_color] ?? p.tee_color}`}
+                      {p.tee_color && ` · ${trs(TEE_LABEL_ES[p.tee_color] ?? p.tee_color)}`}
                     </span>
                   </div>
                   {isCreator && (
@@ -1581,7 +1581,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                     <span className="text-xs font-medium truncate block">{formatPlayerName(p.display_name)}</span>
                     <span className="text-[10px] text-muted-foreground">
                       Index {formatIndex(p.handicap_for_leaderboard)}
-                      {p.tee_color && ` · ${TEE_LABEL_ES[p.tee_color] ?? p.tee_color}`}
+                      {p.tee_color && ` · ${trs(TEE_LABEL_ES[p.tee_color] ?? p.tee_color)}`}
                     </span>
                   </div>
                   {isCreator && (
