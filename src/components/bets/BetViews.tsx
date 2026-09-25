@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { fmtMoney } from '@/lib/formatMoney';
@@ -90,6 +91,7 @@ export const BetDetailView: React.FC<BetDetailViewProps> = ({
   betConfig,
   basePlayerId,
 }) => {
+  const { t } = useTranslation();
   const relevantSummaries = summaries.filter(
     s => s.playerId === player.id && s.vsPlayer === rival.id
   );
@@ -141,7 +143,7 @@ export const BetDetailView: React.FC<BetDetailViewProps> = ({
 
       {relevantSummaries.length === 0 && (
         <p className="text-sm text-muted-foreground text-center py-4">
-          Sin apuestas registradas aún
+          {t('play.noBetsYet')}
         </p>
       )}
     </div>
@@ -159,6 +161,7 @@ export const GeneralBetTable: React.FC<GeneralBetTableProps> = ({
   summaries,
   basePlayerId,
 }) => {
+  const { t } = useTranslation();
   const getPlayerTotalBalance = (playerId: string): number => {
     return summaries
       .filter(b => b.playerId === playerId)
@@ -198,7 +201,7 @@ export const GeneralBetTable: React.FC<GeneralBetTableProps> = ({
 
       {/* Verification: Sum should be 0 */}
       <div className="bg-muted/50 px-3 py-2 text-center text-xs text-muted-foreground">
-        Total: ${summaries.reduce((sum, b) => sum + b.amount, 0)} (debe ser $0)
+        Total: ${summaries.reduce((sum, b) => sum + b.amount, 0)} ({t('play.mustBeZero')})
       </div>
     </div>
   );

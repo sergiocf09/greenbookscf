@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { disambiguateInitials } from '@/lib/playerInput';
 import { Player, PlayerScore, BetConfig, GolfCourse, PlayerGroup, MarkerState, SideBet, ZooEvent, WolfConfig, WolfHoleState, SixesConfig } from '@/types/golf';
@@ -118,6 +119,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
   sixesConfig,
   startingHole = 1,
 }) => {
+  const { t } = useTranslation();
   const isNineHole = (betConfig?.roundHoles ?? 18) === 9;
   const activeHoles = useMemo(() => {
     if (!isNineHole) return Array.from({ length: 18 }, (_, i) => i + 1);
@@ -239,7 +241,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
       {hasMultipleGroups && (
         <div className="bg-card border border-border rounded-lg p-2 mb-2">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-muted-foreground">Capturando scores para:</span>
+            <span className="text-xs font-medium text-muted-foreground">{t('play.scoringFor')}</span>
           </div>
           <GroupSelector
             currentGroupIndex={displayGroupIndex}
@@ -435,11 +437,11 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
         className={`w-full ${isHoleConfirmedForDisplayGroup(currentHole) ? 'bg-green-600 hover:bg-green-600' : wolfNeedsDecision ? 'bg-amber-600 hover:bg-amber-600' : 'bg-accent hover:bg-accent/90'}`}
       >
         {wolfNeedsDecision ? (
-          <><AlertTriangle className="h-4 w-4 mr-2" /> La Loba debe declarar</>
+          <><AlertTriangle className="h-4 w-4 mr-2" /> {t('play.wolfMustDeclare')}</>
         ) : isHoleConfirmedForDisplayGroup(currentHole) ? (
-          <><CheckCircle2 className="h-4 w-4 mr-2" /> Hoyo Confirmado</>
+          <><CheckCircle2 className="h-4 w-4 mr-2" /> {t('play.holeConfirmed')}</>
         ) : (
-          <><Check className="h-4 w-4 mr-2" /> Confirmar Scores del Hoyo {currentHole}</>
+          <><Check className="h-4 w-4 mr-2" /> {t('play.confirmHole', { hole: currentHole })}</>
         )}
       </Button>
 
