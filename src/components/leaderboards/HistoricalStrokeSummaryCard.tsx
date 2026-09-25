@@ -30,7 +30,7 @@ export const HistoricalStrokeSummaryCard: React.FC<{ competition: HistoricalComp
         : s.netVsPar;
 
   const dayLabel = lb.dayNumber
-    ? `${trs("Día")} ${lb.dayNumber}${lb.totalDays > 1 ? ` de ${lb.totalDays}` : ''}`
+    ? `${trs("Día")} ${lb.dayNumber}${lb.totalDays > 1 ? ` ${trs('de')} ${lb.totalDays}` : ''}`
     : null;
 
   return (
@@ -56,7 +56,7 @@ export const HistoricalStrokeSummaryCard: React.FC<{ competition: HistoricalComp
           </div>
         </div>
         <p className="text-xs text-muted-foreground mt-2">
-          Resultado de esta ronda{dayLabel ? ` (${dayLabel.toLowerCase()})` : ''}
+          {trs('Resultado de esta ronda')}{dayLabel ? ` (${dayLabel.toLowerCase()})` : ''}
         </p>
 
         {/* Mi resultado por modalidad */}
@@ -68,7 +68,7 @@ export const HistoricalStrokeSummaryCard: React.FC<{ competition: HistoricalComp
               return (
                 <div key={mode} className="flex items-center justify-between gap-2">
                   <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    {MODE_LABEL[mode]}
+                    {trs(MODE_LABEL[mode])}
                   </span>
                   <div className="flex items-baseline gap-2">
                     <span className={cn(
@@ -79,7 +79,7 @@ export const HistoricalStrokeSummaryCard: React.FC<{ competition: HistoricalComp
                     </span>
                     {pos !== null && (
                       <span className="text-xs text-muted-foreground">
-                        #{pos} de {lb.totalParticipants}
+                        #{pos} {trs('de')} {lb.totalParticipants}
                       </span>
                     )}
                   </div>
@@ -88,7 +88,7 @@ export const HistoricalStrokeSummaryCard: React.FC<{ competition: HistoricalComp
             })}
             {lb.myStanding.grossTotal > 0 && (
               <div className="text-xs text-muted-foreground">
-                {lb.myStanding.grossTotal} golpes brutos · {lb.myStanding.holesPlayed} hoyos
+                {lb.myStanding.grossTotal} {trs('golpes brutos')} · {lb.myStanding.holesPlayed} {trs('hoyos')}
               </div>
             )}
           </div>
@@ -109,14 +109,14 @@ export const HistoricalStrokeSummaryCard: React.FC<{ competition: HistoricalComp
                     : 'bg-muted text-muted-foreground',
                 )}
               >
-                {MODE_LABEL[mode]}
+                 {trs(MODE_LABEL[mode])}
               </button>
             ))}
           </div>
         )}
 
         <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
-          Top 5 · {MODE_LABEL[activeMode]}
+           Top 5 · {trs(MODE_LABEL[activeMode])}
         </div>
         <div className="space-y-1.5">
           {standings.slice(0, 5).map((s, idx) => (

@@ -125,7 +125,7 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
           <DialogTitle className="flex items-center gap-2">
             {trs("🏆 Nueva Teams Cup")}
             <span className="text-xs font-normal text-muted-foreground ml-auto">
-              Paso {step} de 3
+              {trs('Paso')} {step} {trs('de')} 3
             </span>
           </DialogTitle>
         </DialogHeader>

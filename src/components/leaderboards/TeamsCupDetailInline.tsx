@@ -43,6 +43,7 @@ import { cupSlotKey, cupSessionLabel } from '@/types/leaderboard';
 import { ManageFoursomesDialog } from '@/components/leaderboards/ManageFoursomesDialog';
 import { useActiveRoundForLink } from '@/hooks/useActiveRoundForLink';
 import { TeamsCupShareImage } from '@/components/leaderboards/TeamsCupShareImage';
+import i18n from '@/i18n';
 
 
 /* ── helpers ─────────────────────────────────────── */
@@ -147,7 +148,7 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
                       className="block text-[10px] font-bold leading-none mt-0.5"
                       style={{ color: teamColor }}
                     >
-                      +{match.strokes_advantage} {match.strokes_advantage === 1 ? 'golpe' : 'golpes'}
+                      +{match.strokes_advantage} {trs(match.strokes_advantage === 1 ? 'golpe' : 'golpes')}
                     </span>
                   )}
                 </div>
@@ -766,7 +767,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
     if (updates.length > 0) {
       const saved = await cup.batchUpdateParticipants(updates);
       if (!saved) return;
-      toast.success(`Cambios guardados (${updates.length})`);
+      toast.success(`${trs('Cambios guardados')} (${updates.length})`);
     }
     setDraftTeams(new Map());
     setDraftHcps(new Map());
@@ -1077,7 +1078,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             {linkedRoundInfo.date && (
               <span className="inline-flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
-                {new Date(linkedRoundInfo.date + 'T12:00:00').toLocaleDateString('es-MX', {
+                {new Date(linkedRoundInfo.date + 'T12:00:00').toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'es-MX', {
                   day: '2-digit', month: 'short', year: 'numeric',
                 })}
               </span>
@@ -1095,11 +1096,11 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             {activeSlotOption
               ? (activeSlotOption.format === 'fourball' ? 'Fourball (Best Ball)' : 'Match Play Individual')
               : isMultiSlot
-                ? `${cup.days.length} ${cup.days.length === 1 ? 'día' : 'días'} · ${slotOptions.length} sesiones`
+                ? `${cup.days.length} ${trs(cup.days.length === 1 ? 'día' : 'días')} · ${slotOptions.length} ${trs('sesiones')}`
                 : (cupFormat === 'fourball' ? 'Fourball (Best Ball)' : 'Match Play Individual')}
           </Badge>
           <Badge variant="outline" className="text-[10px]">
-            {cup.participants.length} jugadores
+            {cup.participants.length} {trs('jugadores')}
           </Badge>
         </div>
       </div>
@@ -1229,7 +1230,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             </div>
             <p className="text-xs text-muted-foreground text-center mt-2">
               {isMultiSlot && <span className="font-medium">{trs("Acumulado ·")}{' '}</span>}
-              {st.matches_total} matches · {st.matches_completed} completados
+              {st.matches_total} matches · {st.matches_completed} {trs('completados')}
               {st.has_in_progress && <span className="ml-1 italic">{trs("· en vivo")}</span>}
             </p>
             {slotSt && (
@@ -1243,7 +1244,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                   <span style={{ color: st.team_b?.color }}>{slotSt.points_b}</span>
                 </p>
                 <p className="text-[11px] text-muted-foreground">
-                  {slotSt.matches_total} matches · {slotSt.matches_completed} completados
+                  {slotSt.matches_total} matches · {slotSt.matches_completed} {trs('completados')}
                   {slotSt.has_in_progress && <span className="ml-1 italic">{trs("· en vivo")}</span>}
                 </p>
               </div>
@@ -1295,7 +1296,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                       <p className="text-lg font-bold truncate">{trs(String(o.label))}</p>
                     </div>
                     <Badge variant="outline" className={`text-[10px] shrink-0 ${statusClass}`}>
-                      {status}
+                       {trs(status)}
                     </Badge>
                   </div>
 
@@ -1330,7 +1331,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
 
                   <div className="flex items-center justify-between mt-2">
                     <p className="text-xs text-muted-foreground">
-                      <span className="font-semibold text-foreground">{done}</span>/{tot} matches completados
+                       <span className="font-semibold text-foreground">{done}</span>/{tot} matches {trs('completados')}
                       {tot > 0 && <span className="ml-1">· {pct}%</span>}
                     </p>
                     <span className="flex items-center gap-0.5 text-xs font-medium text-primary shrink-0">
@@ -1388,7 +1389,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                 <div key={groupNumber === Infinity ? 'ungrouped' : groupNumber} className="space-y-2">
                   {entries.length > 1 && groupNumber !== Infinity && (
                     <div className="flex items-center gap-1.5 px-1">
-                      <span className="text-[11px] font-semibold text-muted-foreground">Grupo {groupNumber}</span>
+                       <span className="text-[11px] font-semibold text-muted-foreground">{trs('Grupo')} {groupNumber}</span>
                       <span className="h-px flex-1 bg-border" />
                     </div>
                   )}
@@ -1506,7 +1507,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
               {!creatorIsParticipant && profile && (
                 <Button size="sm" variant="outline" className="gap-1" onClick={handleAddSelf} disabled={addingSelf}>
                   {addingSelf ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
-                  Agregarme
+                   {trs('Agregarme')}
                 </Button>
               )}
               <Button size="sm" className="gap-1" onClick={() => setShowAddParticipants(true)}>
@@ -1544,7 +1545,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                     <span className="text-xs font-medium truncate block">{formatPlayerName(p.display_name)}</span>
                     <span className="text-[10px] text-muted-foreground">
                       Index {formatIndex(p.handicap_for_leaderboard)}
-                      {p.tee_color && ` · ${TEE_LABEL_ES[p.tee_color] ?? p.tee_color}`}
+                      {p.tee_color && ` · ${trs(TEE_LABEL_ES[p.tee_color] ?? p.tee_color)}`}
                     </span>
                   </div>
                   {isCreator && (
@@ -1580,7 +1581,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                     <span className="text-xs font-medium truncate block">{formatPlayerName(p.display_name)}</span>
                     <span className="text-[10px] text-muted-foreground">
                       Index {formatIndex(p.handicap_for_leaderboard)}
-                      {p.tee_color && ` · ${TEE_LABEL_ES[p.tee_color] ?? p.tee_color}`}
+                      {p.tee_color && ` · ${trs(TEE_LABEL_ES[p.tee_color] ?? p.tee_color)}`}
                     </span>
                   </div>
                   {isCreator && (
@@ -2084,7 +2085,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              ¿Eliminar a {participantToRemove ? formatPlayerName(participantToRemove.display_name) : ''}?
+              {trs('¿Eliminar a')} {participantToRemove ? formatPlayerName(participantToRemove.display_name) : ''}?
             </AlertDialogTitle>
             <AlertDialogDescription>
               {(() => {
@@ -2093,13 +2094,13 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                 if (inMatches.length > 0) {
                   return (
                     <>
-                      Este jugador aparece en {inMatches.length === 1 ? 'el match' : 'los matches'}{' '}
+                      {trs('Este jugador aparece en')} {trs(inMatches.length === 1 ? 'el match' : 'los matches')}{' '}
                       <strong>#{inMatches.sort((a, b) => a - b).join(', #')}</strong>.
-                      Primero edita o elimina {inMatches.length === 1 ? 'ese match' : 'esos matches'} y vuelve a intentar.
+                      {' '}{trs('Primero edita o elimina')} {trs(inMatches.length === 1 ? 'ese match' : 'esos matches')} {trs('y vuelve a intentar.')}
                     </>
                   );
                 }
-                return 'Saldrá de esta competencia. Podrás volver a agregarlo más adelante si lo necesitas.';
+                 return trs('Saldrá de esta competencia. Podrás volver a agregarlo más adelante si lo necesitas.');
               })()}
             </AlertDialogDescription>
           </AlertDialogHeader>

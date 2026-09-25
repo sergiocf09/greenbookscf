@@ -349,8 +349,8 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
             </p>
             <p className="font-medium">
               {advantageSide === 'none' || strokesAdvantage === 0
-                ? 'Scratch (0 golpes)'
-                : `${advantageSide === 'a' ? teamALabel : teamBLabel} recibe ${strokesAdvantage} ${strokesAdvantage === 1 ? 'golpe' : 'golpes'}`}
+                ? `${trs('Scratch')} (0 ${trs('golpes')})`
+                : `${advantageSide === 'a' ? teamALabel : teamBLabel} ${trs('recibe')} ${strokesAdvantage} ${trs(strokesAdvantage === 1 ? 'golpe' : 'golpes')}`}
             </p>
             {hcpManuallyEdited && (
               <button

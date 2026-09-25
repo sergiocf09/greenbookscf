@@ -24,7 +24,8 @@ import {
   type DayStanding,
 } from '@/lib/leaderboardAggregation';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { enUS, es } from 'date-fns/locale';
+import i18n from '@/i18n';
 import { parseLocalDate } from '@/lib/dateUtils';
 
 type SortMode = 'gross' | 'net' | 'stableford';
@@ -741,7 +742,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
             )}
             <span className="text-[10px] border border-border px-2 py-0.5 rounded-full text-muted-foreground inline-flex items-center gap-1">
               <Users className="h-3 w-3" />
-              {participants.length} jugadores
+              {participants.length} {trs('jugadores')}
             </span>
           </div>
         </div>
@@ -781,7 +782,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                         isToday && "data-[state=inactive]:text-primary"
                       )}>
                       {isToday && <span className="h-1.5 w-1.5 rounded-full bg-primary inline-block" />}
-                      Día {d.day_number}{isToday ? ' · Hoy' : ''}
+                      {trs('Día')} {d.day_number}{isToday ? ` ${trs('· Hoy')}` : ''}
                     </TabsTrigger>
                   );
                 })}
@@ -791,7 +792,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                 <TabsContent key={d.day_number} value={String(d.day_number)} className="mt-2">
                   <div className="text-[11px] text-muted-foreground mb-1.5 px-1">
                     {d.label ? <span className="font-medium text-foreground">{trs(String(d.label))} · </span> : null}
-                    {d.date ? format(parseLocalDate(d.date), "d 'de' MMM yyyy", { locale: es }) : ''}
+                    {d.date ? format(parseLocalDate(d.date), i18n.language === 'en' ? 'MMM d, yyyy' : "d 'de' MMM yyyy", { locale: i18n.language === 'en' ? enUS : es }) : ''}
                     {d.date === todayStr && <span className="ml-1 text-primary font-semibold">{trs("· Hoy")}</span>}
                   </div>
                   {renderStandingsTable(sortDay(standingsByDay[d.day_number] || []))}

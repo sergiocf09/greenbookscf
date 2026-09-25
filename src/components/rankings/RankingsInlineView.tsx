@@ -15,7 +15,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Loader2, Users, TrendingUp, Crown, Award, Trophy } from 'lucide-react';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { enUS, es } from 'date-fns/locale';
+import i18n from '@/i18n';
 import { HandicapRankingHeader } from '@/components/handicap/HandicapRankingHeader';
 import { sortHandicapRankingEntries, withLiveHandicapOverride, type HandicapRankingSortKey, type HandicapRankingSortDirection } from '@/lib/handicapRankingUtils';
 import { HandicapRankingRows } from '@/components/handicap/HandicapRankingRows';
@@ -73,7 +74,7 @@ export const RankingsInlineView: React.FC<RankingsInlineViewProps> = ({ onNaviga
             <CardTitle className="text-base truncate">{r.name}</CardTitle>
             <CardDescription className="text-xs">
               {r.is_creator ? trs("Creado por ti") : `${trs("Creado por")} ${r.creator_name}`}
-              {' · '}{format(new Date(r.created_at), 'd MMM yyyy', { locale: es })}
+              {' · '}{format(new Date(r.created_at), 'd MMM yyyy', { locale: i18n.language === 'en' ? enUS : es })}
             </CardDescription>
           </div>
           {r.is_creator && (
@@ -87,7 +88,7 @@ export const RankingsInlineView: React.FC<RankingsInlineViewProps> = ({ onNaviga
       <CardContent className="pt-0">
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <Users className="h-3.5 w-3.5" />
-          {r.member_count} {r.member_count === 1 ? 'miembro' : 'miembros'}
+          {r.member_count} {trs(r.member_count === 1 ? 'miembro' : 'miembros')}
         </div>
       </CardContent>
     </Card>

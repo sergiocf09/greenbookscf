@@ -638,7 +638,7 @@ const ReviewGroups: React.FC<ReviewGroupsProps> = ({
               overCap ? 'border-destructive bg-destructive/5' : 'border-border',
             )}>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-bold">Grupo {n}</span>
+                <span className="text-xs font-bold">{trs('Grupo')} {n}</span>
                 <span className={cn(
                   'text-[10px] font-semibold px-1.5 py-0.5 rounded',
                   overCap ? 'bg-destructive/20 text-destructive' : 'bg-muted text-muted-foreground',
