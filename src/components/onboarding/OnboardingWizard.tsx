@@ -15,7 +15,7 @@ const steps = [
   {
     icon: <Settings className="h-12 w-12 text-primary" />,
     title: trs("Setup"),
-    description: 'Selecciona el campo y el tee. Agrega hasta 6 jugadores por grupo. Si son más jugadores, crea grupos adicionales con el botón \'+\' — todos quedan vinculados a la misma ronda y pueden participar en apuestas entre grupos.',
+    description: trs('Selecciona el campo y el tee. Agrega hasta 6 jugadores por grupo. Si son más jugadores, crea grupos adicionales con el botón \'+\' — todos quedan vinculados a la misma ronda y pueden participar en apuestas entre grupos.'),
   },
   {
     icon: <Dices className="h-12 w-12 text-primary" />,

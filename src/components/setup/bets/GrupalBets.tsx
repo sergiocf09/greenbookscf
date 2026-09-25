@@ -60,7 +60,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           isExpanded={expandedSections.includes('coneja')}
           onExpandChange={(open) => onToggleSection('coneja', open)}
           color="gold"
-          helpText="Juego grupal dividido en 3 sets de 6 hoyos. Ganar un hoyo da una pata; perder un hoyo quita una pata. Al cierre del set, quien tenga al menos 1 pata cobra a todos. Si nadie tiene pata, la coneja se acumula al siguiente set."
+          helpText={trs("Juego grupal dividido en 3 sets de 6 hoyos. Ganar un hoyo da una pata; perder un hoyo quita una pata. Al cierre del set, quien tenga al menos 1 pata cobra a todos. Si nadie tiene pata, la coneja se acumula al siguiente set.")}
         >
           <AmountInput label={trs("Cantidad por coneja")} value={config.coneja?.amount ?? 50} onChange={(v) => onUpdateBet('coneja', { amount: v })} />
           <CollapsibleSubSection label={trs("Configuración")} summary={`Handicap: ${(config.coneja?.handicapMode ?? 'individual') === 'individual' ? 'USGA' : 'Sliding'}`}>
@@ -168,7 +168,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           }}
           isExpanded={expandedSections.includes('skinsGrupal')}
           onExpandChange={(open) => onToggleSection('skinsGrupal', open)} color="gold"
-          helpText="Skins grupal: en cada hoyo, el jugador con el menor score neto gana un skin. En 'Acumulados', los empates acumulan al siguiente hoyo. En 'Sin Acumular', los empates se pierden. Cada perdedor paga al ganador del skin."
+          helpText={trs("Skins grupal: en cada hoyo, el jugador con el menor score neto gana un skin. En 'Acumulados', los empates acumulan al siguiente hoyo. En 'Sin Acumular', los empates se pierden. Cada perdedor paga al ganador del skin.")}
         >
           <AmountInput label="Front 9" value={config.skinsGrupal?.frontAmount ?? 50} onChange={(v) => onUpdateBet('skinsGrupal', { frontAmount: v } as any)} />
           <AmountInput label="Back 9" value={config.skinsGrupal?.backAmount ?? 100} onChange={(v) => onUpdateBet('skinsGrupal', { backAmount: v } as any)} />
@@ -423,7 +423,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           onToggle={(enabled) => onUpdateConfig?.({ ...config, girGeneral: { ...(config as any).girGeneral, enabled } } as any)}
           isExpanded={expandedSections.includes('girGeneral')}
           onExpandChange={(open) => onToggleSection('girGeneral', open)} color="gold"
-          helpText="El jugador con más GIRs (greens alcanzados en regulación = strokes sin putts ≤ par-2) gana y cobra a cada perdedor. No aplica hándicap. Requiere putts capturados por hoyo."
+          helpText={trs("El jugador con más GIRs (greens alcanzados en regulación = strokes sin putts ≤ par-2) gana y cobra a cada perdedor. No aplica hándicap. Requiere putts capturados por hoyo.")}
         >
           {/* Segment mode toggle */}
           <div className="flex items-center justify-between">
@@ -486,7 +486,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           }}
           isExpanded={expandedSections.includes('stableford')}
           onExpandChange={(open) => onToggleSection('stableford', open)} color="gold"
-          helpText="Sistema de puntos por score neto relativo al par de cada hoyo. Birdie = 3 pts, Par = 2 pts, Bogey = 1 pt (configurable). El jugador con más puntos totales gana y cobra a cada perdedor."
+          helpText={trs("Sistema de puntos por score neto relativo al par de cada hoyo. Birdie = 3 pts, Par = 2 pts, Bogey = 1 pt (configurable). El jugador con más puntos totales gana y cobra a cada perdedor.")}
         >
           <AmountInput label={trs("Cantidad por jugador")} value={config.stableford?.amount ?? 100} onChange={(v) => onUpdateBet('stableford', { amount: v })} />
           {hasMultipleGroups && (

@@ -126,7 +126,7 @@ const ContextualHelp: React.FC<ContextualHelpProps> = ({ view, open, onClose }) 
         <SheetHeader className="text-left">
           <div className="flex items-center gap-2">
             {content.icon}
-            <SheetTitle>{content.title}</SheetTitle>
+            <SheetTitle>{trs(content.title)}</SheetTitle>
           </div>
           <SheetDescription className="sr-only">{trs("Ayuda contextual")}</SheetDescription>
         </SheetHeader>
@@ -134,7 +134,7 @@ const ContextualHelp: React.FC<ContextualHelpProps> = ({ view, open, onClose }) 
           {content.items.map((item, i) => (
             <li key={i} className="flex gap-3 text-sm text-foreground/80">
               <span className="text-primary font-bold mt-0.5">•</span>
-              <span>{item}</span>
+              <span>{trs(item)}</span>
             </li>
           ))}
         </ul>
