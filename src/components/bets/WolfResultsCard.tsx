@@ -99,14 +99,14 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
     return (
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">🐺 Loba</CardTitle>
+          <CardTitle className="text-sm">🐺 {t('dashboard.wolf')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
             <div className="text-xs text-amber-700 space-y-1">
-              <p className="font-medium">Datos de Loba inconsistentes</p>
-              <p>Las decisiones guardadas contienen jugadores fuera del match actual. Se limpiarán automáticamente.</p>
+              <p className="font-medium">{t('dashboard.wolfBadData')}</p>
+              <p>{t('dashboard.wolfBadDataNote')}</p>
             </div>
           </div>
         </CardContent>
@@ -162,17 +162,17 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
             {/* Header with decision info top-right */}
             <div className="flex items-start justify-between">
               <p className="text-xs font-medium">
-                Hoyo {hole} · {detail.result === 'won' ? 'Loba ganó' : detail.result === 'lost' ? 'Loba perdió' : detail.result === 'tied' ? 'Empate' : 'En juego'}
+                {t('dashboard.hole')} {hole} · {t(detail.result === 'won' ? 'dashboard.wolfWon' : detail.result === 'lost' ? 'dashboard.wolfLost' : detail.result === 'tied' ? 'dashboard.tie' : 'dashboard.inPlay')}
               </p>
               <div className="text-right text-[10px] text-muted-foreground shrink-0 ml-2">
-                <div>{detail.wentSolo ? '🐺 Sola ×2' : `Con ${detail.partnerIds.map(id => shortNames.get(id) ?? '?').join(', ')}`}</div>
+                <div>{detail.wentSolo ? `🐺 ${t('dashboard.soloX2')}` : `${t('dashboard.with')} ${detail.partnerIds.map(id => shortNames.get(id) ?? '?').join(', ')}`}</div>
                 <div className="font-medium text-foreground">${fmtMoney(detail.effectiveAmount)}/rival</div>
               </div>
             </div>
 
             {/* Team labels */}
             <div className="flex justify-between text-[10px] text-muted-foreground">
-              <span>Equipo Loba</span>
+              <span>{t('dashboard.wolfTeam')}</span>
               <span>Rivales</span>
             </div>
 
@@ -243,7 +243,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
                 <p className="flex justify-between">
                   <span>Bola Baja</span>
                   <span>
-                    {detail.lowBallWinner === 'wolf' ? 'Loba' : detail.lowBallWinner === 'rival' ? 'Rival' : 'Empate'}
+                    {detail.lowBallWinner === 'wolf' ? t('dashboard.wolf') : detail.lowBallWinner === 'rival' ? t('dashboard.rival') : t('dashboard.tie')}
                     {' · '}{detail.teamWolfScore} vs {detail.teamRivalScore}
                   </span>
                 </p>
@@ -259,11 +259,11 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
                   <p className="flex justify-between">
                     <span>Bola Baja</span>
                     <span>
-                      {detail.lowBallWinner === 'wolf' ? 'Loba' : detail.lowBallWinner === 'rival' ? 'Rival' : 'Empate'}
+                      {detail.lowBallWinner === 'wolf' ? t('dashboard.wolf') : detail.lowBallWinner === 'rival' ? t('dashboard.rival') : t('dashboard.tie')}
                       {detail.teamWolfScore !== null && detail.teamRivalScore !== null && ` · ${detail.teamWolfScore} vs ${detail.teamRivalScore}`}
                     </span>
                   </p>
-                  <p className="flex justify-between"><span>Bola Alta</span><span>{detail.highBallWinner === 'wolf' ? 'Loba' : detail.highBallWinner === 'rival' ? 'Rival' : 'Empate'}</span></p>
+                  <p className="flex justify-between"><span>{t('dashboard.highBall')}</span><span>{detail.highBallWinner === 'wolf' ? t('dashboard.wolf') : detail.highBallWinner === 'rival' ? t('dashboard.rival') : t('dashboard.tie')}</span></p>
                   <p className="flex justify-between"><span>{t('dashboard.points')}</span><span>{detail.pointsWolf}–{detail.pointsRival}</span></p>
                 </>
               )}
@@ -294,7 +294,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
     <Card className={cn('border-accent/50', isDisabled && 'opacity-50')}>
       <CardHeader className="py-3">
         <CardTitle className="text-sm flex items-center justify-between">
-          <span>🐺 Loba</span>
+          <span>🐺 {t('dashboard.wolf')}</span>
           <div className="flex items-center gap-2">
             {isDisabled ? (
               <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
@@ -309,7 +309,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
                 size="icon"
                 className={cn('h-6 w-6', isDisabled ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-destructive')}
                 onClick={onToggleDisabled}
-                title={isDisabled ? 'Reactivar Loba' : 'No considerar Loba'}
+                title={isDisabled ? t('dashboard.reactivateWolf') : t('dashboard.excludeWolf')}
               >
                 {isDisabled ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
               </Button>

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useMemo } from 'react';
 import { Player, TeamHandicapConfig } from '@/types/golf';
 import { TeamBetHandicapInfo } from './TeamBetHandicapInfo';
@@ -24,11 +25,12 @@ const TeamHoleGrid: React.FC<{
     netB2: number; hcpB2: number;
   };
 }> = ({ teamAPlayers, teamBPlayers, shortNames, detail }) => {
+  const { t } = useTranslation();
   const getName = (p?: { name: string; id: string }) => p ? (shortNames.get(p.id) || p.name.split(' ')[0]) : 'Jugador';
   return (
   <div className="space-y-0.5">
     <div className="flex justify-between text-[10px] text-muted-foreground">
-      <span>Tu equipo</span>
+      <span>{t('dashboard.yourTeam')}</span>
       <span>Rival</span>
     </div>
     {/* Player row 1 */}
@@ -226,8 +228,8 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
 
   const getWinnerText = (w?: Winner) => {
     if (!w) return '—';
-    if (w === 'tie') return 'Empate';
-    return w === 'A' ? 'Tu equipo' : 'Rival';
+    if (w === 'tie') return t('dashboard.tie');
+    return w === 'A' ? t('dashboard.yourTeam') : t('dashboard.rival');
   };
 
   const scoringLabel = results.scoringType === 'all'
@@ -344,7 +346,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
                   <ChevronDown className="h-4 w-4" />
-                  <span className="sr-only">Ver detalle</span>
+                  <span className="sr-only">{t('dashboard.viewDetail')}</span>
                 </Button>
               </CollapsibleTrigger>
             </div>
@@ -410,7 +412,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                     <PopoverTrigger asChild>{pill}</PopoverTrigger>
                     <PopoverContent side="top" className="w-[95vw] max-w-sm p-3">
                       <div className="text-xs space-y-1">
-                        <p className="font-medium">Hoyo {detail.holeNumber} • {net > 0 ? `+${net}` : `${net}`} pts</p>
+                        <p className="font-medium">{t('dashboard.hole')} {detail.holeNumber} • {net > 0 ? `+${net}` : `${net}`} pts</p>
                         <TeamHoleGrid
                           teamAPlayers={displayTeamAPlayers}
                           teamBPlayers={displayTeamBPlayers}
@@ -487,7 +489,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                     <PopoverTrigger asChild>{pill}</PopoverTrigger>
                     <PopoverContent side="top" className="w-[95vw] max-w-sm p-3">
                       <div className="text-xs space-y-1">
-                        <p className="font-medium">Hoyo {detail.holeNumber} • {net > 0 ? `+${net}` : `${net}`} pts</p>
+                        <p className="font-medium">{t('dashboard.hole')} {detail.holeNumber} • {net > 0 ? `+${net}` : `${net}`} pts</p>
                         <TeamHoleGrid
                           teamAPlayers={displayTeamAPlayers}
                           teamBPlayers={displayTeamBPlayers}
