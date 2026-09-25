@@ -227,7 +227,7 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
       {/* Rounds list */}
       <div className="space-y-1.5">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Historial de Rondas ({totalRounds})
+          {trs("Historial de Rondas")} ({totalRounds})
         </p>
         {attestationStats && attestationStats.totalRounds > 0 && (() => {
           const pct = Math.round((attestationStats.attestedRounds / attestationStats.totalRounds) * 100);
