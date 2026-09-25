@@ -1361,7 +1361,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
           {/* Sort control */}
           <div className="flex items-center gap-1.5 px-1">
-            <span className="text-[10px] text-muted-foreground font-medium">{trs("Ordenar:")}</span>
+            <span className="text-[10px] text-muted-foreground font-medium">Ordenar:</span>
             {([
               { key: 'name', label: 'A-Z' },
               { key: 'strokes_desc', label: 'Mayor→Menor' },

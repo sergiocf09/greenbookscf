@@ -1785,7 +1785,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       <div className="px-4 py-2 pl-10 bg-background/50 space-y-2">
         {type === 'units' && activeAdvantage !== 0 && (
           <div className="flex items-center gap-2 text-xs px-2 py-1.5 rounded bg-amber-500/10 border border-amber-500/30">
-            <span className="font-semibold text-amber-700">{trs("Ventaja:")}</span>
+            <span className="font-semibold text-amber-700">Ventaja:</span>
             <span className="text-foreground">
               {activeAdvantage > 0
                 ? `Tú das ${activeAdvantage} unidad${activeAdvantage !== 1 ? 'es' : ''}`
@@ -2763,7 +2763,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   {/* Oyes modality toggle within Rayas */}
                                   {segConflicts.find(s => s.segmentKey === 'oyes')?.effectiveEnabled && (
                                     <div className="flex items-center justify-between pt-2 border-t border-border/20 mt-1">
-                                      <span className="text-[10px] text-muted-foreground">{trs("Oyes modalidad:")}</span>
+                                      <span className="text-[10px] text-muted-foreground">Oyes modalidad:</span>
                                       <div className="flex gap-1">
                                         {(['acumulados', 'sangron'] as const).map(mod => {
                                           const oyesPairKey = getPairKey(player.id, rival.id);
@@ -2844,7 +2844,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             {/* Front 9 total */}
                             <div className="flex items-center justify-between text-sm bg-muted/30 rounded px-2 py-1">
                               <div className="flex items-center gap-2">
-                                <span className="text-muted-foreground">{trs("Total Front:")}</span>
+                                <span className="text-muted-foreground">Total Front:</span>
                                 <span className={cn('font-bold', frontTotalRayas > 0 ? 'text-green-600' : frontTotalRayas < 0 ? 'text-destructive' : '')}>
                                   {frontTotalRayas}
                                 </span>
@@ -2889,7 +2889,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             {/* Back 9 total */}
                             <div className="flex items-center justify-between text-sm bg-muted/30 rounded px-2 py-1">
                               <div className="flex items-center gap-2">
-                                <span className="text-muted-foreground">{trs("Total Back:")}</span>
+                                <span className="text-muted-foreground">Total Back:</span>
                                 <span className={cn('font-bold', backTotalRayas > 0 ? 'text-green-600' : backTotalRayas < 0 ? 'text-destructive' : '')}>
                                   {backTotalRayas}
                                 </span>
@@ -3168,7 +3168,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                         </div>
                                       </div>
                                       <div className="text-[10px] text-center pt-1 border-t border-border/50">
-                                        {trs("Final:")}{' '}<span className="font-bold">{matchPlayEvolution.total.finalDisplay}</span>
+                                        Final: <span className="font-bold">{matchPlayEvolution.total.finalDisplay}</span>
                                       </div>
                                     </div>
                                   )}
@@ -3241,8 +3241,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       )}
                                       {/* Final result */}
                                       <div className="text-[10px] text-center pt-1 border-t border-border/50">
-                                        {trs("Final:")}{' '}<span className="font-bold">{pressureSegmentData.finalDisplay}</span>
-                                        {pressureSegmentData.hasCarry && <span className="ml-1 text-amber-600">{trs("(Carry)")}</span>}
+                                        Final: <span className="font-bold">{pressureSegmentData.finalDisplay}</span>
+                                        {pressureSegmentData.hasCarry && <span className="ml-1 text-amber-600">(Carry)</span>}
                                       </div>
                                     </div>
                                   )}

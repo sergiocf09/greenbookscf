@@ -147,7 +147,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
         </SheetHeader>
 
         <div className="flex items-center justify-between p-3 bg-muted/40 border border-border rounded-lg">
-          <span className="text-xs text-muted-foreground">{trs("Total pre-GB:")}</span>
+          <span className="text-xs text-muted-foreground">Total pre-GB:</span>
           <span className={cn(
             'text-lg font-bold tabular-nums',
             total > 0 ? 'text-green-600 dark:text-green-500' :

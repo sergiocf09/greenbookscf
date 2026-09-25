@@ -55,7 +55,7 @@ interface ParejasBetsProps {
   players: Player[];
   expandedSections: string[];
   onToggleSection: (section: string, open: boolean) => void;
-  onUpdateBet: <K extends keyof BetConfig>{trs("(betType: K, updates: Partial")}<BetConfig[K]>) => void;
+  onUpdateBet: <K extends keyof BetConfig>(betType: K, updates: Partial<BetConfig[K]>) => void;
   onUpdateConfig: (config: BetConfig) => void;
   getStrokesForLocalPair?: (localIdA: string, localIdB: string) => number;
   getLocalPairStrokeState?: (localIdA: string, localIdB: string) => { strokes: number; hasExplicitOverride: boolean };
@@ -403,7 +403,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
   /** Unique pairs currently configured across matches (used to detect combo index). */
   const uniquePairsOf = (
     matches: Array<{ teamA: [string, string]; teamB: [string, string] }>
-  {trs("): Array")}<[string, string]> => {
+  ): Array<[string, string]> => {
     const seen = new Map<string, [string, string]>();
     matches.forEach((m) => {
       [m.teamA, m.teamB].forEach((t) => {

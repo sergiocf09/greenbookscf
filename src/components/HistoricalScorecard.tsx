@@ -244,7 +244,7 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
 
       {/* Player Handicaps Summary */}
       <div className="border-t border-border p-3">
-        <p className="text-xs text-muted-foreground mb-2">{trs("Handicaps y tees utilizados:")}</p>
+        <p className="text-xs text-muted-foreground mb-2">Handicaps y tees utilizados:</p>
         <div className="flex flex-wrap gap-2">
           {players.map(player => {
             const tee = player.teeColor;

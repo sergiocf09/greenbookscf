@@ -350,7 +350,7 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
                 />
               ))}
               <div className="text-right text-xs font-medium px-3 py-1 bg-muted/20 border-b">
-                {trs("OUT:")}{' '}<span className="text-primary font-bold">{frontTotal}</span>
+                OUT: <span className="text-primary font-bold">{frontTotal}</span>
               </div>
             </>
           )}
@@ -377,7 +377,7 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
                 />
               ))}
               <div className="text-right text-xs font-medium px-3 py-1 bg-muted/20">
-                {trs("IN:")}{' '}<span className="text-primary font-bold">{backTotal}</span>
+                IN: <span className="text-primary font-bold">{backTotal}</span>
               </div>
             </>
           )}
@@ -385,7 +385,7 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
           {/* Total */}
           {showFront && showBack && (
             <div className="text-center text-sm font-bold py-2 border-t bg-card">
-              {trs("Total:")}{' '}<span className="text-primary">
+              Total: <span className="text-primary">
                 {typeof frontTotal === 'number' && typeof backTotal === 'number'
                   ? frontTotal + backTotal
                   : '-'}

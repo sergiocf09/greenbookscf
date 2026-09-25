@@ -9,7 +9,7 @@ import { disambiguateInitials } from '@/lib/playerInput';
 interface ParticipationMatrixProps {
   config: BetConfig;
   players: Player[];
-  onUpdateBet: <K extends keyof BetConfig>{trs("(betType: K, updates: Partial")}<BetConfig[K]>) => void;
+  onUpdateBet: <K extends keyof BetConfig>(betType: K, updates: Partial<BetConfig[K]>) => void;
   onUpdateConfig?: (config: BetConfig) => void;
 }
 

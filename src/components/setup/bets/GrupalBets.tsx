@@ -19,7 +19,7 @@ interface GrupalBetsProps {
   players: Player[];
   expandedSections: string[];
   onToggleSection: (section: string, open: boolean) => void;
-  onUpdateBet: <K extends keyof BetConfig>{trs("(betType: K, updates: Partial")}<BetConfig[K]>) => void;
+  onUpdateBet: <K extends keyof BetConfig>(betType: K, updates: Partial<BetConfig[K]>) => void;
   onUpdateConfig?: (config: BetConfig) => void;
   hasMultipleGroups?: boolean;
 }
@@ -86,10 +86,10 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
             </div>
           </CollapsibleSubSection>
           <div className="text-[9px] text-muted-foreground mt-3 space-y-1">
-            <p><strong>{trs("Estructura:")}</strong>{' '}{trs("3 sets de 6 hoyos (1-6, 7-12, 13-18)")}</p>
-            <p><strong>{trs("Pata:")}</strong> Ganador absoluto del hoyo gana pata; quien pierde un hoyo, pierde una pata</p>
-            <p><strong>{trs("Coneja:")}</strong>{' '}{trs("Al cierre del set, quien tenga ≥1 pata cobra a todos los demás")}</p>
-            <p><strong>{trs("Acumulación:")}</strong>{' '}{trs("Si nadie tiene pata al cierre, la coneja se acumula al siguiente set")}</p>
+            <p><strong>Estructura:</strong>{' '}{trs("3 sets de 6 hoyos (1-6, 7-12, 13-18)")}</p>
+            <p><strong>Pata:</strong> Ganador absoluto del hoyo gana pata; quien pierde un hoyo, pierde una pata</p>
+            <p><strong>Coneja:</strong>{' '}{trs("Al cierre del set, quien tenga ≥1 pata cobra a todos los demás")}</p>
+            <p><strong>Acumulación:</strong>{' '}{trs("Si nadie tiene pata al cierre, la coneja se acumula al siguiente set")}</p>
           </div>
         </BetSection>
       )}

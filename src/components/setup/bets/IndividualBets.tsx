@@ -16,7 +16,7 @@ interface IndividualBetsProps {
   players: Player[];
   expandedSections: string[];
   onToggleSection: (section: string, open: boolean) => void;
-  onUpdateBet: <K extends keyof BetConfig>{trs("(betType: K, updates: Partial")}<BetConfig[K]>) => void;
+  onUpdateBet: <K extends keyof BetConfig>(betType: K, updates: Partial<BetConfig[K]>) => void;
   onUpdateConfig?: (config: BetConfig) => void;
   basePlayerId?: string;
 }
@@ -62,7 +62,7 @@ const CarosRange: React.FC<{
 
   return (
     <div className="flex items-center gap-2">
-      <Label className="text-xs text-muted-foreground">{trs("Rango:")}</Label>
+      <Label className="text-xs text-muted-foreground">Rango:</Label>
       <div className="flex items-center gap-1">
         <input
           {...inputProps}

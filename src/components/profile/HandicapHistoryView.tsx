@@ -239,7 +239,7 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
           return (
             <p className="text-[11px] text-muted-foreground px-1 -mt-1 flex items-center gap-1">
               <Check className="h-3 w-3" />
-              {trs("Atestadas:")}{' '}<span className={cn('font-medium', colorClass)}>
+              Atestadas: <span className={cn('font-medium', colorClass)}>
                 {attestationStats.attestedRounds} de {attestationStats.totalRounds} ({pct}%)
               </span>
             </p>

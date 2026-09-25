@@ -1735,7 +1735,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     };
 
     const processSegment = (holes: number[], amount: number, segment: 'front' | 'back') => {
-      const empty = { holes: [] as Array<{ holeNum: number; nets: Array<{ playerId: string; net: number; strokesReceived: number }>; winnerId: string | null; accumulated: number; skinValue: number }>{trs(", totalByPlayer: new Map")}<string, number>{trs("(), skinCountByPlayer: new Map")}<string, number>() };
+      const empty = { holes: [] as Array<{ holeNum: number; nets: Array<{ playerId: string; net: number; strokesReceived: number }>; winnerId: string | null; accumulated: number; skinValue: number }>, totalByPlayer: new Map<string, number>(), skinCountByPlayer: new Map<string, number>() };
       if (amount <= 0) return empty;
       
       const modality = cfg.modality ?? 'acumulados';
@@ -2002,7 +2002,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
             {showCulebrasDetail && (culebrasResult.loser || culebrasResult.hasTie) && (
               <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 ml-6">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-muted-foreground">{trs("Hoyos con culebras:")}</span>
+                  <span className="text-xs text-muted-foreground">Hoyos con culebras:</span>
                   <span className="text-xs">${culebrasResult.valuePerOccurrence} c/u × {culebrasResult.totalCount} = ${culebrasResult.amountPerPlayer}/jug</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -2090,7 +2090,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               {showPinguinosDetail && (pinguinosResult.loser || pinguinosResult.hasTie) && (
                 <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 ml-6">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-muted-foreground">{trs("Hoyos con pingüinos:")}</span>
+                    <span className="text-xs text-muted-foreground">Hoyos con pingüinos:</span>
                     <span className="text-xs">${pinguinosResult.valuePerOccurrence} c/u × {pinguinosResult.totalCount} = ${pinguinosResult.amountPerPlayer}/jug</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
@@ -2180,7 +2180,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               {showZooDetail === result.animalType && (result.loser || result.hasTie) && result.events.length > 0 && (
                 <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 ml-6">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-muted-foreground">{trs("Incidencias:")}</span>
+                    <span className="text-xs text-muted-foreground">Incidencias:</span>
                     <span className="text-xs">${result.valuePerOccurrence} c/u × {result.totalOccurrences} = ${result.amountPerPlayer}/jug</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">

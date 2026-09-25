@@ -167,7 +167,7 @@ export const USGAHandicapDialog: React.FC<USGAHandicapDialogProps> = ({
                   {handicapIndex !== null ? handicapIndex.toFixed(1) : '-'}
                 </p>
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  {trs("(siempre igual)")}
+                  (siempre igual)
                 </p>
               </div>
 
@@ -204,7 +204,7 @@ export const USGAHandicapDialog: React.FC<USGAHandicapDialogProps> = ({
 
             {/* USGA Scale Reference */}
             <div className="bg-muted/50 rounded-lg p-3 text-xs">
-              <p className="font-medium mb-1">{trs("Escala USGA:")}</p>
+              <p className="font-medium mb-1">Escala USGA:</p>
               <div className="grid grid-cols-2 gap-1 text-muted-foreground">
                 <span>{trs("3-5 rondas → 1 diferencial")}</span>
                 <span>{trs("6-8 rondas → 2 diferenciales")}</span>

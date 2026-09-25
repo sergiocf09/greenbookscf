@@ -120,7 +120,7 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
       
       {hasFront && (
         <div className="flex items-center justify-between">
-          <Label className="text-sm">{trs("Front 9:")}</Label>
+          <Label className="text-sm">Front 9:</Label>
           <div className="flex items-center gap-1">
             <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => setFrontAmount(Math.max(0, frontAmount - 25))}><Minus className="h-3 w-3" /></Button>
             <div className="flex items-center gap-0.5">
@@ -134,7 +134,7 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
       
       {hasBack && (
         <div className="flex items-center justify-between">
-          <Label className="text-sm">{trs("Back 9:")}</Label>
+          <Label className="text-sm">Back 9:</Label>
           <div className="flex items-center gap-1">
             <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => setBackAmount(Math.max(0, backAmount - 25))}><Minus className="h-3 w-3" /></Button>
             <div className="flex items-center gap-0.5">
@@ -219,7 +219,7 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
             <Switch checked={carryOverOnTie} onCheckedChange={setCarryOverOnTie} />
           </div>
           <p className="text-[10px] text-muted-foreground">
-            {trs("Default global:")}{' '}<strong>{betConfig.bloques?.carryOverOnTie ? trs("Activado") : trs("Desactivado")}</strong>
+            Default global: <strong>{betConfig.bloques?.carryOverOnTie ? trs("Activado") : trs("Desactivado")}</strong>
           </p>
         </div>
       )}

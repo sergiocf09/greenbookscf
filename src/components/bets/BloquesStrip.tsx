@@ -80,7 +80,7 @@ export const BloquesStrip: React.FC<Props> = ({
       <div className="space-y-0.5 text-xs">
         <div className="flex items-center justify-between">
           <span className="text-muted-foreground">
-            <span className="text-green-600 font-semibold">{trs("Ganados:")}</span>{' '}
+            <span className="text-green-600 font-semibold">Ganados:</span>{' '}
             {wonA.length > 0 ? renderList(wonA) : '—'}
           </span>
           <span className="font-bold tabular-nums text-green-600">
@@ -89,7 +89,7 @@ export const BloquesStrip: React.FC<Props> = ({
         </div>
         <div className="flex items-center justify-between">
           <span className="text-muted-foreground">
-            <span className="text-destructive font-semibold">{trs("Perdidos:")}</span>{' '}
+            <span className="text-destructive font-semibold">Perdidos:</span>{' '}
             {wonB.length > 0 ? renderList(wonB) : '—'}
           </span>
           <span className="font-bold tabular-nums text-destructive">

@@ -130,7 +130,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
   };
 
   const systemIcon: Record<string, React.ReactNode> = {
-    strokes: <Target className="h-5 w-5" />{trs(", stableford:")}{' '}<TrendingUp className="h-5 w-5" />{trs(", points:")}{' '}<Trophy className="h-5 w-5" />,
+    strokes: <Target className="h-5 w-5" />, stableford: <TrendingUp className="h-5 w-5" />, points: <Trophy className="h-5 w-5" />,
   };
 
   return (

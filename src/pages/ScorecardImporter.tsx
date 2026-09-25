@@ -819,7 +819,7 @@ function Step3Mapping(props: {
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <span className="text-muted-foreground text-xs uppercase tracking-wide">
-                  {trs("En la tarjeta:")}
+                  En la tarjeta:
                 </span>
                 {p.nameInCard || <em className="text-muted-foreground">{trs("Sin nombre")}</em>}
               </CardTitle>
@@ -865,7 +865,7 @@ function Step3Mapping(props: {
 
               {kind === 'self' && (
                 <p className="text-xs text-muted-foreground">
-                  {trs("Se asignará a tu perfil:")}{' '}<strong>{profileDisplayName}</strong>.
+                  Se asignará a tu perfil: <strong>{profileDisplayName}</strong>.
                 </p>
               )}
 

@@ -320,11 +320,11 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
 
           {modalityLine && (
             <div className="text-[11px] text-muted-foreground">
-              <span className="font-medium text-foreground">{trs("Modalidad:")}</span> {modalityLine}
+              <span className="font-medium text-foreground">Modalidad:</span> {modalityLine}
             </div>
           )}
           <div className="text-[11px] text-muted-foreground">
-            <span className="font-medium text-foreground">{trs("HCP:")}</span>{' '}
+            <span className="font-medium text-foreground">HCP:</span>{' '}
             {useHandicap ? HANDICAP_MODE_LABELS[mode] : 'Sin hándicap (gross)'}
           </div>
 
@@ -363,7 +363,7 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
                 );
               })}
               <div className="text-[10px] text-center text-muted-foreground">
-                {trs("Cada línea:")}{' '}<span className="text-foreground">{trs("jugador · HCP campo · golpes en el tramo")}</span>
+                Cada línea: <span className="text-foreground">{trs("jugador · HCP campo · golpes en el tramo")}</span>
               </div>
             </div>
           ) : grouped ? (
@@ -374,7 +374,7 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
                 <TeamColumn label={teamBLabel} teamRows={rowsB} align="right" />
               </div>
               <div className="text-[10px] text-center text-muted-foreground">
-                {trs("Cada línea:")}{' '}<span className="text-foreground">{trs("jugador · HCP campo · golpes")}</span>
+                Cada línea: <span className="text-foreground">{trs("jugador · HCP campo · golpes")}</span>
               </div>
               {useHandicap && (
                 <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5 text-[10px] tabular-nums flex items-center justify-between">

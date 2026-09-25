@@ -837,7 +837,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-xs text-muted-foreground">{trs("Score promedio por mes")}</p>
                         <span className="text-[11px] text-muted-foreground">
-                          {trs("Prom. global:")}{' '}<span className="font-semibold text-foreground">{activityData.globalAvg}</span>
+                          Prom. global: <span className="font-semibold text-foreground">{activityData.globalAvg}</span>
                         </span>
                       </div>
                       <ResponsiveContainer width="100%" height={150}>

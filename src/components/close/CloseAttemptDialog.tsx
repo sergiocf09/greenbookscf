@@ -51,14 +51,14 @@ export const CloseAttemptDialog: React.FC<CloseAttemptDialogProps> = ({
           <div className="space-y-3">
             <div className="text-sm">
               <div>
-                <span className="text-muted-foreground">{trs("Ronda:")}</span> {report.roundId}
+                <span className="text-muted-foreground">Ronda:</span> {report.roundId}
               </div>
               <div>
-                <span className="text-muted-foreground">{trs("Etapa fallida:")}</span> {failedStage ?? '—'}
+                <span className="text-muted-foreground">Etapa fallida:</span> {failedStage ?? '—'}
               </div>
               {report.invalidProfileIds.length > 0 && (
                 <div className="mt-2">
-                  <div className="text-muted-foreground">{trs("profileId inválidos detectados:")}</div>
+                  <div className="text-muted-foreground">profileId inválidos detectados:</div>
                   <ul className="list-disc pl-5">
                     {report.invalidProfileIds.map((x) => (
                       <li key={`${x.playerId}-${x.profileId}`}>[{x.name}] {x.profileId}</li>
@@ -68,7 +68,7 @@ export const CloseAttemptDialog: React.FC<CloseAttemptDialogProps> = ({
               )}
               {report.discrepancyBreakdown && report.discrepancyBreakdown.length > 0 && (
                 <div className="mt-2">
-                  <div className="text-muted-foreground font-medium">{trs("Apuestas con discrepancia UI vs Motor:")}</div>
+                  <div className="text-muted-foreground font-medium">Apuestas con discrepancia UI vs Motor:</div>
                   <ul className="list-disc pl-5">
                     {report.discrepancyBreakdown.slice(0, 15).map((d, i) => (
                       <li key={i}>

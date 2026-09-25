@@ -396,7 +396,7 @@ const JoinRound = () => {
                               </div>
                               <span className="text-xs">{formatPlayerName(p.display_name)}</span>
                               {p.is_guest && (
-                                <span className="text-[10px] text-muted-foreground">{trs("(inv)")}</span>
+                                <span className="text-[10px] text-muted-foreground">(inv)</span>
                               )}
                             </div>
                           ))}

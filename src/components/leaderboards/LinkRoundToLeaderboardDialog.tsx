@@ -408,7 +408,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
                       <div className="rounded-lg border border-border p-3 space-y-2">
                         <p className="text-xs font-semibold">{trs("¿A qué día del torneo se vinculará la ronda?")}</p>
                         <p className="text-[11px] text-muted-foreground">
-                          {trs("Selecciona manualmente. Fecha de tu ronda:")}{' '}<strong>{roundDate || '—'}</strong>
+                          Selecciona manualmente. Fecha de tu ronda: <strong>{roundDate || '—'}</strong>
                         </p>
                         <div className="grid grid-cols-1 gap-1.5">
                           {mdDays.map(d => {
@@ -438,7 +438,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
                         {mismatch && effectiveDay && (
                           <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 p-2.5 text-[11px]">
                             <p className="text-amber-800 dark:text-amber-200">
-                              {trs("⚠ Tu ronda es del")}{' '}<strong>{roundDate}</strong> pero la estás vinculando al Día {effectiveDay.day_number} (<strong>{effectiveDay.date}</strong>{trs("). Al vincular, ajustaremos la fecha de la ronda al día seleccionado.")}
+                              {trs("⚠ Tu ronda es del")}{' '}<strong>{roundDate}</strong> pero la estás vinculando al Día {effectiveDay.day_number} (<strong>{effectiveDay.date}</strong>). Al vincular, ajustaremos la fecha de la ronda al día seleccionado.
                             </p>
                           </div>
                         )}
@@ -480,7 +480,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
                               )}
                             </div>
                             <div className="flex items-center gap-1">
-                              <span className="text-xs text-muted-foreground">{trs("Hcp:")}</span>
+                              <span className="text-xs text-muted-foreground">Hcp:</span>
                               <Input
                                 type="number"
                                 value={hcp}

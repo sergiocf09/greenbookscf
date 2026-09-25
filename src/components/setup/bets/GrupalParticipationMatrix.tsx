@@ -8,7 +8,7 @@ import { disambiguateInitials } from '@/lib/playerInput';
 interface GrupalParticipationMatrixProps {
   config: BetConfig;
   players: Player[];
-  onUpdateBet: <K extends keyof BetConfig>{trs("(betType: K, updates: Partial")}<BetConfig[K]>) => void;
+  onUpdateBet: <K extends keyof BetConfig>(betType: K, updates: Partial<BetConfig[K]>) => void;
   onUpdateConfig?: (config: BetConfig) => void;
 }
 
@@ -81,7 +81,7 @@ const updateBet = (
   updates: any,
   config: BetConfig,
   players: Player[],
-  onUpdateBet: <K extends keyof BetConfig>{trs("(betType: K, updates: Partial")}<BetConfig[K]>) => void,
+  onUpdateBet: <K extends keyof BetConfig>(betType: K, updates: Partial<BetConfig[K]>) => void,
   onUpdateConfig?: (config: BetConfig) => void,
 ) => {
   if (betKey === 'nines') {

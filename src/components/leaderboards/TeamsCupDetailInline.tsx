@@ -220,7 +220,7 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
   const renderHoleCell = (h: CupHoleBreakdown) => {
     const text = formatRunning(h.running_a_up);
     const color =
-      h.running_a_up >{' '}{trs("0 ? colorA : h.running_a_up")}{' '}< 0 ? colorB :
+      h.running_a_up > 0 ? colorA : h.running_a_up < 0 ? colorB :
       'hsl(var(--muted-foreground))';
     return (
       <div

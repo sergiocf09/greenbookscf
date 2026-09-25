@@ -1881,7 +1881,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             <div className="flex flex-col gap-2">
               {/* FIRST: Group selector (Ver Grupos 1, 2, 3...) */}
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">{trs("Ver Grupo:")}</span>
+                <span className="text-xs text-muted-foreground">Ver Grupo:</span>
                 <GroupSelector
                   currentGroupIndex={displayGroupIndex}
                   players={players}
@@ -1905,7 +1905,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               
               {/* SECOND: Toggle between "Solo Grupo" and "Todos los Grupos" */}
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">{trs("Vista:")}</span>
+                <span className="text-xs text-muted-foreground">Vista:</span>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
@@ -2127,21 +2127,21 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                               {/* Show breakdown when there are pair bets */}
                               {(vsCarritosBalance !== 0 || vsTeamPressuresBalance !== 0 || vsWolfBalance !== 0 || vsSixesBalance !== 0 || vsVegasBalance !== 0) && (
                                 <span className="text-xs text-muted-foreground flex flex-wrap gap-x-1">
-                                  <span>{trs("Ind:")}{' '}<span className={cn(vsIndividualBalance > 0 ? 'text-green-600' : vsIndividualBalance < 0 ? 'text-destructive' : '')}>{vsIndividualBalance >= 0 ? '+' : ''}{vsIndividualBalance}</span></span>
+                                  <span>Ind: <span className={cn(vsIndividualBalance > 0 ? 'text-green-600' : vsIndividualBalance < 0 ? 'text-destructive' : '')}>{vsIndividualBalance >= 0 ? '+' : ''}{vsIndividualBalance}</span></span>
                                   {vsCarritosBalance !== 0 && (
-                                    <span>{trs("| Car:")}{' '}<span className={cn(vsCarritosBalance > 0 ? 'text-green-600' : vsCarritosBalance < 0 ? 'text-destructive' : '')}>{vsCarritosBalance >= 0 ? '+' : ''}{vsCarritosBalance}</span></span>
+                                    <span>| Car: <span className={cn(vsCarritosBalance > 0 ? 'text-green-600' : vsCarritosBalance < 0 ? 'text-destructive' : '')}>{vsCarritosBalance >= 0 ? '+' : ''}{vsCarritosBalance}</span></span>
                                   )}
                                   {vsTeamPressuresBalance !== 0 && (
-                                    <span>{trs("| Pres:")}{' '}<span className={cn(vsTeamPressuresBalance > 0 ? 'text-green-600' : vsTeamPressuresBalance < 0 ? 'text-destructive' : '')}>{vsTeamPressuresBalance >= 0 ? '+' : ''}{vsTeamPressuresBalance}</span></span>
+                                    <span>| Pres: <span className={cn(vsTeamPressuresBalance > 0 ? 'text-green-600' : vsTeamPressuresBalance < 0 ? 'text-destructive' : '')}>{vsTeamPressuresBalance >= 0 ? '+' : ''}{vsTeamPressuresBalance}</span></span>
                                   )}
                                   {vsWolfBalance !== 0 && (
                                     <span>| 🐺: <span className={cn(vsWolfBalance > 0 ? 'text-green-600' : 'text-destructive')}>{vsWolfBalance >= 0 ? '+' : ''}${fmtMoney(Math.abs(vsWolfBalance))}</span></span>
                                   )}
                                   {vsSixesBalance !== 0 && (
-                                    <span>{trs("| 6s:")}{' '}<span className={cn(vsSixesBalance > 0 ? 'text-green-600' : 'text-destructive')}>{vsSixesBalance >= 0 ? '+' : ''}${fmtMoney(Math.abs(vsSixesBalance))}</span></span>
+                                    <span>| 6s: <span className={cn(vsSixesBalance > 0 ? 'text-green-600' : 'text-destructive')}>{vsSixesBalance >= 0 ? '+' : ''}${fmtMoney(Math.abs(vsSixesBalance))}</span></span>
                                   )}
                                   {vsVegasBalance !== 0 && (
-                                    <span>{trs("| LV:")}{' '}<span className={cn(vsVegasBalance > 0 ? 'text-green-600' : 'text-destructive')}>{vsVegasBalance >= 0 ? '+' : ''}${fmtMoney(Math.abs(vsVegasBalance))}</span></span>
+                                    <span>| LV: <span className={cn(vsVegasBalance > 0 ? 'text-green-600' : 'text-destructive')}>{vsVegasBalance >= 0 ? '+' : ''}${fmtMoney(Math.abs(vsVegasBalance))}</span></span>
                                   )}
                                 </span>
                               )}
@@ -2176,7 +2176,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               const rounded = roundGroupToNearest5Map(raws);
               return Array.from(rounded.values()).reduce((s, v) => s + v, 0);
             })()}`}
-            <span className="ml-1">{trs("(debe ser $0)")}</span>
+            <span className="ml-1">(debe ser $0)</span>
           </div>
           {tablaGeneralPlayers.some(p => p.isFounder) && (
             <div className="flex items-center justify-center gap-1.5 py-1 text-xs text-golf-gold">

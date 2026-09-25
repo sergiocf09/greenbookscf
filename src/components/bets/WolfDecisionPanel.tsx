@@ -240,7 +240,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              {trs("Monto efectivo:")}{' '}<span className="font-semibold text-foreground">${fmtMoney(holeState.effectiveAmount ?? wolfConfig.amountPerHole)}</span>{' '}{trs("por rival")}
+              Monto efectivo: <span className="font-semibold text-foreground">${fmtMoney(holeState.effectiveAmount ?? wolfConfig.amountPerHole)}</span>{' '}{trs("por rival")}
             </p>
             {canDecide && (
               <Button
