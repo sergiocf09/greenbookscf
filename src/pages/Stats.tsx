@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useEffect } from 'react';
 import { MoveRight, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -79,7 +80,7 @@ export const StatsInlineView: React.FC = () => {
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]" align="start">
           <DropdownMenuItem onClick={() => setCourseId(null)}>
-            Global — Todos los campos
+            {trs("Global — Todos los campos")}
           </DropdownMenuItem>
           {[...courses].sort((a, b) => b.rounds_played - a.rounds_played || a.course_name.localeCompare(b.course_name)).map(c => (
             <DropdownMenuItem key={c.course_id} onClick={() => setCourseId(c.course_id)}>
@@ -93,7 +94,7 @@ export const StatsInlineView: React.FC = () => {
       {!stats || stats.rounds_played === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
           <BarChart2 className="h-12 w-12 text-muted-foreground" />
-          <p className="text-muted-foreground text-sm">Juega tu primera ronda para ver tus estadísticas</p>
+          <p className="text-muted-foreground text-sm">{trs("Juega tu primera ronda para ver tus estadísticas")}</p>
         </div>
       ) : (
         <>
@@ -181,14 +182,14 @@ function UpgradeBanner({ onNavigate }: { onNavigate: () => void }) {
   ];
   return (
     <Card className="border-emerald-500/50 bg-emerald-500/10 rounded-xl p-5 space-y-3">
-      <h3 className="font-semibold text-foreground">Desbloquea tus estadísticas completas</h3>
-      <p className="text-sm text-muted-foreground">GIR detallado, putting, scrambling, milestones, promedio por hoyo y más</p>
+      <h3 className="font-semibold text-foreground">{trs("Desbloquea tus estadísticas completas")}</h3>
+      <p className="text-sm text-muted-foreground">{trs("GIR detallado, putting, scrambling, milestones, promedio por hoyo y más")}</p>
       <ul className="space-y-1">
         {items.map(t => (
           <li key={t} className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 text-emerald-500 shrink-0" />{t}</li>
         ))}
       </ul>
-      <Button onClick={onNavigate} className="w-full mt-2">Ver planes →</Button>
+      <Button onClick={onNavigate} className="w-full mt-2">{trs("Ver planes →")}</Button>
     </Card>
   );
 }
@@ -212,7 +213,7 @@ function ScoreDistribution({ stats }: { stats: PlayerStats }) {
 
   return (
     <section>
-      <h2 className="text-sm font-semibold text-foreground mb-3">Distribución de Resultados</h2>
+      <h2 className="text-sm font-semibold text-foreground mb-3">{trs("Distribución de Resultados")}</h2>
       <Card className="rounded-xl p-4">
         <div className="space-y-2">
           {data.map((d, i) => {
@@ -256,7 +257,7 @@ function ParPerformance({ stats }: { stats: PlayerStats }) {
   ];
   return (
     <section>
-      <h2 className="text-sm font-semibold text-foreground mb-3">Rendimiento por Par</h2>
+      <h2 className="text-sm font-semibold text-foreground mb-3">{trs("Rendimiento por Par")}</h2>
       <div className="flex gap-3">
         {pars.map(p => {
           const val = p.avg != null ? Number(p.avg) : null;

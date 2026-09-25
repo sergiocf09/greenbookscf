@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLeaderboards } from '@/hooks/useLeaderboards';
@@ -86,7 +87,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
     if (createType === 'multi_day') {
       const validDays = mdDays.filter(d => d.date);
       if (validDays.length < 2) {
-        toast.error('Agrega al menos 2 días con fecha');
+        toast.error(trs("Agrega al menos 2 días con fecha"));
         setCreating(false);
         return;
       }
@@ -159,17 +160,17 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
         >
           <DialogTrigger asChild>
             <Button className="flex-1 gap-2">
-              <Plus className="h-4 w-4" /> Crear Leaderboard
+              <Plus className="h-4 w-4" />{' '}{trs("Crear Leaderboard")}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-sm">
             <DialogHeader>
-              <DialogTitle>Nueva Competencia</DialogTitle>
+              <DialogTitle>{trs("Nueva Competencia")}</DialogTitle>
             </DialogHeader>
             {createType === null && (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  ¿Qué tipo de competencia quieres crear?
+                  {trs("¿Qué tipo de competencia quieres crear?")}
                 </p>
 
                 <button
@@ -180,9 +181,9 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                   <div className="flex items-center gap-3">
                     <Trophy className="h-5 w-5 text-primary" />
                     <div>
-                      <div className="font-medium text-foreground">Leaderboard</div>
+                      <div className="font-medium text-foreground">{trs("Leaderboard")}</div>
                       <div className="text-sm text-muted-foreground">
-                        Tabla de posiciones individual (Medal, Stableford)
+                        {trs("Tabla de posiciones individual (Medal, Stableford)")}
                       </div>
                     </div>
                   </div>
@@ -200,9 +201,9 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                   <div className="flex items-center gap-3">
                     <span className="text-lg leading-none">🏆</span>
                     <div>
-                      <div className="font-medium text-foreground">Teams Cup</div>
+                      <div className="font-medium text-foreground">{trs("Teams Cup")}</div>
                       <div className="text-sm text-muted-foreground">
-                        Competencia por equipos estilo Ryder Cup
+                        {trs("Competencia por equipos estilo Ryder Cup")}
                       </div>
                     </div>
                   </div>
@@ -216,9 +217,9 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                   <div className="flex items-center gap-3">
                     <CalendarDays className="h-5 w-5 text-primary" />
                     <div>
-                      <div className="font-medium text-foreground">Multi-día</div>
+                      <div className="font-medium text-foreground">{trs("Multi-día")}</div>
                       <div className="text-sm text-muted-foreground">
-                        Varios días con standings por día y acumulado
+                        {trs("Varios días con standings por día y acumulado")}
                       </div>
                     </div>
                   </div>
@@ -236,9 +237,9 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                   <div className="flex items-center gap-3">
                     <Trophy className="h-5 w-5 text-amber-500" />
                     <div>
-                      <div className="font-medium text-foreground">Liga</div>
+                      <div className="font-medium text-foreground">{trs("Liga")}</div>
                       <div className="text-sm text-muted-foreground">
-                        Puntos, strokes o stableford acumulado por jornadas
+                        {trs("Puntos, strokes o stableford acumulado por jornadas")}
                       </div>
                     </div>
                   </div>
@@ -250,23 +251,23 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
             {createType === 'standard' && (
               <div className="space-y-4">
                 <div>
-                  <Label>Nombre *</Label>
+                  <Label>{trs("Nombre *")}</Label>
                   <Input
-                    placeholder="Ej: Torneo del Club"
+                    placeholder={trs("Ej: Torneo del Club")}
                     value={formName}
                     onChange={e => setFormName(e.target.value)}
                   />
                 </div>
                 <div>
-                  <Label>Descripción</Label>
+                  <Label>{trs("Descripción")}</Label>
                   <Input
-                    placeholder="Descripción breve (opcional)"
+                    placeholder={trs("Descripción breve (opcional)")}
                     value={formDescription}
                     onChange={e => setFormDescription(e.target.value)}
                   />
                 </div>
                 <div>
-                  <Label>Fecha</Label>
+                  <Label>{trs("Fecha")}</Label>
                   <Input
                     type="date"
                     value={formDate}
@@ -274,7 +275,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                   />
                 </div>
                 <div>
-                  <Label>Modalidades *</Label>
+                  <Label>{trs("Modalidades *")}</Label>
                   <div className="mt-1 flex flex-col gap-2">
                     {[
                       { key: 'gross', label: 'Medal Gross' },
@@ -292,7 +293,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                   </div>
                 </div>
                 <Button variant="outline" onClick={() => setCreateType(null)} className="w-full">
-                  ← Atrás
+                  {trs("← Atrás")}
                 </Button>
                 <Button
                   onClick={handleCreate}
@@ -308,24 +309,24 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
             {createType === 'multi_day' && (
               <div className="space-y-4">
                 <div>
-                  <Label>Nombre *</Label>
+                  <Label>{trs("Nombre *")}</Label>
                   <Input
-                    placeholder="Ej: Copa de Verano"
+                    placeholder={trs("Ej: Copa de Verano")}
                     value={formName}
                     onChange={e => setFormName(e.target.value)}
                   />
                 </div>
                 <div>
-                  <Label>Descripción</Label>
+                  <Label>{trs("Descripción")}</Label>
                   <Input
-                    placeholder="Descripción breve (opcional)"
+                    placeholder={trs("Descripción breve (opcional)")}
                     value={formDescription}
                     onChange={e => setFormDescription(e.target.value)}
                   />
                 </div>
 
                 <div className="space-y-2 border-l-2 border-primary/30 pl-3">
-                  <Label className="text-xs">Días del torneo *</Label>
+                  <Label className="text-xs">{trs("Días del torneo *")}</Label>
                   {mdDays.map((day, idx) => (
                     <div key={idx} className="flex items-center gap-1.5">
                       <span className="text-xs w-12 shrink-0">Día {idx + 1}</span>
@@ -336,7 +337,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                         className="h-8 text-xs flex-1"
                       />
                       <Input
-                        placeholder="Etiqueta"
+                        placeholder={trs("Etiqueta")}
                         value={day.label}
                         onChange={e => updateDay(idx, 'label', e.target.value)}
                         className="h-8 text-xs flex-1"
@@ -359,18 +360,18 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                     className="text-xs h-7 w-full"
                     onClick={addDay}
                   >
-                    <Plus className="h-3 w-3 mr-1" /> Agregar día
+                    <Plus className="h-3 w-3 mr-1" />{' '}{trs("Agregar día")}
                   </Button>
 
                   <div className="space-y-1 mt-3">
-                    <Label className="text-xs">Agregación</Label>
+                    <Label className="text-xs">{trs("Agregación")}</Label>
                     <select
                       value={mdAggregation}
                       onChange={e => setMdAggregation(e.target.value as 'sum' | 'best_n')}
                       className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
                     >
-                      <option value="sum">Suma total de todos los días</option>
-                      <option value="best_n">Mejores N días</option>
+                      <option value="sum">{trs("Suma total de todos los días")}</option>
+                      <option value="best_n">{trs("Mejores N días")}</option>
                     </select>
                     {mdAggregation === 'best_n' && (
                       <div className="flex items-center gap-1.5 mt-1">
@@ -392,7 +393,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                 </div>
 
                 <div>
-                  <Label>Modalidades *</Label>
+                  <Label>{trs("Modalidades *")}</Label>
                   <div className="mt-1 flex flex-col gap-2">
                     {[
                       { key: 'gross', label: 'Medal Gross' },
@@ -411,7 +412,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                 </div>
 
                 <Button variant="outline" onClick={() => setCreateType(null)} className="w-full">
-                  ← Atrás
+                  {trs("← Atrás")}
                 </Button>
                 <Button
                   onClick={handleCreate}
@@ -430,16 +431,16 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
         <Dialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
           <DialogTrigger asChild>
             <Button variant="outline" className="flex-1 gap-2">
-              <Search className="h-4 w-4" /> Unirse por Código
+              <Search className="h-4 w-4" />{' '}{trs("Unirse por Código")}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-sm">
             <DialogHeader>
-              <DialogTitle>Unirse a Leaderboard</DialogTitle>
+              <DialogTitle>{trs("Unirse a Leaderboard")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label>Código del leaderboard</Label>
+                <Label>{trs("Código del leaderboard")}</Label>
                 <Input
                   placeholder="Ej: a1b2c3"
                   value={joinCode}
@@ -448,7 +449,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                 />
               </div>
               <Button onClick={handleJoin} disabled={!joinCode.trim()} className="w-full">
-                Buscar
+                {trs("Buscar")}
               </Button>
             </div>
           </DialogContent>
@@ -458,8 +459,8 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
       {/* Tabs: Active / History */}
       <Tabs defaultValue="active">
         <TabsList className="w-full">
-          <TabsTrigger value="active" className="flex-1">Activos</TabsTrigger>
-          <TabsTrigger value="history" className="flex-1">Historial</TabsTrigger>
+          <TabsTrigger value="active" className="flex-1">{trs("Activos")}</TabsTrigger>
+          <TabsTrigger value="history" className="flex-1">{trs("Historial")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="active" className="space-y-3 mt-3">
@@ -470,8 +471,8 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
           ) : activeEvents.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Trophy className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">No hay leaderboards activos</p>
-              <p className="text-sm mt-1">Crea uno o únete con un código</p>
+              <p className="font-medium">{trs("No hay leaderboards activos")}</p>
+              <p className="text-sm mt-1">{trs("Crea uno o únete con un código")}</p>
             </div>
           ) : (
             activeEvents.map(ev => (
@@ -487,12 +488,12 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                         <CardTitle className="text-base">{ev.name}</CardTitle>
                         {(ev as any).competition_type === 'teams_cup' && (
                           <Badge variant="secondary" className="border border-primary/20 bg-primary/10 text-primary">
-                            TEAMS CUP
+                            {trs("TEAMS CUP")}
                           </Badge>
                         )}
                         {(ev as any).competition_type === 'league' && (
                           <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-600 dark:text-amber-400">
-                            Liga
+                            {trs("Liga")}
                           </Badge>
                         )}
                       </div>
@@ -506,7 +507,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7"
-                          aria-label="Editar configuración"
+                          aria-label={trs("Editar configuración")}
                           onClick={(e) => { e.stopPropagation(); setEditTarget(ev); }}
                         >
                           <Pencil className="h-4 w-4 text-muted-foreground" />
@@ -548,7 +549,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
             </div>
           ) : completedEvents.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              <p className="text-sm">No hay leaderboards completados</p>
+              <p className="text-sm">{trs("No hay leaderboards completados")}</p>
             </div>
           ) : (
             completedEvents.map(ev => (
@@ -562,12 +563,12 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                     <CardTitle className="text-base">{ev.name}</CardTitle>
                     {(ev as any).competition_type === 'teams_cup' && (
                       <Badge variant="secondary" className="border border-primary/20 bg-primary/10 text-primary">
-                        TEAMS CUP
+                        {trs("TEAMS CUP")}
                       </Badge>
                     )}
                     {(ev as any).competition_type === 'league' && (
                       <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-600 dark:text-amber-400">
-                        Liga
+                        {trs("Liga")}
                       </Badge>
                     )}
                   </div>

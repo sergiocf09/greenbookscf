@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -36,11 +37,11 @@ export const GuestConversionModal: React.FC<GuestConversionModalProps> = ({
 
   const handleCreateAccount = async () => {
     if (!email.trim() || !password.trim()) {
-      toast.error('Ingresa email y contraseña');
+      toast.error(trs("Ingresa email y contraseña"));
       return;
     }
     if (password.length < 6) {
-      toast.error('La contraseña debe tener al menos 6 caracteres');
+      toast.error(trs("La contraseña debe tener al menos 6 caracteres"));
       return;
     }
 
@@ -96,7 +97,7 @@ export const GuestConversionModal: React.FC<GuestConversionModalProps> = ({
     } catch (err: any) {
       console.error('Error initiating guest conversion:', err);
       if (err?.message?.includes('already') || err?.message?.includes('duplicate')) {
-        toast.error('Este email ya está registrado. Intenta con otro.');
+        toast.error(trs("Este email ya está registrado. Intenta con otro."));
       } else {
         toast.error(err?.message || 'Error al crear la cuenta');
       }
@@ -119,7 +120,7 @@ export const GuestConversionModal: React.FC<GuestConversionModalProps> = ({
             <div className="flex justify-center mb-2">
               <Mail className="h-12 w-12 text-primary" />
             </div>
-            <DialogTitle className="text-center">Confirma tu correo</DialogTitle>
+            <DialogTitle className="text-center">{trs("Confirma tu correo")}</DialogTitle>
             <DialogDescription className="text-center">
               Hemos enviado un enlace de confirmación a:
             </DialogDescription>
@@ -131,12 +132,11 @@ export const GuestConversionModal: React.FC<GuestConversionModalProps> = ({
             </div>
 
             <p className="text-sm text-muted-foreground text-center">
-              Haz clic en el enlace del correo para activar tu cuenta.
-              Una vez confirmado, podrás iniciar sesión y acceder a tu historial.
+              {trs("Haz clic en el enlace del correo para activar tu cuenta. Una vez confirmado, podrás iniciar sesión y acceder a tu historial.")}
             </p>
 
             <p className="text-xs text-muted-foreground text-center">
-              Si no ves el correo, revisa tu carpeta de spam.
+              {trs("Si no ves el correo, revisa tu carpeta de spam.")}
             </p>
 
             <Button
@@ -147,7 +147,7 @@ export const GuestConversionModal: React.FC<GuestConversionModalProps> = ({
                 onOpenChange(false);
               }}
             >
-              Entendido
+              {trs("Entendido")}
             </Button>
           </div>
         </DialogContent>
@@ -159,40 +159,39 @@ export const GuestConversionModal: React.FC<GuestConversionModalProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
-          <DialogTitle className="text-center">La ronda ha finalizado</DialogTitle>
+          <DialogTitle className="text-center">{trs("La ronda ha finalizado")}</DialogTitle>
           <DialogDescription className="text-center">
-            ¿Quieres conservar tu historial y resultados?
+            {trs("¿Quieres conservar tu historial y resultados?")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
           <div className="bg-muted rounded-lg p-3 text-center text-sm">
-            <span className="font-medium">{displayName}</span>, tus scores y resultados
-            están guardados. Crea una cuenta para acceder a ellos siempre.
+            <span className="font-medium">{displayName}</span>, tus scores y resultados están guardados. Crea una cuenta para acceder a ellos siempre.
           </div>
 
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="guest-name">Nombre</Label>
+              <Label htmlFor="guest-name">{trs("Nombre")}</Label>
               <Input id="guest-name" value={displayName} disabled className="bg-muted" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="guest-email">Email</Label>
+              <Label htmlFor="guest-email">{trs("Email")}</Label>
               <Input
                 id="guest-email"
                 type="email"
-                placeholder="tu@email.com"
+                placeholder={trs("tu@email.com")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoFocus
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="guest-password">Contraseña</Label>
+              <Label htmlFor="guest-password">{trs("Contraseña")}</Label>
               <Input
                 id="guest-password"
                 type="password"
-                placeholder="Mínimo 6 caracteres"
+                placeholder={trs("Mínimo 6 caracteres")}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -220,13 +219,12 @@ export const GuestConversionModal: React.FC<GuestConversionModalProps> = ({
               disabled={loading}
             >
               <LogOut className="h-4 w-4 mr-2" />
-              Salir sin guardar acceso
+              {trs("Salir sin guardar acceso")}
             </Button>
           </div>
 
           <p className="text-[11px] text-muted-foreground text-center">
-            Tus datos permanecerán visibles para los demás jugadores
-            aunque no crees una cuenta.
+            {trs("Tus datos permanecerán visibles para los demás jugadores aunque no crees una cuenta.")}
           </p>
         </div>
       </DialogContent>

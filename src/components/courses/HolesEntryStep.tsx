@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -86,7 +87,7 @@ export const HolesEntryStep: React.FC<Props> = ({ data, onChange, onBack, onNext
           <>
             <span>•</span>
             <span className={cn(phase === 'yards' && 'font-bold text-foreground')}>
-              Yardas
+              {trs("Yardas")}
             </span>
           </>
         )}
@@ -129,7 +130,7 @@ export const HolesEntryStep: React.FC<Props> = ({ data, onChange, onBack, onNext
       {/* PAR phase */}
       {phase === 'par' && (
         <div className="space-y-2">
-          <Label className="text-sm">Selecciona el par</Label>
+          <Label className="text-sm">{trs("Selecciona el par")}</Label>
           <div className="flex gap-3 justify-center">
             {[3, 4, 5].map(p => (
               <button
@@ -148,7 +149,7 @@ export const HolesEntryStep: React.FC<Props> = ({ data, onChange, onBack, onNext
           </div>
           {allParsSet && (
             <Button variant="outline" className="w-full" onClick={() => { setPhase('index'); setCurrentHole(holes.findIndex(h => !h.strokeIndex) >= 0 ? holes.findIndex(h => !h.strokeIndex) : 0); }}>
-              Pares completos → Continuar a Índice
+              {trs("Pares completos → Continuar a Índice")}
             </Button>
           )}
         </div>
@@ -157,7 +158,7 @@ export const HolesEntryStep: React.FC<Props> = ({ data, onChange, onBack, onNext
       {/* INDEX phase */}
       {phase === 'index' && (
         <div className="space-y-2">
-          <Label className="text-sm">Selecciona el índice de hándicap</Label>
+          <Label className="text-sm">{trs("Selecciona el índice de hándicap")}</Label>
           <div className="grid grid-cols-6 gap-1.5">
             {Array.from({ length: 18 }, (_, i) => i + 1).map(idx => {
               const isUsed = usedIndices.has(idx) && holes[currentHole].strokeIndex !== idx;
@@ -187,7 +188,7 @@ export const HolesEntryStep: React.FC<Props> = ({ data, onChange, onBack, onNext
           </div>
           {!allParsSet && (
             <Button variant="ghost" size="sm" onClick={() => { setPhase('par'); setCurrentHole(holes.findIndex(h => !h.par) >= 0 ? holes.findIndex(h => !h.par) : 0); }}>
-              ← Volver a Pares
+              {trs("← Volver a Pares")}
             </Button>
           )}
         </div>
@@ -196,7 +197,7 @@ export const HolesEntryStep: React.FC<Props> = ({ data, onChange, onBack, onNext
       {/* YARDS phase */}
       {phase === 'yards' && data.captureYards && (
         <div className="space-y-2">
-          <Label className="text-sm">Yardas</Label>
+          <Label className="text-sm">{trs("Yardas")}</Label>
           <Input
             type="number"
             inputMode="numeric"
@@ -214,10 +215,10 @@ export const HolesEntryStep: React.FC<Props> = ({ data, onChange, onBack, onNext
           />
           <div className="flex gap-2">
             <Button variant="ghost" size="sm" disabled={currentHole === 0} onClick={() => setCurrentHole(currentHole - 1)}>
-              ← Anterior
+              {trs("← Anterior")}
             </Button>
             <Button variant="ghost" size="sm" disabled={currentHole === 17} onClick={() => setCurrentHole(currentHole + 1)}>
-              Siguiente →
+              {trs("Siguiente →")}
             </Button>
           </div>
         </div>
@@ -230,17 +231,17 @@ export const HolesEntryStep: React.FC<Props> = ({ data, onChange, onBack, onNext
             checked={data.captureYards}
             onCheckedChange={v => onChange({ ...data, captureYards: v })}
           />
-          <Label className="text-sm text-muted-foreground">Capturar yardas por hoyo</Label>
+          <Label className="text-sm text-muted-foreground">{trs("Capturar yardas por hoyo")}</Label>
         </div>
       )}
 
       {/* Navigation */}
       <div className="flex gap-2">
         <Button variant="outline" onClick={onBack} className="flex-1">
-          ← Datos base
+          {trs("← Datos base")}
         </Button>
         <Button disabled={!canContinue} onClick={onNext} className="flex-1">
-          Revisar campo
+          {trs("Revisar campo")}
         </Button>
       </div>
     </div>

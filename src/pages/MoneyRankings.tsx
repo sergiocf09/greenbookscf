@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -85,7 +86,7 @@ const MoneyRankings = () => {
           {r.is_creator && (
             <Badge variant="secondary" className="text-[10px] shrink-0">
               <Crown className="h-3 w-3 mr-1" />
-              Tuyo
+              {trs("Tuyo")}
             </Badge>
           )}
         </div>
@@ -110,11 +111,11 @@ const MoneyRankings = () => {
             <GreenBookLogo />
           </div>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-white/20" onClick={() => window.location.reload()} aria-label="Actualizar">
+            <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-white/20" onClick={() => window.location.reload()} aria-label={trs("Actualizar")}>
               <RefreshCw className="h-5 w-5" />
             </Button>
             <TrendingUp className="h-5 w-5 text-accent" />
-            <span className="font-semibold text-sm text-accent">Rankings</span>
+            <span className="font-semibold text-sm text-accent">{trs("Rankings")}</span>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -124,10 +125,10 @@ const MoneyRankings = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => setShowProfileDialog(true)}>
-                <User className="h-4 w-4 mr-2" /> Perfil
+                <User className="h-4 w-4 mr-2" />{' '}{trs("Perfil")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => signOut()}>
-                <LogOut className="h-4 w-4 mr-2" /> Cerrar sesión
+                <LogOut className="h-4 w-4 mr-2" />{' '}{trs("Cerrar sesión")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -138,26 +139,26 @@ const MoneyRankings = () => {
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
           <DialogTrigger asChild>
             <Button className="w-full" size="lg">
-              <Plus className="h-4 w-4 mr-2" /> Crear nuevo ranking
+              <Plus className="h-4 w-4 mr-2" />{' '}{trs("Crear nuevo ranking")}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Nuevo ranking</DialogTitle>
+              <DialogTitle>{trs("Nuevo ranking")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-2">
               <div className="space-y-2">
-                <Label htmlFor="ranking-name">Nombre del ranking</Label>
+                <Label htmlFor="ranking-name">{trs("Nombre del ranking")}</Label>
                 <Input
                   id="ranking-name"
-                  placeholder="Ej: Ranking Semanal, Los Cracks..."
+                  placeholder={trs("Ej: Ranking Semanal, Los Cracks...")}
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleCreate()}
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Después de crearlo puedes agregar jugadores buscando por nombre.
+                {trs("Después de crearlo puedes agregar jugadores buscando por nombre.")}
               </p>
               <Button className="w-full" disabled={!formName.trim() || creating} onClick={handleCreate}>
                 {creating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
@@ -174,14 +175,14 @@ const MoneyRankings = () => {
         ) : (
           <Tabs defaultValue="mine">
             <TabsList className="w-full">
-              <TabsTrigger value="mine" className="flex-1">Mis Rankings</TabsTrigger>
-              <TabsTrigger value="global" className="flex-1">Global</TabsTrigger>
+              <TabsTrigger value="mine" className="flex-1">{trs("Mis Rankings")}</TabsTrigger>
+              <TabsTrigger value="global" className="flex-1">{trs("Global")}</TabsTrigger>
             </TabsList>
             <TabsContent value="mine" className="space-y-3 mt-3">
               {visibleRankings.length === 0 ? (
                 <div className="text-center py-12">
                   <TrendingUp className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                  <p className="text-sm text-muted-foreground">No tienes rankings todavía</p>
+                  <p className="text-sm text-muted-foreground">{trs("No tienes rankings todavía")}</p>
                 </div>
               ) : visibleRankings.map(r => <RankingCard key={r.id} r={r} />)}
             </TabsContent>
@@ -193,8 +194,8 @@ const MoneyRankings = () => {
               ) : displayGlobalHcpEntries.length === 0 ? (
                 <div className="text-center py-10 space-y-2">
                   <Award className="h-10 w-10 mx-auto text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">Sin datos de hándicap disponibles</p>
-                  <p className="text-xs text-muted-foreground">Agrega amigos para ver el ranking global</p>
+                  <p className="text-sm text-muted-foreground">{trs("Sin datos de hándicap disponibles")}</p>
+                  <p className="text-xs text-muted-foreground">{trs("Agrega amigos para ver el ranking global")}</p>
                 </div>
               ) : (
                 <Card>
@@ -202,7 +203,7 @@ const MoneyRankings = () => {
                     <CardTitle className="text-sm">
                       <span className="inline-flex items-center mb-1">
                         <Award className="h-4 w-4 inline mr-1" />
-                        Ranking de Hándicap · Amigos
+                        {trs("Ranking de Hándicap · Amigos")}
                       </span>
                       <HandicapRankingHeader sortKey={globalSortKey} sortDirection={globalSortDir} onSortChange={handleGlobalSort} />
                     </CardTitle>
@@ -213,7 +214,7 @@ const MoneyRankings = () => {
                 </Card>
               )}
               <p className="text-xs text-muted-foreground text-center">
-                Ranking basado en todos tus amigos · HCP actual, promedio y mejor de últimas 20 rondas
+                {trs("Ranking basado en todos tus amigos · HCP actual, promedio y mejor de últimas 20 rondas")}
               </p>
             </TabsContent>
           </Tabs>

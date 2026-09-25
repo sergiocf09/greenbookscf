@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useMemo } from 'react';
 import { BetConfig, Player, RayasSegmentConfig, RayasBilateralOverride, RayasSkinVariant, OyesModality, RayasOyesMode } from '@/types/golf';
 import { Switch } from '@/components/ui/switch';
@@ -156,34 +157,34 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
         <div className="space-y-4">
           {/* Skin variant (default) - immediately visible */}
           <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-            <Label className="text-xs text-muted-foreground">Variante Skins</Label>
+            <Label className="text-xs text-muted-foreground">{trs("Variante Skins")}</Label>
             <div className="flex gap-1" onMouseDown={(e) => e.stopPropagation()}>
               <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateRayas({ skinVariant: 'acumulados' as RayasSkinVariant }); }}
                 className={cn("px-2 py-1 text-[10px] rounded transition-colors",
                   (rayas.skinVariant ?? 'acumulados') === 'acumulados' ? "bg-golf-gold text-golf-dark font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"
-                )}>Acum</button>
+                )}>{trs("Acum")}</button>
               <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateRayas({ skinVariant: 'sinAcumulacion' as RayasSkinVariant }); }}
                 className={cn("px-2 py-1 text-[10px] rounded transition-colors",
                   (rayas.skinVariant ?? 'acumulados') === 'sinAcumulacion' ? "bg-primary text-primary-foreground font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80"
-                )}>Sin Acum</button>
+                )}>{trs("Sin Acum")}</button>
             </div>
           </div>
 
           {/* Oyes Mode Selector - immediately visible */}
           <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-            <Label className="text-xs text-muted-foreground">Modalidad Oyeses</Label>
+            <Label className="text-xs text-muted-foreground">{trs("Modalidad Oyeses")}</Label>
             <Select value={(rayas as any).oyesMode ?? 'allVsAll'} onValueChange={(value) => onUpdateRayas({ oyesMode: value as RayasOyesMode })}>
-              <SelectTrigger className="w-[140px] h-8 text-[10px]"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+              <SelectTrigger className="w-[140px] h-8 text-[10px]"><SelectValue placeholder={trs("Seleccionar")} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="singleWinner" className="text-[11px]">Un solo ganador</SelectItem>
-                <SelectItem value="allVsAll" className="text-[11px]">Todos vs Todos</SelectItem>
+                <SelectItem value="singleWinner" className="text-[11px]">{trs("Un solo ganador")}</SelectItem>
+                <SelectItem value="allVsAll" className="text-[11px]">{trs("Todos vs Todos")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Oyes Modality Selector (Acumulado / Sangrón) */}
           <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-            <Label className="text-xs text-muted-foreground">Modalidad Oyes</Label>
+            <Label className="text-xs text-muted-foreground">{trs("Modalidad Oyes")}</Label>
             <div className="flex gap-1" onMouseDown={(e) => e.stopPropagation()}>
               <button type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateRayas({ oyesModality: 'acumulados' }); }}
@@ -191,27 +192,27 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
                   (rayas.oyesModality ?? 'acumulados') === 'acumulados'
                     ? "bg-golf-gold text-golf-dark font-medium"
                     : "bg-muted text-muted-foreground hover:bg-muted/80"
-                )}>Acumulado</button>
+                )}>{trs("Acumulado")}</button>
               <button type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateRayas({ oyesModality: 'sangron' }); }}
                 className={cn("px-2 py-1 text-[10px] rounded transition-colors",
                   (rayas.oyesModality ?? 'acumulados') === 'sangron'
                     ? "bg-destructive text-destructive-foreground font-medium"
                     : "bg-muted text-muted-foreground hover:bg-muted/80"
-                )}>Sangrón</button>
+                )}>{trs("Sangrón")}</button>
             </div>
           </div>
 
-          <p className="text-[9px] text-muted-foreground">La variante por par de jugadores se puede ajustar en el Dashboard de Apuestas.</p>
+          <p className="text-[9px] text-muted-foreground">{trs("La variante por par de jugadores se puede ajustar en el Dashboard de Apuestas.")}</p>
           
           {/* Segments configuration */}
           <div className="border-t pt-3">
             <div className="flex items-center justify-between mb-2">
-              <Label className="text-xs font-medium">Segmentos incluidos</Label>
+              <Label className="text-xs font-medium">{trs("Segmentos incluidos")}</Label>
               <div className="flex gap-1 text-[9px] text-muted-foreground pr-1">
-                <span className="w-14 text-center">Front</span>
+                <span className="w-14 text-center">{trs("Front")}</span>
                 <span className="w-2"></span>
-                <span className="w-14 text-center">Back</span>
+                <span className="w-14 text-center">{trs("Back")}</span>
               </div>
             </div>
             <div className="space-y-1">
@@ -242,9 +243,7 @@ export const RayasConfig: React.FC<RayasConfigProps> = ({
       {rivals.length > 0 && (
         <CollapsibleSubSection label="Personalizar por rival" summary={`${rivals.length} rivales`}>
           <p className="text-[10px] text-muted-foreground">
-            La configuración de segmentos por par se ajusta en la pantalla de Resultados,
-            en el detalle bilateral de cada par. Si dos jugadores tienen preferencias distintas,
-            ahí se resuelve qué segmentos juegan.
+            {trs("La configuración de segmentos por par se ajusta en la pantalla de Resultados, en el detalle bilateral de cada par. Si dos jugadores tienen preferencias distintas, ahí se resuelve qué segmentos juegan.")}
           </p>
         </CollapsibleSubSection>
       )}

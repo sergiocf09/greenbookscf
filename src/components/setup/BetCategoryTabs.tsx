@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React from 'react';
 import { Users, Users2, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -14,19 +15,19 @@ const categories: { id: BetCategory; label: string; icon: React.ReactNode; descr
     id: 'individual', 
     label: 'betSetup.individual', 
     icon: <Users className="h-5 w-5" />,
-    description: 'betSetup.individualDesc'
+    description: trs("betSetup.individualDesc")
   },
   { 
     id: 'parejas', 
     label: 'betSetup.pairs', 
     icon: <Users2 className="h-5 w-5" />,
-    description: 'betSetup.pairsDesc'
+    description: trs("betSetup.pairsDesc")
   },
   { 
     id: 'grupal', 
     label: 'betSetup.group', 
     icon: <Globe className="h-5 w-5" />,
-    description: 'betSetup.groupDesc'
+    description: trs("betSetup.groupDesc")
   },
 ];
 

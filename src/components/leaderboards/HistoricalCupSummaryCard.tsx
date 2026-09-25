@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -144,7 +145,7 @@ export const HistoricalCupSummaryCard: React.FC<Props> = ({
           <div className="flex-1 min-w-0">
             <CardTitle className="text-base truncate">{name}</CardTitle>
             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-              <Badge variant="secondary" className="text-xs">Teams Cup</Badge>
+              <Badge variant="secondary" className="text-xs">{trs("Teams Cup")}</Badge>
               {slotLabel && (
                 <Badge variant="outline" className="text-xs">{slotLabel}</Badge>
               )}
@@ -152,7 +153,7 @@ export const HistoricalCupSummaryCard: React.FC<Props> = ({
                 variant={status === 'completed' ? 'outline' : 'default'}
                 className="text-xs"
               >
-                {status === 'completed' ? 'Finalizada' : 'Activa'}
+                {status === 'completed' ? trs("Finalizada") : trs("Activa")}
               </Badge>
             </div>
           </div>
@@ -189,7 +190,7 @@ export const HistoricalCupSummaryCard: React.FC<Props> = ({
         {myMatch && (
           <div>
             <div className="text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">
-              Tu partido
+              {trs("Tu partido")}
             </div>
             <div className="rounded-lg border border-border px-3 py-2.5 space-y-1.5">
               <div className="flex items-center justify-between gap-3">
@@ -225,7 +226,7 @@ export const HistoricalCupSummaryCard: React.FC<Props> = ({
         {multiDay && teamA && teamB && acc && (
           <div className="pt-2 border-t border-border flex items-center justify-between gap-2">
             <span className="text-xs text-muted-foreground uppercase tracking-wide">
-              Acumulado de la copa
+              {trs("Acumulado de la copa")}
             </span>
             <span className="text-sm font-semibold tabular-nums">
               {acc.points_a} – {acc.points_b}
@@ -235,7 +236,7 @@ export const HistoricalCupSummaryCard: React.FC<Props> = ({
 
         {slotMatches.length === 0 && (
           <p className="text-sm text-muted-foreground">
-            Esta ronda no tiene partidos asignados en la copa.
+            {trs("Esta ronda no tiene partidos asignados en la copa.")}
           </p>
         )}
       </CardContent>

@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -117,7 +118,7 @@ export const GuestConversionScreen: React.FC = () => {
       ghostProfileId={guestSession.ghost_profile_id}
       displayName={guestSession.display_name}
       onConverted={() => {
-        toast.success('¡Bienvenido! Tu historial está vinculado.');
+        toast.success(trs("¡Bienvenido! Tu historial está vinculado."));
         navigate('/');
       }}
       onDismissed={() => {

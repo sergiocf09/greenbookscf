@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useMemo } from 'react';
 import { SideBet, Player } from '@/types/golf';
 import { Button } from '@/components/ui/button';
@@ -136,7 +137,7 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
         {trigger || (
           <Button variant="outline" size="sm" className="gap-1">
             <DollarSign className="h-3.5 w-3.5" />
-            Side Bet
+            {trs("Side Bet")}
           </Button>
         )}
       </DialogTrigger>
@@ -144,17 +145,17 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5" />
-            {editingBet ? 'Editar Side Bet' : 'Side Bets'}
+            {editingBet ? trs("Editar Side Bet") : trs("Side Bets")}
           </DialogTitle>
           <DialogDescription>
-            Captura rápida de apuestas entre jugadores (sin hándicap)
+            {trs("Captura rápida de apuestas entre jugadores (sin hándicap)")}
           </DialogDescription>
         </DialogHeader>
 
         {/* Existing Side Bets List */}
         {sideBets.length > 0 && !editingBet && (
           <div className="space-y-2 border-b border-border pb-3">
-            <Label className="text-xs font-medium text-muted-foreground">Side Bets Capturados</Label>
+            <Label className="text-xs font-medium text-muted-foreground">{trs("Side Bets Capturados")}</Label>
             {sideBets.map(bet => {
               const winnersStr = bet.winners.map(id => getPlayerName(id)).join(', ');
               const losersStr = bet.losers.map(id => getPlayerName(id)).join(', ');
@@ -204,12 +205,12 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
 
         <div className="space-y-4 py-2">
           <Label className="text-sm font-medium">
-            {editingBet ? 'Editando apuesta' : 'Nueva Side Bet'}
+            {editingBet ? trs("Editando apuesta") : trs("Nueva Side Bet")}
           </Label>
           
           {/* Winners */}
           <div className="space-y-2">
-            <Label className="text-xs font-medium text-green-600">¿Quién cobra? (Ganadores)</Label>
+            <Label className="text-xs font-medium text-green-600">{trs("¿Quién cobra? (Ganadores)")}</Label>
             <div className="flex flex-wrap gap-2">
               {players.map(player => {
                 const isSelected = winners.includes(player.id);
@@ -240,7 +241,7 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
 
           {/* Losers */}
           <div className="space-y-2">
-            <Label className="text-xs font-medium text-destructive">¿Quién paga? (Perdedores)</Label>
+            <Label className="text-xs font-medium text-destructive">{trs("¿Quién paga? (Perdedores)")}</Label>
             <div className="flex flex-wrap gap-2">
               {players.map(player => {
                 const isSelected = losers.includes(player.id);
@@ -275,7 +276,7 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
 
           {/* Amount */}
           <div className="space-y-2">
-            <Label className="text-xs font-medium">Importe por persona</Label>
+            <Label className="text-xs font-medium">{trs("Importe por persona")}</Label>
             <div className="flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-muted-foreground" />
               <Input
@@ -305,11 +306,11 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
 
           {/* Description (optional) */}
           <div className="space-y-2">
-            <Label className="text-xs font-medium text-muted-foreground">Descripción (opcional)</Label>
+            <Label className="text-xs font-medium text-muted-foreground">{trs("Descripción (opcional)")}</Label>
             <Input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Ej: Birdie en hoyo 7"
+              placeholder={trs("Ej: Birdie en hoyo 7")}
               className="text-xs"
             />
           </div>
@@ -332,15 +333,15 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
         <DialogFooter className="gap-2">
           {editingBet && (
             <Button variant="outline" onClick={resetForm} className="flex-1">
-              Cancelar Edición
+              {trs("Cancelar Edición")}
             </Button>
           )}
           <Button variant="outline" onClick={() => { setOpen(false); resetForm(); }}>
-            Cerrar
+            {trs("Cerrar")}
           </Button>
           <Button onClick={handleSubmit} disabled={!canSubmit} className="gap-1">
             <Plus className="h-4 w-4" />
-            {editingBet ? 'Guardar' : 'Agregar'}
+            {editingBet ? trs("Guardar") : trs("Agregar")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -400,7 +401,7 @@ export const SideBetsSummary: React.FC<SideBetsSummaryProps> = ({
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium flex items-center gap-1">
           <DollarSign className="h-4 w-4" />
-          Side Bets
+          {trs("Side Bets")}
         </span>
         <span className={cn(
           'text-sm font-bold',
@@ -488,7 +489,7 @@ export const BilateralSideBets: React.FC<BilateralSideBetsProps> = ({
       <div className="flex items-center justify-between p-3 bg-muted/30">
         <span className="font-semibold text-sm flex items-center gap-1">
           <DollarSign className="h-4 w-4" />
-          Side Bets
+          {trs("Side Bets")}
         </span>
         <span className={cn(
           'text-lg font-bold',
@@ -510,7 +511,7 @@ export const BilateralSideBets: React.FC<BilateralSideBetsProps> = ({
                   'font-medium',
                   isWinner ? 'text-green-600' : 'text-destructive'
                 )}>
-                  {isWinner ? 'Cobras' : 'Pagas'}
+                  {isWinner ? trs("Cobras") : trs("Pagas")}
                 </span>
                 {bet.description && (
                   <span className="text-muted-foreground ml-1">- {bet.description}</span>

@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLeaderboardDetail, StandingsEntry } from '@/hooks/useLeaderboards';
 import { useAuth } from '@/contexts/AuthContext';
@@ -95,7 +96,7 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
   const copyCode = () => {
     if (event?.code) {
       navigator.clipboard.writeText(event.code);
-      toast.success('Código copiado');
+      toast.success(trs("Código copiado"));
     }
   };
 
@@ -103,7 +104,7 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
     if (event?.code) {
       const url = `${window.location.origin}/leaderboards/join/${event.code}`;
       navigator.clipboard.writeText(url);
-      toast.success('Link copiado');
+      toast.success(trs("Link copiado"));
     }
   };
 
@@ -116,11 +117,11 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
         .update({ name: renameValue.trim() })
         .eq('id', event.id);
       if (error) throw error;
-      toast.success('Nombre actualizado');
+      toast.success(trs("Nombre actualizado"));
       setShowRenameDialog(false);
       fetchDetail();
     } catch (err: any) {
-      toast.error('Error: ' + err.message);
+      toast.error(trs("Error: ") + err.message);
     } finally {
       setRenaming(false);
     }
@@ -135,10 +136,10 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
       await supabase.from('leaderboard_participants').delete().eq('leaderboard_id', event.id);
       const { error } = await supabase.from('leaderboard_events').delete().eq('id', event.id);
       if (error) throw error;
-      toast.success('Leaderboard eliminado');
+      toast.success(trs("Leaderboard eliminado"));
       onBack();
     } catch (err: any) {
-      toast.error('Error: ' + err.message);
+      toast.error(trs("Error: ") + err.message);
     }
   };
 
@@ -153,8 +154,8 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
   if (!event) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">Leaderboard no encontrado</p>
-        <Button variant="outline" onClick={onBack} className="mt-4">Volver</Button>
+        <p className="text-muted-foreground">{trs("Leaderboard no encontrado")}</p>
+        <Button variant="outline" onClick={onBack} className="mt-4">{trs("Volver")}</Button>
       </div>
     );
   }
@@ -173,8 +174,8 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
               variant="ghost"
               size="icon"
               onClick={onLinkRound}
-              aria-label="Vincular ronda"
-              title="Vincular ronda activa"
+              aria-label={trs("Vincular ronda")}
+              title={trs("Vincular ronda activa")}
             >
               <Link2 className="h-4 w-4" />
             </Button>
@@ -184,36 +185,36 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
               variant="ghost"
               size="icon"
               onClick={onUnlinkRound}
-              aria-label="Desvincular ronda"
-              title="Desvincular ronda"
+              aria-label={trs("Desvincular ronda")}
+              title={trs("Desvincular ronda")}
               className="text-destructive hover:text-destructive"
             >
               <Unlink className="h-4 w-4" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" onClick={copyShareLink} aria-label="Compartir">
+          <Button variant="ghost" size="icon" onClick={copyShareLink} aria-label={trs("Compartir")}>
             <Share2 className="h-4 w-4" />
           </Button>
           {isCreator && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Configuración">
+                <Button variant="ghost" size="icon" aria-label={trs("Configuración")}>
                   <Settings className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => { setRenameValue(event.name); setShowRenameDialog(true); }}>
-                  <Pencil className="h-4 w-4 mr-2" /> Editar nombre
+                  <Pencil className="h-4 w-4 mr-2" />{' '}{trs("Editar nombre")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setShowEditConfig(true)}>
-                  <Settings className="h-4 w-4 mr-2" /> Editar configuración
+                  <Settings className="h-4 w-4 mr-2" />{' '}{trs("Editar configuración")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
                   onClick={() => { setShowDeleteConfirm(true); setDeleteConfirmText(''); }}
                 >
-                  <Trash2 className="h-4 w-4 mr-2" /> Eliminar leaderboard
+                  <Trash2 className="h-4 w-4 mr-2" />{' '}{trs("Eliminar leaderboard")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -227,7 +228,7 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
                 onClick={() => { setCloseConfirmText(''); setShowCloseConfirm(true); }}
               >
                 <CheckCircle className="h-3.5 w-3.5" />
-                Cerrar competencia
+                {trs("Cerrar competencia")}
               </Button>
             ) : (
               <Button
@@ -237,7 +238,7 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
                 onClick={reopenLeaderboard}
               >
                 <RefreshCw className="h-3.5 w-3.5" />
-                Reactivar competencia
+                {trs("Reactivar competencia")}
               </Button>
             )
           )}
@@ -260,7 +261,7 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
       <Card>
         <CardHeader className="pb-1 pt-3 px-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Leaderboard</CardTitle>
+            <CardTitle className="text-base">{trs("Leaderboard")}</CardTitle>
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <Users className="h-3.5 w-3.5" />
               {participants.length}
@@ -273,13 +274,13 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
               <Tabs value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
                 <TabsList className="w-full h-8">
                   {availableModes.includes('gross') && (
-                    <TabsTrigger value="gross" className="flex-1 text-xs h-7">Gross</TabsTrigger>
+                    <TabsTrigger value="gross" className="flex-1 text-xs h-7">{trs("Gross")}</TabsTrigger>
                   )}
                   {availableModes.includes('net') && (
-                    <TabsTrigger value="net" className="flex-1 text-xs h-7">Neto</TabsTrigger>
+                    <TabsTrigger value="net" className="flex-1 text-xs h-7">{trs("Neto")}</TabsTrigger>
                   )}
                   {availableModes.includes('stableford') && (
-                    <TabsTrigger value="stableford" className="flex-1 text-xs h-7">Stableford</TabsTrigger>
+                    <TabsTrigger value="stableford" className="flex-1 text-xs h-7">{trs("Stableford")}</TabsTrigger>
                   )}
                 </TabsList>
               </Tabs>
@@ -288,18 +289,18 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
 
           {sortedStandings.length === 0 ? (
             <p className="text-center text-sm text-muted-foreground py-8">
-              No hay participantes registrados
+              {trs("No hay participantes registrados")}
             </p>
           ) : (
             <table className="table-fixed w-full caption-bottom text-sm">
               <thead className="[&_tr]:border-b">
                 <tr className="text-xs border-b">
                   <th className="h-8 w-8 text-center px-1 py-1 font-medium text-muted-foreground">#</th>
-                  <th className="h-8 px-1 py-1 text-left font-medium text-muted-foreground">Jugador</th>
-                  <th className="h-8 text-center w-10 px-1 py-1 font-medium text-muted-foreground">Hcp</th>
-                  <th className="h-8 text-center w-10 px-1 py-1 font-medium text-muted-foreground">Hoyos</th>
+                  <th className="h-8 px-1 py-1 text-left font-medium text-muted-foreground">{trs("Jugador")}</th>
+                  <th className="h-8 text-center w-10 px-1 py-1 font-medium text-muted-foreground">{trs("Hcp")}</th>
+                  <th className="h-8 text-center w-10 px-1 py-1 font-medium text-muted-foreground">{trs("Hoyos")}</th>
                   <th className="h-8 text-center w-14 px-1 py-1 font-medium text-muted-foreground">
-                    {sortMode === 'stableford' ? 'Pts' : 'Score'}
+                    {sortMode === 'stableford' ? trs("Pts") : trs("Score")}
                   </th>
                 </tr>
               </thead>
@@ -364,15 +365,15 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
       <Dialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar nombre del leaderboard</DialogTitle>
-            <DialogDescription>Actualiza el nombre visible del leaderboard.</DialogDescription>
+            <DialogTitle>{trs("Editar nombre del leaderboard")}</DialogTitle>
+            <DialogDescription>{trs("Actualiza el nombre visible del leaderboard.")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Label htmlFor="rename-lb">Nombre</Label>
+            <Label htmlFor="rename-lb">{trs("Nombre")}</Label>
             <Input id="rename-lb" value={renameValue} onChange={(e) => setRenameValue(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleRename()} />
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowRenameDialog(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setShowRenameDialog(false)}>{trs("Cancelar")}</Button>
             <Button disabled={!renameValue.trim() || renaming} onClick={handleRename}>
               {renaming && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Guardar
@@ -385,16 +386,15 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>¿Eliminar leaderboard?</DialogTitle>
+            <DialogTitle>{trs("¿Eliminar leaderboard?")}</DialogTitle>
             <DialogDescription>
-              Esta acción no se puede deshacer. Se eliminarán el leaderboard y todos sus participantes.
-              Escribe <strong>ELIMINAR</strong> para confirmar.
+              {trs("Esta acción no se puede deshacer. Se eliminarán el leaderboard y todos sus participantes. Escribe")}{' '}<strong>{trs("ELIMINAR")}</strong>{' '}{trs("para confirmar.")}
             </DialogDescription>
           </DialogHeader>
-          <Input value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)} placeholder="Escribe ELIMINAR" className="uppercase" />
+          <Input value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)} placeholder={trs("Escribe ELIMINAR")} className="uppercase" />
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>Cancelar</Button>
-            <Button variant="destructive" disabled={deleteConfirmText.toLowerCase() !== 'eliminar'} onClick={handleDelete}>Eliminar</Button>
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>{trs("Cancelar")}</Button>
+            <Button variant="destructive" disabled={deleteConfirmText.toLowerCase() !== 'eliminar'} onClick={handleDelete}>{trs("Eliminar")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -403,20 +403,19 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
       <Dialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>¿Cerrar esta competencia?</DialogTitle>
+            <DialogTitle>{trs("¿Cerrar esta competencia?")}</DialogTitle>
             <DialogDescription>
-              Pasará a Historial. Los resultados quedan guardados y se pueden consultar.
-              Puedes reactivarla más adelante si es necesario. Escribe <strong>CERRAR</strong> para confirmar.
+              {trs("Pasará a Historial. Los resultados quedan guardados y se pueden consultar. Puedes reactivarla más adelante si es necesario. Escribe")}{' '}<strong>{trs("CERRAR")}</strong>{' '}{trs("para confirmar.")}
             </DialogDescription>
           </DialogHeader>
           <Input
             value={closeConfirmText}
             onChange={(e) => setCloseConfirmText(e.target.value)}
-            placeholder="Escribe CERRAR"
+            placeholder={trs("Escribe CERRAR")}
             className="uppercase"
           />
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowCloseConfirm(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setShowCloseConfirm(false)}>{trs("Cancelar")}</Button>
             <Button
               disabled={closeConfirmText.trim().toLowerCase() !== 'cerrar'}
               onClick={async () => {
@@ -425,7 +424,7 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
                 setCloseConfirmText('');
               }}
             >
-              Cerrar competencia
+              {trs("Cerrar competencia")}
             </Button>
           </DialogFooter>
         </DialogContent>

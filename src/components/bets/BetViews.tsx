@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { useTranslation } from 'react-i18next';
 import React from 'react';
 import { cn } from '@/lib/utils';
@@ -109,7 +110,7 @@ export const BetDetailView: React.FC<BetDetailViewProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <PlayerAvatar initials={player.initials} background={player.color} size="md" isLoggedInUser={player.id === basePlayerId} />
-          <span className="text-sm text-muted-foreground">vs</span>
+          <span className="text-sm text-muted-foreground">{trs("vs")}</span>
           <PlayerAvatar initials={rival.initials} background={rival.color} size="md" isLoggedInUser={rival.id === basePlayerId} />
         </div>
         <div className={cn(

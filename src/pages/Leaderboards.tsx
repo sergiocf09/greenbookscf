@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CreateTeamsCupDialog } from '@/components/leaderboards/CreateTeamsCupDialog';
@@ -95,7 +96,7 @@ const Leaderboards = () => {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <GreenBookLogo height={24} />
-          <h1 className="text-lg font-bold">Leaderboards</h1>
+          <h1 className="text-lg font-bold">{trs("Leaderboards")}</h1>
         </div>
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" onClick={() => window.location.reload()}>
@@ -109,10 +110,10 @@ const Leaderboards = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => setShowProfileDialog(true)}>
-                <User className="h-4 w-4 mr-2" /> Perfil
+                <User className="h-4 w-4 mr-2" />{' '}{trs("Perfil")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={signOut}>
-                <LogOut className="h-4 w-4 mr-2" /> Cerrar Sesión
+                <LogOut className="h-4 w-4 mr-2" />{' '}{trs("Cerrar Sesión")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -135,26 +136,26 @@ const Leaderboards = () => {
                   }
                 }}
               >
-                <Plus className="h-4 w-4" /> Crear Leaderboard
+                <Plus className="h-4 w-4" />{' '}{trs("Crear Leaderboard")}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-sm">
               <DialogHeader>
-                <DialogTitle>Nueva Competencia</DialogTitle>
+                <DialogTitle>{trs("Nueva Competencia")}</DialogTitle>
               </DialogHeader>
 
               {/* Step 0: Choose type */}
               {createType === null && (
                 <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">¿Qué tipo de competencia quieres crear?</p>
+                  <p className="text-sm text-muted-foreground">{trs("¿Qué tipo de competencia quieres crear?")}</p>
                   <button
                     onClick={() => setCreateType('standard')}
                     className="w-full flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary hover:bg-accent transition-colors text-left"
                   >
                     <Trophy className="h-5 w-5 text-amber-500 shrink-0" />
                     <div>
-                      <div className="font-medium text-sm">Leaderboard</div>
-                      <div className="text-xs text-muted-foreground">Tabla de posiciones individual (Medal, Stableford)</div>
+                      <div className="font-medium text-sm">{trs("Leaderboard")}</div>
+                      <div className="text-xs text-muted-foreground">{trs("Tabla de posiciones individual (Medal, Stableford)")}</div>
                     </div>
                   </button>
                   <button
@@ -166,8 +167,8 @@ const Leaderboards = () => {
                   >
                     <span className="text-lg shrink-0">🏆</span>
                     <div>
-                      <div className="font-medium text-sm">Teams Cup</div>
-                      <div className="text-xs text-muted-foreground">Competencia por equipos estilo Ryder Cup</div>
+                      <div className="font-medium text-sm">{trs("Teams Cup")}</div>
+                      <div className="text-xs text-muted-foreground">{trs("Competencia por equipos estilo Ryder Cup")}</div>
                     </div>
                   </button>
                 </div>
@@ -177,23 +178,23 @@ const Leaderboards = () => {
               {createType === 'standard' && (
                 <div className="space-y-4">
                   <div>
-                    <Label>Nombre *</Label>
+                    <Label>{trs("Nombre *")}</Label>
                     <Input
-                      placeholder="Ej: Torneo del Club"
+                      placeholder={trs("Ej: Torneo del Club")}
                       value={formName}
                       onChange={e => setFormName(e.target.value)}
                     />
                   </div>
                   <div>
-                    <Label>Descripción</Label>
+                    <Label>{trs("Descripción")}</Label>
                     <Input
-                      placeholder="Descripción breve (opcional)"
+                      placeholder={trs("Descripción breve (opcional)")}
                       value={formDescription}
                       onChange={e => setFormDescription(e.target.value)}
                     />
                   </div>
                   <div>
-                    <Label>Fecha</Label>
+                    <Label>{trs("Fecha")}</Label>
                     <Input
                       type="date"
                       value={formDate}
@@ -201,7 +202,7 @@ const Leaderboards = () => {
                     />
                   </div>
                   <div>
-                    <Label>Modalidades *</Label>
+                    <Label>{trs("Modalidades *")}</Label>
                     <div className="flex flex-col gap-2 mt-1">
                       {[
                         { key: 'gross', label: 'Medal Gross' },
@@ -220,7 +221,7 @@ const Leaderboards = () => {
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" className="flex-1" onClick={() => setCreateType(null)}>
-                      ← Atrás
+                      {trs("← Atrás")}
                     </Button>
                     <Button
                       onClick={handleCreate}
@@ -239,16 +240,16 @@ const Leaderboards = () => {
           <Dialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
             <DialogTrigger asChild>
               <Button variant="outline" className="flex-1 gap-2">
-                <Search className="h-4 w-4" /> Unirse por Código
+                <Search className="h-4 w-4" />{' '}{trs("Unirse por Código")}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-sm">
               <DialogHeader>
-                <DialogTitle>Unirse a Leaderboard</DialogTitle>
+                <DialogTitle>{trs("Unirse a Leaderboard")}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label>Código del leaderboard</Label>
+                  <Label>{trs("Código del leaderboard")}</Label>
                   <Input
                     placeholder="Ej: a1b2c3"
                     value={joinCode}
@@ -257,7 +258,7 @@ const Leaderboards = () => {
                   />
                 </div>
                 <Button onClick={handleJoin} disabled={!joinCode.trim()} className="w-full">
-                  Buscar
+                  {trs("Buscar")}
                 </Button>
               </div>
             </DialogContent>
@@ -267,8 +268,8 @@ const Leaderboards = () => {
         {/* Tabs: Active / History */}
         <Tabs defaultValue="active">
           <TabsList className="w-full">
-            <TabsTrigger value="active" className="flex-1">Activos</TabsTrigger>
-            <TabsTrigger value="history" className="flex-1">Historial</TabsTrigger>
+            <TabsTrigger value="active" className="flex-1">{trs("Activos")}</TabsTrigger>
+            <TabsTrigger value="history" className="flex-1">{trs("Historial")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="active" className="space-y-3 mt-3">
@@ -279,8 +280,8 @@ const Leaderboards = () => {
             ) : activeEvents.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <Trophy className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p className="font-medium">No hay leaderboards activos</p>
-                <p className="text-sm mt-1">Crea uno o únete con un código</p>
+                <p className="font-medium">{trs("No hay leaderboards activos")}</p>
+                <p className="text-sm mt-1">{trs("Crea uno o únete con un código")}</p>
               </div>
             ) : (
               activeEvents.map(ev => (
@@ -295,7 +296,7 @@ const Leaderboards = () => {
                         <div className="flex items-center gap-1.5">
                           <CardTitle className="text-base">{ev.name}</CardTitle>
                           {(ev as any).competition_type === 'teams_cup' && (
-                            <Badge className="bg-emerald-100 text-emerald-700 text-[10px]">TEAMS CUP</Badge>
+                            <Badge className="bg-emerald-100 text-emerald-700 text-[10px]">{trs("TEAMS CUP")}</Badge>
                           )}
                         </div>
                         {ev.description && (
@@ -337,7 +338,7 @@ const Leaderboards = () => {
               </div>
             ) : completedEvents.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                <p className="text-sm">No hay leaderboards completados</p>
+                <p className="text-sm">{trs("No hay leaderboards completados")}</p>
               </div>
             ) : (
               completedEvents.map(ev => (

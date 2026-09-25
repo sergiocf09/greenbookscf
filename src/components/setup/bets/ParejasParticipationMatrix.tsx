@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useMemo } from 'react';
 import { BetConfig, Player, SixesBetInstance, VegasBetInstance } from '@/types/golf';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -209,7 +210,7 @@ export const ParejasParticipationMatrix: React.FC<ParejasParticipationMatrixProp
 
   return (
     <div className="border rounded-lg bg-card p-2 space-y-2">
-      <p className="text-xs font-medium text-foreground px-1">Configuración Rápida</p>
+      <p className="text-xs font-medium text-foreground px-1">{trs("Configuración Rápida")}</p>
 
       <div className="overflow-x-auto -mx-2 px-0">
         <table className="w-full text-[10px] border-collapse">

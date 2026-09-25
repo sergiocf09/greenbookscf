@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React from 'react';
 import circleLightSrc from '@/assets/greenbook-icon-circle-light.png';
 import circleDarkSrc from '@/assets/greenbook-icon-circle-dark.png';
@@ -26,7 +27,7 @@ const GreenBookLogo: React.FC<GreenBookLogoProps> = ({ className = '', height = 
     <div className={`flex flex-col items-center ${className}`}>
       <img
         src={circleSrc}
-        alt="GreenBook"
+        alt={trs("GreenBook")}
         style={{ height: circleSize, width: 'auto' }}
         className="block"
       />
@@ -38,14 +39,14 @@ const GreenBookLogo: React.FC<GreenBookLogoProps> = ({ className = '', height = 
         }
         style={{ fontSize: textSize, lineHeight: 1.1 }}
       >
-        GreenBook
+        {trs("GreenBook")}
       </span>
       {variant === 'auth' && (
         <span
           className="font-serif italic tracking-widest dark:text-[hsl(43,75%,55%)] text-primary mt-0.5"
           style={{ fontSize: subTextSize, lineHeight: 1.2 }}
         >
-          by SCF
+          {trs("by SCF")}
         </span>
       )}
     </div>

@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { cn } from '@/lib/utils';
 import type { HandicapRankingSortKey } from '@/lib/handicapRankingUtils';
 import { ChevronUp, ChevronDown } from 'lucide-react';
@@ -19,7 +20,7 @@ export const HandicapRankingHeader = ({ sortKey, sortDirection, onSortChange, ti
   <div className="flex items-center justify-between">
     <span className="text-xs font-medium text-muted-foreground">{title}</span>
     <div className="flex items-center shrink-0">
-      <span className="w-[40px] text-center text-[9px] font-medium text-muted-foreground leading-tight">Δ30d</span>
+      <span className="w-[40px] text-center text-[9px] font-medium text-muted-foreground leading-tight">{trs("Δ30d")}</span>
       {options.map((option) => {
         const isActive = sortKey === option.key;
         return (

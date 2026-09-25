@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -71,7 +72,7 @@ export const EditMultiDayConfigDialog: React.FC<Props> = ({ open, onOpenChange, 
   const removeDay = (idx: number) => {
     const d = days[idx];
     if (d?.date && linkedDates.has(d.date)) {
-      toast.error('No puedes eliminar este día: hay rondas vinculadas con esa fecha.');
+      toast.error(trs("No puedes eliminar este día: hay rondas vinculadas con esa fecha."));
       return;
     }
     setDays(prev => prev.filter((_, i) => i !== idx));
@@ -91,7 +92,7 @@ export const EditMultiDayConfigDialog: React.FC<Props> = ({ open, onOpenChange, 
 
   const handleSave = async () => {
     if (!name.trim() || modes.length === 0 || sortedDays.length < 2) {
-      toast.error('Verifica nombre, modalidades y al menos 2 días con fecha');
+      toast.error(trs("Verifica nombre, modalidades y al menos 2 días con fecha"));
       return;
     }
     setSaving(true);
@@ -117,11 +118,11 @@ export const EditMultiDayConfigDialog: React.FC<Props> = ({ open, onOpenChange, 
         })
         .eq('id', event.id);
       if (error) throw error;
-      toast.success('Configuración actualizada');
+      toast.success(trs("Configuración actualizada"));
       onSaved?.();
       onOpenChange(false);
     } catch (err: any) {
-      toast.error('Error: ' + err.message);
+      toast.error(trs("Error: ") + err.message);
     } finally {
       setSaving(false);
     }
@@ -131,21 +132,21 @@ export const EditMultiDayConfigDialog: React.FC<Props> = ({ open, onOpenChange, 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Editar configuración (Multi-día)</DialogTitle>
-          <DialogDescription>Ajusta días, modalidades y agregación.</DialogDescription>
+          <DialogTitle>{trs("Editar configuración (Multi-día)")}</DialogTitle>
+          <DialogDescription>{trs("Ajusta días, modalidades y agregación.")}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Nombre *</Label>
+            <Label>{trs("Nombre *")}</Label>
             <Input value={name} onChange={e => setName(e.target.value)} />
           </div>
           <div>
-            <Label>Descripción</Label>
+            <Label>{trs("Descripción")}</Label>
             <Input value={description} onChange={e => setDescription(e.target.value)} />
           </div>
 
           <div className="space-y-2 border-l-2 border-primary/30 pl-3">
-            <Label className="text-xs">Días del torneo *</Label>
+            <Label className="text-xs">{trs("Días del torneo *")}</Label>
             {days.map((day, idx) => {
               const isLinked = day.date && linkedDates.has(day.date);
               return (
@@ -158,7 +159,7 @@ export const EditMultiDayConfigDialog: React.FC<Props> = ({ open, onOpenChange, 
                     className="h-8 text-xs flex-1"
                   />
                   <Input
-                    placeholder="Etiqueta"
+                    placeholder={trs("Etiqueta")}
                     value={day.label}
                     onChange={e => updateDay(idx, 'label', e.target.value)}
                     className="h-8 text-xs flex-1"
@@ -177,7 +178,7 @@ export const EditMultiDayConfigDialog: React.FC<Props> = ({ open, onOpenChange, 
               );
             })}
             <Button variant="outline" size="sm" className="text-xs h-7 w-full" onClick={addDay}>
-              <Plus className="h-3 w-3 mr-1" /> Agregar día
+              <Plus className="h-3 w-3 mr-1" />{' '}{trs("Agregar día")}
             </Button>
 
             {orphanLinked.length > 0 && (
@@ -185,20 +186,20 @@ export const EditMultiDayConfigDialog: React.FC<Props> = ({ open, onOpenChange, 
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                 <span>
                   Hay rondas vinculadas cuya fecha ya no coincide con ningún día configurado:{' '}
-                  <strong>{orphanLinked.join(', ')}</strong>. No se contabilizarán hasta que sus fechas estén en los días del torneo.
+                  <strong>{orphanLinked.join(', ')}</strong>{trs(". No se contabilizarán hasta que sus fechas estén en los días del torneo.")}
                 </span>
               </div>
             )}
 
             <div className="space-y-1 mt-2">
-              <Label className="text-xs">Agregación</Label>
+              <Label className="text-xs">{trs("Agregación")}</Label>
               <select
                 value={aggregation}
                 onChange={e => setAggregation(e.target.value as 'sum' | 'best_n')}
                 className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
               >
-                <option value="sum">Suma total de todos los días</option>
-                <option value="best_n">Mejores N días</option>
+                <option value="sum">{trs("Suma total de todos los días")}</option>
+                <option value="best_n">{trs("Mejores N días")}</option>
               </select>
               {aggregation === 'best_n' && (
                 <div className="flex items-center gap-1.5 mt-1">
@@ -218,7 +219,7 @@ export const EditMultiDayConfigDialog: React.FC<Props> = ({ open, onOpenChange, 
           </div>
 
           <div>
-            <Label>Modalidades *</Label>
+            <Label>{trs("Modalidades *")}</Label>
             <div className="mt-1 flex flex-col gap-2">
               {MODES.map(m => (
                 <label key={m.key} className="flex cursor-pointer items-center gap-2">
@@ -230,7 +231,7 @@ export const EditMultiDayConfigDialog: React.FC<Props> = ({ open, onOpenChange, 
           </div>
         </div>
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{trs("Cancelar")}</Button>
           <Button
             disabled={!name.trim() || modes.length === 0 || sortedDays.length < 2 || saving}
             onClick={handleSave}

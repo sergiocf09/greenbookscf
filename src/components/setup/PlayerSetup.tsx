@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useMemo } from 'react';
 import { Plus, X, User, Users2, Calculator, UserPlus, Loader2, Shield, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -495,7 +496,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
             <div className="flex items-center gap-2 pl-10">
               {/* Tee Selector */}
               <div className="flex items-center gap-1">
-                <Label className="text-[10px] text-muted-foreground">Tee</Label>
+                <Label className="text-[10px] text-muted-foreground">{trs("Tee")}</Label>
                 <select
                   value={player.teeColor || defaultTeeColor}
                   onChange={(e) => updatePlayer(player.id, { teeColor: e.target.value })}
@@ -510,7 +511,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
               </div>
 
               <div className="flex items-center gap-1">
-                <Label className="text-[10px] text-muted-foreground">HCP</Label>
+                <Label className="text-[10px] text-muted-foreground">{trs("HCP")}</Label>
                 <Input
                   type="number"
                   value={player.handicap}
@@ -560,7 +561,7 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                     'text-[8px] mt-0.5',
                     player.isAdmin ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-muted-foreground/70'
                   )}>
-                    co-admin
+                    {trs("co-admin")}
                   </span>
                 </button>
               )}

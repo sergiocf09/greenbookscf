@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState } from 'react';
 import {
   Sheet,
@@ -83,7 +84,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
   const handleSubmit = async () => {
     const rawAmount = parseFloat(amountStr.replace(/,/g, ''));
     if (isNaN(rawAmount) || rawAmount <= 0) {
-      toast.error('Ingresa un monto válido mayor a cero');
+      toast.error(trs("Ingresa un monto válido mayor a cero"));
       return;
     }
     const amount = sign === 'pos' ? rawAmount : -rawAmount;
@@ -100,7 +101,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
           amount,
           note: note.trim() || null,
         });
-        toast.success('Registro actualizado');
+        toast.success(trs("Registro actualizado"));
       } else {
         await onAdd({
           rival_profile_id: rivalProfileId,
@@ -109,11 +110,11 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
           amount,
           note: note.trim() || undefined,
         });
-        toast.success('Registro guardado');
+        toast.success(trs("Registro guardado"));
       }
       resetForm();
     } catch {
-      toast.error('Error guardando registro');
+      toast.error(trs("Error guardando registro"));
     } finally {
       setSaving(false);
     }
@@ -123,10 +124,10 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
     setDeletingId(id);
     try {
       await onDelete(id);
-      toast.success('Registro eliminado');
+      toast.success(trs("Registro eliminado"));
       if (editingId === id) resetForm();
     } catch {
-      toast.error('Error eliminando registro');
+      toast.error(trs("Error eliminando registro"));
     } finally {
       setDeletingId(null);
     }
@@ -141,7 +142,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
             Balance Pre-GB vs {rivalName}
           </SheetTitle>
           <SheetDescription className="text-xs">
-            Solo visible para ti. No afecta rankings ni balances compartidos.
+            {trs("Solo visible para ti. No afecta rankings ni balances compartidos.")}
           </SheetDescription>
         </SheetHeader>
 
@@ -160,7 +161,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
           <div className="space-y-2 pr-2">
             {entries.length === 0 && !showForm && (
               <p className="text-xs text-muted-foreground text-center py-6 px-3">
-                Sin registros pre-GB. Agrega el balance histórico que tenías con este rival antes de usar la app.
+                {trs("Sin registros pre-GB. Agrega el balance histórico que tenías con este rival antes de usar la app.")}
               </p>
             )}
 
@@ -196,8 +197,8 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
                       onClick={() => startEdit(entry)}
                       disabled={deletingId === entry.id || saving}
                       className="text-muted-foreground hover:text-primary transition-colors p-1 shrink-0"
-                      title="Editar registro"
-                      aria-label="Editar registro"
+                      title={trs("Editar registro")}
+                      aria-label={trs("Editar registro")}
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
@@ -206,8 +207,8 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
                     onClick={() => handleDelete(entry.id)}
                     disabled={deletingId === entry.id}
                     className="text-muted-foreground hover:text-destructive transition-colors p-1 shrink-0"
-                    title="Eliminar registro"
-                    aria-label="Eliminar registro"
+                    title={trs("Eliminar registro")}
+                    aria-label={trs("Eliminar registro")}
                   >
                     {deletingId === entry.id
                       ? <Loader2 className="h-4 w-4 animate-spin" />
@@ -219,7 +220,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
             {showForm && (
               <div className="p-3 bg-card border border-border rounded-lg space-y-3">
                 <div className="text-xs font-medium text-muted-foreground">
-                  {editingId ? 'Editando registro' : 'Nuevo registro'}
+                  {editingId ? trs("Editando registro") : trs("Nuevo registro")}
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -232,7 +233,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
                         : 'bg-muted text-muted-foreground border-border'
                     )}
                   >
-                    Gané 📈
+                    {trs("Gané 📈")}
                   </button>
                   <button
                     type="button"
@@ -244,12 +245,12 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
                         : 'bg-muted text-muted-foreground border-border'
                     )}
                   >
-                    Perdí 📉
+                    {trs("Perdí 📉")}
                   </button>
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs">Monto (MXN)</Label>
+                  <Label className="text-xs">{trs("Monto (MXN)")}</Label>
                   <div className="relative">
                     <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
                     <Input
@@ -263,7 +264,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs">Año (opcional)</Label>
+                  <Label className="text-xs">{trs("Año (opcional)")}</Label>
                   <Input
                     value={yearStr}
                     onChange={(e) => setYearStr(e.target.value)}
@@ -273,18 +274,18 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs">Nota (opcional)</Label>
+                  <Label className="text-xs">{trs("Nota (opcional)")}</Label>
                   <Input
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     maxLength={100}
-                    placeholder="Ej. cierre de año"
+                    placeholder={trs("Ej. cierre de año")}
                   />
                 </div>
 
                 <div className="flex gap-2">
                   <Button variant="outline" className="flex-1" onClick={resetForm} disabled={saving}>
-                    Cancelar
+                    {trs("Cancelar")}
                   </Button>
                   <Button className="flex-1" onClick={handleSubmit} disabled={saving}>
                     {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
@@ -301,7 +302,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
         {!showForm && (
           <Button className="w-full" onClick={() => setShowForm(true)}>
             <Plus className="h-4 w-4 mr-1" />
-            Agregar registro pre-GB
+            {trs("Agregar registro pre-GB")}
           </Button>
         )}
       </SheetContent>

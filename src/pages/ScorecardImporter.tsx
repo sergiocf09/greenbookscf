@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -60,13 +61,13 @@ export default function ScorecardImporterPage() {
           <Button
             variant="ghost"
             onClick={() => navigate(-1)}
-            aria-label="Volver"
+            aria-label={trs("Volver")}
           >
             <ArrowLeft className="h-5 w-5 mr-2" />
-            Volver
+            {trs("Volver")}
           </Button>
           <div>
-            <h1 className="text-lg font-semibold">Importar tarjeta manual</h1>
+            <h1 className="text-lg font-semibold">{trs("Importar tarjeta manual")}</h1>
             <p className="text-xs text-muted-foreground">Paso {step} de 4</p>
           </div>
         </div>
@@ -163,7 +164,7 @@ function Step1Upload({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Sube una foto de la tarjeta</CardTitle>
+        <CardTitle>{trs("Sube una foto de la tarjeta")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {!imagePreviewUrl ? (
@@ -173,9 +174,9 @@ function Step1Upload({
           >
             <Upload className="h-10 w-10 text-muted-foreground" />
             <div className="text-center">
-              <p className="text-sm font-medium">Seleccionar foto del carrete</p>
+              <p className="text-sm font-medium">{trs("Seleccionar foto del carrete")}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Elige una imagen de tu galería (JPG o PNG)
+                {trs("Elige una imagen de tu galería (JPG o PNG)")}
               </p>
             </div>
             <input
@@ -191,7 +192,7 @@ function Step1Upload({
             <div className="relative rounded-lg overflow-hidden border border-border bg-black/5 flex items-center justify-center">
               <img
                 src={imagePreviewUrl}
-                alt="Vista previa de la tarjeta"
+                alt={trs("Vista previa de la tarjeta")}
                 className="max-h-[420px] w-auto"
               />
             </div>
@@ -201,7 +202,7 @@ function Step1Upload({
                 className="text-xs text-muted-foreground underline cursor-pointer inline-flex items-center gap-1"
               >
                 <ImageIcon className="h-3 w-3" />
-                Cambiar foto
+                {trs("Cambiar foto")}
               </label>
               <input
                 id="scorecard-file-replace"
@@ -232,15 +233,15 @@ function Step1Upload({
           {imagePreparing ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Preparando foto…
+              {trs("Preparando foto…")}
             </>
           ) : analyzing ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Analizando tarjeta…
+              {trs("Analizando tarjeta…")}
             </>
           ) : (
-            <>Analizar tarjeta <ArrowRight className="h-4 w-4 ml-2" /></>
+            <>{trs("Analizar tarjeta")}{' '}<ArrowRight className="h-4 w-4 ml-2" /></>
           )}
         </Button>
       </CardContent>
@@ -332,16 +333,16 @@ function Step2Validate(props: {
       {confidence === 'low' && (
         <Alert variant="default" className="bg-amber-500/10 border-amber-500/50">
           <AlertTriangle className="h-4 w-4 text-amber-600" />
-          <AlertTitle>Revisa antes de continuar</AlertTitle>
+          <AlertTitle>{trs("Revisa antes de continuar")}</AlertTitle>
           <AlertDescription>
-            Algunos scores pueden ser incorrectos — la tarjeta no se detectó con alta confianza.
+            {trs("Algunos scores pueden ser incorrectos — la tarjeta no se detectó con alta confianza.")}
           </AlertDescription>
         </Alert>
       )}
 
       <Card>
         <CardHeader>
-          <CardTitle>Datos de la ronda</CardTitle>
+          <CardTitle>{trs("Datos de la ronda")}</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <CoursePicker
@@ -353,7 +354,7 @@ function Step2Validate(props: {
             }}
           />
           <div>
-            <Label className="text-xs text-muted-foreground">Color de tee (por default)</Label>
+            <Label className="text-xs text-muted-foreground">{trs("Color de tee (por default)")}</Label>
             <Select value={teeColor} onValueChange={(v) => setTeeColor(v as TeeColorDbValue)}>
               <SelectTrigger className="mt-1">
                 <SelectValue />
@@ -369,7 +370,7 @@ function Step2Validate(props: {
             </p>
           </div>
           <div>
-            <Label className="text-xs text-muted-foreground">Fecha de la ronda</Label>
+            <Label className="text-xs text-muted-foreground">{trs("Fecha de la ronda")}</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -396,16 +397,16 @@ function Step2Validate(props: {
 
       <Card>
         <CardHeader>
-          <CardTitle>Scores detectados</CardTitle>
+          <CardTitle>{trs("Scores detectados")}</CardTitle>
           <p className="text-xs text-muted-foreground">
-            Score arriba, putts abajo. Si no capturas los putts, se guardarán 2 por hoyo.
+            {trs("Score arriba, putts abajo. Si no capturas los putts, se guardarán 2 por hoyo.")}
           </p>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
               <tr className="border-b border-border">
-                <th className="text-left px-2 py-2 sticky left-0 bg-card z-10">Hoyo</th>
+                <th className="text-left px-2 py-2 sticky left-0 bg-card z-10">{trs("Hoyo")}</th>
                 {editablePlayers.map((p) => {
                   const currentTee = playerTeeColors[p.key] ?? teeColor;
                   return (
@@ -415,14 +416,14 @@ function Step2Validate(props: {
                           value={p.nameInCard}
                           onChange={(e) => updatePlayerName(p.key, e.target.value)}
                           className="h-8 text-xs flex-1 min-w-0"
-                          placeholder="Nombre"
+                          placeholder={trs("Nombre")}
                         />
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 text-destructive shrink-0"
                           onClick={() => removePlayer(p.key)}
-                          title="Quitar jugador"
+                          title={trs("Quitar jugador")}
                         >
                           <XCircle className="h-4 w-4" />
                         </Button>
@@ -457,8 +458,8 @@ function Step2Validate(props: {
                 {editablePlayers.map((p) => (
                   <th key={p.key} className="px-1 py-1">
                     <div className="flex justify-around">
-                      <span>Score</span>
-                      <span>Putts</span>
+                      <span>{trs("Score")}</span>
+                      <span>{trs("Putts")}</span>
                     </div>
                   </th>
                 ))}
@@ -524,16 +525,16 @@ function Step2Validate(props: {
       <div className="flex items-center justify-between gap-3">
         <Button variant="outline" onClick={onBack}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Regresar
+          {trs("Regresar")}
         </Button>
         <Button onClick={onContinue} disabled={!canContinue}>
-          Continuar
+          {trs("Continuar")}
           <ArrowRight className="h-4 w-4 ml-2" />
         </Button>
       </div>
       {!courseId && (
         <p className="text-xs text-muted-foreground text-right">
-          Selecciona el campo para poder continuar.
+          {trs("Selecciona el campo para poder continuar.")}
         </p>
       )}
     </div>
@@ -631,7 +632,7 @@ function CoursePicker({
 
   return (
     <div>
-      <Label className="text-xs text-muted-foreground">Campo de golf</Label>
+      <Label className="text-xs text-muted-foreground">{trs("Campo de golf")}</Label>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -649,7 +650,7 @@ function CoursePicker({
           <div className="p-2 border-b border-border">
             <Input
               autoFocus
-              placeholder="Filtrar tus campos o buscar uno nuevo…"
+              placeholder={trs("Filtrar tus campos o buscar uno nuevo…")}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="h-8 text-sm"
@@ -658,16 +659,16 @@ function CoursePicker({
           <div className="max-h-72 overflow-auto">
             {/* Section: user's known courses */}
             <div className="px-3 pt-2 pb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-              Tus campos
+              {trs("Tus campos")}
             </div>
             {loadingKnown && (
               <div className="p-3 text-xs text-muted-foreground flex items-center gap-2">
-                <Loader2 className="h-3 w-3 animate-spin" /> Cargando…
+                <Loader2 className="h-3 w-3 animate-spin" />{' '}{trs("Cargando…")}
               </div>
             )}
             {!loadingKnown && filteredKnown.length === 0 && (
               <div className="px-3 py-2 text-xs text-muted-foreground">
-                {query ? 'Sin coincidencias en tus campos' : 'Aún no tienes campos guardados'}
+                {query ? trs("Sin coincidencias en tus campos") : trs("Aún no tienes campos guardados")}
               </div>
             )}
             {filteredKnown.map((c) => (
@@ -697,15 +698,15 @@ function CoursePicker({
             {query.trim().length >= 2 && (
               <>
                 <div className="px-3 pt-3 pb-1 text-[10px] uppercase tracking-wide text-muted-foreground border-t border-border/60">
-                  Buscar y descargar
+                  {trs("Buscar y descargar")}
                 </div>
                 {searching && (
                   <div className="p-3 text-xs text-muted-foreground flex items-center gap-2">
-                    <Loader2 className="h-3 w-3 animate-spin" /> Buscando…
+                    <Loader2 className="h-3 w-3 animate-spin" />{' '}{trs("Buscando…")}
                   </div>
                 )}
                 {!searching && results.length === 0 && (
-                  <div className="p-3 text-xs text-muted-foreground">Sin resultados en línea</div>
+                  <div className="p-3 text-xs text-muted-foreground">{trs("Sin resultados en línea")}</div>
                 )}
                 {results.map((r) => (
                   <button
@@ -739,7 +740,7 @@ function CoursePicker({
                 ))}
                 {importing && (
                   <div className="p-3 text-xs text-muted-foreground flex items-center gap-2">
-                    <Loader2 className="h-3 w-3 animate-spin" /> Descargando campo…
+                    <Loader2 className="h-3 w-3 animate-spin" />{' '}{trs("Descargando campo…")}
                   </div>
                 )}
               </>
@@ -788,10 +789,9 @@ function Step3Mapping(props: {
               className="mt-1 h-4 w-4 accent-primary"
             />
             <div className="text-sm">
-              <div className="font-medium">Yo también jugué esta ronda</div>
+              <div className="font-medium">{trs("Yo también jugué esta ronda")}</div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Desactívalo si solo estás capturando la tarjeta para ayudar al grupo.
-                Serás el organizador (podrás editar o borrar la ronda) pero no aparecerás como jugador.
+                {trs("Desactívalo si solo estás capturando la tarjeta para ayudar al grupo. Serás el organizador (podrás editar o borrar la ronda) pero no aparecerás como jugador.")}
               </p>
             </div>
           </label>
@@ -802,9 +802,9 @@ function Step3Mapping(props: {
         <User className="h-4 w-4" />
         <AlertDescription>
           {capturistIsPlayer ? (
-            <>Asigna cada nombre detectado a un jugador. Exactamente uno debe ser <strong>"Soy yo"</strong>.</>
+            <>{trs("Asigna cada nombre detectado a un jugador. Exactamente uno debe ser")}{' '}<strong>{trs("\"Soy yo\"")}</strong>.</>
           ) : (
-            <>Asigna cada nombre detectado a un jugador registrado o invitado.</>
+            <>{trs("Asigna cada nombre detectado a un jugador registrado o invitado.")}</>
           )}
         </AlertDescription>
       </Alert>
@@ -821,7 +821,7 @@ function Step3Mapping(props: {
                 <span className="text-muted-foreground text-xs uppercase tracking-wide">
                   En la tarjeta:
                 </span>
-                {p.nameInCard || <em className="text-muted-foreground">Sin nombre</em>}
+                {p.nameInCard || <em className="text-muted-foreground">{trs("Sin nombre")}</em>}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -839,7 +839,7 @@ function Step3Mapping(props: {
                     <User className="h-4 w-4 mr-2" />
                     Soy yo
                     {disableSelf && (
-                      <span className="ml-auto text-[10px] opacity-70">ya asignado</span>
+                      <span className="ml-auto text-[10px] opacity-70">{trs("ya asignado")}</span>
                     )}
                   </Button>
                 )}
@@ -850,7 +850,7 @@ function Step3Mapping(props: {
                   className="justify-start"
                 >
                   <Users className="h-4 w-4 mr-2" />
-                  Registrado
+                  {trs("Registrado")}
                 </Button>
                 <Button
                   variant={kind === 'guest' ? 'default' : 'outline'}
@@ -859,7 +859,7 @@ function Step3Mapping(props: {
                   className="justify-start"
                 >
                   <UserPlus className="h-4 w-4 mr-2" />
-                  Invitado
+                  {trs("Invitado")}
                 </Button>
               </div>
 
@@ -897,17 +897,17 @@ function Step3Mapping(props: {
       <div className="flex items-center justify-between gap-3">
         <Button variant="outline" onClick={onBack}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Regresar
+          {trs("Regresar")}
         </Button>
         <Button onClick={onConfirm} disabled={!mappingsValid}>
-          Confirmar y guardar
+          {trs("Confirmar y guardar")}
         </Button>
       </div>
       {!mappingsValid && (
         <p className="text-xs text-muted-foreground text-right">
           {capturistIsPlayer
-            ? 'Cada jugador debe estar mapeado y uno debe ser "Soy yo".'
-            : 'Cada jugador debe estar mapeado como registrado o invitado.'}
+            ? trs("Cada jugador debe estar mapeado y uno debe ser \"Soy yo\".")
+            : trs("Cada jugador debe estar mapeado como registrado o invitado.")}
         </p>
       )}
     </div>
@@ -938,7 +938,7 @@ function RegisteredPicker({
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar jugador registrado…"
+          placeholder={trs("Buscar jugador registrado…")}
           className="h-8 pl-7 text-sm"
         />
       </div>
@@ -950,7 +950,7 @@ function RegisteredPicker({
       )}
       {searching && (
         <div className="text-xs text-muted-foreground flex items-center gap-1">
-          <Loader2 className="h-3 w-3 animate-spin" /> Buscando…
+          <Loader2 className="h-3 w-3 animate-spin" />{' '}{trs("Buscando…")}
         </div>
       )}
       <div className="max-h-40 overflow-auto rounded-md border border-border/60 divide-y divide-border/40">
@@ -971,7 +971,7 @@ function RegisteredPicker({
           </button>
         ))}
         {!searching && query.length >= 2 && searchResults.length === 0 && (
-          <div className="p-2 text-xs text-muted-foreground">Sin resultados</div>
+          <div className="p-2 text-xs text-muted-foreground">{trs("Sin resultados")}</div>
         )}
       </div>
     </div>
@@ -995,18 +995,17 @@ function Step4Saving({
             <CheckCircle2 className="h-8 w-8 text-emerald-500" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold">¡Ronda importada!</h2>
+            <h2 className="text-lg font-semibold">{trs("¡Ronda importada!")}</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              Se guardó como una ronda histórica ya cerrada. Puedes reabrirla
-              desde el historial si quieres ajustar algo o configurar apuestas.
+              {trs("Se guardó como una ronda histórica ya cerrada. Puedes reabrirla desde el historial si quieres ajustar algo o configurar apuestas.")}
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button onClick={onGoHistory} className="w-full sm:w-auto">
-              Ver ronda
+              {trs("Ver ronda")}
             </Button>
             <Button variant="outline" onClick={onStartOver} className="w-full sm:w-auto">
-              Importar otra
+              {trs("Importar otra")}
             </Button>
           </div>
         </CardContent>
@@ -1021,12 +1020,12 @@ function Step4Saving({
           {progress.stage === 'error' ? (
             <>
               <XCircle className="h-5 w-5 text-destructive" />
-              Error al guardar
+              {trs("Error al guardar")}
             </>
           ) : (
             <>
               <Loader2 className="h-5 w-5 animate-spin" />
-              Guardando ronda…
+              {trs("Guardando ronda…")}
             </>
           )}
         </CardTitle>
@@ -1041,9 +1040,9 @@ function Step4Saving({
 
         {progress.stage === 'error' && (
           <div className="flex gap-2">
-            <Button onClick={onRetry}>Reintentar</Button>
+            <Button onClick={onRetry}>{trs("Reintentar")}</Button>
             <Button variant="outline" onClick={onStartOver}>
-              Volver al inicio
+              {trs("Volver al inicio")}
             </Button>
           </div>
         )}

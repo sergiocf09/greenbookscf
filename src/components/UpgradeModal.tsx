@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -104,14 +105,14 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
           </Button>
 
           <p className="text-xs text-muted-foreground text-center">
-            Menos que un green fee en tu club
+            {trs("Menos que un green fee en tu club")}
           </p>
           <p className="text-[10px] text-muted-foreground text-center">
-            Sin renovación automática · Sin penalización por cancelar
+            {trs("Sin renovación automática · Sin penalización por cancelar")}
           </p>
 
           <Button variant="ghost" className="w-full text-muted-foreground" onClick={onClose}>
-            Ahora no
+            {trs("Ahora no")}
           </Button>
         </div>
       </DialogContent>

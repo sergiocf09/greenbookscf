@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -79,7 +80,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
 
   const handleCreate = async () => {
     if (!name.trim()) {
-      toast.error('El nombre de la liga es obligatorio');
+      toast.error(trs("El nombre de la liga es obligatorio"));
       return;
     }
 
@@ -129,9 +130,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
   };
 
   const systemIcon: Record<string, React.ReactNode> = {
-    strokes: <Target className="h-5 w-5" />,
-    stableford: <TrendingUp className="h-5 w-5" />,
-    points: <Trophy className="h-5 w-5" />,
+    strokes: <Target className="h-5 w-5" />, stableford: <TrendingUp className="h-5 w-5" />, points: <Trophy className="h-5 w-5" />,
   };
 
   return (
@@ -148,7 +147,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
         <DialogHeader className="px-5 pt-5 pb-3 border-b">
           <DialogTitle className="flex items-center gap-2">
             <Trophy className="h-5 w-5 text-amber-500" />
-            Nueva Liga
+            {trs("Nueva Liga")}
           </DialogTitle>
         </DialogHeader>
 
@@ -156,18 +155,18 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
           <div className="px-5 py-4 space-y-5">
             {/* Nombre y descripción */}
             <div className="space-y-2">
-              <Label>Nombre de la liga *</Label>
+              <Label>{trs("Nombre de la liga *")}</Label>
               <Input
-                placeholder="Ej: Liga GreenBook 2026"
+                placeholder={trs("Ej: Liga GreenBook 2026")}
                 value={name}
                 onChange={e => setName(e.target.value)}
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Descripción (opcional)</Label>
+              <Label>{trs("Descripción (opcional)")}</Label>
               <Input
-                placeholder="Descripción breve"
+                placeholder={trs("Descripción breve")}
                 value={description}
                 onChange={e => setDescription(e.target.value)}
               />
@@ -175,7 +174,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
 
             {/* Duración */}
             <div className="space-y-2">
-              <Label>Duración</Label>
+              <Label>{trs("Duración")}</Label>
               <Select value={String(periodMonths)} onValueChange={v => setPeriodMonths(Number(v))}>
                 <SelectTrigger>
                   <SelectValue />
@@ -195,7 +194,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
 
             {/* Sistema de scoring */}
             <div className="space-y-2">
-              <Label>Sistema de scoring</Label>
+              <Label>{trs("Sistema de scoring")}</Label>
               <div className="grid grid-cols-3 gap-2">
                 {(['points', 'strokes', 'stableford'] as const).map(sys => (
                   <button
@@ -211,7 +210,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
                   >
                     {systemIcon[sys]}
                     <span>
-                      {sys === 'points' ? 'Puntos' : sys === 'strokes' ? 'Golpes' : 'Stableford'}
+                      {sys === 'points' ? 'Puntos' : sys === 'strokes' ? trs("Golpes") : trs("Stableford")}
                     </span>
                   </button>
                 ))}
@@ -221,7 +220,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
             {/* Score basis */}
             {scoringSystem !== 'stableford' && (
               <div className="space-y-2">
-                <Label>Base de clasificación por jornada</Label>
+                <Label>{trs("Base de clasificación por jornada")}</Label>
                 <div className="flex gap-2">
                   {(['gross', 'net'] as const).map(b => (
                     <button
@@ -235,7 +234,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
                           : 'bg-muted text-muted-foreground border-border'
                       )}
                     >
-                      {b === 'gross' ? 'Gross (sin handicap)' : 'Neto (con handicap)'}
+                      {b === 'gross' ? trs("Gross (sin handicap)") : trs("Neto (con handicap)")}
                     </button>
                   ))}
                 </div>
@@ -245,7 +244,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
             {/* Tabla de puntos */}
             {scoringSystem === 'points' && (
               <div className="space-y-2">
-                <Label>Puntos por posición</Label>
+                <Label>{trs("Puntos por posición")}</Label>
                 <div className="space-y-1.5">
                   {pointsPerPosition.map((pts, idx) => (
                     <div key={idx} className="flex items-center gap-2">
@@ -256,7 +255,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
                         className="h-8 text-sm"
                         inputMode="numeric"
                       />
-                      <span className="text-[11px] text-muted-foreground">pts</span>
+                      <span className="text-[11px] text-muted-foreground">{trs("pts")}</span>
                       {pointsPerPosition.length > 1 && (
                         <button
                           type="button"
@@ -269,12 +268,12 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
                     </div>
                   ))}
                   <p className="text-[11px] text-muted-foreground pt-1">
-                    Los lugares no listados reciben 0 puntos
+                    {trs("Los lugares no listados reciben 0 puntos")}
                   </p>
                 </div>
                 <Button variant="outline" size="sm" onClick={addPointsPlace} className="w-full mt-1">
                   <Plus className="h-3 w-3 mr-1" />
-                  Agregar lugar
+                  {trs("Agregar lugar")}
                 </Button>
               </div>
             )}
@@ -282,27 +281,27 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
             {/* Aggregation strokes/stableford */}
             {scoringSystem !== 'points' && (
               <div className="space-y-2">
-                <Label>¿Cómo se acumulan las jornadas?</Label>
+                <Label>{trs("¿Cómo se acumulan las jornadas?")}</Label>
                 <Select value={aggregation} onValueChange={v => setAggregation(v as any)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="sum">Suma de todas las jornadas</SelectItem>
-                    <SelectItem value="average">Promedio de todas las jornadas</SelectItem>
-                    <SelectItem value="best_n">Las mejores N jornadas</SelectItem>
+                    <SelectItem value="sum">{trs("Suma de todas las jornadas")}</SelectItem>
+                    <SelectItem value="average">{trs("Promedio de todas las jornadas")}</SelectItem>
+                    <SelectItem value="best_n">{trs("Las mejores N jornadas")}</SelectItem>
                   </SelectContent>
                 </Select>
                 {aggregation === 'best_n' && (
                   <div className="flex items-center gap-2 pt-1">
-                    <span className="text-xs">Contar las mejores</span>
+                    <span className="text-xs">{trs("Contar las mejores")}</span>
                     <Input
                       value={bestN}
                       onChange={e => setBestN(e.target.value)}
                       className="h-8 w-20 text-sm"
                       inputMode="numeric"
                     />
-                    <span className="text-xs">jornadas</span>
+                    <span className="text-xs">{trs("jornadas")}</span>
                   </div>
                 )}
               </div>
@@ -311,26 +310,26 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
             {/* Aggregation puntos */}
             {scoringSystem === 'points' && (
               <div className="space-y-2">
-                <Label>Jornadas que cuentan</Label>
+                <Label>{trs("Jornadas que cuentan")}</Label>
                 <Select value={aggregation} onValueChange={v => setAggregation(v as any)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="sum">Todas las jornadas</SelectItem>
-                    <SelectItem value="best_n">Las mejores N jornadas</SelectItem>
+                    <SelectItem value="sum">{trs("Todas las jornadas")}</SelectItem>
+                    <SelectItem value="best_n">{trs("Las mejores N jornadas")}</SelectItem>
                   </SelectContent>
                 </Select>
                 {aggregation === 'best_n' && (
                   <div className="flex items-center gap-2 pt-1">
-                    <span className="text-xs">Contar las mejores</span>
+                    <span className="text-xs">{trs("Contar las mejores")}</span>
                     <Input
                       value={bestN}
                       onChange={e => setBestN(e.target.value)}
                       className="h-8 w-20 text-sm"
                       inputMode="numeric"
                     />
-                    <span className="text-xs">jornadas</span>
+                    <span className="text-xs">{trs("jornadas")}</span>
                   </div>
                 )}
               </div>
@@ -338,7 +337,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
 
             {/* Mínimo de rondas */}
             <div className="space-y-2">
-              <Label>Mínimo de jornadas para clasificar</Label>
+              <Label>{trs("Mínimo de jornadas para clasificar")}</Label>
               <div className="flex items-center gap-2">
                 <Input
                   value={minRounds}
@@ -347,7 +346,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
                   inputMode="numeric"
                 />
                 <span className="text-xs text-muted-foreground">
-                  {parseInt(minRounds) === 0 ? '(sin mínimo)' : 'jornadas jugadas'}
+                  {parseInt(minRounds) === 0 ? trs("(sin mínimo)") : trs("jornadas jugadas")}
                 </span>
               </div>
             </div>
@@ -355,9 +354,9 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
             {/* Unión abierta */}
             <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
               <div className="min-w-0">
-                <p className="text-sm font-medium">Unión abierta por código</p>
+                <p className="text-sm font-medium">{trs("Unión abierta por código")}</p>
                 <p className="text-[11px] text-muted-foreground">
-                  Cualquiera con el código puede unirse
+                  {trs("Cualquiera con el código puede unirse")}
                 </p>
               </div>
               <Switch checked={allowOpenJoin} onCheckedChange={setAllowOpenJoin} />
@@ -374,7 +373,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
             }}
             disabled={saving}
           >
-            Cancelar
+            {trs("Cancelar")}
           </Button>
           <Button onClick={handleCreate} disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}

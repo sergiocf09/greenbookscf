@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 // Group Bets Card - Medal General, Culebras, Pinguinos, Zoologico, Coneja, Stableford, Skins Grupal consolidated display
 // Simplified view: Medal shows winners only, Culebras/Pinguinos show count + loser payment
 import React, { useMemo, useState } from 'react';
@@ -323,9 +324,9 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-lg">🐰</span>
-            <span className="font-medium text-sm">Coneja</span>
+            <span className="font-medium text-sm">{trs("Coneja")}</span>
             <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 bg-muted rounded">
-              {betConfig.coneja?.handicapMode === 'bilateral' ? 'Sliding' : 'USGA'}
+              {betConfig.coneja?.handicapMode === 'bilateral' ? trs("Sliding") : trs("USGA")}
             </span>
           </div>
           <span className="text-xs text-muted-foreground">
@@ -416,7 +417,7 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
   }, [holeNumber, players, scores, course, betConfig, confirmedHoles]);
 
   if (!matrix) {
-    return <span className="text-xs text-muted-foreground">Sin datos</span>;
+    return <span className="text-xs text-muted-foreground">{trs("Sin datos")}</span>;
   }
 
   const winnerPlayer = matrix.winnerId ? players.find(p => p.id === matrix.winnerId) : null;
@@ -439,7 +440,7 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
           <thead>
             {/* Row 1: Label + Gross scores above column headers */}
             <tr>
-              <th className="p-1.5 text-[10px] text-muted-foreground font-normal">Gross</th>
+              <th className="p-1.5 text-[10px] text-muted-foreground font-normal">{trs("Gross")}</th>
               {matrix.playerIds.map(pid => (
                 <th key={`gross-${pid}`} className="p-1 text-center text-muted-foreground font-normal">
                   {matrix.playerGrossScores[pid] || '-'}
@@ -535,11 +536,11 @@ const HoleMatrixTooltip: React.FC<HoleMatrixTooltipProps> = ({
         <div className="text-[10px] text-green-600 text-center pt-1 border-t-2 border-primary/40 flex items-center justify-center gap-1">
           <span>🐰</span>
           <span className="font-bold">{winnerPlayer.initials}</span>
-          <span>gana pata</span>
+          <span>{trs("gana pata")}</span>
         </div>
       ) : (
         <div className="text-[10px] text-muted-foreground text-center pt-1 border-t-2 border-primary/40">
-          Empate - Sin ganador absoluto
+          {trs("Empate - Sin ganador absoluto")}
         </div>
       )}
     </div>
@@ -714,7 +715,7 @@ const StablefordResultBlock: React.FC<{
             <div className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 text-[8px] text-muted-foreground">
               <div></div>
               {[1,2,3,4,5,6,7,8,9].map(h => <div key={h} className="text-center">{h}</div>)}
-              <div className="text-center font-semibold">F9</div>
+              <div className="text-center font-semibold">{trs("F9")}</div>
             </div>
             {results.map(r => (
               <div key={r.playerId} className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 items-center">
@@ -743,7 +744,7 @@ const StablefordResultBlock: React.FC<{
             <div className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 text-[8px] text-muted-foreground mt-2">
               <div></div>
               {[10,11,12,13,14,15,16,17,18].map(h => <div key={h} className="text-center">{h}</div>)}
-              <div className="text-center font-semibold">B9</div>
+              <div className="text-center font-semibold">{trs("B9")}</div>
             </div>
             {results.map(r => (
               <div key={`${r.playerId}-back`} className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 items-center">
@@ -769,7 +770,7 @@ const StablefordResultBlock: React.FC<{
               </div>
             ))}
             <div className="border-t-2 border-primary/40 pt-2 mt-2 text-center text-[10px] text-muted-foreground">
-              Toca afuera para cerrar
+              {trs("Toca afuera para cerrar")}
             </div>
           </div>
         </PopoverContent>
@@ -824,7 +825,7 @@ const SkinsGrupalPopover: React.FC<{
                   {getPlayerAbbr(p)}
                 </th>
               ))}
-              <th className="p-1 text-center text-[10px] text-muted-foreground font-normal">Skin</th>
+              <th className="p-1 text-center text-[10px] text-muted-foreground font-normal">{trs("Skin")}</th>
             </tr>
           </thead>
           <tbody>
@@ -900,7 +901,7 @@ const AuditEntriesList: React.FC<{
     higherIsBetter ? b.value - a.value : a.value - b.value
   );
   if (sorted.length === 0) {
-    return <p className="text-xs text-muted-foreground text-center py-4">Sin datos suficientes</p>;
+    return <p className="text-xs text-muted-foreground text-center py-4">{trs("Sin datos suficientes")}</p>;
   }
   return (
     <div className="space-y-2">
@@ -970,7 +971,7 @@ const GroupBetAuditSheet: React.FC<GroupBetAuditSheetProps> = ({
             <AuditEntriesList entries={sections[0]?.entries ?? []} basePlayerId={basePlayerId} higherIsBetter={higherIsBetter} />
           )}
           <p className="text-[10px] text-muted-foreground text-center pt-3">
-            Solo hoyos confirmados con putts registrados
+            {trs("Solo hoyos confirmados con putts registrados")}
           </p>
         </div>
       </SheetContent>
@@ -1293,7 +1294,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     return {
       enabled: true,
       type: 'culebras',
-      title: 'Culebras',
+      title: trs("Culebras"),
       emoji: '🐍',
       totalCount,
       valuePerOccurrence,
@@ -1410,7 +1411,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     return {
       enabled: true,
       type: 'pinguinos',
-      title: 'Pingüinos',
+      title: trs("Pingüinos"),
       emoji: '🐧',
       totalCount,
       valuePerOccurrence,
@@ -1938,7 +1939,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         <CardHeader className="py-3">
           <CardTitle className="text-sm flex items-center gap-2">
             <Users className="h-4 w-4" />
-            Apuestas Grupales
+            {trs("Apuestas Grupales")}
           </CardTitle>
         </CardHeader>
       )}
@@ -1959,7 +1960,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 {culebrasResult.hasTie && (
                   <span className="text-xs text-amber-600 flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3" />
-                    Empate
+                    {trs("Empate")}
                   </span>
                 )}
                 {culebrasResult.loser && (
@@ -2047,7 +2048,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   {pinguinosResult.hasTie && (
                     <span className="text-xs text-amber-600 flex items-center gap-1">
                       <AlertTriangle className="h-3 w-3" />
-                      Empate
+                      {trs("Empate")}
                     </span>
                   )}
                   {pinguinosResult.loser && (
@@ -2137,7 +2138,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   {result.hasTie && (
                     <span className="text-xs text-amber-600 flex items-center gap-1">
                       <AlertTriangle className="h-3 w-3" />
-                      Empate
+                      {trs("Empate")}
                     </span>
                   )}
                   {result.loser && (
@@ -2232,7 +2233,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   )}>
                     <Target className="h-5 w-5" strokeWidth={2} />
                   </div>
-                  <span className="text-[11px] font-medium text-muted-foreground">Oyeses</span>
+                  <span className="text-[11px] font-medium text-muted-foreground">{trs("Oyeses")}</span>
                   {oyesesSummary.totalPar3 > 0 && (
                     <span className="text-lg font-bold text-blue-600 leading-none">{oyesesSummary.holesWithData}/{oyesesSummary.totalPar3}</span>
                   )}
@@ -2256,7 +2257,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   )}>
                     <Check className="h-5 w-5" strokeWidth={2.5} />
                   </div>
-                  <span className="text-[11px] font-medium text-muted-foreground">Unidades</span>
+                  <span className="text-[11px] font-medium text-muted-foreground">{trs("Unidades")}</span>
                   {unidadesSummary.totalUnidades > 0 && (
                     <span className="text-lg font-bold text-green-600 leading-none">{unidadesSummary.totalUnidades}</span>
                   )}
@@ -2280,7 +2281,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   )}>
                     <X className="h-5 w-5" strokeWidth={2.5} />
                   </div>
-                  <span className="text-[11px] font-medium text-muted-foreground">Manchas</span>
+                  <span className="text-[11px] font-medium text-muted-foreground">{trs("Manchas")}</span>
                   {manchasSummary.totalManchas > 0 && (
                     <span className="text-lg font-bold text-destructive leading-none">{manchasSummary.totalManchas}</span>
                   )}
@@ -2293,7 +2294,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               <div className="space-y-1">
                 {(() => {
                   const allPlayerData = manchasSummary.playerData;
-                  if (allPlayerData.length === 0) return <p className="text-xs text-muted-foreground text-center py-2">Sin manchas aún</p>;
+                  if (allPlayerData.length === 0) return <p className="text-xs text-muted-foreground text-center py-2">{trs("Sin manchas aún")}</p>;
                   const colCount = allPlayerData.length;
                   return (
                     <div className="w-full px-2">
@@ -2337,7 +2338,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                         })}
                       </div>
                       {manchasSummary.totalManchas === 0 && (
-                        <p className="text-xs text-muted-foreground text-center py-2">Sin manchas aún</p>
+                        <p className="text-xs text-muted-foreground text-center py-2">{trs("Sin manchas aún")}</p>
                       )}
                     </div>
                   );
@@ -2350,7 +2351,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               <div className="space-y-1">
                 {(() => {
                   const allPlayerData = unidadesSummary.playerData;
-                  if (allPlayerData.length === 0) return <p className="text-xs text-muted-foreground text-center py-2">Sin unidades aún</p>;
+                  if (allPlayerData.length === 0) return <p className="text-xs text-muted-foreground text-center py-2">{trs("Sin unidades aún")}</p>;
                   const colCount = allPlayerData.length;
                   return (
                     <div className="w-full px-2">
@@ -2394,7 +2395,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                         })}
                       </div>
                       {unidadesSummary.totalUnidades === 0 && (
-                        <p className="text-xs text-muted-foreground text-center py-2">Sin unidades aún</p>
+                        <p className="text-xs text-muted-foreground text-center py-2">{trs("Sin unidades aún")}</p>
                       )}
                     </div>
                   );
@@ -2406,7 +2407,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
             {showOyesesPanel && oyesesSummary && (
               <div className="space-y-3">
                 {oyesesSummary.holesWithData === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-2">Sin datos de Oyeses aún</p>
+                  <p className="text-xs text-muted-foreground text-center py-2">{trs("Sin datos de Oyeses aún")}</p>
                 ) : (
                   <>
                     {/* Tab toggle when both modalities coexist */}
@@ -2421,7 +2422,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                               : 'text-muted-foreground hover:text-foreground'
                           )}
                         >
-                          Acumulado
+                          {trs("Acumulado")}
                         </button>
                         <button
                           onClick={() => setOyesesPanelTab('sangron')}
@@ -2432,7 +2433,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                               : 'text-muted-foreground hover:text-foreground'
                           )}
                         >
-                          ⚡ Sangrón
+                          {trs("⚡ Sangrón")}
                         </button>
                       </div>
                     )}
@@ -2453,11 +2454,11 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                           ).length;
                           return ranked + unrankedConfirmed;
                         }));
-                        if (maxRows === 0) return <p className="text-xs text-muted-foreground text-center py-2">Sin datos de Acumulado aún</p>;
+                        if (maxRows === 0) return <p className="text-xs text-muted-foreground text-center py-2">{trs("Sin datos de Acumulado aún")}</p>;
                         return (
                           <div className="space-y-1">
                             {!oyesesSummary.hasSangron && (
-                              <span className="text-[9px] text-muted-foreground">Modalidad Acumulado</span>
+                              <span className="text-[9px] text-muted-foreground">{trs("Modalidad Acumulado")}</span>
                             )}
                             <div className="grid w-full" style={{ gridTemplateColumns: `20px repeat(${acumHoles.length}, 1fr)` }}>
                               <div className="text-[9px] text-muted-foreground text-center pb-1" />
@@ -2517,7 +2518,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                         return (
                           <div className="space-y-1">
                             {!oyesesSummary.hasAcumulados && (
-                              <span className="text-[9px] text-muted-foreground">Modalidad Sangrón</span>
+                              <span className="text-[9px] text-muted-foreground">{trs("Modalidad Sangrón")}</span>
                             )}
                             <div className="grid w-full" style={{ gridTemplateColumns: `20px repeat(${sangronHoles.length}, 1fr)` }}>
                               <div className="text-[9px] text-muted-foreground text-center pb-1" />
@@ -2618,9 +2619,9 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                           <span className="text-[10px] font-semibold text-muted-foreground">{seg.label} — ${seg.amount} c/u</span>
                         </div>
                         {!r || !r.hasValidScores ? (
-                          <span className="text-xs text-muted-foreground">Sin datos</span>
+                          <span className="text-xs text-muted-foreground">{trs("Sin datos")}</span>
                         ) : r.winners.length === 0 ? (
-                          <span className="text-xs text-muted-foreground">Empate total</span>
+                          <span className="text-xs text-muted-foreground">{trs("Empate total")}</span>
                         ) : (
                           <>
                             {r.winners.length === 1 ? (
@@ -2681,14 +2682,14 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Trophy className="h-4 w-4 text-yellow-500" />
-                    <span className="font-medium text-sm">Medal General</span>
+                    <span className="font-medium text-sm">{trs("Medal General")}</span>
                     {hasMultipleGroups && medalScope !== 'global' && (
                       <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                        {medalScope === 'group' ? 'Grupo' : 'Ambas'}
+                        {medalScope === 'group' ? trs("Grupo") : trs("Ambas")}
                       </span>
                     )}
                     {medalSegmentMode === 'segments' && (
-                      <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">F9/B9/T18</span>
+                      <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{trs("F9/B9/T18")}</span>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
@@ -2698,7 +2699,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                     <button
                       onClick={() => setAuditSheet({ betKey: 'medalGeneral' })}
                       className="p-1 rounded-full hover:bg-muted/60 transition-colors"
-                      title="Ver todos los resultados"
+                      title={trs("Ver todos los resultados")}
                     >
                       <Eye className="h-3.5 w-3.5 text-muted-foreground" />
                     </button>
@@ -2756,12 +2757,12 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Trophy className="h-4 w-4 text-emerald-500" />
-                    <span className="font-medium text-sm">Putts General</span>
+                    <span className="font-medium text-sm">{trs("Putts General")}</span>
                   </div>
                   <button
                     onClick={() => setAuditSheet({ betKey: 'puttsGeneral' })}
                     className="p-1 rounded-full hover:bg-muted/60 transition-colors"
-                    title="Ver todos los resultados"
+                    title={trs("Ver todos los resultados")}
                   >
                     <Eye className="h-3.5 w-3.5 text-muted-foreground" />
                   </button>
@@ -2769,7 +2770,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
                 {!anyResult ? (
                   <div className="text-xs text-muted-foreground p-2 bg-muted/20 rounded">
-                    Sin putts confirmados suficientes
+                    {trs("Sin putts confirmados suficientes")}
                   </div>
                 ) : (
                   <div className="space-y-1.5">
@@ -2785,7 +2786,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                             <span className="text-[10px] font-semibold text-muted-foreground">{seg.label} — ${seg.amount} c/u</span>
                           </div>
                           {!r ? (
-                            <span className="text-xs text-muted-foreground">Sin datos</span>
+                            <span className="text-xs text-muted-foreground">{trs("Sin datos")}</span>
                           ) : (
                             <>
                               {r.winners.length === 1 ? (
@@ -2872,15 +2873,15 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Target className="h-4 w-4 text-sky-500" />
-                    <span className="font-medium text-sm">GIR General</span>
+                    <span className="font-medium text-sm">{trs("GIR General")}</span>
                     {girSegmentMode === 'segments' && (
-                      <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">F9/B9/T18</span>
+                      <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{trs("F9/B9/T18")}</span>
                     )}
                   </div>
                   <button
                     onClick={() => setAuditSheet({ betKey: 'girGeneral' })}
                     className="p-1 rounded-full hover:bg-muted/60 transition-colors"
-                    title="Ver todos los resultados"
+                    title={trs("Ver todos los resultados")}
                   >
                     <Eye className="h-3.5 w-3.5 text-muted-foreground" />
                   </button>
@@ -2888,7 +2889,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
                 {!anyGirResult ? (
                   <div className="text-xs text-muted-foreground p-2 bg-muted/20 rounded">
-                    Sin datos suficientes (requiere putts por hoyo)
+                    {trs("Sin datos suficientes (requiere putts por hoyo)")}
                   </div>
                 ) : (
                   <div className="space-y-1.5">
@@ -2904,7 +2905,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                             <span className="text-[10px] font-semibold text-muted-foreground">{seg.label} — ${seg.amount} c/u</span>
                           </div>
                           {!r ? (
-                            <span className="text-xs text-muted-foreground">Sin datos</span>
+                            <span className="text-xs text-muted-foreground">{trs("Sin datos")}</span>
                           ) : (
                             <>
                               {r.winners.length === 1 ? (
@@ -2955,10 +2956,10 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Star className="h-4 w-4 text-amber-500" />
-                  <span className="font-medium text-sm">Stableford</span>
+                  <span className="font-medium text-sm">{trs("Stableford")}</span>
                   {hasMultipleGroups && stablefordScope !== 'global' && (
                     <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                      {stablefordScope === 'group' ? 'Grupo' : 'Ambas'}
+                      {stablefordScope === 'group' ? trs("Grupo") : trs("Ambas")}
                     </span>
                   )}
                 </div>
@@ -3000,9 +3001,9 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Target className="h-4 w-4 text-emerald-500" />
-                  <span className="font-medium text-sm">Skins Grupal</span>
+                  <span className="font-medium text-sm">{trs("Skins Grupal")}</span>
                   <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                    {skinsGrupalResult.cfg.modality === 'sinAcumular' ? 'Sin Acum' : 'Acumulados'}
+                    {skinsGrupalResult.cfg.modality === 'sinAcumular' ? trs("Sin Acum") : trs("Acumulados")}
                   </span>
                 </div>
               </div>
@@ -3013,7 +3014,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   <PopoverTrigger asChild>
                     <div className="cursor-pointer hover:bg-muted/20 rounded-lg p-2 transition-colors space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium">Front 9</span>
+                        <span className="text-xs font-medium">{trs("Front 9")}</span>
                         <span className="text-xs text-muted-foreground">${skinsGrupalResult.cfg.frontAmount}/skin</span>
                       </div>
                       <div className="grid grid-cols-9 gap-0.5">
@@ -3048,7 +3049,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                   <PopoverTrigger asChild>
                     <div className="cursor-pointer hover:bg-muted/20 rounded-lg p-2 transition-colors space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium">Back 9</span>
+                        <span className="text-xs font-medium">{trs("Back 9")}</span>
                         <span className="text-xs text-muted-foreground">${skinsGrupalResult.cfg.backAmount}/skin</span>
                       </div>
                       <div className="grid grid-cols-9 gap-0.5">
@@ -3212,7 +3213,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     <Sheet open={sixesSheetOpen} onOpenChange={setSixesSheetOpen}>
       <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Configurar parejas · Seises</SheetTitle>
+          <SheetTitle>{trs("Configurar parejas · Seises")}</SheetTitle>
         </SheetHeader>
         <div className="space-y-4 mt-4">
           {([1, 2, 3] as const).map(setNum => {
@@ -3226,32 +3227,32 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 <p className="text-sm font-semibold">Set {setNum} · {ranges[setNum]}</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Equipo 1</p>
+                    <p className="text-xs text-muted-foreground">{trs("Equipo 1")}</p>
                     <Select value={set.t1p1} onValueChange={v => setSixesSets(prev => ({
                       ...prev, [setNum]: { ...prev[setNum], t1p1: v }
                     }))}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Jugador 1" /></SelectTrigger>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={trs("Jugador 1")} /></SelectTrigger>
                       <SelectContent>{playerOpts}</SelectContent>
                     </Select>
                     <Select value={set.t1p2} onValueChange={v => setSixesSets(prev => ({
                       ...prev, [setNum]: { ...prev[setNum], t1p2: v }
                     }))}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Jugador 2" /></SelectTrigger>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={trs("Jugador 2")} /></SelectTrigger>
                       <SelectContent>{playerOpts}</SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Equipo 2</p>
+                    <p className="text-xs text-muted-foreground">{trs("Equipo 2")}</p>
                     <Select value={set.t2p1} onValueChange={v => setSixesSets(prev => ({
                       ...prev, [setNum]: { ...prev[setNum], t2p1: v }
                     }))}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Jugador 1" /></SelectTrigger>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={trs("Jugador 1")} /></SelectTrigger>
                       <SelectContent>{playerOpts}</SelectContent>
                     </Select>
                     <Select value={set.t2p2} onValueChange={v => setSixesSets(prev => ({
                       ...prev, [setNum]: { ...prev[setNum], t2p2: v }
                     }))}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Jugador 2" /></SelectTrigger>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={trs("Jugador 2")} /></SelectTrigger>
                       <SelectContent>{playerOpts}</SelectContent>
                     </Select>
                   </div>
@@ -3268,7 +3269,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
             await sixesHook?.saveSets(assignments);
             setSixesSheetOpen(false);
           }}>
-            Guardar parejas
+            {trs("Guardar parejas")}
           </Button>
         </div>
       </SheetContent>
@@ -3278,7 +3279,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     <Sheet open={vegasSheetOpen} onOpenChange={setVegasSheetOpen}>
       <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Asignar jugadores · Las Vegas</SheetTitle>
+          <SheetTitle>{trs("Asignar jugadores · Las Vegas")}</SheetTitle>
         </SheetHeader>
         <div className="space-y-3 mt-4">
           {(['A', 'B', 'C', 'D'] as const).map(letter => {
@@ -3287,7 +3288,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               <div key={letter} className="flex items-center gap-3">
                 <span className="text-sm font-medium w-20">Jugador {letter}</span>
                 <Select value={vegasPlayers[key]} onValueChange={v => setVegasPlayers(prev => ({ ...prev, [key]: v }))}>
-                  <SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                  <SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder={trs("Seleccionar")} /></SelectTrigger>
                   <SelectContent>
                     {players.map(p => (
                       <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
@@ -3297,7 +3298,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
               </div>
             );
           })}
-          <p className="text-xs text-muted-foreground text-center">Equipo 1: A+B · Equipo 2: C+D</p>
+          <p className="text-xs text-muted-foreground text-center">{trs("Equipo 1: A+B · Equipo 2: C+D")}</p>
           <Button className="w-full" onClick={async () => {
             if (!vegasHook?.vegasConfig) return;
             await vegasHook.saveConfig({
@@ -3312,7 +3313,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
             });
             setVegasSheetOpen(false);
           }}>
-            Guardar
+            {trs("Guardar")}
           </Button>
         </div>
       </SheetContent>

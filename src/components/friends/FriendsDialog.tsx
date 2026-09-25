@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useEffect, useState, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -79,14 +80,14 @@ export const FriendsDialog: React.FC<FriendsDialogProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Amigos
+            {trs("Amigos")}
           </DialogTitle>
         </DialogHeader>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="flex-1 flex flex-col min-h-0">
           <TabsList className="grid grid-cols-2 w-full">
             <TabsTrigger value="friends">Mis Amigos ({friends.length})</TabsTrigger>
-            <TabsTrigger value="search">Buscar Jugadores</TabsTrigger>
+            <TabsTrigger value="search">{trs("Buscar Jugadores")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="friends" className="flex-1 mt-4 min-h-0">
@@ -97,8 +98,8 @@ export const FriendsDialog: React.FC<FriendsDialogProps> = ({
             ) : friends.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p className="text-sm">No tienes amigos agregados</p>
-                <p className="text-xs mt-1">Busca jugadores para agregarlos</p>
+                <p className="text-sm">{trs("No tienes amigos agregados")}</p>
+                <p className="text-xs mt-1">{trs("Busca jugadores para agregarlos")}</p>
               </div>
             ) : (
               <ScrollArea className="h-[350px] pr-2">
@@ -120,7 +121,7 @@ export const FriendsDialog: React.FC<FriendsDialogProps> = ({
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por nombre o correo..."
+                placeholder={trs("Buscar por nombre o correo...")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -134,12 +135,12 @@ export const FriendsDialog: React.FC<FriendsDialogProps> = ({
             ) : searchQuery.length < 2 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Search className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p className="text-sm">Escribe al menos 2 caracteres</p>
-                <p className="text-xs mt-1">Busca por nombre parcial o correo</p>
+                <p className="text-sm">{trs("Escribe al menos 2 caracteres")}</p>
+                <p className="text-xs mt-1">{trs("Busca por nombre parcial o correo")}</p>
               </div>
             ) : searchResults.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <p className="text-sm">No se encontraron jugadores</p>
+                <p className="text-sm">{trs("No se encontraron jugadores")}</p>
               </div>
             ) : (
               <ScrollArea className="h-[300px] pr-2">
@@ -176,7 +177,7 @@ const FriendCard: React.FC<FriendCardProps> = ({ friend, onRemove, onAddToRound 
         size="icon"
         onClick={onRemove}
         className="h-7 w-7 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-        title="Quitar amigo"
+        title={trs("Quitar amigo")}
       >
         <UserMinus className="h-4 w-4" />
       </Button>
@@ -199,7 +200,7 @@ const FriendCard: React.FC<FriendCardProps> = ({ friend, onRemove, onAddToRound 
           className="text-xs h-8 shrink-0"
         >
           <UserPlus className="h-3.5 w-3.5 mr-1" />
-          A Ronda
+          {trs("A Ronda")}
         </Button>
       )}
     </div>
@@ -228,7 +229,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ result, onAddFriend
       </div>
       {result.isFriend ? (
         <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded shrink-0">
-          Ya es amigo
+          {trs("Ya es amigo")}
         </span>
       ) : (
         <Button
@@ -238,7 +239,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ result, onAddFriend
           className="text-xs h-8 shrink-0"
         >
           <UserPlus className="h-3.5 w-3.5 mr-1" />
-          Agregar
+          {trs("Agregar")}
         </Button>
       )}
     </div>

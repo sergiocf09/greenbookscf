@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -48,7 +49,7 @@ export const CupDaysEditor: React.FC<Props> = ({ days, onChange, lockedSlots }) 
     const d = days[idx];
     const locked = d.sessions.some(s => lockedSlots?.has(cupSlotKey(d.day_number, s.session_number)));
     if (locked) {
-      toast.error('No puedes eliminar este día: tiene matches creados.');
+      toast.error(trs("No puedes eliminar este día: tiene matches creados."));
       return;
     }
     if (days.length <= 1) return;
@@ -80,7 +81,7 @@ export const CupDaysEditor: React.FC<Props> = ({ days, onChange, lockedSlots }) 
     if (d.sessions.length <= 1) return;
     const s = d.sessions[sIdx];
     if (lockedSlots?.has(cupSlotKey(d.day_number, s.session_number))) {
-      toast.error('No puedes eliminar esta sesión: tiene matches creados.');
+      toast.error(trs("No puedes eliminar esta sesión: tiene matches creados."));
       return;
     }
     updateDay(dayIdx, { sessions: d.sessions.filter((_, i) => i !== sIdx) });
@@ -95,10 +96,10 @@ export const CupDaysEditor: React.FC<Props> = ({ days, onChange, lockedSlots }) 
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <Label className="text-xs flex items-center gap-1">
-          <CalendarDays className="h-3.5 w-3.5" /> Días y sesiones
+          <CalendarDays className="h-3.5 w-3.5" />{' '}{trs("Días y sesiones")}
         </Label>
         <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={addDay}>
-          <Plus className="h-3 w-3" /> Día
+          <Plus className="h-3 w-3" />{' '}{trs("Día")}
         </Button>
       </div>
 
@@ -113,7 +114,7 @@ export const CupDaysEditor: React.FC<Props> = ({ days, onChange, lockedSlots }) 
               className="h-7 text-xs flex-1 min-w-0"
             />
             <Input
-              placeholder="Etiqueta"
+              placeholder={trs("Etiqueta")}
               value={day.label ?? ''}
               onChange={e => updateDay(idx, { label: e.target.value })}
               className="h-7 text-xs flex-1 min-w-0"
@@ -122,7 +123,7 @@ export const CupDaysEditor: React.FC<Props> = ({ days, onChange, lockedSlots }) 
               variant="ghost" size="icon" className="h-6 w-6 shrink-0"
               onClick={() => removeDay(idx)}
               disabled={days.length <= 1}
-              aria-label="Eliminar día"
+              aria-label={trs("Eliminar día")}
             >
               <X className="h-3 w-3" />
             </Button>
@@ -146,15 +147,15 @@ export const CupDaysEditor: React.FC<Props> = ({ days, onChange, lockedSlots }) 
                     <SelectValue>{FORMAT_LABEL[s.format]}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="match_individual">Individual</SelectItem>
-                    <SelectItem value="fourball">Fourball</SelectItem>
+                    <SelectItem value="match_individual">{trs("Individual")}</SelectItem>
+                    <SelectItem value="fourball">{trs("Fourball")}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button
                   variant="ghost" size="icon" className="h-6 w-6 shrink-0"
                   onClick={() => removeSession(idx, si)}
                   disabled={day.sessions.length <= 1}
-                  aria-label="Eliminar sesión"
+                  aria-label={trs("Eliminar sesión")}
                 >
                   <X className="h-3 w-3" />
                 </Button>
@@ -164,7 +165,7 @@ export const CupDaysEditor: React.FC<Props> = ({ days, onChange, lockedSlots }) 
               variant="ghost" size="sm" className="h-6 text-[11px] gap-1 text-muted-foreground"
               onClick={() => addSession(idx)}
             >
-              <Plus className="h-3 w-3" /> Agregar sesión
+              <Plus className="h-3 w-3" />{' '}{trs("Agregar sesión")}
             </Button>
           </div>
         </div>

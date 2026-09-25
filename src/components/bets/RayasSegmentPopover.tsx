@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 /**
  * RayasSegmentPopover - Shows detailed breakdown of rayas for a segment (Front/Back)
  * Top row: Skins (hole-by-hole grid)
@@ -206,7 +207,7 @@ export const RayasSegmentPopover: React.FC<RayasSegmentPopoverProps> = ({
           {/* ── SKINS ── */}
           {skinsEnabled && (
             <div className="space-y-1">
-              <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Skins</div>
+              <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{trs("Skins")}</div>
               <div className="overflow-x-auto">
                 <div className="flex gap-0.5 min-w-max">
                   {skinsHoles.map(hole => (
@@ -232,7 +233,7 @@ export const RayasSegmentPopover: React.FC<RayasSegmentPopoverProps> = ({
                 <span className="text-[10px] font-bold text-green-700 dark:text-green-400">
                   {skinsHoles.filter(h => h.winner === 'A').reduce((s, h) => s + h.skinsWon, 0)}
                 </span>
-                <span className="text-[9px] text-muted-foreground">vs</span>
+                <span className="text-[9px] text-muted-foreground">{trs("vs")}</span>
                 <span className="text-[10px] font-bold text-destructive">
                   {skinsHoles.filter(h => h.winner === 'B').reduce((s, h) => s + h.skinsWon, 0)}
                 </span>
@@ -244,7 +245,7 @@ export const RayasSegmentPopover: React.FC<RayasSegmentPopoverProps> = ({
           <div className="grid grid-cols-3 gap-2 border-t border-border/30 pt-2">
             {/* UNIDADES column */}
             <div className="space-y-1">
-              <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide text-center">Unidades</div>
+              <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide text-center">{trs("Unidades")}</div>
               {unitsEnabled && unitEvents.length > 0 ? (
                 <div className="flex flex-col gap-0.5">
                   {unitEvents.map((evt, i) => {
@@ -273,7 +274,7 @@ export const RayasSegmentPopover: React.FC<RayasSegmentPopoverProps> = ({
 
             {/* OYES column */}
             <div className="space-y-1">
-              <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide text-center">Oyes</div>
+              <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide text-center">{trs("Oyes")}</div>
               {oyesEnabled && oyesData.length > 0 ? (
                 <div className="flex flex-col gap-0.5">
                   {oyesData.map((d, i) => (
@@ -300,10 +301,10 @@ export const RayasSegmentPopover: React.FC<RayasSegmentPopoverProps> = ({
 
             {/* MEDAL column */}
             <div className="space-y-1">
-              <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide text-center">Medal</div>
+              <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide text-center">{trs("Medal")}</div>
               {medalEnabled ? (
                 <div className="flex flex-col items-center gap-0.5">
-                  <span className="text-[8px] text-muted-foreground">Neto</span>
+                  <span className="text-[8px] text-muted-foreground">{trs("Neto")}</span>
                   <div className={cn(
                     'text-[10px] font-bold rounded px-1.5 py-0.5',
                     medalData.playerNet < medalData.rivalNet

@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { disambiguateInitials } from '@/lib/playerInput';
@@ -430,7 +431,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
   if (players.length < 4) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        <p className="text-sm">Se necesitan al menos 4 jugadores para apuestas de parejas.</p>
+        <p className="text-sm">{trs("Se necesitan al menos 4 jugadores para apuestas de parejas.")}</p>
       </div>
     );
   }
@@ -438,7 +439,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
   return (
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground mb-2">
-        Apuestas pareja vs pareja. Definen su hándicap propio en esta pantalla.
+        {trs("Apuestas pareja vs pareja. Definen su hándicap propio en esta pantalla.")}
       </p>
 
       {/* Parejas Participation Matrix */}
@@ -453,7 +454,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       {config.teamPressures.enabled && (
       <BetSection
         id="teamPressures"
-         title="Foursomes"
+         title={trs("Foursomes")}
          description="Match play por equipos, apertura automática"
         enabled={config.teamPressures.enabled}
         onToggle={(enabled) => {
@@ -495,10 +496,10 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         )}
         {config.teamPressures.bets.length === 0 ? (
           <div className="text-center py-4">
-            <p className="text-xs text-muted-foreground mb-2">No hay foursomes configurados</p>
+            <p className="text-xs text-muted-foreground mb-2">{trs("No hay foursomes configurados")}</p>
             <Button variant="outline" size="sm" onClick={addTeamPressure} className="gap-1">
               <Plus className="h-3.5 w-3.5" />
-              Agregar Foursome
+              {trs("Agregar Foursome")}
             </Button>
           </div>
         ) : (
@@ -529,7 +530,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
               className="w-full mt-3 gap-1"
             >
               <Plus className="h-3.5 w-3.5" />
-              Agregar otro Foursome
+              {trs("Agregar otro Foursome")}
             </Button>
           </>
         )}
@@ -540,7 +541,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       {config.carritos.enabled && (
       <BetSection
         id="carritos"
-        title="Carritos (Medal Parejas)"
+        title={trs("Carritos (Medal Parejas)")}
         description="Medal por equipos de 2"
         enabled={config.carritos.enabled}
         onToggle={(enabled) => {
@@ -583,10 +584,10 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         )}
         {!hasPrimaryCarritos && (config.carritosTeams || []).length === 0 ? (
           <div className="text-center py-4">
-            <p className="text-xs text-muted-foreground mb-2">No hay apuestas de carritos configuradas</p>
+            <p className="text-xs text-muted-foreground mb-2">{trs("No hay apuestas de carritos configuradas")}</p>
             <Button variant="outline" size="sm" onClick={addCarritosPrimary} className="gap-1">
               <Plus className="h-3.5 w-3.5" />
-              Agregar apuesta de Carritos
+              {trs("Agregar apuesta de Carritos")}
             </Button>
           </div>
         ) : (
@@ -652,7 +653,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
               className="w-full mt-3 gap-1"
             >
               <Plus className="h-3.5 w-3.5" />
-              Agregar otra apuesta de Carritos
+              {trs("Agregar otra apuesta de Carritos")}
             </Button>
           </>
         )}
@@ -662,7 +663,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       {/* Sixes — only if enabled */}
       {(config.sixesEnabled ?? ((config.sixesBets?.length ?? 0) > 0)) && (
       <BetSection
-        id="sixes" title="Sixes"
+        id="sixes" title={trs("Sixes")}
         description="3 sets de 6 hoyos con cambio de parejas"
         enabled={config.sixesEnabled ?? ((config.sixesBets?.length ?? 0) > 0)}
         onToggle={(enabled) => {
@@ -688,7 +689,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       >
         {(config.sixesBets?.length ?? 0) === 0 ? (
           <div className="text-center py-4">
-            <p className="text-xs text-muted-foreground mb-2">No hay apuestas de Sixes configuradas</p>
+            <p className="text-xs text-muted-foreground mb-2">{trs("No hay apuestas de Sixes configuradas")}</p>
             <Button variant="outline" size="sm" onClick={() => {
               const nueva: SixesBetInstance = {
                 id: `sixes-${Date.now()}`, scoringMode: 'lowBall', cobro: 'per_hole',
@@ -696,7 +697,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
               };
               onUpdateConfig({ ...config, sixesBets: [nueva] });
             }} className="gap-1">
-              <Plus className="h-3.5 w-3.5" /> Agregar apuesta de Sixes
+              <Plus className="h-3.5 w-3.5" />{' '}{trs("Agregar apuesta de Sixes")}
             </Button>
           </div>
         ) : (
@@ -720,7 +721,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
               };
               onUpdateConfig({ ...config, sixesBets: [...(config.sixesBets ?? []), nueva] });
             }}>
-              <Plus className="h-3.5 w-3.5" /> Agregar otra apuesta de Sixes
+              <Plus className="h-3.5 w-3.5" />{' '}{trs("Agregar otra apuesta de Sixes")}
             </Button>
           </>
         )}
@@ -730,7 +731,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       {/* Vegas — only if enabled */}
       {(config.vegasEnabled ?? ((config.vegasBets?.length ?? 0) > 0)) && (
       <BetSection
-        id="vegas" title="Las Vegas"
+        id="vegas" title={trs("Las Vegas")}
         description="Combina scores en números de 2 dígitos"
         enabled={config.vegasEnabled ?? ((config.vegasBets?.length ?? 0) > 0)}
         onToggle={(enabled) => {
@@ -757,7 +758,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       >
         {(config.vegasBets?.length ?? 0) === 0 ? (
           <div className="text-center py-4">
-            <p className="text-xs text-muted-foreground mb-2">No hay apuestas de Vegas configuradas</p>
+            <p className="text-xs text-muted-foreground mb-2">{trs("No hay apuestas de Vegas configuradas")}</p>
             <Button variant="outline" size="sm" onClick={() => {
               const nueva: VegasBetInstance = {
                 id: `vegas-${Date.now()}`, valuePerPoint: 10, useHandicap: false,
@@ -766,7 +767,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
               };
               onUpdateConfig({ ...config, vegasBets: [nueva] });
             }} className="gap-1">
-              <Plus className="h-3.5 w-3.5" /> Agregar apuesta de Vegas
+              <Plus className="h-3.5 w-3.5" />{' '}{trs("Agregar apuesta de Vegas")}
             </Button>
           </div>
         ) : (
@@ -791,7 +792,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
               };
               onUpdateConfig({ ...config, vegasBets: [...(config.vegasBets ?? []), nueva] });
             }}>
-              <Plus className="h-3.5 w-3.5" /> Agregar otra apuesta de Vegas
+              <Plus className="h-3.5 w-3.5" />{' '}{trs("Agregar otra apuesta de Vegas")}
             </Button>
           </>
         )}
@@ -820,14 +821,14 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
             onChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, amountPerHole: v } as any)} />
 
           <div className="flex items-center justify-between mt-2">
-            <Label className="text-[10px] font-semibold text-primary">Modalidad</Label>
+            <Label className="text-[10px] font-semibold text-primary">{trs("Modalidad")}</Label>
             <Select value={config.wolfSetup?.scoringMode ?? 'lowBall'}
               onValueChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, scoringMode: v as WolfScoringMode } as any)}>
               <SelectTrigger className="h-7 w-36 text-[11px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="lowBall">Bola Baja</SelectItem>
-                <SelectItem value="lowHighBall">Bola Baja + Alta</SelectItem>
-                <SelectItem value="stroke">Score Neto</SelectItem>
+                <SelectItem value="lowBall">{trs("Bola Baja")}</SelectItem>
+                <SelectItem value="lowHighBall">{trs("Bola Baja + Alta")}</SelectItem>
+                <SelectItem value="stroke">{trs("Score Neto")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -837,7 +838,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
               onCheckedChange={(v) => {
                 onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, useHandicap: v } as any);
               }} />
-            <Label className="text-xs">Jugar con hándicap</Label>
+            <Label className="text-xs">{trs("Jugar con hándicap")}</Label>
           </div>
 
           {/* Editable handicaps when useHandicap is on */}
@@ -855,7 +856,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
             return (
               <div className="mt-2 space-y-1">
                 <div className="flex items-center justify-between">
-                  <Label className="text-[10px] font-semibold text-primary">Hándicaps de Loba</Label>
+                  <Label className="text-[10px] font-semibold text-primary">{trs("Hándicaps de Loba")}</Label>
                   <Select
                     value={(() => {
                       const hcps = activeIds.map(pid => getHcp(pid));
@@ -878,8 +879,8 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
                   >
                     <SelectTrigger className="h-7 w-36 text-[11px]"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="individual">Full Hándicap</SelectItem>
-                      <SelectItem value="baseCero">Base Cero</SelectItem>
+                      <SelectItem value="individual">{trs("Full Hándicap")}</SelectItem>
+                      <SelectItem value="baseCero">{trs("Base Cero")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -918,14 +919,14 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           })()}
 
           <div className="flex items-center justify-between mt-2">
-            <Label className="text-[10px] font-semibold text-primary">Timing de decisión</Label>
+            <Label className="text-[10px] font-semibold text-primary">{trs("Timing de decisión")}</Label>
             <Select value={config.wolfSetup?.timing ?? 'B'}
               onValueChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, timing: v as WolfTiming } as any)}>
               <SelectTrigger className="h-7 w-44 text-[11px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="A">Antes del driver</SelectItem>
-                <SelectItem value="B">Al pegar el driver</SelectItem>
-                <SelectItem value="C">Antes del 2° golpe</SelectItem>
+                <SelectItem value="A">{trs("Antes del driver")}</SelectItem>
+                <SelectItem value="B">{trs("Al pegar el driver")}</SelectItem>
+                <SelectItem value="C">{trs("Antes del 2° golpe")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -933,25 +934,25 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           <div className="flex items-center gap-2 mt-2">
             <Switch checked={config.wolfSetup?.carryover ?? true}
               onCheckedChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, carryover: v } as any)} />
-            <Label className="text-xs">Carryover en empates</Label>
+            <Label className="text-xs">{trs("Carryover en empates")}</Label>
           </div>
 
           <div className="flex items-center gap-2 mt-2">
             <Switch checked={config.wolfSetup?.hole18Redemption ?? false}
               onCheckedChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, hole18Redemption: v } as any)} />
-            <Label className="text-xs">Recuperación Hoyo 18 (máx. perdedor, solo, ×3)</Label>
+            <Label className="text-xs">{trs("Recuperación Hoyo 18 (máx. perdedor, solo, ×3)")}</Label>
           </div>
 
           {/* Shuffle order button */}
           <div className="mt-3 space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="text-[10px] font-semibold text-primary">Orden de rotación</Label>
+              <Label className="text-[10px] font-semibold text-primary">{trs("Orden de rotación")}</Label>
               <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1" onClick={() => {
                 const activeIds = getParejasActivePlayerIds(config, 'wolf', players);
                 const shuffled = [...activeIds].sort(() => Math.random() - 0.5);
                 onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, playerOrder: shuffled } as any);
               }}>
-                🎲 Sortear orden
+                {trs("🎲 Sortear orden")}
               </Button>
             </div>
             {(() => {
@@ -1014,7 +1015,7 @@ const PlayerWithHcp: React.FC<PlayerWithHcpProps> = ({
     <div className={cn('flex items-center gap-1', row)}>
       <Select value={playerId} onValueChange={onChangePlayer}>
         <SelectTrigger className="h-7 text-[11px] flex-1 min-w-0 px-1.5">
-          <SelectValue placeholder="Jugador" />
+          <SelectValue placeholder={trs("Jugador")} />
         </SelectTrigger>
         <SelectContent>
           {playerOptions.map((opt) => (
@@ -1131,8 +1132,8 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
               type="button"
               onClick={() => applyComboAt(baseIdx - 1)}
               className="flex items-center text-[11px] text-primary border border-primary/30 rounded-md px-1.5 py-1 hover:bg-primary/5 transition-colors"
-              title="Combinación anterior"
-              aria-label="Combinación anterior"
+              title={trs("Combinación anterior")}
+              aria-label={trs("Combinación anterior")}
             >
               <ChevronLeft className="h-3 w-3" />
             </button>
@@ -1143,7 +1144,7 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
               title={`Ciclar combinaciones (${combos.length} opciones)`}
             >
               <Shuffle className="h-3 w-3" />
-              Shuffle
+              {trs("Shuffle")}
               <span className="text-[9px] text-muted-foreground ml-0.5">
                 {baseIdx >= 0 ? `${baseIdx + 1}/${combos.length}` : `×${combos.length}`}
               </span>
@@ -1167,8 +1168,8 @@ const TeamColumns: React.FC<TeamColumnsProps> = ({
 
       {/* Header row */}
       <div className="grid grid-cols-2 gap-2">
-        <Label className="text-[10px] text-muted-foreground font-medium leading-none">Equipo A</Label>
-        <Label className="text-[10px] text-muted-foreground font-medium text-right leading-none">Equipo B</Label>
+        <Label className="text-[10px] text-muted-foreground font-medium leading-none">{trs("Equipo A")}</Label>
+        <Label className="text-[10px] text-muted-foreground font-medium text-right leading-none">{trs("Equipo B")}</Label>
       </div>
       {/* Player row 1 */}
       <div className="grid grid-cols-2 gap-2">
@@ -1270,13 +1271,13 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
               <AlertDialogHeader>
                 <AlertDialogTitle>¿Eliminar Foursome {index + 1}?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Esta acción eliminará permanentemente esta apuesta. No se puede deshacer.
+                  {trs("Esta acción eliminará permanentemente esta apuesta. No se puede deshacer.")}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogCancel>{trs("Cancelar")}</AlertDialogCancel>
                 <AlertDialogAction onClick={onRemove} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                  Eliminar
+                  {trs("Eliminar")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -1326,7 +1327,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
 
       {/* Scoring type */}
       <div className="flex items-center justify-between">
-        <Label className="text-[10px] font-semibold text-primary">Modalidad Juego</Label>
+        <Label className="text-[10px] font-semibold text-primary">{trs("Modalidad Juego")}</Label>
         <Select
           value={bet.scoringType}
           onValueChange={(v: 'lowBall' | 'highBall' | 'combined' | 'matchOnly') => onUpdate({ scoringType: v })}
@@ -1335,10 +1336,10 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="lowBall">Bola Baja</SelectItem>
-            <SelectItem value="highBall">Bola Alta</SelectItem>
-            <SelectItem value="combined">Bola Baja + Bola Alta</SelectItem>
-            <SelectItem value="matchOnly">Match Play</SelectItem>
+            <SelectItem value="lowBall">{trs("Bola Baja")}</SelectItem>
+            <SelectItem value="highBall">{trs("Bola Alta")}</SelectItem>
+            <SelectItem value="combined">{trs("Bola Baja + Bola Alta")}</SelectItem>
+            <SelectItem value="matchOnly">{trs("Match Play")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -1346,32 +1347,32 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
       {/* Amounts - conditional on continua */}
       {bet.scoringType === 'matchOnly' && (
         <div className="flex items-center justify-between pt-1">
-          <Label className="text-xs text-muted-foreground">Match Play por 18 hoyos</Label>
+          <Label className="text-xs text-muted-foreground">{trs("Match Play por 18 hoyos")}</Label>
           <Switch checked={bet.continua ?? false} onCheckedChange={(v) => onUpdate({ continua: v })} />
         </div>
       )}
       {bet.scoringType === 'matchOnly' && bet.continua ? (
         <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground text-center block">Match 18 (único)</Label>
+          <Label className="text-[10px] text-muted-foreground text-center block">{trs("Match 18 (único)")}</Label>
           <AmountInput label="" value={bet.totalAmount} onChange={(v) => onUpdate({ totalAmount: v })} />
         </div>
       ) : isNineHole ? (
         <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground text-center block">Front 9</Label>
+          <Label className="text-[10px] text-muted-foreground text-center block">{trs("Front 9")}</Label>
           <AmountInput label="" value={bet.frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-2">
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground text-center block">Front 9</Label>
+            <Label className="text-[10px] text-muted-foreground text-center block">{trs("Front 9")}</Label>
             <AmountInput label="" value={bet.frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
           </div>
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground text-center block">Back 9</Label>
+            <Label className="text-[10px] text-muted-foreground text-center block">{trs("Back 9")}</Label>
             <AmountInput label="" value={bet.backAmount} onChange={(v) => onUpdate({ backAmount: v })} />
           </div>
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground text-center block">Total 18</Label>
+            <Label className="text-[10px] text-muted-foreground text-center block">{trs("Total 18")}</Label>
             <AmountInput label="" value={bet.totalAmount} onChange={(v) => onUpdate({ totalAmount: v })} />
           </div>
         </div>
@@ -1379,12 +1380,12 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
 
       {/* Modalidades Adicionales */}
       <div className="space-y-2 pt-2 border-t border-border/30">
-        <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Modalidades Adicionales</Label>
+        <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{trs("Modalidades Adicionales")}</Label>
         
         {/* Units Toggle & Config */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label className="text-xs">Unidades</Label>
+            <Label className="text-xs">{trs("Unidades")}</Label>
             <Switch
               checked={bet.unitsConfig?.enabled ?? false}
               onCheckedChange={(enabled) => onUpdate({
@@ -1398,13 +1399,13 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
           {bet.unitsConfig?.enabled && (
             <div className="space-y-2 pl-2 border-l-2 border-primary/20">
               <div className="flex items-center justify-between">
-                <Label className="text-[10px] text-muted-foreground">Valor por Unidad</Label>
+                <Label className="text-[10px] text-muted-foreground">{trs("Valor por Unidad")}</Label>
                 <AmountInput label="" value={bet.unitsConfig.valuePerUnit} onChange={(v) => onUpdate({
                   unitsConfig: { ...bet.unitsConfig!, valuePerUnit: v },
                 })} />
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] text-muted-foreground">Qué cuenta como unidad</Label>
+                <Label className="text-[10px] text-muted-foreground">{trs("Qué cuenta como unidad")}</Label>
               <div className="grid grid-cols-2 gap-1">
                   {(['birdie', 'sandyPar', 'eagle', 'holeOut', 'albatross', 'aquaPar'] as (keyof MarkerState)[]).map(marker => {
                     const info = markerInfo[marker];
@@ -1439,11 +1440,11 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
                     })}
                     className="h-3.5 w-3.5"
                   />
-                  <span>⭐ Incluir Unidad genérica (incremental)</span>
+                  <span>{trs("⭐ Incluir Unidad genérica (incremental)")}</span>
                 </label>
                 {bet.unitsConfig?.includeGenericUnit && (
                   <div className="flex items-center justify-between pl-5">
-                    <Label className="text-[10px] text-muted-foreground">Valor por Unidad genérica</Label>
+                    <Label className="text-[10px] text-muted-foreground">{trs("Valor por Unidad genérica")}</Label>
                     <AmountInput
                       label=""
                       value={bet.unitsConfig?.valuePerGenericUnit ?? bet.unitsConfig!.valuePerUnit}
@@ -1458,7 +1459,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
 
               {/* Ventaja de Unidades (foursome) */}
               <div className="space-y-1.5 pt-2 border-t border-border/30">
-                <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Ventaja de Unidades</Label>
+                <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">{trs("Ventaja de Unidades")}</Label>
                 <div className="flex items-center gap-2">
                   <Select
                     value={bet.unitsConfig?.unitsAdvantageTeam ?? 'none'}
@@ -1474,9 +1475,9 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">— Sin ventaja —</SelectItem>
-                      <SelectItem value="a">Equipo A da ventaja</SelectItem>
-                      <SelectItem value="b">Equipo B da ventaja</SelectItem>
+                      <SelectItem value="none">{trs("— Sin ventaja —")}</SelectItem>
+                      <SelectItem value="a">{trs("Equipo A da ventaja")}</SelectItem>
+                      <SelectItem value="b">{trs("Equipo B da ventaja")}</SelectItem>
                     </SelectContent>
                   </Select>
                   {(bet.unitsConfig?.unitsAdvantageTeam === 'a' || bet.unitsConfig?.unitsAdvantageTeam === 'b') && (
@@ -1529,7 +1530,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
         {/* Oyeses Toggle & Config */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label className="text-xs">Oyeses</Label>
+            <Label className="text-xs">{trs("Oyeses")}</Label>
             <Switch
               checked={bet.oyesesConfig?.enabled ?? false}
               onCheckedChange={(enabled) => onUpdate({
@@ -1543,13 +1544,13 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
           {bet.oyesesConfig?.enabled && (
             <div className="space-y-2 pl-2 border-l-2 border-primary/20">
               <div className="flex items-center justify-between">
-                <Label className="text-[10px] text-muted-foreground">Valor por Oyes</Label>
+                <Label className="text-[10px] text-muted-foreground">{trs("Valor por Oyes")}</Label>
                 <AmountInput label="" value={bet.oyesesConfig.valuePerOyes} onChange={(v) => onUpdate({
                   oyesesConfig: { ...bet.oyesesConfig!, valuePerOyes: v },
                 })} />
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] text-muted-foreground">Modalidad</Label>
+                <Label className="text-[10px] text-muted-foreground">{trs("Modalidad")}</Label>
                 <RadioGroup
                   value={bet.oyesesConfig.modality}
                   onValueChange={(v) => onUpdate({
@@ -1559,11 +1560,11 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
                 >
                   <label className="flex items-center gap-1.5 text-[11px] cursor-pointer">
                     <RadioGroupItem value="acumulados" className="h-3.5 w-3.5" />
-                    Acumulado
+                    {trs("Acumulado")}
                   </label>
                   <label className="flex items-center gap-1.5 text-[11px] cursor-pointer">
                     <RadioGroupItem value="sangron" className="h-3.5 w-3.5" />
-                    Sangrón
+                    {trs("Sangrón")}
                   </label>
                 </RadioGroup>
               </div>
@@ -1574,7 +1575,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
         {/* Manchas Toggle & Config */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label className="text-xs">⬛ Manchas</Label>
+            <Label className="text-xs">{trs("⬛ Manchas")}</Label>
             <Switch
               checked={bet.manchasConfig?.enabled ?? false}
               onCheckedChange={(enabled) => onUpdate({
@@ -1588,13 +1589,13 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
           {bet.manchasConfig?.enabled && (
             <div className="space-y-2 pl-2 border-l-2 border-primary/20">
               <div className="flex items-center justify-between">
-                <Label className="text-[10px] text-muted-foreground">Valor por Mancha</Label>
+                <Label className="text-[10px] text-muted-foreground">{trs("Valor por Mancha")}</Label>
                 <AmountInput label="" value={bet.manchasConfig.valuePerMancha} onChange={(v) => onUpdate({
                   manchasConfig: { ...bet.manchasConfig!, valuePerMancha: v },
                 })} />
               </div>
               <p className="text-[10px] text-muted-foreground">
-                Cuentan las manchas de siempre: marcadores manuales (Ladies, Retruje, Trampa, Doble Agua, Doble OB, Par3 GIR+3, Moreliana, Swing Blanco), doble dígito y 4 putts. El equipo con más manchas paga la diferencia.
+                {trs("Cuentan las manchas de siempre: marcadores manuales (Ladies, Retruje, Trampa, Doble Agua, Doble OB, Par3 GIR+3, Moreliana, Swing Blanco), doble dígito y 4 putts. El equipo con más manchas paga la diferencia.")}
               </p>
 
               {/* Generic Mancha (incremental ⬛) */}
@@ -1607,11 +1608,11 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
                     })}
                     className="h-3.5 w-3.5"
                   />
-                  <span>⬛ Incluir Mancha genérica (incremental)</span>
+                  <span>{trs("⬛ Incluir Mancha genérica (incremental)")}</span>
                 </label>
                 {bet.manchasConfig?.includeGenericMancha && (
                   <div className="flex items-center justify-between pl-5">
-                    <Label className="text-[10px] text-muted-foreground">Valor por Mancha genérica</Label>
+                    <Label className="text-[10px] text-muted-foreground">{trs("Valor por Mancha genérica")}</Label>
                     <AmountInput
                       label=""
                       value={bet.manchasConfig?.valuePerGenericMancha ?? bet.manchasConfig!.valuePerMancha}
@@ -1704,13 +1705,13 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
                 <AlertDialogHeader>
                   <AlertDialogTitle>¿Eliminar {label}?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Esta acción eliminará permanentemente esta apuesta de carritos. No se puede deshacer.
+                    {trs("Esta acción eliminará permanentemente esta apuesta de carritos. No se puede deshacer.")}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogCancel>{trs("Cancelar")}</AlertDialogCancel>
                   <AlertDialogAction onClick={onRemove} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                    Eliminar
+                    {trs("Eliminar")}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -1761,7 +1762,7 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
 
       {/* Scoring Type - after players, consistent with Presiones */}
       <div className="flex items-center justify-between">
-        <Label className="text-[10px] font-semibold text-primary">Modalidad Juego</Label>
+        <Label className="text-[10px] font-semibold text-primary">{trs("Modalidad Juego")}</Label>
         <Select
           value={scoringType}
           onValueChange={(v: 'lowBall' | 'highBall' | 'combined' | 'all') => onUpdate({ scoringType: v })}
@@ -1770,10 +1771,10 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="lowBall">Low Ball</SelectItem>
-            <SelectItem value="highBall">High Ball</SelectItem>
-            <SelectItem value="combined">Bola Baja + Bola Alta</SelectItem>
-            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="lowBall">{trs("Low Ball")}</SelectItem>
+            <SelectItem value="highBall">{trs("High Ball")}</SelectItem>
+            <SelectItem value="combined">{trs("Bola Baja + Bola Alta")}</SelectItem>
+            <SelectItem value="all">{trs("Todos")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -1781,21 +1782,21 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
       {/* Amounts - 3 columns */}
       {isNineHole ? (
         <div className="space-y-1">
-          <Label className="text-[10px] text-muted-foreground text-center block">Front 9</Label>
+          <Label className="text-[10px] text-muted-foreground text-center block">{trs("Front 9")}</Label>
           <AmountInput label="" value={frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-2">
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground text-center block">Front 9</Label>
+            <Label className="text-[10px] text-muted-foreground text-center block">{trs("Front 9")}</Label>
             <AmountInput label="" value={frontAmount} onChange={(v) => onUpdate({ frontAmount: v })} />
           </div>
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground text-center block">Back 9</Label>
+            <Label className="text-[10px] text-muted-foreground text-center block">{trs("Back 9")}</Label>
             <AmountInput label="" value={backAmount} onChange={(v) => onUpdate({ backAmount: v })} />
           </div>
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground text-center block">Total 18</Label>
+            <Label className="text-[10px] text-muted-foreground text-center block">{trs("Total 18")}</Label>
             <AmountInput label="" value={totalAmount} onChange={(v) => onUpdate({ totalAmount: v })} />
           </div>
         </div>
@@ -1975,22 +1976,22 @@ const HandicapModeSelector: React.FC<{
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <Label className="text-[10px] font-semibold text-primary">Modalidad HCP</Label>
+        <Label className="text-[10px] font-semibold text-primary">{trs("Modalidad HCP")}</Label>
         <Select value={mode} onValueChange={(v) => applyMode(v as TeamHandicapMode)}>
           <SelectTrigger className="h-7 w-44 text-[11px]">
-            <SelectValue placeholder="Seleccionar" />
+            <SelectValue placeholder={trs("Seleccionar")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="individual">Full Hándicap</SelectItem>
-            <SelectItem value="baseCero">Base Cero</SelectItem>
-            <SelectItem value="diferencialEquipo">Diferencial Equipo</SelectItem>
-            <SelectItem value="slidingEquipo">Sliding Equipo</SelectItem>
+            <SelectItem value="individual">{trs("Full Hándicap")}</SelectItem>
+            <SelectItem value="baseCero">{trs("Base Cero")}</SelectItem>
+            <SelectItem value="diferencialEquipo">{trs("Diferencial Equipo")}</SelectItem>
+            <SelectItem value="slidingEquipo">{trs("Sliding Equipo")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
       {mode === 'slidingEquipo' && slidingHasHalf && (
         <div className="flex items-center justify-between bg-muted/40 rounded-md px-2 py-1.5">
-          <Label className="text-[10px] text-muted-foreground">Jugar medio punto</Label>
+          <Label className="text-[10px] text-muted-foreground">{trs("Jugar medio punto")}</Label>
           <Switch
             checked={currentHalfMode === 'halfPoint'}
             onCheckedChange={toggleHalfPoint}
@@ -2029,42 +2030,42 @@ const SixesBetCard: React.FC<{
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar Sixes {index + 1}?</AlertDialogTitle>
-            <AlertDialogDescription>Esta acción eliminará permanentemente esta apuesta. No se puede deshacer.</AlertDialogDescription>
+            <AlertDialogDescription>{trs("Esta acción eliminará permanentemente esta apuesta. No se puede deshacer.")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={onRemove} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Eliminar</AlertDialogAction>
+            <AlertDialogCancel>{trs("Cancelar")}</AlertDialogCancel>
+            <AlertDialogAction onClick={onRemove} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{trs("Eliminar")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
 
     <div className="flex items-center justify-between">
-      <Label className="text-[10px] font-semibold text-primary">Modalidad</Label>
+      <Label className="text-[10px] font-semibold text-primary">{trs("Modalidad")}</Label>
       <Select value={bet.scoringMode} onValueChange={(v) => onUpdate({ scoringMode: v as SixesScoringMode })}>
         <SelectTrigger className="h-7 w-36 text-[11px]"><SelectValue /></SelectTrigger>
         <SelectContent>
-          <SelectItem value="lowBall">Bola Baja</SelectItem>
-          <SelectItem value="lowHighBall">Bola Baja + Alta</SelectItem>
-          <SelectItem value="stroke">Score Neto</SelectItem>
+          <SelectItem value="lowBall">{trs("Bola Baja")}</SelectItem>
+          <SelectItem value="lowHighBall">{trs("Bola Baja + Alta")}</SelectItem>
+          <SelectItem value="stroke">{trs("Score Neto")}</SelectItem>
         </SelectContent>
       </Select>
     </div>
 
     <div className="flex items-center justify-between">
-      <Label className="text-[10px] font-semibold text-primary">Cobro</Label>
+      <Label className="text-[10px] font-semibold text-primary">{trs("Cobro")}</Label>
       <Select value={bet.cobro} onValueChange={(v) => onUpdate({ cobro: v as SixesCobro })}>
         <SelectTrigger className="h-7 w-36 text-[11px]"><SelectValue /></SelectTrigger>
         <SelectContent>
-          <SelectItem value="per_hole">Por hoyo ganado</SelectItem>
-          <SelectItem value="per_set">Por set ganado</SelectItem>
+          <SelectItem value="per_hole">{trs("Por hoyo ganado")}</SelectItem>
+          <SelectItem value="per_set">{trs("Por set ganado")}</SelectItem>
         </SelectContent>
       </Select>
     </div>
 
     <div className="flex items-center gap-2">
       <Switch checked={bet.useHandicap} onCheckedChange={(v) => onUpdate({ useHandicap: v })} />
-      <Label className="text-xs">Jugar con hándicap</Label>
+      <Label className="text-xs">{trs("Jugar con hándicap")}</Label>
     </div>
 
     {/* Handicap Mode Selector — only when useHandicap is on and we have 4 players */}
@@ -2092,7 +2093,7 @@ const SixesBetCard: React.FC<{
         checked={bet.usePerSetAmounts ?? false}
         onCheckedChange={(v) => onUpdate({ usePerSetAmounts: v })}
       />
-      <Label className="text-xs">Monto diferente por set</Label>
+      <Label className="text-xs">{trs("Monto diferente por set")}</Label>
     </div>
 
     {bet.usePerSetAmounts && (
@@ -2125,7 +2126,7 @@ const SixesBetCard: React.FC<{
           <>
             {/* Set 1 - always editable */}
             <div className="space-y-2 p-2 rounded-lg bg-muted/30">
-              <Label className="text-[10px] font-semibold text-primary">Set 1 · H1–6</Label>
+              <Label className="text-[10px] font-semibold text-primary">{trs("Set 1 · H1–6")}</Label>
               <TeamColumns teamA={set1?.team1 ?? ['', '']} teamB={set1?.team2 ?? ['', '']}
                 allPlayerOptions={playerOptions.length === 4 ? playerOptions : undefined}
                 onShuffleTeams={(a, b) => {
@@ -2174,7 +2175,7 @@ const SixesBetCard: React.FC<{
             {/* All 3 sets - read-only preview when auto-generated */}
             {set1Complete && (
               <div className="bg-muted/40 rounded-lg p-2 space-y-1">
-                <Label className="text-[9px] font-semibold text-muted-foreground">Rotación automática</Label>
+                <Label className="text-[9px] font-semibold text-muted-foreground">{trs("Rotación automática")}</Label>
                 <div className="grid grid-cols-3 gap-1 text-[9px] text-center">
                   {([1, 2, 3] as const).map(setNum => {
                     const assignment = (bet.sets ?? []).find(s => s.setNumber === setNum);
@@ -2183,7 +2184,7 @@ const SixesBetCard: React.FC<{
                       <div key={setNum} className="bg-background rounded p-1.5">
                         <div className="font-semibold text-primary">{ranges[setNum]}</div>
                         <div>{gn(assignment?.team1[0] ?? '')}+{gn(assignment?.team1[1] ?? '')}</div>
-                        <div className="text-muted-foreground">vs</div>
+                        <div className="text-muted-foreground">{trs("vs")}</div>
                         <div>{gn(assignment?.team2[0] ?? '')}+{gn(assignment?.team2[1] ?? '')}</div>
                       </div>
                     );
@@ -2221,11 +2222,11 @@ const VegasBetCard: React.FC<{
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar Vegas {index + 1}?</AlertDialogTitle>
-            <AlertDialogDescription>Esta acción eliminará permanentemente esta apuesta. No se puede deshacer.</AlertDialogDescription>
+            <AlertDialogDescription>{trs("Esta acción eliminará permanentemente esta apuesta. No se puede deshacer.")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={onRemove} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Eliminar</AlertDialogAction>
+            <AlertDialogCancel>{trs("Cancelar")}</AlertDialogCancel>
+            <AlertDialogAction onClick={onRemove} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{trs("Eliminar")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -2233,12 +2234,12 @@ const VegasBetCard: React.FC<{
 
     {/* Modalidad FIRST */}
     <div className="flex items-center justify-between">
-      <Label className="text-[10px] font-semibold text-primary">Modalidad</Label>
+      <Label className="text-[10px] font-semibold text-primary">{trs("Modalidad")}</Label>
       <Select value={bet.variant} onValueChange={(v) => onUpdate({ variant: v as VegasVariant })}>
         <SelectTrigger className="h-7 w-44 text-[11px]"><SelectValue /></SelectTrigger>
         <SelectContent>
-          <SelectItem value="fixed">Fija — una pareja toda la ronda</SelectItem>
-          <SelectItem value="rotating">Rotatoria — 3 sets</SelectItem>
+          <SelectItem value="fixed">{trs("Fija — una pareja toda la ronda")}</SelectItem>
+          <SelectItem value="rotating">{trs("Rotatoria — 3 sets")}</SelectItem>
         </SelectContent>
       </Select>
     </div>
@@ -2251,7 +2252,7 @@ const VegasBetCard: React.FC<{
         onCheckedChange={(v) => onUpdate({ useSegmentAmounts: v })}
       />
       <Label className="text-xs">
-        {bet.variant === 'fixed' ? 'Monto diferente Front/Back' : 'Monto diferente por set'}
+        {bet.variant === 'fixed' ? trs("Monto diferente Front/Back") : trs("Monto diferente por set")}
       </Label>
     </div>
 
@@ -2292,12 +2293,12 @@ const VegasBetCard: React.FC<{
 
     <div className="flex items-center gap-2">
       <Switch checked={bet.useHandicap} onCheckedChange={(v) => onUpdate({ useHandicap: v })} />
-      <Label className="text-xs">Jugar con hándicap</Label>
+      <Label className="text-xs">{trs("Jugar con hándicap")}</Label>
     </div>
 
     <div className="flex items-center gap-2">
       <Switch checked={bet.birdieMultiplier} onCheckedChange={(v) => onUpdate({ birdieMultiplier: v })} />
-      <Label className="text-xs">Multiplicador Birdie (×2)</Label>
+      <Label className="text-xs">{trs("Multiplicador Birdie (×2)")}</Label>
     </div>
 
     {/* Handicap Mode Selector — only when useHandicap is on and we have 4 players */}
@@ -2319,7 +2320,7 @@ const VegasBetCard: React.FC<{
     )}
 
     <div className="space-y-2">
-      <Label className="text-[10px] font-semibold text-primary">Jugadores</Label>
+      <Label className="text-[10px] font-semibold text-primary">{trs("Jugadores")}</Label>
       <TeamColumns
         teamA={[bet.playerAId, bet.playerBId]}
         teamB={[bet.playerCId, bet.playerDId]}
@@ -2330,7 +2331,7 @@ const VegasBetCard: React.FC<{
         onUpdateTeamB={([c, d]) => onUpdate({ playerCId: c, playerDId: d })}
         onUpdateHandicaps={(hcps) => onUpdate({ teamHandicaps: hcps })}
       />
-      <p className="text-[9px] text-muted-foreground">Equipo 1: A+B · Equipo 2: C+D</p>
+      <p className="text-[9px] text-muted-foreground">{trs("Equipo 1: A+B · Equipo 2: C+D")}</p>
     </div>
 
     {/* Auto-rotation preview for rotating variant */}
@@ -2339,24 +2340,24 @@ const VegasBetCard: React.FC<{
       const A = gn(bet.playerAId), B = gn(bet.playerBId), C = gn(bet.playerCId), D = gn(bet.playerDId);
       return (
         <div className="bg-muted/40 rounded-lg p-2 space-y-1 mt-1">
-          <Label className="text-[9px] font-semibold text-muted-foreground">Rotación automática</Label>
+          <Label className="text-[9px] font-semibold text-muted-foreground">{trs("Rotación automática")}</Label>
           <div className="grid grid-cols-3 gap-1 text-[9px] text-center">
             <div className="bg-background rounded p-1">
-              <div className="font-semibold text-primary">H1–6</div>
+              <div className="font-semibold text-primary">{trs("H1–6")}</div>
               <div>{A}+{B}</div>
-              <div className="text-muted-foreground">vs</div>
+              <div className="text-muted-foreground">{trs("vs")}</div>
               <div>{C}+{D}</div>
             </div>
             <div className="bg-background rounded p-1">
-              <div className="font-semibold text-primary">H7–12</div>
+              <div className="font-semibold text-primary">{trs("H7–12")}</div>
               <div>{A}+{C}</div>
-              <div className="text-muted-foreground">vs</div>
+              <div className="text-muted-foreground">{trs("vs")}</div>
               <div>{B}+{D}</div>
             </div>
             <div className="bg-background rounded p-1">
-              <div className="font-semibold text-primary">H13–18</div>
+              <div className="font-semibold text-primary">{trs("H13–18")}</div>
               <div>{A}+{D}</div>
-              <div className="text-muted-foreground">vs</div>
+              <div className="text-muted-foreground">{trs("vs")}</div>
               <div>{B}+{C}</div>
             </div>
           </div>

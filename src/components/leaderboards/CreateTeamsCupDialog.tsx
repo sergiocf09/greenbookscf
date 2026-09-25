@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -99,12 +100,12 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
       ]).select();
       if (teamsErr) throw teamsErr;
 
-      toast.success('Teams Cup creada');
+      toast.success(trs("Teams Cup creada"));
       queryClient.invalidateQueries({ queryKey: ['leaderboard_events'] });
       setCreatedEvent({ id: ev.id, teams: (createdTeams as any[]) || [] });
       setStep(3);
     } catch (err: any) {
-      toast.error('Error al crear: ' + err.message);
+      toast.error(trs("Error al crear: ") + err.message);
     } finally {
       setCreating(false);
     }
@@ -122,7 +123,7 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            🏆 Nueva Teams Cup
+            {trs("🏆 Nueva Teams Cup")}
             <span className="text-xs font-normal text-muted-foreground ml-auto">
               Paso {step} de 3
             </span>
@@ -132,24 +133,24 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
         {step === 1 && (
           <div className="space-y-4">
             <div>
-              <Label>Nombre de la competencia *</Label>
+              <Label>{trs("Nombre de la competencia *")}</Label>
               <Input
-                placeholder="Torneo Querétaro 2026"
+                placeholder={trs("Torneo Querétaro 2026")}
                 value={name}
                 onChange={e => setName(e.target.value)}
               />
             </div>
             <div>
-              <Label>Descripción</Label>
+              <Label>{trs("Descripción")}</Label>
               <Input
-                placeholder="Opcional"
+                placeholder={trs("Opcional")}
                 value={description}
                 onChange={e => setDescription(e.target.value)}
               />
             </div>
             <CupDaysEditor days={days} onChange={setDays} />
             <p className="text-[11px] text-muted-foreground -mt-2">
-              Los puntos de cada día/sesión se acumulan en el marcador general.
+              {trs("Los puntos de cada día/sesión se acumulan en el marcador general.")}
             </p>
 
             <Button
@@ -157,7 +158,7 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
               disabled={!name.trim()}
               onClick={() => setStep(2)}
             >
-              Siguiente →
+              {trs("Siguiente →")}
             </Button>
           </div>
         )}
@@ -167,7 +168,7 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
             <div className="grid grid-cols-2 gap-3">
               {/* Team A */}
               <div className="space-y-2">
-                <Label className="text-xs">Equipo A</Label>
+                <Label className="text-xs">{trs("Equipo A")}</Label>
                 <Input
                   value={teamAName}
                   onChange={e => setTeamAName(e.target.value)}
@@ -191,7 +192,7 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
 
               {/* Team B */}
               <div className="space-y-2">
-                <Label className="text-xs">Equipo B</Label>
+                <Label className="text-xs">{trs("Equipo B")}</Label>
                 <Input
                   value={teamBName}
                   onChange={e => setTeamBName(e.target.value)}
@@ -216,7 +217,7 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
 
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setStep(1)}>
-                ← Anterior
+                {trs("← Anterior")}
               </Button>
               <Button
                 className="flex-1"
@@ -233,17 +234,17 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
         {step === 3 && createdEvent && (
           <div className="space-y-4">
             <div className="text-center space-y-1">
-              <p className="text-sm font-medium">¡Competencia creada!</p>
+              <p className="text-sm font-medium">{trs("¡Competencia creada!")}</p>
               <p className="text-xs text-muted-foreground">
-                ¿Quieres agregar jugadores ahora? También puedes hacerlo después desde el detalle.
+                {trs("¿Quieres agregar jugadores ahora? También puedes hacerlo después desde el detalle.")}
               </p>
             </div>
             <div className="flex flex-col gap-2">
               <Button className="w-full gap-1" onClick={() => setShowAddPlayers(true)}>
-                <UserPlus className="h-4 w-4" /> Agregar Jugadores Ahora
+                <UserPlus className="h-4 w-4" />{' '}{trs("Agregar Jugadores Ahora")}
               </Button>
               <Button variant="outline" className="w-full" onClick={goToCup}>
-                Más tarde
+                {trs("Más tarde")}
               </Button>
             </div>
 

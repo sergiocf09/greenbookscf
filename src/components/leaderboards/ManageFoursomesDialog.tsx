@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -75,7 +76,7 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
         .maybeSingle();
       if (roundCheckErr) throw roundCheckErr;
       if (!roundExists) {
-        toast.error('La ronda enlazada fue eliminada. Crea una nueva.');
+        toast.error(trs("La ronda enlazada fue eliminada. Crea una nueva."));
         onRoundMissing?.();
         onClose();
         return;
@@ -135,7 +136,7 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
       setOriginalRoundPlayers(origMap);
       setAssignment(assignMap);
     } catch (err: any) {
-      toast.error('Error al cargar foursomes: ' + err.message);
+      toast.error(trs("Error al cargar foursomes: ") + err.message);
     } finally {
       setLoading(false);
     }
@@ -164,7 +165,7 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
     // Only allow if empty in current assignment.
     const occupied = Array.from(assignment.values()).some(g => g === groupNumber);
     if (occupied) {
-      toast.error('Mueve a los jugadores de este grupo antes de eliminarlo');
+      toast.error(trs("Mueve a los jugadores de este grupo antes de eliminarlo"));
       return;
     }
     setGroups(prev => prev.filter(g => g.groupNumber !== groupNumber));
@@ -189,7 +190,7 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
         .maybeSingle();
       if (roundCheckErr) throw roundCheckErr;
       if (!roundCheck) {
-        toast.error('La ronda enlazada ya no existe. Crea una nueva desde la tarjeta superior.');
+        toast.error(trs("La ronda enlazada ya no existe. Crea una nueva desde la tarjeta superior."));
         onRoundMissing?.();
         onClose();
         return;
@@ -265,17 +266,17 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
         if (error) console.warn('Could not delete group:', error.message);
       }
 
-      toast.success('Foursomes actualizados');
+      toast.success(trs("Foursomes actualizados"));
       onChanged();
       onClose();
     } catch (err: any) {
       // RLS rejection — almost always means the round was deleted/reorganized.
       if (err?.code === '42501') {
-        toast.error('No tienes permisos sobre esta ronda o fue eliminada. Vuelve a crearla desde la tarjeta superior.');
+        toast.error(trs("No tienes permisos sobre esta ronda o fue eliminada. Vuelve a crearla desde la tarjeta superior."));
         onRoundMissing?.();
         onClose();
       } else {
-        toast.error('Error al guardar: ' + err.message);
+        toast.error(trs("Error al guardar: ") + err.message);
       }
     } finally {
       setSaving(false);
@@ -295,11 +296,11 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
         .update({ is_active: false, cup_team_id: null })
         .eq('id', participantId);
       if (error) throw error;
-      toast.success('Eliminado del Cup');
+      toast.success(trs("Eliminado del Cup"));
       onChanged();
       await loadData();
     } catch (err: any) {
-      toast.error('Error al eliminar del Cup: ' + err.message);
+      toast.error(trs("Error al eliminar del Cup: ") + err.message);
     }
   };
 
@@ -321,7 +322,7 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md p-3 gap-2">
         <DialogHeader className="space-y-2">
-          <DialogTitle className="text-sm">Foursomes de la Ronda</DialogTitle>
+          <DialogTitle className="text-sm">{trs("Foursomes de la Ronda")}</DialogTitle>
           <Button
             size="sm"
             onClick={handleSave}
@@ -368,7 +369,7 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
               onClick={addGroup}
               className="w-full h-8 text-xs gap-1"
             >
-              <Plus className="h-3.5 w-3.5" /> Agregar Foursome
+              <Plus className="h-3.5 w-3.5" />{' '}{trs("Agregar Foursome")}
             </Button>
           </div>
         )}
@@ -390,7 +391,7 @@ const UnassignedSection: React.FC<UnassignedProps> = ({ players, groups, onAssig
       <Badge variant="outline" className="text-[10px] border-amber-500 text-amber-700 dark:text-amber-300">
         Sin asignar ({players.length})
       </Badge>
-      <span className="text-[10px] text-muted-foreground">Estos jugadores no juegan esta ronda hasta que los agregues a un foursome.</span>
+      <span className="text-[10px] text-muted-foreground">{trs("Estos jugadores no juegan esta ronda hasta que los agregues a un foursome.")}</span>
     </div>
     {players.map(p => (
       <div key={p.id} className="flex items-center gap-2 py-1">
@@ -401,12 +402,12 @@ const UnassignedSection: React.FC<UnassignedProps> = ({ players, groups, onAssig
           </p>
         </div>
         {groups.length === 0 ? (
-          <span className="text-[10px] text-muted-foreground">Crea un foursome</span>
+          <span className="text-[10px] text-muted-foreground">{trs("Crea un foursome")}</span>
         ) : (
           <Popover>
             <PopoverTrigger asChild>
               <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1">
-                <Plus className="h-3 w-3" /> Asignar
+                <Plus className="h-3 w-3" />{' '}{trs("Asignar")}
               </Button>
             </PopoverTrigger>
             <PopoverContent align="end" className="w-36 p-1">
@@ -450,7 +451,7 @@ const GroupSection: React.FC<GroupSectionProps> = ({
         <Users className="h-3.5 w-3.5 text-primary" />
         <span className="text-xs font-semibold">Foursome {groupNumber}</span>
         <Badge variant="secondary" className="text-[10px] h-4 px-1.5">{players.length}</Badge>
-        {isNew && <Badge variant="outline" className="text-[10px] h-4 px-1.5 border-primary/50 text-primary">Nuevo</Badge>}
+        {isNew && <Badge variant="outline" className="text-[10px] h-4 px-1.5 border-primary/50 text-primary">{trs("Nuevo")}</Badge>}
       </div>
       {players.length === 0 && (
         <Button
@@ -458,14 +459,14 @@ const GroupSection: React.FC<GroupSectionProps> = ({
           variant="ghost"
           className="h-6 w-6 text-muted-foreground hover:text-destructive"
           onClick={onRemoveGroup}
-          title="Eliminar foursome (vacío)"
+          title={trs("Eliminar foursome (vacío)")}
         >
           <Trash2 className="h-3 w-3" />
         </Button>
       )}
     </div>
     {players.length === 0 ? (
-      <p className="text-[10px] text-muted-foreground italic px-1">Sin jugadores</p>
+      <p className="text-[10px] text-muted-foreground italic px-1">{trs("Sin jugadores")}</p>
     ) : (
       players.map(p => (
         <div key={p.id} className="flex items-center gap-2 py-1 border-t border-border/50 first:border-t-0">
@@ -477,7 +478,7 @@ const GroupSection: React.FC<GroupSectionProps> = ({
           </div>
           <Popover>
             <PopoverTrigger asChild>
-              <Button size="icon" variant="ghost" className="h-6 w-6" title="Mover">
+              <Button size="icon" variant="ghost" className="h-6 w-6" title={trs("Mover")}>
                 <ArrowRightLeft className="h-3 w-3" />
               </Button>
             </PopoverTrigger>
@@ -497,7 +498,7 @@ const GroupSection: React.FC<GroupSectionProps> = ({
                   onClick={() => onMove(p.id, null)}
                   className="w-full text-left text-xs px-2 py-1.5 rounded hover:bg-destructive/10 text-destructive"
                 >
-                  Quitar solo de esta ronda
+                  {trs("Quitar solo de esta ronda")}
                 </button>
                 <button
                   onClick={() => {
@@ -507,7 +508,7 @@ const GroupSection: React.FC<GroupSectionProps> = ({
                   }}
                   className="w-full text-left text-xs px-2 py-1.5 rounded hover:bg-destructive/10 text-destructive font-semibold"
                 >
-                  Quitar del Cup completo
+                  {trs("Quitar del Cup completo")}
                 </button>
               </div>
             </PopoverContent>

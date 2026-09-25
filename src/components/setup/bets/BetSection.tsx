@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -70,7 +71,7 @@ export const BetSection: React.FC<BetSectionProps> = ({
               type="button"
               onClick={(e) => { e.stopPropagation(); setShowHelp(prev => !prev); }}
               className="ml-2 p-1 rounded-full hover:bg-muted/60 transition-colors"
-              aria-label="Info de apuesta"
+              aria-label={trs("Info de apuesta")}
             >
               <Info className={cn('h-4 w-4', showHelp ? 'text-primary' : 'text-muted-foreground')} />
             </button>

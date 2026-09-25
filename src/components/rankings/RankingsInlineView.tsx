@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -78,7 +79,7 @@ export const RankingsInlineView: React.FC<RankingsInlineViewProps> = ({ onNaviga
           {r.is_creator && (
             <Badge variant="secondary" className="text-[10px] shrink-0">
               <Crown className="h-3 w-3 mr-1" />
-              Tuyo
+              {trs("Tuyo")}
             </Badge>
           )}
         </div>
@@ -96,14 +97,14 @@ export const RankingsInlineView: React.FC<RankingsInlineViewProps> = ({ onNaviga
     return (
       <div className="text-center py-12 space-y-4">
         <Trophy className="h-10 w-10 mx-auto text-muted-foreground" />
-        <p className="font-semibold">Rankings grupales</p>
+        <p className="font-semibold">{trs("Rankings grupales")}</p>
         <p className="text-sm text-muted-foreground">
-          Consulta quién va ganando en dinero y hándicap en tu grupo. Disponible con GreenBook Pro.
+          {trs("Consulta quién va ganando en dinero y hándicap en tu grupo. Disponible con GreenBook Pro.")}
         </p>
         <Button onClick={() => window.dispatchEvent(new CustomEvent('greenbook:show-upgrade', {
           detail: { reason: 'history' }
         }))}>
-          Suscribirse para ver rankings
+          {trs("Suscribirse para ver rankings")}
         </Button>
       </div>
     );
@@ -114,26 +115,26 @@ export const RankingsInlineView: React.FC<RankingsInlineViewProps> = ({ onNaviga
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogTrigger asChild>
           <Button className="w-full" size="lg">
-            <Plus className="h-4 w-4 mr-2" /> Crear nuevo ranking
+            <Plus className="h-4 w-4 mr-2" />{' '}{trs("Crear nuevo ranking")}
           </Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nuevo ranking</DialogTitle>
+            <DialogTitle>{trs("Nuevo ranking")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
-              <Label htmlFor="ranking-name-inline">Nombre del ranking</Label>
+              <Label htmlFor="ranking-name-inline">{trs("Nombre del ranking")}</Label>
               <Input
                 id="ranking-name-inline"
-                placeholder="Ej: Ranking Semanal, Los Cracks..."
+                placeholder={trs("Ej: Ranking Semanal, Los Cracks...")}
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleCreate()}
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Después de crearlo puedes agregar jugadores buscando por nombre.
+              {trs("Después de crearlo puedes agregar jugadores buscando por nombre.")}
             </p>
             <Button className="w-full" disabled={!formName.trim() || creating} onClick={handleCreate}>
               {creating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
@@ -150,14 +151,14 @@ export const RankingsInlineView: React.FC<RankingsInlineViewProps> = ({ onNaviga
       ) : (
         <Tabs defaultValue="mine">
           <TabsList className="w-full">
-            <TabsTrigger value="mine" className="flex-1">Mis Rankings</TabsTrigger>
-            <TabsTrigger value="global" className="flex-1">Global</TabsTrigger>
+            <TabsTrigger value="mine" className="flex-1">{trs("Mis Rankings")}</TabsTrigger>
+            <TabsTrigger value="global" className="flex-1">{trs("Global")}</TabsTrigger>
           </TabsList>
           <TabsContent value="mine" className="space-y-3 mt-3">
             {rankings.length === 0 ? (
               <div className="text-center py-12">
                 <TrendingUp className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                <p className="text-sm text-muted-foreground">No tienes rankings todavía</p>
+                <p className="text-sm text-muted-foreground">{trs("No tienes rankings todavía")}</p>
               </div>
             ) : rankings.map(r => <RankingCard key={r.id} r={r} />)}
           </TabsContent>
@@ -169,14 +170,14 @@ export const RankingsInlineView: React.FC<RankingsInlineViewProps> = ({ onNaviga
             ) : displayGlobalHcpEntries.length === 0 ? (
               <div className="text-center py-10 space-y-2">
                 <Award className="h-10 w-10 mx-auto text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Sin datos de hándicap disponibles</p>
-                <p className="text-xs text-muted-foreground">Agrega amigos para ver el ranking global</p>
+                <p className="text-sm text-muted-foreground">{trs("Sin datos de hándicap disponibles")}</p>
+                <p className="text-xs text-muted-foreground">{trs("Agrega amigos para ver el ranking global")}</p>
               </div>
             ) : (
                <Card>
                 <CardHeader className="pb-1 px-3">
                   <CardTitle className="text-sm text-center">
-                    Scoring Ranking - Amigos</CardTitle>
+                    {trs("Scoring Ranking - Amigos")}</CardTitle>
                 </CardHeader>
                 <CardHeader className="pb-1 px-3 pt-0">
                   <CardTitle className="text-sm">
@@ -189,7 +190,7 @@ export const RankingsInlineView: React.FC<RankingsInlineViewProps> = ({ onNaviga
               </Card>
             )}
             <p className="text-xs text-muted-foreground text-center">
-              Ranking basado en todos tus amigos · HCP actual, promedio y mejor de últimas 20 rondas
+              {trs("Ranking basado en todos tus amigos · HCP actual, promedio y mejor de últimas 20 rondas")}
             </p>
           </TabsContent>
         </Tabs>

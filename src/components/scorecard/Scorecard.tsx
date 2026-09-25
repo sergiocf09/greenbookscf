@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { useTranslation } from 'react-i18next';
 import React, { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -229,7 +230,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
         <div className="flex items-start justify-between gap-2">
           <div>
             <div className="flex items-center gap-1.5">
-              <h3 className="text-sm font-semibold text-primary">Scorecard</h3>
+              <h3 className="text-sm font-semibold text-primary">{trs("Scorecard")}</h3>
               <RoundHolesBadge holes={betConfig?.roundHoles} />
             </div>
             <p className="text-[10px] text-muted-foreground">{course.name}</p>
@@ -245,7 +246,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                 onClick={onLeaderboardClick}
               >
                 <Trophy className="h-3.5 w-3.5 mr-1" />
-                Leaderboard
+                {trs("Leaderboard")}
               </Button>
             )}
             {onAddPlayerClick && (
@@ -298,14 +299,14 @@ export const Scorecard: React.FC<ScorecardProps> = ({
               <th className="px-2 py-1.5 font-semibold text-center bg-muted min-w-[36px]">{firstNineLabel}</th>
             </tr>
             <tr className="bg-muted/30 text-muted-foreground">
-              <td className="px-2 py-1 sticky left-0 bg-muted/30 font-medium">Par</td>
+              <td className="px-2 py-1 sticky left-0 bg-muted/30 font-medium">{trs("Par")}</td>
               {firstNine.map(hole => (
                 <td key={hole.number} className="text-center px-1.5 py-1 font-medium">{hole.par}</td>
               ))}
               <td className="text-center px-2 py-1 font-semibold bg-muted/50">{firstNinePar}</td>
             </tr>
             <tr className="bg-muted/20 text-muted-foreground text-[10px]">
-              <td className="px-2 py-0.5 sticky left-0 bg-muted/20">Index</td>
+              <td className="px-2 py-0.5 sticky left-0 bg-muted/20">{trs("Index")}</td>
               {firstNine.map(hole => (
                 <td key={hole.number} className="text-center px-1.5 py-0.5">{hole.handicapIndex}</td>
               ))}
@@ -398,10 +399,10 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                 </th>
               ))}
               <th className="px-2 py-1.5 font-semibold text-center bg-muted min-w-[36px]">{secondNineLabel}</th>
-              <th className="px-2 py-1.5 font-semibold text-center bg-primary/20 text-primary min-w-[40px]">TOT</th>
+              <th className="px-2 py-1.5 font-semibold text-center bg-primary/20 text-primary min-w-[40px]">{trs("TOT")}</th>
             </tr>
             <tr className="bg-muted/30 text-muted-foreground">
-              <td className="px-2 py-1 sticky left-0 bg-muted/30 font-medium">Par</td>
+              <td className="px-2 py-1 sticky left-0 bg-muted/30 font-medium">{trs("Par")}</td>
               {secondNine.map(hole => (
                 <td key={hole.number} className="text-center px-1.5 py-1 font-medium">{hole.par}</td>
               ))}
@@ -409,7 +410,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
               <td className="text-center px-2 py-1 font-semibold bg-primary/10">{frontPar + backPar}</td>
             </tr>
             <tr className="bg-muted/20 text-muted-foreground text-[10px]">
-              <td className="px-2 py-0.5 sticky left-0 bg-muted/20">Index</td>
+              <td className="px-2 py-0.5 sticky left-0 bg-muted/20">{trs("Index")}</td>
               {secondNine.map(hole => (
                 <td key={hole.number} className="text-center px-1.5 py-0.5">{hole.handicapIndex}</td>
               ))}
@@ -490,7 +491,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
         <div className="border-t border-border p-2 bg-amber-500/5">
           <div className="flex items-center gap-2 mb-1.5">
             <Star className="h-3.5 w-3.5 text-amber-500" />
-            <span className="text-xs font-medium text-amber-700 dark:text-amber-400">Stableford</span>
+            <span className="text-xs font-medium text-amber-700 dark:text-amber-400">{trs("Stableford")}</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {displayPlayers.map(player => {

@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -82,7 +83,7 @@ export const BetTemplatesDialog: React.FC<BetTemplatesDialogProps> = ({
   const handleSave = async () => {
     const trimmed = saveName.trim();
     if (!trimmed) {
-      toast.error('Ingresa un nombre para la plantilla');
+      toast.error(trs("Ingresa un nombre para la plantilla"));
       return;
     }
     setIsSaving(true);
@@ -94,10 +95,10 @@ export const BetTemplatesDialog: React.FC<BetTemplatesDialogProps> = ({
       return;
     }
     if (result.success) {
-      toast.success('Plantilla guardada');
+      toast.success(trs("Plantilla guardada"));
       handleClose(false);
     } else {
-      toast.error('Error al guardar la plantilla');
+      toast.error(trs("Error al guardar la plantilla"));
     }
   };
 
@@ -107,10 +108,10 @@ export const BetTemplatesDialog: React.FC<BetTemplatesDialogProps> = ({
     const ok = await overwriteTemplate(saveName.trim(), betConfig);
     setIsSaving(false);
     if (ok) {
-      toast.success('Plantilla actualizada');
+      toast.success(trs("Plantilla actualizada"));
       handleClose(false);
     } else {
-      toast.error('Error al actualizar');
+      toast.error(trs("Error al actualizar"));
     }
   };
 
@@ -120,17 +121,17 @@ export const BetTemplatesDialog: React.FC<BetTemplatesDialogProps> = ({
     setIsApplying(false);
     if (config) {
       onApplyTemplate(config);
-      toast.success('Plantilla aplicada. Revisa participantes si cambió el grupo.');
+      toast.success(trs("Plantilla aplicada. Revisa participantes si cambió el grupo."));
       handleClose(false);
     } else {
-      toast.error('Error al cargar la plantilla');
+      toast.error(trs("Error al cargar la plantilla"));
     }
   };
 
   const handleDelete = async (id: string) => {
     const ok = await deleteTemplate(id);
-    if (ok) toast.success('Plantilla eliminada');
-    else toast.error('Error al eliminar');
+    if (ok) toast.success(trs("Plantilla eliminada"));
+    else toast.error(trs("Error al eliminar"));
     setDeleteConfirmId(null);
   };
 
@@ -138,8 +139,8 @@ export const BetTemplatesDialog: React.FC<BetTemplatesDialogProps> = ({
     const trimmed = editName.trim();
     if (!trimmed) return;
     const ok = await renameTemplate(id, trimmed);
-    if (ok) toast.success('Nombre actualizado');
-    else toast.error('Error al renombrar');
+    if (ok) toast.success(trs("Nombre actualizado"));
+    else toast.error(trs("Error al renombrar"));
     setEditingId(null);
   };
 
@@ -178,8 +179,8 @@ export const BetTemplatesDialog: React.FC<BetTemplatesDialogProps> = ({
               >
                 <Save className="h-5 w-5 text-primary" />
                 <div className="text-left">
-                  <div className="font-medium">Guardar plantilla</div>
-                  <div className="text-xs text-muted-foreground">Guarda la configuración actual</div>
+                  <div className="font-medium">{trs("Guardar plantilla")}</div>
+                  <div className="text-xs text-muted-foreground">{trs("Guarda la configuración actual")}</div>
                 </div>
               </Button>
               <Button
@@ -189,8 +190,8 @@ export const BetTemplatesDialog: React.FC<BetTemplatesDialogProps> = ({
               >
                 <Download className="h-5 w-5 text-primary" />
                 <div className="text-left">
-                  <div className="font-medium">Cargar plantilla</div>
-                  <div className="text-xs text-muted-foreground">Aplica una configuración guardada</div>
+                  <div className="font-medium">{trs("Cargar plantilla")}</div>
+                  <div className="text-xs text-muted-foreground">{trs("Aplica una configuración guardada")}</div>
                 </div>
               </Button>
               {templates.length > 0 && (
@@ -209,10 +210,10 @@ export const BetTemplatesDialog: React.FC<BetTemplatesDialogProps> = ({
           {mode === 'save' && (
             <div className="space-y-4 py-2">
               <div className="space-y-2">
-                <Label htmlFor="template-name">Nombre de la plantilla</Label>
+                <Label htmlFor="template-name">{trs("Nombre de la plantilla")}</Label>
                 <Input
                   id="template-name"
-                  placeholder="Ej: Ronda semanal Club"
+                  placeholder={trs("Ej: Ronda semanal Club")}
                   value={saveName}
                   onChange={(e) => setSaveName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSave()}
@@ -220,7 +221,7 @@ export const BetTemplatesDialog: React.FC<BetTemplatesDialogProps> = ({
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label htmlFor="template-fav" className="text-sm">Marcar como favorita</Label>
+                <Label htmlFor="template-fav" className="text-sm">{trs("Marcar como favorita")}</Label>
                 <Switch
                   id="template-fav"
                   checked={saveFavorite}
@@ -229,7 +230,7 @@ export const BetTemplatesDialog: React.FC<BetTemplatesDialogProps> = ({
               </div>
               <div className="flex gap-2">
                 <Button variant="ghost" onClick={() => setMode('menu')} className="flex-1">
-                  Atrás
+                  {trs("Atrás")}
                 </Button>
                 <Button onClick={handleSave} disabled={isSaving || !saveName.trim()} className="flex-1">
                   {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
@@ -247,9 +248,9 @@ export const BetTemplatesDialog: React.FC<BetTemplatesDialogProps> = ({
                 </div>
               ) : templates.length === 0 ? (
                 <div className="text-center text-muted-foreground py-8">
-                  <p className="text-sm">No tienes plantillas guardadas.</p>
+                  <p className="text-sm">{trs("No tienes plantillas guardadas.")}</p>
                   <Button variant="link" onClick={() => setMode('save')} className="mt-2">
-                    Guardar la configuración actual
+                    {trs("Guardar la configuración actual")}
                   </Button>
                 </div>
               ) : (
@@ -281,7 +282,7 @@ export const BetTemplatesDialog: React.FC<BetTemplatesDialogProps> = ({
                     </button>
                   ))}
                   <Button variant="ghost" onClick={() => setMode('menu')} className="w-full mt-2">
-                    Atrás
+                    {trs("Atrás")}
                   </Button>
                 </>
               )}
@@ -353,7 +354,7 @@ export const BetTemplatesDialog: React.FC<BetTemplatesDialogProps> = ({
                 </div>
               ))}
               <Button variant="ghost" onClick={() => setMode('menu')} className="w-full mt-2">
-                Atrás
+                {trs("Atrás")}
               </Button>
             </div>
           )}
@@ -364,14 +365,14 @@ export const BetTemplatesDialog: React.FC<BetTemplatesDialogProps> = ({
       <AlertDialog open={showOverwriteConfirm} onOpenChange={setShowOverwriteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Plantilla existente</AlertDialogTitle>
+            <AlertDialogTitle>{trs("Plantilla existente")}</AlertDialogTitle>
             <AlertDialogDescription>
               Ya tienes una plantilla llamada "{saveName.trim()}". ¿Deseas sobrescribirla con la configuración actual?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleOverwrite}>Sobrescribir</AlertDialogAction>
+            <AlertDialogCancel>{trs("Cancelar")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleOverwrite}>{trs("Sobrescribir")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -380,18 +381,18 @@ export const BetTemplatesDialog: React.FC<BetTemplatesDialogProps> = ({
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(o) => !o && setDeleteConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar plantilla</AlertDialogTitle>
+            <AlertDialogTitle>{trs("Eliminar plantilla")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. ¿Estás seguro?
+              {trs("Esta acción no se puede deshacer. ¿Estás seguro?")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>{trs("Cancelar")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
               className="bg-destructive text-destructive-foreground"
             >
-              Eliminar
+              {trs("Eliminar")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

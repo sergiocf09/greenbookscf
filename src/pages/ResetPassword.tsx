@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -34,32 +35,32 @@ const ResetPassword = () => {
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password.length < 8) {
-      toast.error('La contraseña debe tener al menos 8 caracteres');
+      toast.error(trs("La contraseña debe tener al menos 8 caracteres"));
       return;
     }
     if (!/[A-Z]/.test(password)) {
-      toast.error('La contraseña debe incluir al menos una mayúscula');
+      toast.error(trs("La contraseña debe incluir al menos una mayúscula"));
       return;
     }
     if (!/[a-z]/.test(password)) {
-      toast.error('La contraseña debe incluir al menos una minúscula');
+      toast.error(trs("La contraseña debe incluir al menos una minúscula"));
       return;
     }
     if (!/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-      toast.error('La contraseña debe incluir al menos un número o signo');
+      toast.error(trs("La contraseña debe incluir al menos un número o signo"));
       return;
     }
     if (password !== confirmPassword) {
-      toast.error('Las contraseñas no coinciden');
+      toast.error(trs("Las contraseñas no coinciden"));
       return;
     }
     setIsLoading(true);
     const { error } = await supabase.auth.updateUser({ password });
     if (error) {
-      toast.error('Error al actualizar contraseña', { description: error.message });
+      toast.error(trs("Error al actualizar contraseña"), { description: error.message });
     } else {
       setDone(true);
-      toast.success('Contraseña actualizada correctamente');
+      toast.success(trs("Contraseña actualizada correctamente"));
       setTimeout(() => navigate('/'), 2000);
     }
     setIsLoading(false);
@@ -70,11 +71,11 @@ const ResetPassword = () => {
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md border-primary/20 shadow-lg">
           <CardHeader className="text-center">
-            <CardTitle className="text-xl text-primary">Enlace inválido</CardTitle>
-            <CardDescription>Este enlace de recuperación no es válido o ha expirado.</CardDescription>
+            <CardTitle className="text-xl text-primary">{trs("Enlace inválido")}</CardTitle>
+            <CardDescription>{trs("Este enlace de recuperación no es válido o ha expirado.")}</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full" onClick={() => navigate('/auth')}>Ir a Iniciar Sesión</Button>
+            <Button className="w-full" onClick={() => navigate('/auth')}>{trs("Ir a Iniciar Sesión")}</Button>
           </CardContent>
         </Card>
       </div>
@@ -87,8 +88,8 @@ const ResetPassword = () => {
         <Card className="w-full max-w-md border-primary/20 shadow-lg">
           <CardHeader className="text-center">
             <CheckCircle className="h-12 w-12 text-primary mx-auto mb-2" />
-            <CardTitle className="text-xl text-primary">¡Contraseña actualizada!</CardTitle>
-            <CardDescription>Redirigiendo...</CardDescription>
+            <CardTitle className="text-xl text-primary">{trs("¡Contraseña actualizada!")}</CardTitle>
+            <CardDescription>{trs("Redirigiendo...")}</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -99,13 +100,13 @@ const ResetPassword = () => {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md border-primary/20 shadow-lg">
         <CardHeader className="text-center">
-          <CardTitle className="text-xl text-primary">Nueva Contraseña</CardTitle>
-          <CardDescription>Ingresa tu nueva contraseña</CardDescription>
+          <CardTitle className="text-xl text-primary">{trs("Nueva Contraseña")}</CardTitle>
+          <CardDescription>{trs("Ingresa tu nueva contraseña")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleReset} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="new-password">Nueva contraseña</Label>
+              <Label htmlFor="new-password">{trs("Nueva contraseña")}</Label>
               <Input
                 id="new-password"
                 type="password"
@@ -115,10 +116,10 @@ const ResetPassword = () => {
                 minLength={8}
                 required
               />
-              <p className="text-xs text-muted-foreground">Mínimo 8 caracteres, 1 mayúscula, 1 minúscula y 1 número o signo</p>
+              <p className="text-xs text-muted-foreground">{trs("Mínimo 8 caracteres, 1 mayúscula, 1 minúscula y 1 número o signo")}</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirmar contraseña</Label>
+              <Label htmlFor="confirm-password">{trs("Confirmar contraseña")}</Label>
               <Input
                 id="confirm-password"
                 type="password"

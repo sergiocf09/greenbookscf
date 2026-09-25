@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { Lock, RefreshCw, CheckCircle2, Play, AlertCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -130,11 +131,9 @@ export function PlayViews(props: PlayViewsProps) {
       {showReadOnlyBanner && (
         <Alert className="mb-3 border-amber-500/40 bg-amber-500/10">
           <AlertCircle className="h-4 w-4 text-amber-600" />
-          <AlertTitle className="text-amber-700 dark:text-amber-400">Modo solo lectura</AlertTitle>
+          <AlertTitle className="text-amber-700 dark:text-amber-400">{trs("Modo solo lectura")}</AlertTitle>
           <AlertDescription className="text-amber-700/90 dark:text-amber-400/90 text-xs">
-            Solo el organizador o un co-administrador de tu grupo pueden capturar
-            scores y editar handicaps. Las apuestas bilaterales (lápiz / X) sí se
-            pueden editar normalmente desde el dashboard.
+            {trs("Solo el organizador o un co-administrador de tu grupo pueden capturar scores y editar handicaps. Las apuestas bilaterales (lápiz / X) sí se pueden editar normalmente desde el dashboard.")}
           </AlertDescription>
         </Alert>
       )}
@@ -173,7 +172,7 @@ export function PlayViews(props: PlayViewsProps) {
             isLoading={isLoadingHandicaps}
           />
           <div className="border-t border-border my-4" />
-          <h3 className="text-sm font-semibold mb-2">Ranking de Hándicap</h3>
+          <h3 className="text-sm font-semibold mb-2">{trs("Ranking de Hándicap")}</h3>
           <HandicapRankingView roundId={roundState.id} />
         </>
       )}
@@ -354,7 +353,7 @@ export function PlayViews(props: PlayViewsProps) {
               ) : (
 
                 <div className="text-center text-muted-foreground text-sm py-4 bg-muted rounded-lg mt-4">
-                  Solo el organizador puede cerrar la tarjeta
+                  {trs("Solo el organizador puede cerrar la tarjeta")}
                 </div>
               )}
             </>
@@ -364,27 +363,27 @@ export function PlayViews(props: PlayViewsProps) {
             <div className="space-y-4">
               <div className="text-center text-muted-foreground text-sm py-4 bg-muted rounded-lg">
                 <CheckCircle2 className="h-6 w-6 mx-auto mb-2 text-green-600" />
-                Tarjeta cerrada y guardada
+                {trs("Tarjeta cerrada y guardada")}
               </div>
               {profile?.id === roundState.organizerProfileId && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="outline" className="w-full">
                       <RefreshCw className="h-4 w-4 mr-2" />
-                      Re-abrir para re-cerrar
+                      {trs("Re-abrir para re-cerrar")}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>¿Re-abrir ronda?</AlertDialogTitle>
+                      <AlertDialogTitle>{trs("¿Re-abrir ronda?")}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Esto eliminará el snapshot, ledger y historial de sliding actuales. Podrás cerrar la ronda nuevamente con los datos corregidos.
+                        {trs("Esto eliminará el snapshot, ledger y historial de sliding actuales. Podrás cerrar la ronda nuevamente con los datos corregidos.")}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogCancel>{trs("Cancelar")}</AlertDialogCancel>
                       <AlertDialogAction onClick={() => onResetRoundForReclose()}>
-                        Confirmar re-apertura
+                        {trs("Confirmar re-apertura")}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -395,7 +394,7 @@ export function PlayViews(props: PlayViewsProps) {
                 className="w-full"
               >
                 <Play className="h-4 w-4 mr-2" />
-                Iniciar Nueva Ronda
+                {trs("Iniciar Nueva Ronda")}
               </Button>
             </div>
           )}
@@ -434,12 +433,10 @@ function CloseRoundSection({
         <Alert className="border-amber-500/40 bg-amber-500/10">
           <AlertCircle className="h-4 w-4 text-amber-600" />
           <AlertTitle className="text-amber-700 dark:text-amber-400">
-            Cierra tu tarjeta aquí abajo
+            {trs("Cierra tu tarjeta aquí abajo")}
           </AlertTitle>
           <AlertDescription className="text-amber-700/90 dark:text-amber-400/90">
-            Para cerrar oficialmente tu ronda, usa el botón rojo de abajo
-            (deberás escribir <strong>CERRAR</strong> para confirmar). Esto
-            sella el resultado y libera a los demás jugadores.
+            {trs("Para cerrar oficialmente tu ronda, usa el botón rojo de abajo (deberás escribir")}{' '}<strong>{trs("CERRAR")}</strong>{' '}{trs("para confirmar). Esto sella el resultado y libera a los demás jugadores.")}
           </AlertDescription>
         </Alert>
       )}
@@ -450,7 +447,7 @@ function CloseRoundSection({
         className="w-full"
       >
         <Lock className="h-4 w-4 mr-2" />
-        Cerrar Tarjeta y Guardar
+        {trs("Cerrar Tarjeta y Guardar")}
       </Button>
     </div>
   );

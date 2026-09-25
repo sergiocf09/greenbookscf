@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -109,7 +110,7 @@ export const CourseSearchDialog: React.FC<Props> = ({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Buscar Campo de Golf</DialogTitle>
+          <DialogTitle>{trs("Buscar Campo de Golf")}</DialogTitle>
         </DialogHeader>
 
         <div className="relative">
@@ -120,7 +121,7 @@ export const CourseSearchDialog: React.FC<Props> = ({
             onKeyDown={(e) => {
               if (e.key === 'Enter' && localMatches.length === 0) runGlobalSearch();
             }}
-            placeholder="Nombre del campo o club..."
+            placeholder={trs("Nombre del campo o club...")}
             className="pl-9"
             autoFocus
           />
@@ -130,8 +131,7 @@ export const CourseSearchDialog: React.FC<Props> = ({
         </div>
 
         <p className="text-[11px] text-muted-foreground">
-          Los campos que ya descargó cualquier usuario quedan guardados para toda la aplicación: no hay
-          que volver a descargarlos.
+          {trs("Los campos que ya descargó cualquier usuario quedan guardados para toda la aplicación: no hay que volver a descargarlos.")}
         </p>
 
         {error && <p className="text-sm text-destructive">{error}</p>}
@@ -153,7 +153,7 @@ export const CourseSearchDialog: React.FC<Props> = ({
                     <div className="flex items-center gap-1.5">
                       <p className="font-medium text-sm truncate">{course.name}</p>
                       <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 shrink-0">
-                        Ya en GreenBook
+                        {trs("Ya en GreenBook")}
                       </Badge>
                     </div>
                     {course.location && (
@@ -163,7 +163,7 @@ export const CourseSearchDialog: React.FC<Props> = ({
                       </div>
                     )}
                   </div>
-                  <span className="text-xs font-medium text-primary shrink-0 mt-0.5">Usar</span>
+                  <span className="text-xs font-medium text-primary shrink-0 mt-0.5">{trs("Usar")}</span>
                 </div>
               </button>
             ))}
@@ -207,7 +207,7 @@ export const CourseSearchDialog: React.FC<Props> = ({
                         <p className="font-medium text-sm truncate">{label}</p>
                         {alreadyLocal && (
                           <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 shrink-0">
-                            Ya en GreenBook
+                            {trs("Ya en GreenBook")}
                           </Badge>
                         )}
                       </div>
@@ -235,13 +235,13 @@ export const CourseSearchDialog: React.FC<Props> = ({
 
         {globalSearched && !searching && results.length === 0 && !error && (
           <p className="text-sm text-muted-foreground text-center py-4">
-            No se encontraron campos en el catálogo mundial. Prueba con otro nombre o usa "Manual".
+            {trs("No se encontraron campos en el catálogo mundial. Prueba con otro nombre o usa \"Manual\".")}
           </p>
         )}
 
         {query.trim().length < 2 && (
           <p className="text-sm text-muted-foreground text-center py-4">
-            Escribe al menos 2 caracteres para buscar primero entre los campos que ya están en GreenBook.
+            {trs("Escribe al menos 2 caracteres para buscar primero entre los campos que ya están en GreenBook.")}
           </p>
         )}
 

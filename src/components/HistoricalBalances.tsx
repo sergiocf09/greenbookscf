@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 /**
  * Historical Balances Component
  * 
@@ -854,14 +855,14 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     return (
       <div className="text-center py-12 space-y-4">
         <Lock className="h-8 w-8 mx-auto text-muted-foreground" />
-        <p className="font-semibold">Balances históricos bloqueados</p>
+        <p className="font-semibold">{trs("Balances históricos bloqueados")}</p>
         <p className="text-sm text-muted-foreground">
-          Suscríbete para acceder a tu historial completo de balances con cada jugador.
+          {trs("Suscríbete para acceder a tu historial completo de balances con cada jugador.")}
         </p>
         <Button onClick={() => window.dispatchEvent(new CustomEvent('greenbook:show-upgrade', {
           detail: { reason: 'history' }
         }))}>
-          Ver planes
+          {trs("Ver planes")}
         </Button>
       </div>
     );
@@ -903,7 +904,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
           className="mb-2"
         >
           <ArrowLeft className="h-4 w-4 mr-1" />
-          Volver
+          {trs("Volver")}
         </Button>
 
         {/* Rival header */}
@@ -961,10 +962,10 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     rivalProfileId: selectedRival.profileId ?? null,
                   })}
                   className="flex items-center gap-1 text-[11px] text-primary border border-primary/30 rounded-md px-2 py-1 hover:bg-primary/5 transition-colors"
-                  title="Cargar balance pre-GB"
+                  title={trs("Cargar balance pre-GB")}
                 >
                   <History className="h-3 w-3" />
-                  Pre-GB
+                  {trs("Pre-GB")}
                 </button>
               </div>
             );
@@ -981,8 +982,8 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
           ) : sharedRounds.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No hay rondas detalladas disponibles</p>
-              <p className="text-xs mt-1">Las rondas sin snapshot no mostrarán detalles</p>
+              <p className="text-sm">{trs("No hay rondas detalladas disponibles")}</p>
+              <p className="text-xs mt-1">{trs("Las rondas sin snapshot no mostrarán detalles")}</p>
             </div>
           ) : (
             <div className="space-y-2 pr-2">
@@ -1023,7 +1024,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <span className="flex-shrink-0 w-[62px] text-left">
                         {slidingDisplay ? (
-                          <span className="text-foreground/70"><span className="text-[9px]">SLDG</span> <span className="font-semibold">{slidingDisplay}</span></span>
+                          <span className="text-foreground/70"><span className="text-[9px]">{trs("SLDG")}</span> <span className="font-semibold">{slidingDisplay}</span></span>
                         ) : (
                           <span>&nbsp;</span>
                         )}
@@ -1032,7 +1033,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                       {hasScores ? (
                         <span>Yo: {round.userGross} vs {round.rivalGross}</span>
                       ) : (
-                        <span className="italic">Sin datos</span>
+                        <span className="italic">{trs("Sin datos")}</span>
                       )}
                     </div>
                   </button>
@@ -1052,8 +1053,8 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     return (
       <div className="text-center py-8 text-muted-foreground">
         <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-50" />
-        <p>No hay historial de apuestas</p>
-        <p className="text-sm">Completa rondas con apuestas para ver tu historial</p>
+        <p>{trs("No hay historial de apuestas")}</p>
+        <p className="text-sm">{trs("Completa rondas con apuestas para ver tu historial")}</p>
       </div>
     );
   }
@@ -1072,9 +1073,9 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
         if (tab === 'sliding') fetchSliding();
       }} className="w-full">
         <TabsList className="w-full">
-          <TabsTrigger value="rivals" className="flex-1 text-xs">Vs Rivales</TabsTrigger>
-          <TabsTrigger value="rounds" className="flex-1 text-xs">Mis Rondas</TabsTrigger>
-          <TabsTrigger value="sliding" className="flex-1 text-xs">Sliding</TabsTrigger>
+          <TabsTrigger value="rivals" className="flex-1 text-xs">{trs("Vs Rivales")}</TabsTrigger>
+          <TabsTrigger value="rounds" className="flex-1 text-xs">{trs("Mis Rondas")}</TabsTrigger>
+          <TabsTrigger value="sliding" className="flex-1 text-xs">{trs("Sliding")}</TabsTrigger>
           <TabsTrigger value="evolution" className="flex-1 text-xs">
             <BarChart2 className="h-3 w-3" />
           </TabsTrigger>
@@ -1090,7 +1091,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
             <div className="flex items-center justify-between mb-2 gap-2">
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <Trophy className="h-4 w-4 text-primary" />
-                <span className="text-xs font-medium">Balance Total</span>
+                <span className="text-xs font-medium">{trs("Balance Total")}</span>
               </div>
               <div className={cn(
                 'text-xl font-bold flex items-center gap-1',
@@ -1123,7 +1124,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                   </button>
                   {showGuests && (
                     <p className="text-[11px] text-muted-foreground px-1">
-                      Los invitados se identifican por nombre. Si un mismo jugador aparece duplicado, verifica que su nombre se haya escrito exactamente igual en todas las rondas.
+                      {trs("Los invitados se identifican por nombre. Si un mismo jugador aparece duplicado, verifica que su nombre se haya escrito exactamente igual en todas las rondas.")}
                     </p>
                   )}
                 </div>
@@ -1135,7 +1136,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
           <div className="space-y-1">
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center gap-1.5">
-                <h3 className="text-sm font-medium text-muted-foreground">Ranking por Rival</h3>
+                <h3 className="text-sm font-medium text-muted-foreground">{trs("Ranking por Rival")}</h3>
                 <button
                   onClick={() => {
                     if (sortField === 'name') {
@@ -1146,7 +1147,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     }
                   }}
                   className="p-0.5 rounded hover:bg-muted/50 transition-colors"
-                  title="Ordenar por nombre"
+                  title={trs("Ordenar por nombre")}
                 >
                   {sortField === 'name' ? (
                     sortDir === 'asc' ? <ArrowUp className="h-3 w-3 text-primary" /> : <ArrowDown className="h-3 w-3 text-primary" />
@@ -1167,7 +1168,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     )}
                   >
                     <History className="h-3 w-3" />
-                    Pre-GB
+                    {trs("Pre-GB")}
                   </button>
                 )}
               </div>
@@ -1182,7 +1183,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     }
                   }}
                   className="p-0.5 rounded hover:bg-muted/50 transition-colors"
-                  title="Ordenar por importe"
+                  title={trs("Ordenar por importe")}
                 >
                   {sortField === 'amount' ? (
                     sortDir === 'desc' ? <ArrowDown className="h-3 w-3 text-primary" /> : <ArrowUp className="h-3 w-3 text-primary" />
@@ -1220,7 +1221,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     />
                     <span className="text-xs font-medium truncate min-w-0">
                       {rival.rivalName}
-                      {rival.isGuest && <span className="text-muted-foreground font-normal"> inv</span>}
+                      {rival.isGuest && <span className="text-muted-foreground font-normal">{' '}{trs("inv")}</span>}
                     </span>
                     <span className="text-[10px] text-muted-foreground flex-shrink-0">({rival.roundsPlayed})</span>
                     {(() => {
@@ -1251,7 +1252,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
             <div className="flex items-center justify-between mb-2 gap-2">
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <Trophy className="h-4 w-4 text-primary" />
-                <span className="text-xs font-medium">Balance Total</span>
+                <span className="text-xs font-medium">{trs("Balance Total")}</span>
               </div>
               <div className={cn(
                 'text-xl font-bold flex items-center gap-1',
@@ -1277,7 +1278,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
           {myRounds.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>No hay rondas completadas</p>
+              <p>{trs("No hay rondas completadas")}</p>
             </div>
           ) : (
             <ScrollArea className="h-[340px]">
@@ -1329,7 +1330,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                 <div className="flex items-center justify-between mb-2 gap-2">
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     <Trophy className="h-4 w-4 text-primary" />
-                    <span className="text-xs font-medium">Sliding Neto</span>
+                    <span className="text-xs font-medium">{trs("Sliding Neto")}</span>
                   </div>
                   <div className={cn(
                     'text-xl font-bold tabular-nums',
@@ -1346,7 +1347,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                   {evens.length > 0 && (
                     <div className="flex items-center gap-1">
                       <span className="font-semibold">{evens.length}</span>
-                      <span>scratch</span>
+                      <span>{trs("scratch")}</span>
                     </div>
                   )}
                   <div className="flex items-center gap-1">
@@ -1388,9 +1389,9 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
             </div>
           ) : slidingEntries.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 gap-2">
-              <p className="text-sm text-muted-foreground">Sin datos de sliding</p>
+              <p className="text-sm text-muted-foreground">{trs("Sin datos de sliding")}</p>
               <p className="text-xs text-muted-foreground text-center">
-                El sliding se genera automáticamente al cerrar rondas con hándicap bilateral.
+                {trs("El sliding se genera automáticamente al cerrar rondas con hándicap bilateral.")}
               </p>
             </div>
           ) : (() => {
@@ -1459,7 +1460,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <BarChart2 className="h-10 w-10 text-muted-foreground/40 mb-3" />
               <p className="text-sm text-muted-foreground">
-                Juega al menos 2 rondas para ver tu evolución
+                {trs("Juega al menos 2 rondas para ver tu evolución")}
               </p>
             </div>
           ) : (
@@ -1497,7 +1498,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
               {/* Gráfica 1: Balance Acumulado */}
               <div className="bg-card border border-border rounded-xl p-3">
                 <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
-                  Balance Acumulado
+                  {trs("Balance Acumulado")}
                 </p>
                 <ResponsiveContainer width="100%" height={180}>
                   <AreaChart
@@ -1574,7 +1575,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                   if (!last) return null;
                   return (
                     <div className="flex items-center justify-between mt-2 pt-2 border-t border-border">
-                      <span className="text-[10px] text-muted-foreground">Balance total período</span>
+                      <span className="text-[10px] text-muted-foreground">{trs("Balance total período")}</span>
                       <span className={cn(
                         'text-sm font-bold tabular-nums',
                         last.acumulado > 0 ? 'text-green-500' : last.acumulado < 0 ? 'text-destructive' : 'text-muted-foreground'
@@ -1589,11 +1590,11 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
               {/* Gráfica 2: Por Mes */}
               <div className="bg-card border border-border rounded-xl p-3">
                 <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
-                  Resultado por Mes
+                  {trs("Resultado por Mes")}
                 </p>
                 {evolutionData.monthlyPoints.length < 2 ? (
                   <p className="text-xs text-muted-foreground text-center py-6">
-                    Se necesitan al menos 2 meses de datos para esta gráfica
+                    {trs("Se necesitan al menos 2 meses de datos para esta gráfica")}
                   </p>
                 ) : (
                   <ResponsiveContainer width="100%" height={160}>
@@ -1687,7 +1688,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
               {betCategoryData.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <Layers className="h-10 w-10 text-muted-foreground/40 mb-3" />
-                  <p className="text-sm text-muted-foreground">Sin apuestas registradas en este período</p>
+                  <p className="text-sm text-muted-foreground">{trs("Sin apuestas registradas en este período")}</p>
                 </div>
               ) : (
                 <>
@@ -1741,7 +1742,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                                   <div className="flex items-center gap-2">
                                     <span className="text-sm font-semibold">{cat.category}</span>
                                     {cat.isTeamBet && (
-                                      <span className="text-[9px] text-muted-foreground border border-border rounded px-1">parejas</span>
+                                      <span className="text-[9px] text-muted-foreground border border-border rounded px-1">{trs("parejas")}</span>
                                     )}
                                   </div>
                                   <div className="flex items-center gap-2">
@@ -1791,7 +1792,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     <button type="button"
                       onClick={() => setSelectedBetCategory(null)}
                       className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground p-1 -ml-1">
-                      <ArrowLeft className="h-4 w-4" /> Volver
+                      <ArrowLeft className="h-4 w-4" />{' '}{trs("Volver")}
                     </button>
                     <p className="text-sm text-muted-foreground text-center py-8">
                       Sin movimientos de {selectedBetCategory} con este rival en el período
@@ -1852,7 +1853,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
                   {/* Lista de rivales */}
                   {rivals.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-6">Sin datos para este rival</p>
+                    <p className="text-sm text-muted-foreground text-center py-6">{trs("Sin datos para este rival")}</p>
                   ) : (
                     <ScrollArea className="h-[340px]">
                       <div className="space-y-2 pr-2">

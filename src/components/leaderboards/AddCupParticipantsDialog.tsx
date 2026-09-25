@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useFriends } from '@/hooks/useFriends';
@@ -162,9 +163,9 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
 
   const addPendingGuest = () => {
     const name = guestName.trim();
-    if (!name) { toast.error('Escribe el nombre'); return; }
+    if (!name) { toast.error(trs("Escribe el nombre")); return; }
     if (existingGuestNames.has(name) || pendingGuests.some(g => g.name === name)) {
-      toast.error('Ese invitado ya está en la lista');
+      toast.error(trs("Ese invitado ya está en la lista"));
       return;
     }
     setPendingGuests(prev => [...prev, {
@@ -191,7 +192,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
 
   const handleSubmit = async () => {
     if (totalToAdd === 0) {
-      toast.error('Selecciona al menos un jugador');
+      toast.error(trs("Selecciona al menos un jugador"));
       return;
     }
     setSubmitting(true);
@@ -270,7 +271,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
       onAdded();
       onClose();
     } catch (err: any) {
-      toast.error('Error al agregar: ' + err.message);
+      toast.error(trs("Error al agregar: ") + err.message);
     } finally {
       setSubmitting(false);
     }
@@ -314,7 +315,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="h-4 w-4" />
-            Agregar Jugadores
+            {trs("Agregar Jugadores")}
           </DialogTitle>
         </DialogHeader>
 
@@ -323,7 +324,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
             <PlayerAvatar initials={selfOption.initials} background={selfOption.avatarColor} size="sm" />
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold truncate">Tú: {formatPlayerName(selfOption.displayName)}</p>
-              <p className="text-[10px] text-muted-foreground">Aún no estás en esta competencia</p>
+              <p className="text-[10px] text-muted-foreground">{trs("Aún no estás en esta competencia")}</p>
             </div>
             <Button
               size="sm"
@@ -344,9 +345,9 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
 
           <TabsList className="grid grid-cols-3 w-full">
-            <TabsTrigger value="friends" className="text-xs">Amigos</TabsTrigger>
-            <TabsTrigger value="search" className="text-xs">Buscar</TabsTrigger>
-            <TabsTrigger value="guest" className="text-xs">Invitado</TabsTrigger>
+            <TabsTrigger value="friends" className="text-xs">{trs("Amigos")}</TabsTrigger>
+            <TabsTrigger value="search" className="text-xs">{trs("Buscar")}</TabsTrigger>
+            <TabsTrigger value="guest" className="text-xs">{trs("Invitado")}</TabsTrigger>
           </TabsList>
 
           {/* ── Friends ── */}
@@ -356,8 +357,8 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
             ) : availableFriends.length === 0 ? (
               <p className="text-xs text-muted-foreground italic text-center py-4">
                 {friends.length === 0
-                  ? 'Aún no tienes amigos. Usa Buscar para encontrar jugadores.'
-                  : 'Todos tus amigos ya están en esta competencia.'}
+                  ? trs("Aún no tienes amigos. Usa Buscar para encontrar jugadores.")
+                  : trs("Todos tus amigos ya están en esta competencia.")}
               </p>
             ) : (
               availableFriends.map(f => {
@@ -383,8 +384,8 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
                           value={sel!.hcp}
                           onChange={(e) => updateFriend(f.profileId, { hcp: parseIndex(e.target.value) })}
                           className="w-14 h-7 px-1 text-center text-xs shrink-0"
-                          aria-label="Index"
-                          title="HCP Index"
+                          aria-label={trs("Index")}
+                          title={trs("HCP Index")}
                         />
                       </>
                     )}
@@ -399,7 +400,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
             <div className="relative">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
-                placeholder="Buscar por nombre…"
+                placeholder={trs("Buscar por nombre…")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-7 h-8 text-xs"
@@ -409,10 +410,10 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
               <div className="flex justify-center py-4"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
             ) : searchQuery.trim().length < 2 ? (
               <p className="text-[10px] text-muted-foreground italic text-center py-3">
-                Escribe al menos 2 letras.
+                {trs("Escribe al menos 2 letras.")}
               </p>
             ) : searchResults.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic text-center py-3">Sin resultados.</p>
+              <p className="text-xs text-muted-foreground italic text-center py-3">{trs("Sin resultados.")}</p>
             ) : (
               searchResults
                 .filter(r => !existingProfileIds.has(r.id))
@@ -436,8 +437,8 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
                             value={sel!.hcp}
                             onChange={(e) => updateSearch(r.id, { hcp: parseIndex(e.target.value) })}
                             className="w-14 h-7 px-1 text-center text-xs shrink-0"
-                            aria-label="Index"
-                            title="HCP Index"
+                            aria-label={trs("Index")}
+                            title={trs("HCP Index")}
                           />
                         </>
                       )}
@@ -451,17 +452,17 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
           <TabsContent value="guest" className="mt-3 space-y-3">
             <div className="space-y-2">
               <div>
-                <Label className="text-[10px]">Nombre</Label>
+                <Label className="text-[10px]">{trs("Nombre")}</Label>
                 <Input
                   value={guestName}
                   onChange={(e) => setGuestName(e.target.value)}
-                  placeholder="Ej. Juan Pérez"
+                  placeholder={trs("Ej. Juan Pérez")}
                   className="h-8 text-xs"
                 />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <Label className="text-[10px]">Iniciales</Label>
+                  <Label className="text-[10px]">{trs("Iniciales")}</Label>
                   <Input
                     value={guestInitials}
                     onChange={(e) => { setGuestInitialsTouched(true); setGuestInitials(e.target.value.toUpperCase().slice(0, 3)); }}
@@ -470,7 +471,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
                   />
                 </div>
                 <div>
-                  <Label className="text-[10px]">Index</Label>
+                  <Label className="text-[10px]">{trs("Index")}</Label>
                   <Input
                     type="number"
                     step="0.1"
@@ -483,11 +484,11 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
                 </div>
               </div>
               <div>
-                <Label className="text-[10px] block mb-1">Tee de salida</Label>
+                <Label className="text-[10px] block mb-1">{trs("Tee de salida")}</Label>
                 <TeePicker value={guestTee} onChange={setGuestTee} size="sm" />
               </div>
               <div>
-                <Label className="text-[10px]">Color</Label>
+                <Label className="text-[10px]">{trs("Color")}</Label>
                 <div className="flex gap-1.5 flex-wrap">
                   {GUEST_COLORS.map(c => (
                     <button
@@ -505,7 +506,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
                 </div>
               </div>
               <div>
-                <Label className="text-[10px] block mb-1">Equipo (opcional)</Label>
+                <Label className="text-[10px] block mb-1">{trs("Equipo (opcional)")}</Label>
                 <TeamPicker value={guestTeam} onChange={setGuestTeam} />
               </div>
               <Button
@@ -515,7 +516,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
                 onClick={addPendingGuest}
                 disabled={!guestName.trim()}
               >
-                <Plus className="h-3.5 w-3.5" /> Añadir a la lista
+                <Plus className="h-3.5 w-3.5" />{' '}{trs("Añadir a la lista")}
               </Button>
             </div>
 
@@ -544,7 +545,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
 
         <div className="flex gap-2 pt-3 border-t mt-3">
           <Button variant="outline" className="flex-1" onClick={onClose} disabled={submitting}>
-            Cancelar
+            {trs("Cancelar")}
           </Button>
           <Button className="flex-1" onClick={handleSubmit} disabled={submitting || totalToAdd === 0}>
             {submitting && <Loader2 className="h-4 w-4 animate-spin mr-1" />}

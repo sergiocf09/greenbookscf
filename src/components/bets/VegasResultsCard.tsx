@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { useTranslation } from 'react-i18next';
 import React, { useMemo, useState } from 'react';
 import { Player, PlayerScore, GolfCourse, VegasConfig } from '@/types/golf';
@@ -99,7 +100,7 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
     return (
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Las Vegas</CardTitle>
+          <CardTitle className="text-sm">{trs("Las Vegas")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
@@ -171,7 +172,7 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
         <CardTitle className="text-sm flex items-center justify-between">
           <div className="flex items-center gap-1">
             <Users className="h-4 w-4" />
-            Las Vegas
+            {trs("Las Vegas")}
             <TeamBetHandicapInfo
               players={players.filter(p => [vegasConfig.playerAId, vegasConfig.playerBId, vegasConfig.playerCId, vegasConfig.playerDId].includes(p.id))}
               effectiveHandicaps={vegasConfig.teamHandicaps}
@@ -190,7 +191,7 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
 
           <div className="flex items-center gap-2">
           {isDisabled ? (
-              <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
+              <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">{trs("Cancelada")}</div>
             ) : (
               <span className={cn('text-base font-bold tabular-nums', getNetTone(totalBalance))}>
                 {totalBalance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(totalBalance))}
@@ -240,7 +241,7 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
                          <span className="text-xs font-bold">{disambiguated.get(srMyTeam[0]) ?? '?'}</span>
                          <span className="text-xs font-bold">{disambiguated.get(srMyTeam[1]) ?? '?'}</span>
                        </div>
-                       <span className="text-[9px] text-muted-foreground">vs</span>
+                       <span className="text-[9px] text-muted-foreground">{trs("vs")}</span>
                        <div className="flex flex-col items-end">
                          <span className="text-xs font-bold">{disambiguated.get(srRivalTeam[0]) ?? '?'}</span>
                          <span className="text-xs font-bold">{disambiguated.get(srRivalTeam[1]) ?? '?'}</span>
@@ -303,7 +304,7 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
               <span className="font-medium truncate">
                 {getShortName(myTeam[0])} / {getShortName(myTeam[1])}
               </span>
-              <span className="text-muted-foreground text-xs mx-2">vs</span>
+              <span className="text-muted-foreground text-xs mx-2">{trs("vs")}</span>
               <span className="font-medium truncate text-right">
                 {getShortName(rivalTeam[0])} / {getShortName(rivalTeam[1])}
               </span>
@@ -326,7 +327,7 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
                 <CollapsibleTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
                     <ChevronDown className={cn('h-4 w-4 transition-transform', detailOpen && 'rotate-180')} />
-                    <span className="sr-only">Ver detalle</span>
+                    <span className="sr-only">{trs("Ver detalle")}</span>
                   </Button>
                 </CollapsibleTrigger>
               </div>
@@ -428,8 +429,8 @@ function renderHolePill(
         <div className="space-y-1">
           <p className="text-xs font-medium">Hoyo {hd.holeNumber}</p>
           <div className="flex justify-between text-[10px] text-muted-foreground">
-            <span>Tu equipo</span>
-            <span>Rival</span>
+            <span>{trs("Tu equipo")}</span>
+            <span>{trs("Rival")}</span>
           </div>
           {[0, 1].map(i => {
             const myS = getNet(i, true);
@@ -450,12 +451,12 @@ function renderHolePill(
           })}
           <div className="pt-1 border-t border-border/50 space-y-1 text-xs">
             <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Número</span>
+              <span className="text-muted-foreground">{trs("Número")}</span>
               <div className="flex items-center gap-2">
                 <span className={cn('font-mono font-bold tabular-nums px-1.5 py-0.5 rounded', myDiff > 0 && 'bg-foreground text-background')}>
                   {myNumEff}
                 </span>
-                <span className="text-muted-foreground">vs</span>
+                <span className="text-muted-foreground">{trs("vs")}</span>
                 <span className={cn('font-mono font-bold tabular-nums px-1.5 py-0.5 rounded', myDiff < 0 && 'bg-foreground text-background')}>
                   {rvNumEff}
                 </span>
@@ -465,7 +466,7 @@ function renderHolePill(
               <p className="text-[10px] text-amber-600">🐦 Birdie → ×2 ({hd.multiplierApplied === (myTeam1 ? 'team1' : 'team2') ? 'Tu equipo' : 'Rival'})</p>
             )}
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Diferencia</span>
+              <span className="text-muted-foreground">{trs("Diferencia")}</span>
               <span className={cn('font-bold', myDiff > 0 ? 'text-green-600' : myDiff < 0 ? 'text-destructive' : '')}>
                 {myDiff > 0 ? '+' : ''}{myDiff} → ${fmtMoney(hd.amountThisHole)}
               </span>

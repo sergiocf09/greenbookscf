@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Player } from '@/types/golf';
 import { useSlidingPersistence } from '@/hooks/useSlidingPersistence';
@@ -98,7 +99,7 @@ const CrossGroupHandicapWidget: React.FC<CrossGroupHandicapWidgetProps> = ({
       <CardHeader className="py-2 px-3">
         <CardTitle className="text-xs flex items-center gap-2 text-accent-foreground">
           <Users className="h-3.5 w-3.5" />
-          Ventaja entre grupos
+          {trs("Ventaja entre grupos")}
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0 pb-3 px-3 space-y-2">
@@ -162,7 +163,7 @@ const CrossGroupHandicapWidget: React.FC<CrossGroupHandicapWidgetProps> = ({
             )}
             {slidingSuggestion !== null && localStrokes === slidingSuggestion && (
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-600 border border-amber-400/30">
-                ✨ Usando Sliding
+                {trs("✨ Usando Sliding")}
               </span>
             )}
           </div>

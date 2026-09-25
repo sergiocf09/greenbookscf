@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { useTranslation } from 'react-i18next';
 import React, { useMemo } from 'react';
 import { Player, PlayerScore, GolfCourse, NinesConfig } from '@/types/golf';
@@ -176,7 +177,7 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
     return (
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Nines (5-3-1)</CardTitle>
+          <CardTitle className="text-sm">{trs("Nines (5-3-1)")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
@@ -212,7 +213,7 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm flex items-center gap-1">
-          Nines (5-3-1)
+          {trs("Nines (5-3-1)")}
           <TeamBetHandicapInfo
             players={activePlayers}
             effectiveHandicaps={ninesConfig.playerHandicaps}
@@ -273,7 +274,7 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
               )}>
                 <div></div>
                 {[1,2,3,4,5,6,7,8,9].map(h => <div key={h} className="text-center">{h}</div>)}
-                <div className="text-center font-semibold">F9</div>
+                <div className="text-center font-semibold">{trs("F9")}</div>
               </div>
               {summaries.map(s => {
                 const player = activePlayers.find(p => p.id === s.playerId);
@@ -303,7 +304,7 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
               <div className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 text-[8px] text-muted-foreground mt-2">
                 <div></div>
                 {[10,11,12,13,14,15,16,17,18].map(h => <div key={h} className="text-center">{h}</div>)}
-                <div className="text-center font-semibold">B9</div>
+                <div className="text-center font-semibold">{trs("B9")}</div>
               </div>
               {summaries.map(s => {
                 const player = activePlayers.find(p => p.id === s.playerId);

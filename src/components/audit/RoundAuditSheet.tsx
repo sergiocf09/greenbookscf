@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -129,14 +130,14 @@ export const RoundAuditSheet: React.FC<RoundAuditSheetProps> = ({
           <div className="flex items-center pr-20">
             <SheetTitle className="flex items-center gap-2 text-base">
               <ClipboardList className="h-4 w-4" />
-              Bitácora de Ronda
+              {trs("Bitácora de Ronda")}
             </SheetTitle>
           </div>
           <button
             type="button"
             onClick={() => onRefresh()}
-            aria-label="Actualizar bitácora"
-            title="Actualizar bitácora"
+            aria-label={trs("Actualizar bitácora")}
+            title={trs("Actualizar bitácora")}
             className="absolute right-14 top-4 inline-flex h-4 w-4 items-center justify-center rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
 
           >
@@ -168,13 +169,13 @@ export const RoundAuditSheet: React.FC<RoundAuditSheetProps> = ({
               <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center text-sm text-muted-foreground py-8">Sin eventos registrados</div>
+            <div className="text-center text-sm text-muted-foreground py-8">{trs("Sin eventos registrados")}</div>
           ) : (
             <div>
               {firstCaptures.length > 0 && (
                 <div>
                   <div className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider pt-2 pb-1">
-                    Primera Captura
+                    {trs("Primera Captura")}
                   </div>
                   {renderEntries(firstCaptures)}
                 </div>
@@ -182,7 +183,7 @@ export const RoundAuditSheet: React.FC<RoundAuditSheetProps> = ({
               {modifications.length > 0 && (
                 <div className={firstCaptures.length > 0 ? 'mt-3' : ''}>
                   <div className="text-[10px] font-bold uppercase text-amber-600 dark:text-amber-400 tracking-wider pt-2 pb-1">
-                    ✏️ Modificaciones
+                    {trs("✏️ Modificaciones")}
                   </div>
                   {renderEntries(modifications)}
                 </div>

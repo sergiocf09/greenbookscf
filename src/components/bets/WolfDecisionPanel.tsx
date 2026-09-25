@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useMemo } from 'react';
 import { Player, WolfConfig, WolfHoleState } from '@/types/golf';
 import { disambiguateInitials } from '@/lib/playerInput';
@@ -84,10 +85,10 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
           isLoggedInUser={wolfPlayer.profileId === currentUserId}
         />
         <span className="font-semibold text-sm">{wolfPlayer.name.split(' ')[0]}</span>
-        <span className="text-xs opacity-80">— La Loba</span>
+        <span className="text-xs opacity-80">{trs("— La Loba")}</span>
         {isRedemption && (
           <Badge variant="destructive" className="ml-auto text-[9px]">
-            Recuperación ×3
+            {trs("Recuperación ×3")}
           </Badge>
         )}
       </div>
@@ -121,7 +122,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
                       setEditing(false);
                     }}
                   >
-                    🐺 Aceptar Recuperación ×3
+                    {trs("🐺 Aceptar Recuperación ×3")}
                   </Button>
                   <Button
                     size="sm"
@@ -129,12 +130,12 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
                     className="flex-1"
                     onClick={() => setRedemptionMode('declined')}
                   >
-                    Declinar
+                    {trs("Declinar")}
                   </Button>
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground italic">Esperando decisión de recuperación…</p>
+              <p className="text-xs text-muted-foreground italic">{trs("Esperando decisión de recuperación…")}</p>
             )
           ) : isRedemption ? (
             canDecide ? (
@@ -151,11 +152,11 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
                     setEditing(false);
                   }}
                 >
-                  🐺 Confirmar Recuperación (Solo ×3)
+                  {trs("🐺 Confirmar Recuperación (Solo ×3)")}
                 </Button>
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground italic">Esperando confirmación de recuperación…</p>
+              <p className="text-xs text-muted-foreground italic">{trs("Esperando confirmación de recuperación…")}</p>
             )
           ) : canDecide ? (
             <div className="space-y-3">
@@ -191,7 +192,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
                   }}
                   className="flex-1"
                 >
-                  Confirmar pareja
+                  {trs("Confirmar pareja")}
                 </Button>
                 <Button
                   size="sm"
@@ -203,12 +204,12 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
                     setEditing(false);
                   }}
                 >
-                  🐺 Ir Sola ×2
+                  {trs("🐺 Ir Sola ×2")}
                 </Button>
               </div>
             </div>
           ) : (
-            <p className="text-xs text-muted-foreground italic">Esperando decisión de La Loba…</p>
+            <p className="text-xs text-muted-foreground italic">{trs("Esperando decisión de La Loba…")}</p>
           )
         )}
 
@@ -218,7 +219,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
             <div className="flex flex-wrap items-center gap-2">
               {holeState.wentSolo ? (
                 <Badge className="bg-amber-500/20 text-amber-700 border-amber-500/40">
-                  🐺 Sola ×2
+                  {trs("🐺 Sola ×2")}
                 </Badge>
               ) : (
                 holeState.partnerIds.map(id => {
@@ -239,7 +240,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Monto efectivo: <span className="font-semibold text-foreground">${fmtMoney(holeState.effectiveAmount ?? wolfConfig.amountPerHole)}</span> por rival
+              Monto efectivo: <span className="font-semibold text-foreground">${fmtMoney(holeState.effectiveAmount ?? wolfConfig.amountPerHole)}</span>{' '}{trs("por rival")}
             </p>
             {canDecide && (
               <Button
@@ -252,7 +253,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
                   setRedemptionMode('pending');
                 }}
               >
-                Cambiar
+                {trs("Cambiar")}
               </Button>
             )}
           </div>
@@ -280,7 +281,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
                   ↔ Empate
                   {wolfConfig.carryover && (
                     <Badge className="bg-amber-500/20 text-amber-700 border-amber-500/40 text-[10px]">
-                      ↑ Carry
+                      {trs("↑ Carry")}
                     </Badge>
                   )}
                 </span>
@@ -298,7 +299,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
                   setRedemptionMode('pending');
                 }}
               >
-                Cambiar
+                {trs("Cambiar")}
               </Button>
             )}
           </div>

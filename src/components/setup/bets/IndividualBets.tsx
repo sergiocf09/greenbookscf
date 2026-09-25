@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React from 'react';
 import { BetConfig, Player, OyesesPlayerConfig, OyesModality } from '@/types/golf';
 import { BetSection } from './BetSection';
@@ -148,7 +149,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
   return (
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground mb-2">
-        Apuestas jugador vs jugador. Usan la Matriz de Hándicaps Bilaterales.
+        {trs("Apuestas jugador vs jugador. Usan la Matriz de Hándicaps Bilaterales.")}
       </p>
 
       {/* Participation Matrix */}
@@ -163,7 +164,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
       {show('medal') && (
         <BetSection
           id="medal"
-          title="Medal"
+          title={trs("Medal")}
           description="Score total por segmento"
           enabled={config.medal.enabled}
           onToggle={(enabled) => onUpdateBet('medal', { enabled })}
@@ -181,7 +182,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
       {show('pressures') && (
         <BetSection
           id="pressures"
-          title="Presiones"
+          title={trs("Presiones")}
           description={config.pressures.onlyMatch ? undefined : 'Se abre con diferencia de 2'}
           enabled={config.pressures.enabled}
           onToggle={(enabled) => onUpdateBet('pressures', { enabled })}
@@ -198,19 +199,19 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           {!isNineHole && <AmountInput label={config.pressures.continua ? "Match 18 (único)" : "Match 18"} value={config.pressures.totalAmount} onChange={(v) => onUpdateBet('pressures', { totalAmount: v })} />}
 
           <div className="flex items-center justify-between pt-1">
-            <Label className="text-xs text-muted-foreground">Sin presiones</Label>
+            <Label className="text-xs text-muted-foreground">{trs("Sin presiones")}</Label>
             <Switch checked={config.pressures.onlyMatch ?? false} onCheckedChange={(v) => onUpdateBet('pressures', { onlyMatch: v, ...(v ? {} : { continua: false }) })} />
           </div>
           {config.pressures.onlyMatch && (
             <>
               <div className="flex items-center justify-between pt-1">
-                <Label className="text-xs text-muted-foreground">Match Play por 18 hoyos</Label>
+                <Label className="text-xs text-muted-foreground">{trs("Match Play por 18 hoyos")}</Label>
                 <Switch checked={config.pressures.continua ?? false} onCheckedChange={(v) => onUpdateBet('pressures', { continua: v })} />
               </div>
               {config.pressures.continua ? (
                 <p className="text-[9px] text-muted-foreground">Match continuo del 1 al 18 sin corte. Se define cuando un jugador lleva más hoyos de ventaja que hoyos restantes (ej: 4&3).</p>
               ) : (
-                <p className="text-[9px] text-muted-foreground">Solo se calcula la apuesta principal. No se abren secundarias.</p>
+                <p className="text-[9px] text-muted-foreground">{trs("Solo se calcula la apuesta principal. No se abren secundarias.")}</p>
               )}
             </>
           )}
@@ -220,7 +221,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
       {show('skins') && (
         <BetSection
           id="skins"
-          title="Skins"
+          title={trs("Skins")}
           description="Mejor score neto por hoyo"
           enabled={config.skins.enabled}
           onToggle={(enabled) => onUpdateBet('skins', { enabled })}
@@ -237,20 +238,20 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           >
             <div className="space-y-3">
               <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-                <Label className="text-xs text-muted-foreground">Modalidad global</Label>
+                <Label className="text-xs text-muted-foreground">{trs("Modalidad global")}</Label>
                 <div className="flex gap-1" onMouseDown={(e) => e.stopPropagation()}>
                   <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateBet('skins', { modality: 'acumulados' }); }}
-                    className={cn('px-2 py-1 text-[10px] rounded transition-colors', (config.skins.modality ?? 'acumulados') === 'acumulados' ? 'bg-golf-gold text-golf-dark font-medium' : 'bg-muted text-muted-foreground hover:bg-muted/80')}>Acum</button>
+                    className={cn('px-2 py-1 text-[10px] rounded transition-colors', (config.skins.modality ?? 'acumulados') === 'acumulados' ? 'bg-golf-gold text-golf-dark font-medium' : 'bg-muted text-muted-foreground hover:bg-muted/80')}>{trs("Acum")}</button>
                   <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateBet('skins', { modality: 'sinAcumular' }); }}
-                    className={cn('px-2 py-1 text-[10px] rounded transition-colors', (config.skins.modality ?? 'acumulados') === 'sinAcumular' ? 'bg-primary text-primary-foreground font-medium' : 'bg-muted text-muted-foreground hover:bg-muted/80')}>Sin Acum</button>
+                    className={cn('px-2 py-1 text-[10px] rounded transition-colors', (config.skins.modality ?? 'acumulados') === 'sinAcumular' ? 'bg-primary text-primary-foreground font-medium' : 'bg-muted text-muted-foreground hover:bg-muted/80')}>{trs("Sin Acum")}</button>
                 </div>
               </div>
 
               <div className="flex items-center justify-between">
-                <Label className="text-xs text-muted-foreground">Arrastrar del 9 al 10</Label>
+                <Label className="text-xs text-muted-foreground">{trs("Arrastrar del 9 al 10")}</Label>
                 <Switch checked={config.skins.carryOver} onCheckedChange={(v) => onUpdateBet('skins', { carryOver: v })} />
               </div>
-              <p className="text-[9px] text-muted-foreground">La modalidad por par de jugadores se puede ajustar en el Dashboard de Apuestas.</p>
+              <p className="text-[9px] text-muted-foreground">{trs("La modalidad por par de jugadores se puede ajustar en el Dashboard de Apuestas.")}</p>
             </div>
           </CollapsibleSubSection>
         </BetSection>
@@ -260,7 +261,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
       {show('caros') && (
         <BetSection
           id="caros"
-          title="Caros"
+          title={trs("Caros")}
           description={`Hoyos ${carosStart}-${carosEnd} (ganador único)`}
           enabled={config.caros.enabled}
           onToggle={(enabled) => onUpdateBet('caros', { enabled })}
@@ -287,7 +288,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
       {show('oyeses') && (
         <BetSection
           id="oyeses"
-          title="Oyeses (Closest to the Pin)"
+          title={trs("Oyeses (Closest to the Pin)")}
           description="Par 3 - cercanía a la bandera"
           enabled={config.oyeses.enabled}
           onToggle={(enabled) => {
@@ -309,9 +310,9 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           <div className="space-y-2 mt-2">
             <div className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
               <div className="flex flex-col">
-                <Label className="text-xs font-medium">Un solo ganador</Label>
+                <Label className="text-xs font-medium">{trs("Un solo ganador")}</Label>
                 <span className="text-[10px] text-muted-foreground">
-                  Solo el #1 cobra a TODOS los demás. Si está activo Acumulados, gana el pote acumulado.
+                  {trs("Solo el #1 cobra a TODOS los demás. Si está activo Acumulados, gana el pote acumulado.")}
                 </span>
               </div>
               <Switch
@@ -321,9 +322,9 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
             </div>
             <div className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
               <div className="flex flex-col">
-                <Label className="text-xs font-medium">Zapato (default)</Label>
+                <Label className="text-xs font-medium">{trs("Zapato (default)")}</Label>
                 <span className="text-[10px] text-muted-foreground">
-                  Activa zapato (x2 al 100%) por default en todas las bilateralidades. Se puede cambiar en cada bilateralidad.
+                  {trs("Activa zapato (x2 al 100%) por default en todas las bilateralidades. Se puede cambiar en cada bilateralidad.")}
                 </span>
               </div>
               <Switch
@@ -335,7 +336,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
 
           <CollapsibleSubSection label="Configuración" summary="Modalidad por jugador">
             <div className="space-y-2">
-              <p className="text-[10px] text-muted-foreground mb-2">Acumulados: debe llegar al green en 1 golpe. Sangrón: todos compiten sin acumular.</p>
+              <p className="text-[10px] text-muted-foreground mb-2">{trs("Acumulados: debe llegar al green en 1 golpe. Sangrón: todos compiten sin acumular.")}</p>
               {(() => {
                 const participantIds = (config.oyeses as any).participantIds as string[] | undefined;
                 const _ovaOn = (config.oyeses as any).oneVsAll === true && (config.oyeses as any).anchorPlayerId;
@@ -362,9 +363,9 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
                       </div>
                       <div className="flex gap-1" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
                         <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); updatePlayerOyes({ modality: 'acumulados' }); }}
-                          className={cn("px-2 py-1 text-[10px] rounded transition-colors", modality === 'acumulados' ? "bg-golf-gold text-golf-dark font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80")}>Acum</button>
+                          className={cn("px-2 py-1 text-[10px] rounded transition-colors", modality === 'acumulados' ? "bg-golf-gold text-golf-dark font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80")}>{trs("Acum")}</button>
                         <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); updatePlayerOyes({ modality: 'sangron' }); }}
-                          className={cn("px-2 py-1 text-[10px] rounded transition-colors", modality === 'sangron' ? "bg-destructive text-destructive-foreground font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80")}>Sang</button>
+                          className={cn("px-2 py-1 text-[10px] rounded transition-colors", modality === 'sangron' ? "bg-destructive text-destructive-foreground font-medium" : "bg-muted text-muted-foreground hover:bg-muted/80")}>{trs("Sang")}</button>
                       </div>
                     </div>
                   );
@@ -378,7 +379,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
       {/* Units */}
       {show('units') && (
         <BetSection
-          id="units" title="Unidades" description="Birdie, Águila, Sandy Par, etc."
+          id="units" title={trs("Unidades")} description="Birdie, Águila, Sandy Par, etc."
           enabled={config.units.enabled} onToggle={(enabled) => onUpdateBet('units', { enabled })}
           isExpanded={expandedSections.includes('units')} onExpandChange={(open) => onToggleSection('units', open)} color="gold"
           helpText="Se gana 1 unidad por birdie, 2 por águila, 3 por albatros. También suman 1 unidad los marcadores manuales: Sandy Par (par desde bunker), Aqua Par (par tras caer al agua) y Hole Out (embocada desde fuera del green)."
@@ -390,7 +391,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
             onChange={(v) => onUpdateBet('units', { valuePerGenericUnit: v })}
           />
           <p className="text-[10px] text-muted-foreground">
-            Para cualquier unidad no contemplada en el set estándar
+            {trs("Para cualquier unidad no contemplada en el set estándar")}
           </p>
         </BetSection>
       )}
@@ -398,7 +399,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
       {/* Manchas */}
       {show('manchas') && (
         <BetSection
-          id="manchas" title="Manchas" description="Pinkie, Paloma, Trampa, Cuatriput, etc."
+          id="manchas" title={trs("Manchas")} description="Pinkie, Paloma, Trampa, Cuatriput, etc."
           enabled={config.manchas.enabled} onToggle={(enabled) => onUpdateBet('manchas', { enabled })}
           isExpanded={expandedSections.includes('manchas')} onExpandChange={(open) => onToggleSection('manchas', open)} color="red"
           helpText="Se cobra por errores durante el hoyo. Son manchas: Doble OB, Trampa (bunker a bunker), Pinkies (tiro de damas), Retruje (golpe para atrás), Doble Agua, Paloma (swing en blanco), Par 3 GIR>3, Moreliana (salirse del green poteando) y Doble Dígito (10+ golpes). El cuatriput (4+ putts) también suma como mancha. Paga el diferencial: quien tiene más manchas paga la diferencia."
@@ -410,7 +411,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
             onChange={(v) => onUpdateBet('manchas', { valuePerGenericMancha: v })}
           />
           <p className="text-[10px] text-muted-foreground">
-            Para cualquier mancha no contemplada en el set estándar
+            {trs("Para cualquier mancha no contemplada en el set estándar")}
           </p>
         </BetSection>
       )}
@@ -418,7 +419,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
       {/* Putts */}
       {show('putts') && (
         <BetSection
-          id="putts" title="Putts ⛳" description="Comparación directa de putts (sin hándicap)"
+          id="putts" title={trs("Putts ⛳")} description="Comparación directa de putts (sin hándicap)"
           enabled={config.putts?.enabled ?? false} onToggle={(enabled) => onUpdateBet('putts', { enabled })}
           isExpanded={expandedSections.includes('putts')} onExpandChange={(open) => onToggleSection('putts', open)}
           helpText="Comparación directa del total de putts entre cada par de jugadores, sin aplicar hándicap. Se paga por Front 9, Back 9 y Total 18 por separado. Quien tenga menos putts en cada segmento gana la apuesta. En empate no hay pago."
@@ -426,7 +427,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           <AmountInput label="Front 9" value={config.putts?.frontAmount ?? 50} onChange={(v) => onUpdateBet('putts', { frontAmount: v })} />
           {!isNineHole && <AmountInput label="Back 9" value={config.putts?.backAmount ?? 50} onChange={(v) => onUpdateBet('putts', { backAmount: v })} />}
           {!isNineHole && <AmountInput label="Total 18" value={config.putts?.totalAmount ?? 100} onChange={(v) => onUpdateBet('putts', { totalAmount: v })} />}
-          <p className="text-[9px] text-muted-foreground mt-2">⚠️ Esta apuesta NO utiliza hándicaps. Gana quien tenga menos putts en cada segmento.</p>
+          <p className="text-[9px] text-muted-foreground mt-2">{trs("⚠️ Esta apuesta NO utiliza hándicaps. Gana quien tenga menos putts en cada segmento.")}</p>
         </BetSection>
       )}
 
@@ -434,7 +435,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
       {show('matchPlay') && (
         <BetSection
           id="matchPlay"
-          title="Match Play"
+          title={trs("Match Play")}
           description="Match play bilateral 18 hoyos (independiente)"
           enabled={config.matchPlay?.enabled ?? false}
           onToggle={(enabled) => onUpdateBet('matchPlay' as any, { enabled })}
@@ -459,7 +460,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
       {show('bloques') && (
         <BetSection
           id="bloques"
-          title="Bloques"
+          title={trs("Bloques")}
           description={`Mini-medal por ${config.bloques?.holesPerBlock ?? 3} hoyos · ${(isNineHole ? 9 : 18) / (config.bloques?.holesPerBlock ?? 3)} bloques`}
           enabled={config.bloques?.enabled ?? false}
           onToggle={(enabled) => onUpdateBet('bloques' as any, { enabled })}
@@ -469,7 +470,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         >
           <div className="space-y-3">
             <div>
-              <Label className="text-xs text-muted-foreground mb-1 block">Hoyos por bloque</Label>
+              <Label className="text-xs text-muted-foreground mb-1 block">{trs("Hoyos por bloque")}</Label>
               <div className="flex gap-1">
                 {([2, 3, 6] as const).map((n) => {
                   const disabled = isNineHole && n === 6;
@@ -503,21 +504,21 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
             />
 
             <div className="flex items-center justify-between">
-              <Label className="text-xs text-muted-foreground">Acumula en empate</Label>
+              <Label className="text-xs text-muted-foreground">{trs("Acumula en empate")}</Label>
               <Switch
                 checked={config.bloques?.carryOverOnTie ?? true}
                 onCheckedChange={(checked) => onUpdateBet('bloques' as any, { carryOverOnTie: checked })}
               />
             </div>
             <p className="text-[9px] text-muted-foreground">
-              Si está activo, el bloque empatado suma su importe al siguiente. Puede encadenarse.
+              {trs("Si está activo, el bloque empatado suma su importe al siguiente. Puede encadenarse.")}
             </p>
           </div>
         </BetSection>
       )}
       {show('rayas') && (
         <BetSection
-          id="rayas" title="Rayas" description="Agregador: Skins + Unidades + Oyes + Medal"
+          id="rayas" title={trs("Rayas")} description="Agregador: Skins + Unidades + Oyes + Medal"
           enabled={config.rayas?.enabled ?? false} onToggle={(enabled) => onUpdateBet('rayas', { enabled })}
           isExpanded={expandedSections.includes('rayas')} onExpandChange={(open) => onToggleSection('rayas', open)} color="gold"
           helpText="Contador acumulado de eventos ganados a lo largo de la ronda. Suma rayas por: Skins ganados, Oyeses ganados, Unidades ganadas y Medal ganado. El valor por raya se configura por segmento Front y Back."

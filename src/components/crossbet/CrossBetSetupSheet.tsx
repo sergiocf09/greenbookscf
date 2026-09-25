@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -82,7 +83,7 @@ export const CrossBetSetupSheet: React.FC<CrossBetSetupSheetProps> = ({
         <SheetHeader className="pb-4">
           <div className="flex items-center gap-2">
             <Swords className="h-5 w-5 text-primary" />
-            <SheetTitle className="text-base">Cruzar tarjeta</SheetTitle>
+            <SheetTitle className="text-base">{trs("Cruzar tarjeta")}</SheetTitle>
           </div>
         </SheetHeader>
 
@@ -106,7 +107,7 @@ export const CrossBetSetupSheet: React.FC<CrossBetSetupSheetProps> = ({
           </div>
         </div>
 
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Apuestas del cruce</p>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">{trs("Apuestas del cruce")}</p>
         <BetToggleRow label="Medal"      enabled={!!config.medal?.enabled}     amount={config.medal?.amount}
           onToggle={v => update('medal', { enabled: v })}     onAmountChange={v => update('medal', { amount: v })} />
         <BetToggleRow label="Putts"      enabled={!!config.putts?.enabled}     amount={config.putts?.amount}
@@ -121,14 +122,14 @@ export const CrossBetSetupSheet: React.FC<CrossBetSetupSheetProps> = ({
           onToggle={v => update('bloques', { enabled: v })}   onAmountChange={v => update('bloques', { amount: v })} />
 
         <p className="text-[10px] text-muted-foreground mt-4 mb-4">
-          El rival recibirá una invitación. Las apuestas aplican al sliding bilateral que ya tienen entre ustedes.
+          {trs("El rival recibirá una invitación. Las apuestas aplican al sliding bilateral que ya tienen entre ustedes.")}
         </p>
 
         {sendError && (
           <p className="text-xs text-destructive mb-2 text-center">
             {(sendError as any)?.message?.includes('subscription_required')
-              ? 'Ambos jugadores necesitan suscripción Pro para cruzar tarjeta.'
-              : 'Error al enviar invitación. Intenta de nuevo.'}
+              ? trs("Ambos jugadores necesitan suscripción Pro para cruzar tarjeta.")
+              : trs("Error al enviar invitación. Intenta de nuevo.")}
           </p>
         )}
 

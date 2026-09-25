@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
+import { useTranslation } from "react-i18next";
 import "./index.css";
 import "./i18n";
 import { initSentry } from "./lib/sentry";
@@ -67,8 +68,14 @@ if (isInIframe || isDevOrPreviewHost) {
 
 initSentry();
 
+// Remount the tree on language change so display-only phrase translations refresh.
+const LangRoot = () => {
+  const { i18n } = useTranslation();
+  return <App key={i18n.language} />;
+};
+
 createRoot(document.getElementById("root")!).render(
   <RouteErrorBoundary>
-    <App />
+    <LangRoot />
   </RouteErrorBoundary>
 );

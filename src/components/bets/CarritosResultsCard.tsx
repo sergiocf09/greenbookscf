@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { useTranslation } from 'react-i18next';
 import React, { useMemo } from 'react';
 import { Player, TeamHandicapConfig } from '@/types/golf';
@@ -283,7 +284,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
 
           <div className="flex items-center gap-2">
             {isDisabled ? (
-              <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
+              <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">{trs("Cancelada")}</div>
             ) : (
               <span className={cn('text-base font-bold tabular-nums', getNetTone(baseTeamMoney))}>
                 {showAmtSigned(baseTeamMoney)}
@@ -306,7 +307,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                 size="icon"
                 className="h-6 w-6 text-muted-foreground hover:text-destructive"
                 onClick={onCancel}
-                title="Cancelar Carritos"
+                title={trs("Cancelar Carritos")}
               >
                 <XCircle className="h-4 w-4" />
               </Button>
@@ -322,7 +323,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
               <span className="font-medium truncate">
                 {displayTeamAPlayers.map(p => getShortName(p)).join(' / ')}
               </span>
-              <span className="text-muted-foreground text-xs mx-2">vs</span>
+              <span className="text-muted-foreground text-xs mx-2">{trs("vs")}</span>
               <span className="font-medium truncate text-right">
                 {displayTeamBPlayers.map(p => getShortName(p)).join(' / ')}
               </span>
@@ -367,7 +368,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
           {/* Front 9 */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium">Front 9</span>
+              <span className="text-xs font-medium">{trs("Front 9")}</span>
               <div className="flex items-center gap-2">
                 <span className={cn('text-xs tabular-nums', getNetTone(baseTeamNetFront))}>
                   {baseTeamNetFront >= 0 ? '+' : ''}{baseTeamNetFront} pts
@@ -422,15 +423,15 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                         />
                         <div className="pt-1 border-t border-border/50">
                           {(results.scoringType === 'lowBall' || results.scoringType === 'all') && (
-                            <p className="flex justify-between"><span>Bola Baja</span><span className="tabular-nums">{getWinnerText(detail.lowBallWinner)}</span></p>
+                            <p className="flex justify-between"><span>{trs("Bola Baja")}</span><span className="tabular-nums">{getWinnerText(detail.lowBallWinner)}</span></p>
                           )}
                           {(results.scoringType === 'highBall' || results.scoringType === 'all') && (
-                            <p className="flex justify-between"><span>Bola Alta</span><span className="tabular-nums">{getWinnerText(detail.highBallWinner)}</span></p>
+                            <p className="flex justify-between"><span>{trs("Bola Alta")}</span><span className="tabular-nums">{getWinnerText(detail.highBallWinner)}</span></p>
                           )}
                           {(results.scoringType === 'combined' || results.scoringType === 'all') && (
-                            <p className="flex justify-between"><span>Suma</span><span className="tabular-nums">{getWinnerText(detail.combinedWinner)}</span></p>
+                            <p className="flex justify-between"><span>{trs("Suma")}</span><span className="tabular-nums">{getWinnerText(detail.combinedWinner)}</span></p>
                           )}
-                          <p className="flex justify-between font-medium"><span>Puntos</span><span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span></p>
+                          <p className="flex justify-between font-medium"><span>{trs("Puntos")}</span><span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span></p>
                         </div>
                       </div>
                     </PopoverContent>
@@ -444,7 +445,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
           {/* Back 9 */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium">Back 9</span>
+              <span className="text-xs font-medium">{trs("Back 9")}</span>
               <div className="flex items-center gap-2">
                 <span className={cn('text-xs tabular-nums', getNetTone(baseTeamNetBack))}>
                   {baseTeamNetBack >= 0 ? '+' : ''}{baseTeamNetBack} pts
@@ -499,15 +500,15 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                         />
                         <div className="pt-1 border-t border-border/50">
                           {(results.scoringType === 'lowBall' || results.scoringType === 'all') && (
-                            <p className="flex justify-between"><span>Bola Baja</span><span className="tabular-nums">{getWinnerText(detail.lowBallWinner)}</span></p>
+                            <p className="flex justify-between"><span>{trs("Bola Baja")}</span><span className="tabular-nums">{getWinnerText(detail.lowBallWinner)}</span></p>
                           )}
                           {(results.scoringType === 'highBall' || results.scoringType === 'all') && (
-                            <p className="flex justify-between"><span>Bola Alta</span><span className="tabular-nums">{getWinnerText(detail.highBallWinner)}</span></p>
+                            <p className="flex justify-between"><span>{trs("Bola Alta")}</span><span className="tabular-nums">{getWinnerText(detail.highBallWinner)}</span></p>
                           )}
                           {(results.scoringType === 'combined' || results.scoringType === 'all') && (
-                            <p className="flex justify-between"><span>Suma</span><span className="tabular-nums">{getWinnerText(detail.combinedWinner)}</span></p>
+                            <p className="flex justify-between"><span>{trs("Suma")}</span><span className="tabular-nums">{getWinnerText(detail.combinedWinner)}</span></p>
                           )}
-                          <p className="flex justify-between font-medium"><span>Puntos</span><span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span></p>
+                          <p className="flex justify-between font-medium"><span>{trs("Puntos")}</span><span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span></p>
                         </div>
                       </div>
                     </PopoverContent>
@@ -519,7 +520,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
 
               {/* Total */}
               <div className="flex items-center justify-between border-t border-border/50 pt-2">
-                <span className="text-xs font-medium">Total 18</span>
+                <span className="text-xs font-medium">{trs("Total 18")}</span>
                 <div className="flex items-center gap-2">
                   <span className={cn('text-sm tabular-nums', getNetTone(baseTeamNetTotal))}>
                     {baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal} pts

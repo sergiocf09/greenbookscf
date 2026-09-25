@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLeaderboardDetail, StandingsEntry } from '@/hooks/useLeaderboards';
@@ -56,7 +57,7 @@ const LeaderboardDetail = () => {
   const copyCode = () => {
     if (event?.code) {
       navigator.clipboard.writeText(event.code);
-      toast.success('Código copiado');
+      toast.success(trs("Código copiado"));
     }
   };
 
@@ -64,7 +65,7 @@ const LeaderboardDetail = () => {
     if (event?.code) {
       const url = `${window.location.origin}/leaderboards/join/${event.code}`;
       navigator.clipboard.writeText(url);
-      toast.success('Link copiado');
+      toast.success(trs("Link copiado"));
     }
   };
 
@@ -79,8 +80,8 @@ const LeaderboardDetail = () => {
   if (!event) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
-        <p className="text-muted-foreground">Leaderboard no encontrado</p>
-        <Button onClick={() => navigate('/leaderboards')}>Volver</Button>
+        <p className="text-muted-foreground">{trs("Leaderboard no encontrado")}</p>
+        <Button onClick={() => navigate('/leaderboards')}>{trs("Volver")}</Button>
       </div>
     );
   }
@@ -99,7 +100,7 @@ const LeaderboardDetail = () => {
             <GreenBookLogo height={24} />
           </div>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" onClick={() => window.location.reload()} aria-label="Actualizar">
+            <Button variant="ghost" size="icon" onClick={() => window.location.reload()} aria-label={trs("Actualizar")}>
               <RefreshCw className="h-5 w-5" />
             </Button>
             <Button variant="ghost" size="icon" onClick={copyShareLink}>
@@ -139,7 +140,7 @@ const LeaderboardDetail = () => {
             <div className="flex gap-1 mt-2">
               {availableModes.map(m => (
                 <span key={m} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
-                  {m === 'gross' ? 'Gross' : m === 'net' ? 'Neto' : 'Stableford'}
+                  {m === 'gross' ? 'Gross' : m === 'net' ? trs("Neto") : trs("Stableford")}
                 </span>
               ))}
             </div>
@@ -149,7 +150,7 @@ const LeaderboardDetail = () => {
         {/* Standings */}
         <Card>
           <CardHeader className="pb-2 pt-4 px-4">
-            <CardTitle className="text-base">Standings</CardTitle>
+            <CardTitle className="text-base">{trs("Standings")}</CardTitle>
           </CardHeader>
           <CardContent className="px-0 pb-2 pt-0">
             {/* Sort tabs */}
@@ -158,13 +159,13 @@ const LeaderboardDetail = () => {
                 <Tabs value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
                   <TabsList className="w-full h-8">
                     {availableModes.includes('gross') && (
-                      <TabsTrigger value="gross" className="flex-1 text-xs h-7">Gross</TabsTrigger>
+                      <TabsTrigger value="gross" className="flex-1 text-xs h-7">{trs("Gross")}</TabsTrigger>
                     )}
                     {availableModes.includes('net') && (
-                      <TabsTrigger value="net" className="flex-1 text-xs h-7">Neto</TabsTrigger>
+                      <TabsTrigger value="net" className="flex-1 text-xs h-7">{trs("Neto")}</TabsTrigger>
                     )}
                     {availableModes.includes('stableford') && (
-                      <TabsTrigger value="stableford" className="flex-1 text-xs h-7">Stableford</TabsTrigger>
+                      <TabsTrigger value="stableford" className="flex-1 text-xs h-7">{trs("Stableford")}</TabsTrigger>
                     )}
                   </TabsList>
                 </Tabs>
@@ -173,18 +174,18 @@ const LeaderboardDetail = () => {
 
             {sortedStandings.length === 0 ? (
               <p className="text-center text-sm text-muted-foreground py-8">
-                No hay participantes registrados
+                {trs("No hay participantes registrados")}
               </p>
             ) : (
               <table className="table-fixed w-full caption-bottom text-sm">
                 <thead className="[&_tr]:border-b">
                   <tr className="text-xs border-b">
                     <th className="h-8 w-8 text-center px-1 py-1 font-medium text-muted-foreground">#</th>
-                    <th className="h-8 px-1 py-1 text-left font-medium text-muted-foreground">Jugador</th>
-                    <th className="h-8 text-center w-10 px-1 py-1 font-medium text-muted-foreground">Hcp</th>
-                    <th className="h-8 text-center w-10 px-1 py-1 font-medium text-muted-foreground">Hoyos</th>
+                    <th className="h-8 px-1 py-1 text-left font-medium text-muted-foreground">{trs("Jugador")}</th>
+                    <th className="h-8 text-center w-10 px-1 py-1 font-medium text-muted-foreground">{trs("Hcp")}</th>
+                    <th className="h-8 text-center w-10 px-1 py-1 font-medium text-muted-foreground">{trs("Hoyos")}</th>
                     <th className="h-8 text-center w-14 px-1 py-1 font-medium text-muted-foreground">
-                      {sortMode === 'stableford' ? 'Pts' : 'Score'}
+                      {sortMode === 'stableford' ? trs("Pts") : trs("Score")}
                     </th>
                   </tr>
                 </thead>

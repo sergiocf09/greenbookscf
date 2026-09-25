@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -127,14 +128,14 @@ export const AddFromFriendsDialog: React.FC<AddFromFriendsDialogProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Agregar desde Amigos
+            {trs("Agregar desde Amigos")}
           </DialogTitle>
         </DialogHeader>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="flex-1 flex flex-col min-h-0">
           <TabsList className="grid grid-cols-2 w-full">
-            <TabsTrigger value="friends">Mis Amigos</TabsTrigger>
-            <TabsTrigger value="search">Buscar</TabsTrigger>
+            <TabsTrigger value="friends">{trs("Mis Amigos")}</TabsTrigger>
+            <TabsTrigger value="search">{trs("Buscar")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="friends" className="flex-1 mt-4 min-h-0">
@@ -145,8 +146,8 @@ export const AddFromFriendsDialog: React.FC<AddFromFriendsDialogProps> = ({
             ) : friends.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p className="text-sm">No tienes amigos agregados</p>
-                <p className="text-xs mt-1">Busca jugadores para agregarlos</p>
+                <p className="text-sm">{trs("No tienes amigos agregados")}</p>
+                <p className="text-xs mt-1">{trs("Busca jugadores para agregarlos")}</p>
               </div>
             ) : (
               <ScrollArea className="h-[300px] pr-2">
@@ -187,7 +188,7 @@ export const AddFromFriendsDialog: React.FC<AddFromFriendsDialogProps> = ({
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por nombre o correo..."
+                placeholder={trs("Buscar por nombre o correo...")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -201,11 +202,11 @@ export const AddFromFriendsDialog: React.FC<AddFromFriendsDialogProps> = ({
             ) : searchQuery.length < 2 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Search className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p className="text-sm">Escribe al menos 2 caracteres</p>
+                <p className="text-sm">{trs("Escribe al menos 2 caracteres")}</p>
               </div>
             ) : searchResults.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <p className="text-sm">No se encontraron jugadores</p>
+                <p className="text-sm">{trs("No se encontraron jugadores")}</p>
               </div>
             ) : (
               <ScrollArea className="h-[250px] pr-2">
@@ -252,7 +253,7 @@ export const AddFromFriendsDialog: React.FC<AddFromFriendsDialogProps> = ({
             </span>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Cancelar
+                {trs("Cancelar")}
               </Button>
               <Button onClick={handleConfirm} disabled={selectedCount === 0}>
                 <UserPlus className="h-4 w-4 mr-1" />
@@ -330,7 +331,7 @@ const SelectablePlayerCard: React.FC<SelectablePlayerCardProps> = ({
       {!isDisabled && !multiSelect && (
         <Button variant="outline" size="sm" className="text-xs h-8">
           <UserPlus className="h-3.5 w-3.5 mr-1" />
-          Agregar
+          {trs("Agregar")}
         </Button>
       )}
       {showAddFriendHint && onAddFriend && !isDisabled && (
@@ -343,7 +344,7 @@ const SelectablePlayerCard: React.FC<SelectablePlayerCardProps> = ({
           }}
           className="text-xs h-7 text-muted-foreground"
         >
-          + Amigo
+          {trs("+ Amigo")}
         </Button>
       )}
     </div>

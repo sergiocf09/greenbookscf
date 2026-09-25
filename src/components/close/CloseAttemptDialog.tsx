@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -29,9 +30,9 @@ export const CloseAttemptDialog: React.FC<CloseAttemptDialogProps> = ({
     try {
       setCopying(true);
       await navigator.clipboard.writeText(text);
-      toast.success('Reporte copiado');
+      toast.success(trs("Reporte copiado"));
     } catch {
-      toast.error('No se pudo copiar el reporte');
+      toast.error(trs("No se pudo copiar el reporte"));
     } finally {
       setCopying(false);
     }
@@ -41,11 +42,11 @@ export const CloseAttemptDialog: React.FC<CloseAttemptDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Diagnóstico de cierre</DialogTitle>
+          <DialogTitle>{trs("Diagnóstico de cierre")}</DialogTitle>
         </DialogHeader>
 
         {!report ? (
-          <div className="text-sm text-muted-foreground">No hay reporte disponible.</div>
+          <div className="text-sm text-muted-foreground">{trs("No hay reporte disponible.")}</div>
         ) : (
           <div className="space-y-3">
             <div className="text-sm">
@@ -82,12 +83,12 @@ export const CloseAttemptDialog: React.FC<CloseAttemptDialogProps> = ({
             <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={copy} disabled={copying || !text}>
                 <Copy className="h-4 w-4 mr-2" />
-                Copiar reporte
+                {trs("Copiar reporte")}
               </Button>
               {onRetry && (
                 <Button type="button" onClick={onRetry}>
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Reintentar
+                  {trs("Reintentar")}
                 </Button>
               )}
             </div>

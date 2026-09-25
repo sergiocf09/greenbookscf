@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useEffect, useCallback, useRef, useMemo, useReducer, lazy, Suspense } from 'react';
 import { Scorecard } from '@/components/scorecard/Scorecard';
 import { CloneRoundData, FullCloneRoundData } from '@/components/RoundHistory';
@@ -447,11 +448,11 @@ const Index = () => {
 
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
-      toast.success('¡Bienvenido a GreenBook Pro! Tu suscripción está activa.');
+      toast.success(trs("¡Bienvenido a GreenBook Pro! Tu suscripción está activa."));
       window.history.replaceState({}, '', '/');
     }
     if (params.get('payment') === 'cancelled') {
-      toast.info('Pago cancelado. Puedes suscribirte cuando quieras.');
+      toast.info(trs("Pago cancelado. Puedes suscribirte cuando quieras."));
       window.history.replaceState({}, '', '/');
     }
 
@@ -842,7 +843,7 @@ const Index = () => {
     closeDialog('history');
     
     try {
-      toast.info('Creando ronda con scores precargados...');
+      toast.info(trs("Creando ronda con scores precargados..."));
       
       // Create a new round via RPC
       const { data: roundResult, error: createError } = await supabase.rpc('create_round', {
@@ -1055,7 +1056,7 @@ const Index = () => {
       if (failedScores > 0) {
         toast.warning(`Ronda duplicada con ${failedScores} score(s) incompletos. Redirigiendo...`);
       } else {
-        toast.success('Ronda duplicada exitosamente. Redirigiendo...');
+        toast.success(trs("Ronda duplicada exitosamente. Redirigiendo..."));
       }
       
       // Force reload to trigger restore mechanism
@@ -1065,13 +1066,13 @@ const Index = () => {
       
     } catch (err: any) {
       devError('Error cloning full round:', err);
-      toast.error('Error al duplicar la ronda: ' + (err.message || 'Error desconocido'));
+      toast.error(trs("Error al duplicar la ronda: ") + (err.message || 'Error desconocido'));
     }
   }, [profile?.id]);
 
   const handleAddGroup = useCallback(async () => {
     if (!roundState.id) {
-      toast.error('Primero crea/selecciona una ronda');
+      toast.error(trs("Primero crea/selecciona una ronda"));
       return;
     }
 
@@ -1108,7 +1109,7 @@ const Index = () => {
       toast.success(`${newGroup.name} creado`);
     } catch (e: any) {
       devError('Error creating round group:', e);
-      toast.error('No se pudo crear el grupo');
+      toast.error(trs("No se pudo crear el grupo"));
     }
   }, [roundState.id, setPlayerGroups]);
 
@@ -1228,8 +1229,8 @@ const Index = () => {
       if (!cur.includes(roundId)) cur.push(roundId);
       localStorage.setItem(hiddenPendingKey, JSON.stringify(cur));
       setHiddenPendingIds(cur);
-      toast.success('Tarjeta ocultada de tu vista', {
-        description: 'Solo el organizador puede cerrarla oficialmente.',
+      toast.success(trs("Tarjeta ocultada de tu vista"), {
+        description: trs("Solo el organizador puede cerrarla oficialmente."),
       });
     } catch (e) {
       devError('hide pending round failed', e);
@@ -1392,7 +1393,7 @@ const Index = () => {
     // Check if this player is the organizer - organizers cannot be removed
     const playerToRemove = players.find(p => p.id === playerId);
     if (playerToRemove && roundState.organizerProfileId && playerToRemove.profileId === roundState.organizerProfileId) {
-      toast.error('El organizador de la ronda no puede ser eliminado');
+      toast.error(trs("El organizador de la ronda no puede ser eliminado"));
       return;
     }
     
@@ -1408,7 +1409,7 @@ const Index = () => {
         
         if (error) {
           devError('Error removing player from database:', error);
-          toast.error('Error al eliminar jugador (solo el organizador puede hacerlo)');
+          toast.error(trs("Error al eliminar jugador (solo el organizador puede hacerlo)"));
           return;
         }
         
@@ -1425,10 +1426,10 @@ const Index = () => {
           return next;
         });
         
-        toast.success('Jugador eliminado');
+        toast.success(trs("Jugador eliminado"));
       } catch (err) {
         devError('Error in handleRemovePlayer:', err);
-        toast.error('Error al eliminar jugador');
+        toast.error(trs("Error al eliminar jugador"));
         return;
       }
     }
@@ -1573,7 +1574,7 @@ const Index = () => {
       const playersToAdd = newPlayers.filter(p => !existingIds.has(p.id) && !existingIds.has(p.profileId));
 
       if (playersToAdd.length === 0) {
-        toast.info('Todos los jugadores seleccionados ya están en la ronda');
+        toast.info(trs("Todos los jugadores seleccionados ya están en la ronda"));
         return;
       }
 
@@ -1584,7 +1585,7 @@ const Index = () => {
     // Case 2: Round exists but no group - shouldn't happen, but handle gracefully
     if (!roundState.groupId) {
       devError('Round exists but no groupId - cannot add players');
-      toast.error('Error de estado: no hay grupo disponible');
+      toast.error(trs("Error de estado: no hay grupo disponible"));
       return;
     }
 
@@ -1907,7 +1908,7 @@ const Index = () => {
         return !g.players.some(p => p.profileId && p.isAdmin);
       });
       if (groupsMissingAdmin.length > 0) {
-        toast.error('Designa al menos un co-administrador en cada grupo adicional', {
+        toast.error(trs("Designa al menos un co-administrador en cada grupo adicional"), {
           description: `Falta en: ${groupsMissingAdmin.map(g => g.name).join(', ')}. Solo el organizador o un co-admin del grupo podrán capturar scores.`,
         });
         return;
@@ -2426,7 +2427,7 @@ const Index = () => {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" />
-          <p className="text-muted-foreground">Cargando...</p>
+          <p className="text-muted-foreground">{trs("Cargando...")}</p>
         </div>
       </div>
     );
@@ -2437,9 +2438,9 @@ const Index = () => {
       <AlertDialog open={dialogs.pendingRound && visiblePendingRounds.length > 0 && !isRestoring} onOpenChange={(v: boolean) => setDialog('pendingRound', v)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Tarjeta pendiente</AlertDialogTitle>
+            <AlertDialogTitle>{trs("Tarjeta pendiente")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Encontramos rondas sin “Cerrar Tarjeta”. Elige cómo continuar.
+              {trs("Encontramos rondas sin “Cerrar Tarjeta”. Elige cómo continuar.")}
 
               <div className="mt-3 space-y-2">
                 {visiblePendingRounds.map((r) => {
@@ -2451,13 +2452,13 @@ const Index = () => {
                           <div className="text-sm font-medium text-foreground">
                             {s?.courseName ?? 'Campo'}
                             {r.isOrganizer ? (
-                              <span className="ml-2 text-[10px] uppercase tracking-wide bg-primary/15 text-primary px-1.5 py-0.5 rounded">Organizador</span>
+                              <span className="ml-2 text-[10px] uppercase tracking-wide bg-primary/15 text-primary px-1.5 py-0.5 rounded">{trs("Organizador")}</span>
                             ) : (
-                              <span className="ml-2 text-[10px] uppercase tracking-wide bg-muted text-muted-foreground px-1.5 py-0.5 rounded">Participante</span>
+                              <span className="ml-2 text-[10px] uppercase tracking-wide bg-muted text-muted-foreground px-1.5 py-0.5 rounded">{trs("Participante")}</span>
                             )}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {r.status === 'in_progress' ? 'En progreso' : 'En configuración'} •{' '}
+                            {r.status === 'in_progress' ? trs("En progreso") : trs("En configuración")} •{' '}
                             {format(r.date, "d 'de' MMMM, yyyy", { locale: es })}
                             {s ? (
                               <> • {s.holesPlayed} hoyos • {s.totalStrokes} golpes</>
@@ -2475,7 +2476,7 @@ const Index = () => {
                               handleRestorePendingRound(r.roundId);
                             }}
                           >
-                            Restaurar
+                            {trs("Restaurar")}
                           </Button>
                           {r.isOrganizer ? (
                             <Button
@@ -2487,7 +2488,7 @@ const Index = () => {
                                 handleRestoreAndJumpToClose(r.roundId);
                               }}
                             >
-                              Cerrar tarjeta
+                              {trs("Cerrar tarjeta")}
                             </Button>
                           ) : (
                             <Button
@@ -2498,7 +2499,7 @@ const Index = () => {
                                 handleHidePendingRoundLocally(r.roundId);
                               }}
                             >
-                              Ocultar de mi vista
+                              {trs("Ocultar de mi vista")}
                             </Button>
                           )}
                         </div>
@@ -2519,7 +2520,7 @@ const Index = () => {
                   handleDiscardPendingRoundAndStartNew();
                 }}
               >
-                Iniciar nueva
+                {trs("Iniciar nueva")}
               </Button>
             </AlertDialogCancel>
           </AlertDialogFooter>
@@ -2570,7 +2571,7 @@ const Index = () => {
       {user?.is_anonymous && (
         <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-700 px-4 py-2 flex items-center justify-between gap-2">
           <span className="text-xs text-amber-800 dark:text-amber-200">
-            Estás viendo la ronda como invitado
+            {trs("Estás viendo la ronda como invitado")}
           </span>
           <Button
             size="sm"
@@ -2578,7 +2579,7 @@ const Index = () => {
             className="text-xs h-7 border-amber-400 text-amber-800 hover:bg-amber-100 dark:text-amber-200 dark:border-amber-600 dark:hover:bg-amber-900/40"
             onClick={() => navigate('/auth', { state: { returnTo: '/' } })}
           >
-            Registrarme
+            {trs("Registrarme")}
           </Button>
         </div>
       )}
@@ -2589,11 +2590,11 @@ const Index = () => {
           <div className="max-w-md mx-auto">
             <Tabs value={view === 'scoring' ? 'scoring' : view} onValueChange={(v) => { setView(v as AppView); if (v !== 'leaderboards') setLeaderboardDetailId(null); if (v !== 'rankings') setRankingDetailId(null); }}>
               <TabsList className="w-full grid grid-cols-5 h-14">
-                <TabsTrigger value="setup" className="text-xs flex flex-col items-center gap-0.5 py-1"><Settings className="h-4 w-4" /><span className="text-[10px] leading-tight">Setup</span></TabsTrigger>
-                <TabsTrigger value="handicaps" className="text-xs flex flex-col items-center gap-0.5 py-1"><RefreshCw className="h-4 w-4" /><span className="text-[10px] leading-tight">Hándicaps</span></TabsTrigger>
-                <TabsTrigger value="betsetup" className="text-xs flex flex-col items-center gap-0.5 py-1"><Dices className="h-4 w-4" /><span className="text-[10px] leading-tight">Apuestas</span></TabsTrigger>
-                <TabsTrigger value="scorecard" className="text-xs flex flex-col items-center gap-0.5 py-1"><Trophy className="h-4 w-4" /><span className="text-[10px] leading-tight">Scorecard</span></TabsTrigger>
-                <TabsTrigger value="bets" className="text-xs flex flex-col items-center gap-0.5 py-1"><CoinDollarIcon className="h-4 w-4" /><span className="text-[10px] leading-tight">Resultados</span></TabsTrigger>
+                <TabsTrigger value="setup" className="text-xs flex flex-col items-center gap-0.5 py-1"><Settings className="h-4 w-4" /><span className="text-[10px] leading-tight">{trs("Setup")}</span></TabsTrigger>
+                <TabsTrigger value="handicaps" className="text-xs flex flex-col items-center gap-0.5 py-1"><RefreshCw className="h-4 w-4" /><span className="text-[10px] leading-tight">{trs("Hándicaps")}</span></TabsTrigger>
+                <TabsTrigger value="betsetup" className="text-xs flex flex-col items-center gap-0.5 py-1"><Dices className="h-4 w-4" /><span className="text-[10px] leading-tight">{trs("Apuestas")}</span></TabsTrigger>
+                <TabsTrigger value="scorecard" className="text-xs flex flex-col items-center gap-0.5 py-1"><Trophy className="h-4 w-4" /><span className="text-[10px] leading-tight">{trs("Scorecard")}</span></TabsTrigger>
+                <TabsTrigger value="bets" className="text-xs flex flex-col items-center gap-0.5 py-1"><CoinDollarIcon className="h-4 w-4" /><span className="text-[10px] leading-tight">{trs("Resultados")}</span></TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -2795,9 +2796,9 @@ const Index = () => {
                       .eq('round_id', roundId);
                     if (scoresError) throw scoresError;
                     setIsRoundLinkedToLeaderboard(false);
-                    toast.success('Ronda desvinculada del leaderboard');
+                    toast.success(trs("Ronda desvinculada del leaderboard"));
                   } catch (err: any) {
-                    toast.error('Error al desvincular: ' + err.message);
+                    toast.error(trs("Error al desvincular: ") + err.message);
                   }
                 }}
               />
@@ -2917,9 +2918,9 @@ const Index = () => {
                     }
 
                     setIsRoundLinkedToLeaderboard(false);
-                    toast.success('Ronda desvinculada del leaderboard');
+                    toast.success(trs("Ronda desvinculada del leaderboard"));
                   } catch (err: any) {
-                    toast.error('Error al desvincular: ' + err.message);
+                    toast.error(trs("Error al desvincular: ") + err.message);
                   }
                 }}
               />
@@ -3062,18 +3063,18 @@ const Index = () => {
             <AlertDialogHeader>
               <AlertDialogTitle>¿Cruzar tarjeta con {crossBetTarget.name}?</AlertDialogTitle>
               <AlertDialogDescription>
-                Se enviará una invitación de cruce. Cuando la acepte, podrás elegir qué apuestas individuales incluir en este cruce desde la sección <strong>Apuestas de Cruce</strong> del dashboard.
+                {trs("Se enviará una invitación de cruce. Cuando la acepte, podrás elegir qué apuestas individuales incluir en este cruce desde la sección")}{' '}<strong>{trs("Apuestas de Cruce")}</strong> del dashboard.
                 {sendError && (
                   <span className="block mt-2 text-destructive text-xs">
                     {(sendError as any)?.message?.includes('subscription_required')
-                      ? 'Ambos jugadores necesitan suscripción Pro para cruzar tarjeta.'
-                      : 'Error al enviar la invitación. Intenta de nuevo.'}
+                      ? trs("Ambos jugadores necesitan suscripción Pro para cruzar tarjeta.")
+                      : trs("Error al enviar la invitación. Intenta de nuevo.")}
                   </span>
                 )}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={isSending}>Cancelar</AlertDialogCancel>
+              <AlertDialogCancel disabled={isSending}>{trs("Cancelar")}</AlertDialogCancel>
               <AlertDialogAction
                 disabled={isSending}
                 onClick={async (e) => {
@@ -3086,7 +3087,7 @@ const Index = () => {
                   }
                 }}
               >
-                {isSending ? 'Enviando…' : 'Enviar invitación'}
+                {isSending ? trs("Enviando…") : trs("Enviar invitación")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

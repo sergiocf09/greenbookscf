@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { useTranslation } from 'react-i18next';
 import React, { useMemo, useState } from 'react';
 import { Player, PlayerScore, GolfCourse, SixesConfig } from '@/types/golf';
@@ -116,7 +117,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
     return (
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Sixes</CardTitle>
+          <CardTitle className="text-sm">{trs("Sixes")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
@@ -147,7 +148,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
       <CardHeader className="py-3">
         <CardTitle className="text-sm flex items-center justify-between">
           <span className="flex items-center gap-1">
-            Sixes
+            {trs("Sixes")}
             <TeamBetHandicapInfo
               players={sixesParticipants}
               effectiveHandicaps={sixesConfig.teamHandicaps}
@@ -164,7 +165,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
 
           <div className="flex items-center gap-2">
             {isDisabled ? (
-              <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">Cancelada</div>
+              <div className="text-xs text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">{trs("Cancelada")}</div>
             ) : (
               <span className={cn('text-base font-bold tabular-nums', getNetTone(basePlayerBalance))}>
                 {basePlayerBalance >= 0 ? '+$' : '-$'}{fmtMoney(Math.abs(basePlayerBalance))}
@@ -214,7 +215,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                     <span className="text-xs font-bold">{disambiguated.get(myTeam[0]) ?? '?'}</span>
                     <span className="text-xs font-bold">{disambiguated.get(myTeam[1]) ?? '?'}</span>
                   </div>
-                  <span className="text-[9px] text-muted-foreground">vs</span>
+                  <span className="text-[9px] text-muted-foreground">{trs("vs")}</span>
                   <div className="flex flex-col items-end">
                     <span className="text-xs font-bold">{disambiguated.get(rivalTeam[0]) ?? '?'}</span>
                     <span className="text-xs font-bold">{disambiguated.get(rivalTeam[1]) ?? '?'}</span>
@@ -274,8 +275,8 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                         <div className="space-y-1">
                           <p className="text-xs font-medium">Hoyo {hd.holeNumber} · {diff > 0 ? `+${diff}` : `${diff}`} pts</p>
                           <div className="flex justify-between text-[10px] text-muted-foreground">
-                            <span>Tu equipo</span>
-                            <span>Rival</span>
+                            <span>{trs("Tu equipo")}</span>
+                            <span>{trs("Rival")}</span>
                           </div>
                           {[0, 1].map(i => {
                             const my = myScores[i];
