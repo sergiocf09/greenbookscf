@@ -269,7 +269,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
                 </>
               )}
               {(detail.carryoverHoles ?? 0) > 0 && (
-                <p className="flex justify-between"><span>{trs("Carryover")}</span><span>+{detail.carryoverHoles} hoyo(s)</span></p>
+                <p className="flex justify-between"><span>{trs("Carryover")}</span><span>+{detail.carryoverHoles} {trs("hoyo(s)")}</span></p>
               )}
               {detail.wentSolo && wolfConfig.scoringMode !== 'lowBall' && (
                 <p className="text-[9px] text-amber-600 mt-1">
@@ -288,7 +288,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
     scoringLabel,
     wolfConfig.useHandicap ? t('dashboard.withHcp') : t('dashboard.withoutHcp'),
     wolfConfig.carryover ? 'Carryover' : null,
-    `$${fmtMoney(wolfConfig.amountPerHole)}/hoyo`,
+    `$${fmtMoney(wolfConfig.amountPerHole)}${trs("/hoyo")}`,
   ].filter(Boolean).join(' · ');
 
   return (

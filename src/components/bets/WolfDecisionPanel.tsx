@@ -96,7 +96,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
         <p className="text-[10px] text-[hsl(50,95%,55%)]/70">
           {isRedemption
             ? `$${fmtMoney(wolfConfig.amountPerHole * 3)} (×3) · Solo obligatorio`
-            : `$${fmtMoney(wolfConfig.amountPerHole)} por hoyo · ${timingLabels[wolfConfig.timing] ?? wolfConfig.timing}`}
+            : `$${fmtMoney(wolfConfig.amountPerHole)} ${trs("por hoyo ·")} ${timingLabels[wolfConfig.timing] ?? wolfConfig.timing}`}
         </p>
       </div>
 
@@ -108,7 +108,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
             canDecide ? (
               <div className="space-y-3">
                 <p className="text-xs text-muted-foreground">
-                  🔥 <span className="font-semibold">{players.find(p => p.id === redemptionCandidateId)?.name?.split(' ')[0]}</span> es el máximo perdedor{redemptionCandidateLoss ? ` (-$${fmtMoney(Math.abs(redemptionCandidateLoss))})` : ''} y puede tomar la Recuperación (Solo ×3).
+                  🔥 <span className="font-semibold">{players.find(p => p.id === redemptionCandidateId)?.name?.split(' ')[0]}</span> {trs("es el máximo perdedor")}{redemptionCandidateLoss ? ` (-$${fmtMoney(Math.abs(redemptionCandidateLoss))})` : ''} y puede tomar la Recuperación (Solo ×3).
                 </p>
                 <div className="flex gap-2">
                   <Button
@@ -271,10 +271,10 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
               )}
             >
               {holeState.result === 'won' && (
-                <>✅ La Loba ganó · +${fmtMoney(holeState.effectiveAmount ?? wolfConfig.amountPerHole)} por rival</>
+                <>{trs("✅ La Loba ganó · +$")}{fmtMoney(holeState.effectiveAmount ?? wolfConfig.amountPerHole)} {trs("por rival")}</>
               )}
               {holeState.result === 'lost' && (
-                <>❌ La Loba perdió · -${fmtMoney(holeState.effectiveAmount ?? wolfConfig.amountPerHole)} por rival</>
+                <>{trs("❌ La Loba perdió · -$")}{fmtMoney(holeState.effectiveAmount ?? wolfConfig.amountPerHole)} {trs("por rival")}</>
               )}
               {holeState.result === 'tied' && (
                 <span className="flex items-center gap-2">

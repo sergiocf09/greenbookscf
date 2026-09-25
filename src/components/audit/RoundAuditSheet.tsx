@@ -50,11 +50,11 @@ function formatPayload(entry: AuditLogEntry): string {
   const p = entry.payload;
   switch (entry.eventType) {
     case 'score_captured':
-      return `Hoyo ${p.hole_number} · ${entry.targetName ?? '?'}: ${p.strokes} golpes${p.putts != null ? `, ${p.putts} putts` : ''}`;
+      return `${trs("Hoyo")} ${p.hole_number} · ${entry.targetName ?? '?'}: ${p.strokes} golpes${p.putts != null ? `, ${p.putts} putts` : ''}`;
     case 'score_modified':
-      return `Hoyo ${p.hole_number} · ${entry.targetName ?? '?'}: ${p.prev_strokes}→${p.new_strokes}${p.prev_putts != null ? ` (putts: ${p.prev_putts}→${p.new_putts})` : ''}`;
+      return `${trs("Hoyo")} ${p.hole_number} · ${entry.targetName ?? '?'}: ${p.prev_strokes}→${p.new_strokes}${p.prev_putts != null ? ` (putts: ${p.prev_putts}→${p.new_putts})` : ''}`;
     case 'hole_confirmed':
-      return `Hoyo ${p.hole_number} confirmado`;
+      return `${trs("Hoyo")} ${p.hole_number} confirmado`;
     case 'bet_config_changed':
       return p.description ?? trs("Configuración de apuestas actualizada");
     case 'handicap_changed':
@@ -62,7 +62,7 @@ function formatPayload(entry: AuditLogEntry): string {
     case 'player_added':
       return `${entry.targetName ?? p.player_name ?? '?'} agregado`;
     case 'player_removed':
-      return `${entry.targetName ?? p.player_name ?? '?'} eliminado`;
+      return `${entry.targetName ?? p.player_name ?? '?'} ${trs("eliminado")}`;
     case 'round_created':
       return 'Ronda iniciada';
     case 'round_closed':

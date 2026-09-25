@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -128,11 +129,11 @@ export function useLeaderboards() {
         .select()
         .single();
       if (error) throw error;
-      toast.success('Leaderboard creado');
+      toast.success(trs("Leaderboard creado"));
       queryClient.invalidateQueries({ queryKey: ['leaderboard_events'] });
       return data;
     } catch (err: any) {
-      toast.error('Error al crear leaderboard: ' + err.message);
+      toast.error(trs("Error al crear leaderboard: ") + err.message);
       return null;
     }
   }, [profile, queryClient]);
@@ -147,7 +148,7 @@ export function useLeaderboards() {
         });
       if (error) throw error;
       if (!leaderboardId) {
-        toast.error('No se encontró un leaderboard con ese código');
+        toast.error(trs("No se encontró un leaderboard con ese código"));
         return null;
       }
       // Detect competition type so callers can route to /leaderboards/cup/:id when needed
@@ -161,7 +162,7 @@ export function useLeaderboards() {
         competition_type: (ev as any)?.competition_type || 'standard',
       };
     } catch (err: any) {
-      toast.error('Error: ' + err.message);
+      toast.error(trs("Error: ") + err.message);
       return null;
     }
   }, [profile]);
@@ -174,7 +175,7 @@ export function useLeaderboards() {
       toast.success('Competencia cerrada y movida a Historial');
       queryClient.invalidateQueries({ queryKey: ['leaderboard_events'] });
     } catch (err: any) {
-      toast.error('Error: ' + err.message);
+      toast.error(trs("Error: ") + err.message);
     }
   }, [queryClient]);
 
@@ -186,7 +187,7 @@ export function useLeaderboards() {
       toast.success('Competencia reactivada');
       queryClient.invalidateQueries({ queryKey: ['leaderboard_events'] });
     } catch (err: any) {
-      toast.error('Error: ' + err.message);
+      toast.error(trs("Error: ") + err.message);
     }
   }, [queryClient]);
 
@@ -405,7 +406,7 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
       if (error) throw error;
       await fetchDetail();
     } catch (err: any) {
-      toast.error('Error al agregar participante: ' + err.message);
+      toast.error(trs("Error al agregar participante: ") + err.message);
     }
   }, [leaderboardId, fetchDetail]);
 
@@ -418,7 +419,7 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
       if (error) throw error;
       await fetchDetail();
     } catch (err: any) {
-      toast.error('Error al actualizar handicap: ' + err.message);
+      toast.error(trs("Error al actualizar handicap: ") + err.message);
     }
   }, [fetchDetail]);
 
@@ -454,7 +455,7 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
 
       await fetchDetail();
     } catch (err: any) {
-      toast.error('Error al vincular ronda: ' + err.message);
+      toast.error(trs("Error al vincular ronda: ") + err.message);
       throw err;
     }
   }, [leaderboardId, profile, fetchDetail]);
@@ -485,11 +486,11 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
         .eq('round_id', roundId);
       if (scoresError) throw scoresError;
 
-      toast.success('Ronda desvinculada del leaderboard');
+      toast.success(trs("Ronda desvinculada del leaderboard"));
       await fetchDetail();
       queryClient.invalidateQueries({ queryKey: ['leaderboard_events'] });
     } catch (err: any) {
-      toast.error('Error al desvincular ronda: ' + err.message);
+      toast.error(trs("Error al desvincular ronda: ") + err.message);
     }
   }, [leaderboardId, fetchDetail, queryClient]);
 

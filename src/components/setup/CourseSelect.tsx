@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState } from 'react';
 import { MapPin, Loader2, Star, Plus, Search } from 'lucide-react';
 import {
@@ -90,7 +91,7 @@ export const CourseSelect: React.FC<CourseSelectProps> = ({
     return (
       <div className="space-y-3">
          <Label className="text-sm font-medium">{t('setup.golfCourse')}</Label>
-        <p className="text-sm text-destructive">Error: {error}</p>
+        <p className="text-sm text-destructive">{trs("Error:")}{' '}{error}</p>
       </div>
     );
   }

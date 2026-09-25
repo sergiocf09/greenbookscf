@@ -424,7 +424,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
                                   isSel ? "border-primary bg-primary/10" : "border-border hover:bg-muted/50"
                                 )}
                               >
-                                <span className="font-semibold">Día {d.day_number}</span>
+                                <span className="font-semibold">{trs("Día")}{' '}{d.day_number}</span>
                                 {d.label ? <span className="text-muted-foreground"> · {d.label}</span> : null}
                                 <span className="text-muted-foreground"> · {d.date}</span>
                                 {isMatch && (
@@ -438,7 +438,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
                         {mismatch && effectiveDay && (
                           <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 p-2.5 text-[11px]">
                             <p className="text-amber-800 dark:text-amber-200">
-                              {trs("⚠ Tu ronda es del")}{' '}<strong>{roundDate}</strong> pero la estás vinculando al Día {effectiveDay.day_number} (<strong>{effectiveDay.date}</strong>). Al vincular, ajustaremos la fecha de la ronda al día seleccionado.
+                              {trs("⚠ Tu ronda es del")}{' '}<strong>{roundDate}</strong> {trs("pero la estás vinculando al Día")}{' '}{effectiveDay.day_number} (<strong>{effectiveDay.date}</strong>). Al vincular, ajustaremos la fecha de la ronda al día seleccionado.
                             </p>
                           </div>
                         )}

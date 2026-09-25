@@ -27,7 +27,7 @@ export const AttestationSheet: React.FC<AttestationSheetProps> = ({
     setAttestingId(roundPlayerId);
     try {
       await onAttest(roundPlayerId);
-      toast.success(`Score de ${name} atestado`);
+      toast.success(`${trs("Score de")} ${name} atestado`);
     } catch (err) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       toast.error((err as any)?.message ?? trs("No se pudo atestar"));

@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -362,7 +363,7 @@ export const useRoundManagement = ({
           );
 
           if (!activeRound) {
-            toast.error('No se pudo cargar la ronda (intenta de nuevo)');
+            toast.error(trs("No se pudo cargar la ronda (intenta de nuevo)"));
             sessionStorage.removeItem('restore_round_id');
             return;
           }
@@ -402,7 +403,7 @@ export const useRoundManagement = ({
           );
 
           if (!allRoundPlayers?.length) {
-            toast.error('No se pudieron cargar los jugadores de la ronda');
+            toast.error(trs("No se pudieron cargar los jugadores de la ronda"));
             sessionStorage.removeItem('restore_round_id');
             return;
           }
@@ -660,7 +661,7 @@ export const useRoundManagement = ({
             devLog('Restored', holeScores.length, 'scores from database');
           }
 
-          toast.success('Ronda restaurada');
+          toast.success(trs("Ronda restaurada"));
           sessionStorage.removeItem('restore_round_id');
         }
       } catch (err) {
@@ -752,14 +753,14 @@ export const useRoundManagement = ({
   // Create a new round in the database using server-side RPC
   const createRound = useCallback(async (courseId: string, teeColor: string, date: Date, startingHole: 1 | 10 = 1) => {
     if (!profile) {
-      toast.error('Debes iniciar sesión para crear una ronda');
+      toast.error(trs("Debes iniciar sesión para crear una ronda"));
       return null;
     }
 
     // Verify we have an active session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     if (sessionError || !session) {
-      toast.error('Sesión expirada. Por favor, inicia sesión nuevamente.');
+      toast.error(trs("Sesión expirada. Por favor, inicia sesión nuevamente."));
       return null;
     }
 
@@ -810,7 +811,7 @@ export const useRoundManagement = ({
 
       setRoundPlayerIds(new Map([[result.organizer_profile_id, result.round_player_id]]));
 
-      toast.success('Ronda creada');
+      toast.success(trs("Ronda creada"));
       if (logEvent) {
         logEvent('round_created', { course_id: courseId });
       }
@@ -840,7 +841,7 @@ export const useRoundManagement = ({
       return result.round_id;
     } catch (error) {
       devError('Error creating round:', error);
-      toast.error('Error al crear la ronda');
+      toast.error(trs("Error al crear la ronda"));
       return null;
     } finally {
       setIsLoading(false);
@@ -892,7 +893,7 @@ export const useRoundManagement = ({
       return true;
     } catch (error) {
       devError('Error starting round:', error);
-      toast.error('Error al iniciar la ronda');
+      toast.error(trs("Error al iniciar la ronda"));
       return false;
     } finally {
       setIsLoading(false);
@@ -934,7 +935,7 @@ export const useRoundManagement = ({
       });
       pushStageFail(report, 'validateInputs', 'Cierre en proceso');
       setLastCloseReport(report);
-      toast('Cierre en proceso');
+      toast(trs("Cierre en proceso"));
       return false;
     }
 
@@ -1024,7 +1025,7 @@ export const useRoundManagement = ({
           pushStageOk(report, 'beginAttempt');
           setLastCloseReport({ ...report });
           setRoundState((prev) => ({ ...prev, status: 'completed' }));
-          toast.success('Ronda ya estaba cerrada');
+          toast.success(trs("Ronda ya estaba cerrada"));
           // Reset local lock so future calls work
           closeInFlightRef.current = false;
           setIsClosing(false);
@@ -1034,7 +1035,7 @@ export const useRoundManagement = ({
         if (state === 'locked') {
           pushStageFail(report, 'beginAttempt', 'Ya hay un cierre en proceso (lock backend)');
           setLastCloseReport({ ...report });
-          toast('Ya hay un cierre en proceso. Espera un minuto y vuelve a intentar.');
+          toast(trs("Ya hay un cierre en proceso. Espera un minuto y vuelve a intentar."));
           // Reset local lock — backend is handling it, don't block future retries
           closeInFlightRef.current = false;
           setIsClosing(false);
@@ -1046,7 +1047,7 @@ export const useRoundManagement = ({
         pushStageOk(report, 'beginAttempt');
       } catch (e) {
         await fail('beginAttempt', e);
-        toast.error('No se pudo iniciar el cierre (lock)');
+        toast.error(trs("No se pudo iniciar el cierre (lock)"));
         return false;
       }
 
@@ -1134,7 +1135,7 @@ export const useRoundManagement = ({
         pushStageOk(report, 'saveBetConfig');
       } catch (e) {
         await fail('saveBetConfig', e, report.attemptId);
-        toast.error('Error al guardar configuración');
+        toast.error(trs("Error al guardar configuración"));
         return false;
       }
 
@@ -1173,7 +1174,7 @@ export const useRoundManagement = ({
         pushStageOk(report, 'writeScores');
       } catch (e) {
         await fail('writeScores', e, report.attemptId);
-        toast.error('Error al guardar scores');
+        toast.error(trs("Error al guardar scores"));
         return false;
       }
 
@@ -1217,7 +1218,7 @@ export const useRoundManagement = ({
       const actualPairs = bilateralHandicapsMap?.size || 0;
       
       if (betConfig.pressures?.enabled && loggedInPlayers.length >= 2 && actualPairs === 0) {
-        devWarn(`⚠️ VALIDATION WARNING: Presiones enabled with ${loggedInPlayers.length} logged-in players but no bilateral handicaps found.`);
+        devWarn(`⚠️ VALIDATION WARNING: Presiones enabled with ${loggedInPlayers.length} ${trs("logged-in players but no bilateral handicaps found.")}`);
       } else if (betConfig.pressures?.enabled && actualPairs < expectedPairs) {
         devWarn(`⚠️ VALIDATION: Expected ${expectedPairs} bilateral handicap pairs, found ${actualPairs}.`);
       }
@@ -1533,7 +1534,7 @@ export const useRoundManagement = ({
       // ─── END SPRINT 3 BET CALCULATION ────────────────────────────────────────
 
       const allBetResults = [...intraGroupBetResults, ...crossGroupSummaries, ...sprint3Summaries];
-      devLog(`Close engine: ${intraGroupBetResults.length} intra-group + ${crossGroupSummaries.length} cross-group + ${sprint3Summaries.length} sprint3 = ${allBetResults.length} total bet summaries`);
+      devLog(`Close engine: ${intraGroupBetResults.length} intra-group + ${crossGroupSummaries.length} cross-group + ${sprint3Summaries.length} sprint3 = ${allBetResults.length} ${trs("total bet summaries")}`);
       // ─── END SYNCHRONOUS BET CALCULATION ────────────────────────────────────
 
       // ─── SIDE BETS DIAGNOSTIC LOG ───────────────────────────────────────────
@@ -1770,9 +1771,9 @@ export const useRoundManagement = ({
         // ─── End breakdown ───────────────────────────────────────────────────
 
         // BLOCKING GUARDRAIL: Abort closure if discrepancy exceeds $1
-        const errorMsg = `Discrepancia UI vs Motor detectada (máx Δ$${maxDelta}):\n${discrepancies.join('\n')}\n\nEl cierre fue bloqueado. Revisa la configuración de participantes en las apuestas.`;
+        const errorMsg = `${trs("Discrepancia UI vs Motor detectada (máx Δ$")}${maxDelta}):\n${discrepancies.join('\n')}${trs("\\n\\nEl cierre fue bloqueado. Revisa la configuración de participantes en las apuestas.")}`;
         await fail('preValidation', new Error(errorMsg), report.attemptId);
-        toast.error(`Cierre bloqueado: discrepancia de $${maxDelta} entre UI y motor de cálculo. Revisa participantes.`, { duration: 8000 });
+        toast.error(`${trs("Cierre bloqueado: discrepancia de $")}${maxDelta} ${trs("entre UI y motor de cálculo. Revisa participantes.")}`, { duration: 8000 });
         return false;
       } else if (maxDelta > 1 && !uiProvidedResults) {
         devWarn(`[CLOSE] PRE-VALIDATION skipped: UI provided 0 summaries (BetDashboard not mounted). Engine is authoritative. Max delta: $${maxDelta}`);
@@ -1791,7 +1792,7 @@ export const useRoundManagement = ({
         if (!hasParticipants) return;
         const found = expectedTypes.some(t => engineBetTypes.has(t));
         if (!found) {
-          structuralWarnings.push(`${label} está habilitada con participantes pero no generó resultados en el motor`);
+          structuralWarnings.push(`${label} ${trs("está habilitada con participantes pero no generó resultados en el motor")}`);
         }
       };
 
@@ -1871,7 +1872,7 @@ export const useRoundManagement = ({
         pushStageOk(report, 'finalizeRoundBets');
       } catch (e) {
         await fail('finalizeRoundBets', e, report.attemptId);
-        toast.error('Error al finalizar apuestas');
+        toast.error(trs("Error al finalizar apuestas"));
         return false;
       }
 
@@ -1996,7 +1997,7 @@ export const useRoundManagement = ({
         const isIntegrityFailure = errMsg.includes('integrity check failed');
         toast.error(
           isIntegrityFailure
-            ? `Error de integridad en el snapshot: ${errMsg.split(':')[1]?.trim() ?? errMsg}`
+            ? `${trs("Error de integridad en el snapshot:")} ${errMsg.split(':')[1]?.trim() ?? errMsg}`
             : 'Error al generar snapshot'
         );
         return false;
@@ -2023,7 +2024,7 @@ export const useRoundManagement = ({
       } catch (e) {
         // Snapshot SHOULD be reliable; fail to make it diagnosable and to avoid partial "closed" states.
         await fail('saveSnapshot', e, report.attemptId);
-        toast.error('Error al guardar snapshot');
+        toast.error(trs("Error al guardar snapshot"));
         return false;
       }
 
@@ -2204,7 +2205,7 @@ export const useRoundManagement = ({
                 devLog(`[CloseUSGA] ${player.name}: new Handicap Index = ${newIndex}`);
               }
             } catch (usgaErr) {
-              devError(`[CloseUSGA] Error recalculating index for ${player.name}:`, usgaErr);
+              devError(`${trs("[CloseUSGA] Error recalculating index for")} ${player.name}:`, usgaErr);
             }
           })
         );
@@ -2285,8 +2286,8 @@ export const useRoundManagement = ({
                 : change === 0 
                   ? 'Empate Total → Sin ajuste'
                   : change > 0 
-                    ? `A gana Total → +${change} golpe` 
-                    : `B gana Total → ${change} golpe`;
+                    ? `${trs("A gana Total → +")}${change} golpe` 
+                    : `${trs("B gana Total →")} ${change} golpe`;
               devLog(`Sliding ${r.playerAProfileId.slice(0,8)} vs ${r.playerBProfileId.slice(0,8)}: ${r.strokesUsed} → ${r.strokesNext} (${desc})`);
             });
           }
@@ -2324,7 +2325,7 @@ export const useRoundManagement = ({
 
       } catch (e) {
         await fail('setRoundClosed', e, report.attemptId);
-        toast.error('No se pudo marcar la ronda como cerrada');
+        toast.error(trs("No se pudo marcar la ronda como cerrada"));
         return false;
       }
 
@@ -2356,13 +2357,13 @@ export const useRoundManagement = ({
       }
 
       setRoundState(prev => ({ ...prev, status: 'completed' }));
-      toast.success('Tarjeta cerrada y guardada');
+      toast.success(trs("Tarjeta cerrada y guardada"));
       setLastCloseReport({ ...report });
       return true;
     } catch (error) {
       // Unknown/unexpected stage
       await fail('setRoundClosed', error, report.attemptId);
-      toast.error('Error al cerrar la tarjeta');
+      toast.error(trs("Error al cerrar la tarjeta"));
       return false;
     } finally {
       setIsLoading(false);
@@ -2404,7 +2405,7 @@ export const useRoundManagement = ({
 
         if (error) {
           devError('Error adding player to round:', error);
-          toast.error('Error al agregar jugador a la ronda');
+          toast.error(trs("Error al agregar jugador a la ronda"));
           return false;
         }
 
@@ -2512,7 +2513,7 @@ export const useRoundManagement = ({
 
         if (error) {
           devError('Error adding guest player to round:', error);
-          toast.error('Error al agregar invitado a la ronda');
+          toast.error(trs("Error al agregar invitado a la ronda"));
           return false;
         }
 
@@ -2651,7 +2652,7 @@ export const useRoundManagement = ({
       return true;
     } catch (err) {
       console.error('[addPlayerToRound] Error inesperado:', err);
-      toast.error('Error al agregar jugador. Intenta de nuevo.');
+      toast.error(trs("Error al agregar jugador. Intenta de nuevo."));
       return false;
     }
   }, [roundState.id, roundState.groupId, roundPlayerIds, setPlayers, setScores, setBetConfig]);
@@ -2703,15 +2704,15 @@ export const useRoundManagement = ({
   const copyShareLink = useCallback(async () => {
     const link = getShareableLink();
     if (!link) {
-      toast.error('Primero crea la ronda');
+      toast.error(trs("Primero crea la ronda"));
       return;
     }
 
     try {
       await navigator.clipboard.writeText(link);
-      toast.success('Link copiado al portapapeles');
+      toast.success(trs("Link copiado al portapapeles"));
     } catch {
-      toast.error('Error al copiar el link');
+      toast.error(trs("Error al copiar el link"));
     }
   }, [getShareableLink]);
 
@@ -2723,11 +2724,11 @@ export const useRoundManagement = ({
       } as any);
       if (error) throw error;
       setRoundState(prev => ({ ...prev, status: 'in_progress' }));
-      toast.success('Ronda reabierta. Puedes cerrarla de nuevo.');
+      toast.success(trs("Ronda reabierta. Puedes cerrarla de nuevo."));
       return true;
     } catch (err: any) {
       devError('[resetRoundForReclose]', err);
-      toast.error(`Error al reabrir ronda: ${err.message}`);
+      toast.error(`${trs("Error al reabrir ronda:")} ${err.message}`);
       return false;
     }
   }, [roundState.id]);

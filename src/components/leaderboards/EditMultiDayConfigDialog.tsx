@@ -151,7 +151,7 @@ export const EditMultiDayConfigDialog: React.FC<Props> = ({ open, onOpenChange, 
               const isLinked = day.date && linkedDates.has(day.date);
               return (
                 <div key={idx} className="flex items-center gap-1.5">
-                  <span className="text-xs w-12 shrink-0">Día {idx + 1}</span>
+                  <span className="text-xs w-12 shrink-0">{trs("Día")}{' '}{idx + 1}</span>
                   <Input
                     type="date"
                     value={day.date}
@@ -212,7 +212,7 @@ export const EditMultiDayConfigDialog: React.FC<Props> = ({ open, onOpenChange, 
                     onChange={e => setBestN(parseInt(e.target.value) || 1)}
                     className="h-7 w-16 text-xs"
                   />
-                  <span className="text-[10px] text-muted-foreground">de {sortedDays.length} días</span>
+                  <span className="text-[10px] text-muted-foreground">{trs("de")}{' '}{sortedDays.length} {trs("días")}</span>
                 </div>
               )}
             </div>

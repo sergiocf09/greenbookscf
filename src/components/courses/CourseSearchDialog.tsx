@@ -89,8 +89,8 @@ export const CourseSearchDialog: React.FC<Props> = ({
       finish(
         imported.courseId,
         imported.cached
-          ? `${label} ya estaba en GreenBook, lo agregamos a tus campos`
-          : `${label} descargado y disponible para todos`
+          ? `${label} ${trs("ya estaba en GreenBook, lo agregamos a tus campos")}`
+          : `${label} ${trs("descargado y disponible para todos")}`
       );
     }
   }, [importCourse, finish]);

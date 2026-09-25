@@ -329,7 +329,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                   <Label className="text-xs">{trs("Días del torneo *")}</Label>
                   {mdDays.map((day, idx) => (
                     <div key={idx} className="flex items-center gap-1.5">
-                      <span className="text-xs w-12 shrink-0">Día {idx + 1}</span>
+                      <span className="text-xs w-12 shrink-0">{trs("Día")}{' '}{idx + 1}</span>
                       <Input
                         type="date"
                         value={day.date}
@@ -534,7 +534,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Creado por {ev.creator_name}
+                    {trs("Creado por")} {ev.creator_name}
                   </p>
                 </CardContent>
               </Card>

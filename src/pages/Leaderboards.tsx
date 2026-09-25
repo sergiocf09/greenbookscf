@@ -323,7 +323,7 @@ const Leaderboards = () => {
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Creado por {ev.creator_name}
+                      {trs("Creado por")} {ev.creator_name}
                     </p>
                   </CardContent>
                 </Card>

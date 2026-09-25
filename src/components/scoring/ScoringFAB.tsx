@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { BookOpen, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -121,7 +122,7 @@ export const ScoringFAB: React.FC<ScoringFABProps> = ({
         !positioned && 'safe-bottom',
       )}
       style={style}
-      aria-label={`Capturar scores - Hoyo ${currentHole}. Mantén presionado y arrastra para mover.`}
+      aria-label={`${trs("Capturar scores - Hoyo")} ${currentHole}${trs(". Mantén presionado y arrastra para mover.")}`}
     >
       <div className="relative pointer-events-none">
         <BookOpen className="h-6 w-6" />

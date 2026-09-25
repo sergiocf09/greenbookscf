@@ -288,7 +288,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
 
     if (errorCount === 0) toast.success(`${successCount} hándicap(s) guardado(s)`);
     else if (successCount === 0) toast.error(`Error guardando ${errorCount} par(es)`);
-    else toast.error(`${successCount} hándicap(s) guardado(s), ${errorCount} par(es) con error`);
+    else toast.error(`${successCount} ${trs("hándicap(s) guardado(s),")} ${errorCount} ${trs("par(es) con error")}`);
   }, [pendingChanges, setStrokesForLocalPair, hasRoundPlayerIds]);
 
   const applyFullHandicap = useCallback(async () => {
@@ -328,7 +328,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     }
 
     if (errorCount === 0) toast.success(`Full hándicap aplicado (${successCount} pares)`);
-    else toast.error(`${successCount} guardados, ${errorCount} con error`);
+    else toast.error(`${successCount} guardados, ${errorCount} ${trs("con error")}`);
   }, [allPlayers, hasRoundPlayerIds, setStrokesForLocalPair]);
 
   /**
@@ -405,7 +405,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     }
 
     if (errorCount === 0) toast.success(`Sliding aplicado y guardado (${successCount} pares)`);
-    else toast.error(`${successCount} guardados, ${errorCount} con error`);
+    else toast.error(`${successCount} guardados, ${errorCount} ${trs("con error")}`);
   }, [allPlayers, getSlidingForPair, hasRoundPlayerIds, setStrokesForLocalPair]);
 
   // --- Render ---
@@ -756,7 +756,7 @@ const CellEditor: React.FC<CellEditorProps> = ({
         )}
         {isReceiving && (
           <><span className="font-semibold text-foreground">{rowFirstName}</span>{' '}
-          <span className="text-green-700 font-medium">recibe {Math.abs(strokes)}</span> de {colFirstName}</>
+          <span className="text-green-700 font-medium">recibe {Math.abs(strokes)}</span> {trs("de")}{' '}{colFirstName}</>
         )}
         {strokes === 0 && 'Scratch — sin ventaja'}
       </p>

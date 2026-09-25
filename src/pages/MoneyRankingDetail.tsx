@@ -177,7 +177,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
     setRenaming(false);
 
     if (error) {
-      toast.error(`No se pudo actualizar el nombre: ${error.message}`);
+      toast.error(`${trs("No se pudo actualizar el nombre:")} ${error.message}`);
       return;
     }
 
@@ -338,7 +338,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-medium truncate leading-tight">
                                 {toTitleCase(entry.display_name)}
-                                {entry.profile_id === profile?.id && <span className="text-[10px] text-muted-foreground ml-1">(tú)</span>}
+                                {entry.profile_id === profile?.id && <span className="text-[10px] text-muted-foreground ml-1">{trs("(tú)")}</span>}
                               </p>
                               <p className="text-[10px] text-muted-foreground">{entry.rounds_played} {entry.rounds_played === 1 ? 'ronda' : 'rondas'}</p>
                             </div>

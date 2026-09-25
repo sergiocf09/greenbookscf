@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -294,7 +295,7 @@ function diffBetConfigs(prev: any, next: any): string {
   // Cap length
   const max = 3;
   const shown = allChanges.slice(0, max).join(' · ');
-  const extra = allChanges.length > max ? ` (+${allChanges.length - max} más)` : '';
+  const extra = allChanges.length > max ? ` (+${allChanges.length - max} ${trs("más)")}` : '';
   return shown + extra;
 }
 

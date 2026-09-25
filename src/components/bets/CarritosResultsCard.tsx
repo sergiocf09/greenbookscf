@@ -277,7 +277,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
               teamB={displayTeamBPlayers}
               effectiveHandicaps={teamHandicaps}
               handicapConfig={handicapConfig}
-              title={`${title} — Hándicaps`}
+              title={`${title} ${trs("— Hándicaps")}`}
               modalityLine={scoringLabel}
             />
           </div>

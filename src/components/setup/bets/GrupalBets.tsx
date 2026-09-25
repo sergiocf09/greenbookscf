@@ -54,7 +54,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
       {show('coneja') && (
         <BetSection
           id="coneja" title={trs("Coneja 🐰")}
-          description="Grupal: patas por hoyo en sets de 6 (usa Matriz Bilateral)"
+          description={trs("Grupal: patas por hoyo en sets de 6 (usa Matriz Bilateral)")}
           enabled={config.coneja?.enabled ?? false}
           onToggle={(enabled) => onUpdateBet('coneja', { enabled })}
           isExpanded={expandedSections.includes('coneja')}
@@ -62,8 +62,8 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           color="gold"
           helpText="Juego grupal dividido en 3 sets de 6 hoyos. Ganar un hoyo da una pata; perder un hoyo quita una pata. Al cierre del set, quien tenga al menos 1 pata cobra a todos. Si nadie tiene pata, la coneja se acumula al siguiente set."
         >
-          <AmountInput label="Cantidad por coneja" value={config.coneja?.amount ?? 50} onChange={(v) => onUpdateBet('coneja', { amount: v })} />
-          <CollapsibleSubSection label="Configuración" summary={`Handicap: ${(config.coneja?.handicapMode ?? 'individual') === 'individual' ? 'USGA' : 'Sliding'}`}>
+          <AmountInput label={trs("Cantidad por coneja")} value={config.coneja?.amount ?? 50} onChange={(v) => onUpdateBet('coneja', { amount: v })} />
+          <CollapsibleSubSection label={trs("Configuración")} summary={`Handicap: ${(config.coneja?.handicapMode ?? 'individual') === 'individual' ? 'USGA' : 'Sliding'}`}>
             <div className="space-y-3">
               <Label className="text-xs text-muted-foreground">{trs("Modo de Handicap")}</Label>
               <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
@@ -89,7 +89,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
             <p><strong>Estructura:</strong>{' '}{trs("3 sets de 6 hoyos (1-6, 7-12, 13-18)")}</p>
             <p><strong>Pata:</strong> Ganador absoluto del hoyo gana pata; quien pierde un hoyo, pierde una pata</p>
             <p><strong>Coneja:</strong>{' '}{trs("Al cierre del set, quien tenga ≥1 pata cobra a todos los demás")}</p>
-            <p><strong>Acumulación:</strong>{' '}{trs("Si nadie tiene pata al cierre, la coneja se acumula al siguiente set")}</p>
+            <p><strong>{trs("Acumulación:")}</strong>{' '}{trs("Si nadie tiene pata al cierre, la coneja se acumula al siguiente set")}</p>
           </div>
         </BetSection>
       )}
@@ -97,24 +97,24 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
       {/* Culebras */}
       {show('culebras') && (
         <BetSection
-          id="culebras" title={trs("Culebras 🐍")} description="3+ putts, el último paga todas"
+          id="culebras" title={trs("Culebras 🐍")} description={trs("3+ putts, el último paga todas")}
           enabled={config.culebras.enabled} onToggle={(enabled) => onUpdateBet('culebras', { enabled })}
           isExpanded={expandedSections.includes('culebras')} onExpandChange={(open) => onToggleSection('culebras', open)} color="red"
-          helpText="Cada vez que un jugador tiene 3 o más putts en un hoyo, se marca una culebra. Al final de la ronda, el último jugador en haber tenido una culebra paga el valor a todos los demás participantes."
+          helpText={trs("Cada vez que un jugador tiene 3 o más putts en un hoyo, se marca una culebra. Al final de la ronda, el último jugador en haber tenido una culebra paga el valor a todos los demás participantes.")}
         >
-          <AmountInput label="Valor por culebra" value={config.culebras.valuePerOccurrence} onChange={(v) => onUpdateBet('culebras', { valuePerOccurrence: v })} />
+          <AmountInput label={trs("Valor por culebra")} value={config.culebras.valuePerOccurrence} onChange={(v) => onUpdateBet('culebras', { valuePerOccurrence: v })} />
         </BetSection>
       )}
 
       {/* Pinguinos */}
       {show('pinguinos') && (
         <BetSection
-          id="pinguinos" title={trs("Pingüinos 🐧")} description="Triple bogey o peor (bruto vs par), el último paga todas"
+          id="pinguinos" title={trs("Pingüinos 🐧")} description={trs("Triple bogey o peor (bruto vs par), el último paga todas")}
           enabled={config.pinguinos.enabled} onToggle={(enabled) => onUpdateBet('pinguinos', { enabled })}
           isExpanded={expandedSections.includes('pinguinos')} onExpandChange={(open) => onToggleSection('pinguinos', open)} color="red"
-          helpText="Si un jugador hace triple bogey o peor (score bruto vs par del hoyo), se marca un pingüino. Al final de la ronda, el último jugador en haber tenido un pingüino paga el valor a todos los demás."
+          helpText={trs("Si un jugador hace triple bogey o peor (score bruto vs par del hoyo), se marca un pingüino. Al final de la ronda, el último jugador en haber tenido un pingüino paga el valor a todos los demás.")}
         >
-          <AmountInput label="Valor por pingüino" value={config.pinguinos.valuePerOccurrence} onChange={(v) => onUpdateBet('pinguinos', { valuePerOccurrence: v })} />
+          <AmountInput label={trs("Valor por pingüino")} value={config.pinguinos.valuePerOccurrence} onChange={(v) => onUpdateBet('pinguinos', { valuePerOccurrence: v })} />
         </BetSection>
       )}
 
@@ -122,15 +122,15 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
       {show('zoologico') && (
         <BetSection
           id="zoologico" title={trs("Zoológico 🐾")}
-          description="Camello (bunker), Pez (agua), Gorila (OB) - último paga"
+          description={trs("Camello (bunker), Pez (agua), Gorila (OB) - último paga")}
           enabled={config.zoologico?.enabled ?? false}
           onToggle={(enabled) => onUpdateBet('zoologico', { enabled })}
           isExpanded={expandedSections.includes('zoologico')}
           onExpandChange={(open) => onToggleSection('zoologico', open)} color="red"
-          helpText="Tres animales: Camello (caer en bunker), Pez (caer en agua), Gorila (salir OB). Cada incidencia se registra al capturar el hoyo. Al final, el último jugador en cometer cada tipo de incidencia paga a todos los demás."
+          helpText={trs("Tres animales: Camello (caer en bunker), Pez (caer en agua), Gorila (salir OB). Cada incidencia se registra al capturar el hoyo. Al final, el último jugador en cometer cada tipo de incidencia paga a todos los demás.")}
         >
-          <AmountInput label="Valor por incidencia" value={config.zoologico?.valuePerOccurrence ?? 10} onChange={(v) => onUpdateBet('zoologico', { valuePerOccurrence: v })} />
-          <CollapsibleSubSection label="Configuración" summary={`${(config.zoologico?.enabledAnimals ?? ['camello', 'pez', 'gorila']).length} animales`}>
+          <AmountInput label={trs("Valor por incidencia")} value={config.zoologico?.valuePerOccurrence ?? 10} onChange={(v) => onUpdateBet('zoologico', { valuePerOccurrence: v })} />
+          <CollapsibleSubSection label={trs("Configuración")} summary={`${(config.zoologico?.enabledAnimals ?? ['camello', 'pez', 'gorila']).length} animales`}>
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">{trs("Animales habilitados")}</Label>
               <div className="flex flex-wrap gap-2">
@@ -157,7 +157,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
       {show('skinsGrupal') && (
         <BetSection
           id="skinsGrupal" title={trs("Skins Grupal 🏅")}
-          description="Grupal: skins netos por hoyo, cada perdedor paga al ganador"
+          description={trs("Grupal: skins netos por hoyo, cada perdedor paga al ganador")}
           enabled={config.skinsGrupal?.enabled ?? false}
           onToggle={(enabled) => {
             const currentHandicaps = config.skinsGrupal?.playerHandicaps || [];
@@ -172,7 +172,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
         >
           <AmountInput label="Front 9" value={config.skinsGrupal?.frontAmount ?? 50} onChange={(v) => onUpdateBet('skinsGrupal', { frontAmount: v } as any)} />
           <AmountInput label="Back 9" value={config.skinsGrupal?.backAmount ?? 100} onChange={(v) => onUpdateBet('skinsGrupal', { backAmount: v } as any)} />
-          <CollapsibleSubSection label="Configuración" summary={`${(config.skinsGrupal?.modality ?? 'acumulados') === 'acumulados' ? 'Acumulados' : 'Sin Acumular'} · Handicaps`}>
+          <CollapsibleSubSection label={trs("Configuración")} summary={`${(config.skinsGrupal?.modality ?? 'acumulados') === 'acumulados' ? 'Acumulados' : 'Sin Acumular'} · Handicaps`}>
             <div className="space-y-3">
               <Label className="text-xs text-muted-foreground">{trs("Modalidad")}</Label>
               <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
@@ -225,7 +225,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
       {/* Medal General */}
       {show('medalGeneral') && (
         <BetSection
-          id="medalGeneral" title={trs("Medal General 🏆")} description="Grupal: menor score neto total gana"
+          id="medalGeneral" title={trs("Medal General 🏆")} description={trs("Grupal: menor score neto total gana")}
           enabled={config.medalGeneral?.enabled ?? false}
           onToggle={(enabled) => {
             const currentHandicaps = config.medalGeneral?.playerHandicaps || [];
@@ -236,7 +236,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           }}
           isExpanded={expandedSections.includes('medalGeneral')}
           onExpandChange={(open) => onToggleSection('medalGeneral', open)} color="gold"
-          helpText="El jugador con el menor score neto total de los 18 hoyos gana y cobra la cantidad configurada a cada perdedor. En caso de empate, se divide. Cada jugador puede tener un handicap independiente para esta apuesta."
+          helpText={trs("El jugador con el menor score neto total de los 18 hoyos gana y cobra la cantidad configurada a cada perdedor. En caso de empate, se divide. Cada jugador puede tener un handicap independiente para esta apuesta.")}
         >
           {/* Segment mode toggle */}
           <div className="flex items-center justify-between">
@@ -280,7 +280,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
               </div>
             </div>
           ) : (
-            <AmountInput label="Cantidad por jugador" value={config.medalGeneral?.amount ?? 100} onChange={(v) => onUpdateBet('medalGeneral', { amount: v })} />
+            <AmountInput label={trs("Cantidad por jugador")} value={config.medalGeneral?.amount ?? 100} onChange={(v) => onUpdateBet('medalGeneral', { amount: v })} />
           )}
 
           {hasMultipleGroups && (
@@ -320,7 +320,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
             </p>
           </div>
 
-          <CollapsibleSubSection label="Configuración" summary="Handicaps por jugador">
+          <CollapsibleSubSection label={trs("Configuración")} summary="Handicaps por jugador">
 
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">{trs("Handicaps para Medal General")}</Label>
@@ -359,12 +359,12 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
       {/* Putts General */}
       {show('puttsGeneral') && (
         <BetSection
-          id="puttsGeneral" title={trs("Putts General ⛳")} description="Grupal: menor total de putts gana"
+          id="puttsGeneral" title={trs("Putts General ⛳")} description={trs("Grupal: menor total de putts gana")}
           enabled={(config as any).puttsGeneral?.enabled ?? false}
           onToggle={(enabled) => onUpdateConfig?.({ ...config, puttsGeneral: { ...(config as any).puttsGeneral, enabled } } as any)}
           isExpanded={expandedSections.includes('puttsGeneral')}
           onExpandChange={(open) => onToggleSection('puttsGeneral', open)} color="gold"
-          helpText="El jugador con el menor total de putts gana y cobra a cada perdedor. No usa hándicaps. Se puede configurar por Front 9, Back 9 y Total 18."
+          helpText={trs("El jugador con el menor total de putts gana y cobra a cada perdedor. No usa hándicaps. Se puede configurar por Front 9, Back 9 y Total 18.")}
         >
           {/* Segment mode toggle */}
           <div className="flex items-center justify-between">
@@ -408,7 +408,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
               </div>
             </div>
           ) : (
-            <AmountInput label="Cantidad por jugador" value={(config as any).puttsGeneral?.amount ?? 100} onChange={(v) => onUpdateConfig?.({ ...config, puttsGeneral: { ...(config as any).puttsGeneral, amount: v } } as any)} />
+            <AmountInput label={trs("Cantidad por jugador")} value={(config as any).puttsGeneral?.amount ?? 100} onChange={(v) => onUpdateConfig?.({ ...config, puttsGeneral: { ...(config as any).puttsGeneral, amount: v } } as any)} />
           )}
 
           <p className="text-[9px] text-muted-foreground mt-2">{trs("El ganador con menos putts totales cobra a cada perdedor. No aplica hándicap.")}</p>
@@ -418,7 +418,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
       {/* GIR General */}
       {show('girGeneral') && (
         <BetSection
-          id="girGeneral" title={trs("GIR General 🎯")} description="Grupal: más Greens In Regulation gana"
+          id="girGeneral" title={trs("GIR General 🎯")} description={trs("Grupal: más Greens In Regulation gana")}
           enabled={(config as any).girGeneral?.enabled ?? false}
           onToggle={(enabled) => onUpdateConfig?.({ ...config, girGeneral: { ...(config as any).girGeneral, enabled } } as any)}
           isExpanded={expandedSections.includes('girGeneral')}
@@ -466,7 +466,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
               </div>
             </div>
           ) : (
-            <AmountInput label="Cantidad por jugador" value={(config as any).girGeneral?.amount ?? 100} onChange={(v) => onUpdateConfig?.({ ...config, girGeneral: { ...(config as any).girGeneral, amount: v } } as any)} />
+            <AmountInput label={trs("Cantidad por jugador")} value={(config as any).girGeneral?.amount ?? 100} onChange={(v) => onUpdateConfig?.({ ...config, girGeneral: { ...(config as any).girGeneral, amount: v } } as any)} />
           )}
 
           <p className="text-[9px] text-muted-foreground mt-2">{trs("El ganador con más GIRs cobra a cada perdedor. No aplica hándicap.")}</p>
@@ -476,7 +476,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
       {/* Stableford */}
       {show('stableford') && (
         <BetSection
-          id="stableford" title={trs("Stableford 📊")} description="Grupal: puntos por score relativo al par"
+          id="stableford" title={trs("Stableford 📊")} description={trs("Grupal: puntos por score relativo al par")}
           enabled={config.stableford?.enabled ?? false}
           onToggle={(enabled) => {
             if (enabled && config.stableford.playerHandicaps.length === 0) {
@@ -488,26 +488,26 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           onExpandChange={(open) => onToggleSection('stableford', open)} color="gold"
           helpText="Sistema de puntos por score neto relativo al par de cada hoyo. Birdie = 3 pts, Par = 2 pts, Bogey = 1 pt (configurable). El jugador con más puntos totales gana y cobra a cada perdedor."
         >
-          <AmountInput label="Cantidad por jugador" value={config.stableford?.amount ?? 100} onChange={(v) => onUpdateBet('stableford', { amount: v })} />
+          <AmountInput label={trs("Cantidad por jugador")} value={config.stableford?.amount ?? 100} onChange={(v) => onUpdateBet('stableford', { amount: v })} />
           {hasMultipleGroups && (
             <BetScopeSelector
               scope={config.stableford?.scope ?? 'global'}
               onChange={(scope) => onUpdateBet('stableford', { scope })}
             />
           )}
-          <CollapsibleSubSection label="Configuración" summary="Puntos y Handicaps">
+          <CollapsibleSubSection label={trs("Configuración")} summary="Puntos y Handicaps">
             <div className="space-y-3">
               <div className="p-3 bg-muted/30 rounded-lg space-y-2">
                 <Label className="text-xs font-medium">{trs("Puntos por resultado")}</Label>
                 <div className="space-y-1.5">
                   <PointInput label="Albatros" value={config.stableford?.points?.albatross ?? 5} onChange={(v) => onUpdateBet('stableford', { points: { ...config.stableford.points, albatross: v } })} />
-                  <PointInput label="Águila" value={config.stableford?.points?.eagle ?? 4} onChange={(v) => onUpdateBet('stableford', { points: { ...config.stableford.points, eagle: v } })} />
+                  <PointInput label={trs("Águila")} value={config.stableford?.points?.eagle ?? 4} onChange={(v) => onUpdateBet('stableford', { points: { ...config.stableford.points, eagle: v } })} />
                   <PointInput label="Birdie" value={config.stableford?.points?.birdie ?? 3} onChange={(v) => onUpdateBet('stableford', { points: { ...config.stableford.points, birdie: v } })} />
                   <PointInput label="Par" value={config.stableford?.points?.par ?? 2} onChange={(v) => onUpdateBet('stableford', { points: { ...config.stableford.points, par: v } })} />
                   <PointInput label="Bogey" value={config.stableford?.points?.bogey ?? 1} onChange={(v) => onUpdateBet('stableford', { points: { ...config.stableford.points, bogey: v } })} />
                   <PointInput label="Doble Bogey" value={config.stableford?.points?.doubleBogey ?? 0} onChange={(v) => onUpdateBet('stableford', { points: { ...config.stableford.points, doubleBogey: v } })} />
                   <PointInput label="Triple Bogey" value={config.stableford?.points?.tripleBogey ?? -1} onChange={(v) => onUpdateBet('stableford', { points: { ...config.stableford.points, tripleBogey: v } })} />
-                  <PointInput label="Cuádruple+" value={config.stableford?.points?.quadrupleOrWorse ?? -2} onChange={(v) => onUpdateBet('stableford', { points: { ...config.stableford.points, quadrupleOrWorse: v } })} />
+                  <PointInput label={trs("Cuádruple+")} value={config.stableford?.points?.quadrupleOrWorse ?? -2} onChange={(v) => onUpdateBet('stableford', { points: { ...config.stableford.points, quadrupleOrWorse: v } })} />
                 </div>
               </div>
               <div className="space-y-2">
@@ -549,7 +549,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
       {show('nines') && (
         <BetSection
           id="nines" title={trs("Nines (5-3-1)")}
-          description="Distribución de 9 puntos por hoyo entre 3 jugadores"
+          description={trs("Distribución de 9 puntos por hoyo entre 3 jugadores")}
           enabled={(config.ninesBets?.length ?? 0) > 0}
           onToggle={(enabled) => {
             if (!onUpdateConfig) return;
@@ -563,7 +563,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           }}
           isExpanded={expandedSections.includes('nines')}
           onExpandChange={(open) => onToggleSection('nines', open)}
-          helpText="Cada hoyo se reparten 9 puntos: 5 al mejor, 3 al segundo, 1 al tercero. Con 4 jugadores, el descansante rota y recibe 3 pts. Múltiples instancias permiten diferentes tríos."
+          helpText={trs("Cada hoyo se reparten 9 puntos: 5 al mejor, 3 al segundo, 1 al tercero. Con 4 jugadores, el descansante rota y recibe 3 pts. Múltiples instancias permiten diferentes tríos.")}
         >
           {(config.ninesBets?.length ?? 0) === 0 ? (
             <div className="text-center py-4">
@@ -641,7 +641,7 @@ const NinesBetCard: React.FC<{
         </Button>
       </div>
 
-      <AmountInput label="Valor por punto" value={bet.valuePerPoint} onChange={(v) => onUpdate({ valuePerPoint: v })} />
+      <AmountInput label={trs("Valor por punto")} value={bet.valuePerPoint} onChange={(v) => onUpdate({ valuePerPoint: v })} />
 
       <div className="space-y-2">
         <Label className="text-[10px] font-semibold text-primary">{trs("Jugadores (selecciona 3)")}</Label>
@@ -666,7 +666,7 @@ const NinesBetCard: React.FC<{
           })}
         </div>
         {selectedIds.length < minPlayers && (
-          <p className="text-[9px] text-amber-600">Selecciona al menos 3 jugadores ({selectedIds.length}/{minPlayers})</p>
+          <p className="text-[9px] text-amber-600">{trs("Selecciona al menos 3 jugadores (")}{selectedIds.length}/{minPlayers})</p>
         )}
         {selectedIds.length === 3 && (
           <>

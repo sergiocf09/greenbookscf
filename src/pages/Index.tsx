@@ -834,7 +834,7 @@ const Index = () => {
     setHasInitialNavigated(true);
     setView('setup');
     
-    toast.success(`Datos cargados de la ronda anterior. Ajusta fecha, jugadores y configuración, luego inicia la ronda.`);
+    toast.success(`${trs("Datos cargados de la ronda anterior. Ajusta fecha, jugadores y configuración, luego inicia la ronda.")}`);
   }, []);
 
   // Clone full round: copy everything including scores and create a new in_progress round
@@ -908,7 +908,7 @@ const Index = () => {
           .single();
 
         if (insertErr) {
-          devError(`Error adding player ${p.name}:`, insertErr);
+          devError(`${trs("Error adding player")} ${p.name}:`, insertErr);
           failedPlayers++;
           continue;
         }
@@ -926,7 +926,7 @@ const Index = () => {
       }
 
       if (failedPlayers > 0) {
-        devWarn(`${failedPlayers} jugador(es) no se pudieron agregar`);
+        devWarn(`${failedPlayers} ${trs("jugador(es) no se pudieron agregar")}`);
       }
 
       // Insert scores for each player
@@ -934,7 +934,7 @@ const Index = () => {
       for (const [originalPlayerId, playerScores] of Object.entries(data.scores)) {
         const newPlayerId = playerIdMap.get(originalPlayerId);
         if (!newPlayerId) {
-          devError(`No mapping found for player ${originalPlayerId}`);
+          devError(`${trs("No mapping found for player")} ${originalPlayerId}`);
           failedScores++;
           continue;
         }
@@ -956,7 +956,7 @@ const Index = () => {
           .select('id, hole_number');
 
         if (scoreErr) {
-          devError(`Error inserting scores for player ${originalPlayerId}:`, scoreErr);
+          devError(`${trs("Error inserting scores for player")} ${originalPlayerId}:`, scoreErr);
           failedScores++;
           continue;
         }
@@ -1054,7 +1054,7 @@ const Index = () => {
       sessionStorage.setItem('restore_round_id', newRoundId);
       
       if (failedScores > 0) {
-        toast.warning(`Ronda duplicada con ${failedScores} score(s) incompletos. Redirigiendo...`);
+        toast.warning(`${trs("Ronda duplicada con")} ${failedScores} score(s) incompletos. Redirigiendo...`);
       } else {
         toast.success(trs("Ronda duplicada exitosamente. Redirigiendo..."));
       }
@@ -1106,7 +1106,7 @@ const Index = () => {
       };
 
       setPlayerGroups((prev) => [...prev, newGroup]);
-      toast.success(`${newGroup.name} creado`);
+      toast.success(`${newGroup.name} ${trs("creado")}`);
     } catch (e: any) {
       devError('Error creating round group:', e);
       toast.error(trs("No se pudo crear el grupo"));
@@ -1148,15 +1148,15 @@ const Index = () => {
                   .select('id, tee_color, handicap_for_round')
                   .maybeSingle();
                 if (error) {
-                  devError(`Error persisting group player changes for ${newPlayer.name}:`, error);
-                  toast.error(`No se pudo guardar el cambio de ${newPlayer.name}`);
+                  devError(`${trs("Error persisting group player changes for")} ${newPlayer.name}:`, error);
+                  toast.error(`${trs("No se pudo guardar el cambio de")} ${newPlayer.name}`);
                 } else if (!updated) {
-                  devError(`[Handicap Persist G2+] No row updated for ${newPlayer.name} (posible RLS)`);
-                  toast.error(`No tienes permiso para actualizar a ${newPlayer.name}`);
+                  devError(`${trs("[Handicap Persist G2+] No row updated for")} ${newPlayer.name} (posible RLS)`);
+                  toast.error(`${trs("No tienes permiso para actualizar a")} ${newPlayer.name}`);
                 } else {
                   devLog(`[Handicap Persist G2+] ✓ Saved for ${newPlayer.name}`, updated);
                   if (teeChanged) {
-                    toast.success(`Tee de ${newPlayer.name} actualizado. Recalcula HCP si aplica.`);
+                    toast.success(`${trs("Tee de")} ${newPlayer.name} ${trs("actualizado. Recalcula HCP si aplica.")}`);
                   }
                 }
                 if (currentPlayer.handicap !== newPlayer.handicap) {
@@ -1170,7 +1170,7 @@ const Index = () => {
             } else {
               if (currentPlayer.handicap !== newPlayer.handicap || currentPlayer.teeColor !== newPlayer.teeColor) {
                 devWarn(`[Handicap Persist G2+] No roundPlayerId mapping for ${newPlayer.name} (id: ${newPlayer.id}). Change will NOT persist.`);
-                toast.error(`No se pudo guardar el cambio de ${newPlayer.name} (mapeo pendiente)`);
+                toast.error(`${trs("No se pudo guardar el cambio de")} ${newPlayer.name} (mapeo pendiente)`);
               }
             }
           }
@@ -1486,15 +1486,15 @@ const Index = () => {
                 .select('id, tee_color, handicap_for_round')
                 .maybeSingle();
               if (error) {
-                devError(`Error persisting player changes for ${newPlayer.name}:`, error);
-                toast.error(`No se pudo guardar el cambio de ${newPlayer.name}`);
+                devError(`${trs("Error persisting player changes for")} ${newPlayer.name}:`, error);
+                toast.error(`${trs("No se pudo guardar el cambio de")} ${newPlayer.name}`);
               } else if (!updated) {
-                devError(`[Handicap Persist] No row updated for ${newPlayer.name} (posible RLS)`);
-                toast.error(`No tienes permiso para actualizar a ${newPlayer.name}`);
+                devError(`${trs("[Handicap Persist] No row updated for")} ${newPlayer.name} (posible RLS)`);
+                toast.error(`${trs("No tienes permiso para actualizar a")} ${newPlayer.name}`);
               } else {
                 devLog(`[Handicap Persist] ✓ Saved for ${newPlayer.name}`, updated);
                 if (teeChanged) {
-                  toast.success(`Tee de ${newPlayer.name} actualizado. Recalcula HCP si aplica.`);
+                  toast.success(`${trs("Tee de")} ${newPlayer.name} ${trs("actualizado. Recalcula HCP si aplica.")}`);
                 }
               }
               if (currentPlayer.handicap !== newPlayer.handicap) {
@@ -1508,7 +1508,7 @@ const Index = () => {
           } else {
             if (currentPlayer.handicap !== newPlayer.handicap || currentPlayer.teeColor !== newPlayer.teeColor) {
               devWarn(`[Handicap Persist] No roundPlayerId mapping for ${newPlayer.name} (id: ${newPlayer.id}). Change will NOT persist until mapping exists.`);
-              toast.error(`No se pudo guardar el cambio de ${newPlayer.name} (mapeo pendiente)`);
+              toast.error(`${trs("No se pudo guardar el cambio de")} ${newPlayer.name} (mapeo pendiente)`);
             }
           }
         }
@@ -1614,7 +1614,7 @@ const Index = () => {
 
         if (rpErr || !rpRow?.id) {
           devError('Error adding friend to round:', rpErr);
-          toast.error(`Error al agregar ${playerData.name}`);
+          toast.error(`${trs("Error al agregar")} ${playerData.name}`);
           continue;
         }
 
@@ -1720,10 +1720,10 @@ const Index = () => {
           );
         }
 
-        toast.success(`${playerData.name} agregado a la ronda`);
+        toast.success(`${playerData.name} ${trs("agregado a la ronda")}`);
       } catch (err) {
         devError('Exception adding friend mid-round:', err);
-        toast.error(`Error al agregar ${playerData.name}`);
+        toast.error(`${trs("Error al agregar")} ${playerData.name}`);
       }
     }
   }, [players, teeColor, roundState.id, roundState.groupId, course, roundPlayerIds, playerGroups, initializeHandicapsForNewPlayer, setRoundPlayerIds]);
@@ -1766,7 +1766,7 @@ const Index = () => {
 
         if (rpErr || !rpRow?.id) {
           devError('Error adding friend to group:', rpErr);
-          toast.error(`Error al agregar ${playerData.name}`);
+          toast.error(`${trs("Error al agregar")} ${playerData.name}`);
           continue;
         }
 
@@ -1865,10 +1865,10 @@ const Index = () => {
           );
         }
 
-        toast.success(`${playerData.name} agregado al grupo`);
+        toast.success(`${playerData.name} ${trs("agregado al grupo")}`);
       } catch (err) {
         devError('Exception adding friend to group:', err);
-        toast.error(`Error al agregar ${playerData.name}`);
+        toast.error(`${trs("Error al agregar")} ${playerData.name}`);
       }
     }
   }, [roundState.id, players, playerGroups, teeColor, course, roundPlayerIds, initializeHandicapsForNewPlayer, setRoundPlayerIds]);
@@ -1909,7 +1909,7 @@ const Index = () => {
       });
       if (groupsMissingAdmin.length > 0) {
         toast.error(trs("Designa al menos un co-administrador en cada grupo adicional"), {
-          description: `Falta en: ${groupsMissingAdmin.map(g => g.name).join(', ')}. Solo el organizador o un co-admin del grupo podrán capturar scores.`,
+          description: `${trs("Falta en:")} ${groupsMissingAdmin.map(g => g.name).join(', ')}${trs(". Solo el organizador o un co-admin del grupo podrán capturar scores.")}`,
         });
         return;
       }
@@ -2461,7 +2461,7 @@ const Index = () => {
                             {r.status === 'in_progress' ? trs("En progreso") : trs("En configuración")} •{' '}
                             {format(r.date, "d 'de' MMMM, yyyy", { locale: es })}
                             {s ? (
-                              <> • {s.holesPlayed} hoyos • {s.totalStrokes} golpes</>
+                              <> • {s.holesPlayed} {trs("hoyos •")}{' '}{s.totalStrokes} golpes</>
                             ) : null}
                           </div>
                         </div>
@@ -3061,7 +3061,7 @@ const Index = () => {
         <AlertDialog open={!!crossBetTarget} onOpenChange={(v) => { if (!v) setCrossBetTarget(null); }}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>¿Cruzar tarjeta con {crossBetTarget.name}?</AlertDialogTitle>
+              <AlertDialogTitle>{trs("¿Cruzar tarjeta con")}{' '}{crossBetTarget.name}?</AlertDialogTitle>
               <AlertDialogDescription>
                 {trs("Se enviará una invitación de cruce. Cuando la acepte, podrás elegir qué apuestas individuales incluir en este cruce desde la sección")}{' '}<strong>{trs("Apuestas de Cruce")}</strong> del dashboard.
                 {sendError && (

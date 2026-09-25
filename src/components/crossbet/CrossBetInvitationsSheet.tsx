@@ -72,7 +72,7 @@ export const CrossBetInvitationsSheet: React.FC<CrossBetInvitationsSheetProps> =
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <MapPin className="h-3 w-3 shrink-0" />
                         <span className="truncate">{inv.courseName}</span>
-                        {inv.holesPlayed > 0 && <span className="shrink-0">· Hoyo {inv.holesPlayed}</span>}
+                        {inv.holesPlayed > 0 && <span className="shrink-0">{trs("· Hoyo")}{' '}{inv.holesPlayed}</span>}
                       </div>
                     </div>
                   </div>

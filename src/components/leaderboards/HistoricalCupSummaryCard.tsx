@@ -72,7 +72,7 @@ export const HistoricalCupSummaryCard: React.FC<Props> = ({
     : undefined;
   const slotLabel = slot
     ? [
-        dayCfg?.label?.trim() || `Día ${slot.day}`,
+        dayCfg?.label?.trim() || `${trs("Día")} ${slot.day}`,
         dayCfg && dayCfg.sessions.length > 1
           ? (sessCfg?.label?.trim() || `S${slot.session}`)
           : null,

@@ -55,7 +55,7 @@ export const CloseRoundConfirmDialog: React.FC<CloseRoundConfirmDialogProps> = (
           </div>
           <AlertDialogDescription className="space-y-3">
             <p>
-              {trs("Esta acción es")}{' '}<strong>{trs("irreversible")}</strong>. Una vez cerrada la ronda:
+              {trs("Esta acción es")}{' '}<strong>{trs("irreversible")}</strong>. {trs("Una vez cerrada la ronda:")}
             </p>
             <ul className="list-disc pl-5 space-y-1 text-sm">
               <li>{trs("Los scores quedarán guardados permanentemente")}</li>

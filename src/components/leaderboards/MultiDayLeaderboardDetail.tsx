@@ -896,7 +896,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium truncate">{r.course_name}</p>
                       <p className="text-[10px] text-muted-foreground">
-                        {r.date}{r.day_number ? ` · Día ${r.day_number}` : trs(" · Sin día")}
+                        {r.date}{r.day_number ? ` ${trs("· Día")} ${r.day_number}` : trs(" · Sin día")}
                       </p>
                     </div>
                     <Button

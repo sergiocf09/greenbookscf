@@ -548,7 +548,7 @@ export const TeamsCupShareImage: React.FC<TeamsCupShareImageProps> = (props) => 
         {previewUrl && (
           <img
             src={previewUrl}
-            alt={`Resultado de ${cupName}`}
+            alt={`${trs("Resultado de")} ${cupName}`}
             className="w-full rounded-lg border border-border"
           />
         )}

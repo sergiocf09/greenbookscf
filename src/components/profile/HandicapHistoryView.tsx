@@ -156,7 +156,7 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
             : 'text-muted-foreground';
         return (
           <div className="text-xs text-muted-foreground px-1">
-            Atestadas (últ. {total}): <span className={cn('font-medium', colorClass)}>{attestedCount} de {total} ({pct}%)</span>
+            {trs("Atestadas")} ({trs("últ.")} {total}): <span className={cn('font-medium', colorClass)}>{attestedCount} {trs("de")}{' '}{total} ({pct}%)</span>
           </div>
         );
       })()}
@@ -219,7 +219,7 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
             </LineChart>
           </ResponsiveContainer>
           <p className="text-[9px] text-muted-foreground text-center mt-1">
-            ● usados para el índice — línea punteada = índice actual
+            {trs("● usados para el índice — línea punteada = índice actual")}
           </p>
         </div>
       )}
@@ -227,7 +227,7 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
       {/* Rounds list */}
       <div className="space-y-1.5">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Historial de Rondas ({totalRounds})
+          {trs("Historial de Rondas")} ({totalRounds})
         </p>
         {attestationStats && attestationStats.totalRounds > 0 && (() => {
           const pct = Math.round((attestationStats.attestedRounds / attestationStats.totalRounds) * 100);
@@ -239,8 +239,8 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
           return (
             <p className="text-[11px] text-muted-foreground px-1 -mt-1 flex items-center gap-1">
               <Check className="h-3 w-3" />
-              Atestadas: <span className={cn('font-medium', colorClass)}>
-                {attestationStats.attestedRounds} de {attestationStats.totalRounds} ({pct}%)
+              {trs("Atestadas")}: <span className={cn('font-medium', colorClass)}>
+                {attestationStats.attestedRounds} {trs("de")} {attestationStats.totalRounds} ({pct}%)
               </span>
             </p>
           );

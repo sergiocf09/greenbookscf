@@ -118,7 +118,7 @@ export const HolesEntryStep: React.FC<Props> = ({ data, onChange, onBack, onNext
 
       {/* Current hole label */}
       <div className="text-center">
-        <span className="text-lg font-bold">Hoyo {currentHole + 1}</span>
+        <span className="text-lg font-bold">{trs("Hoyo")}{' '}{currentHole + 1}</span>
         {holes[currentHole].par && (
           <span className="ml-2 text-sm text-muted-foreground">Par {holes[currentHole].par}</span>
         )}
@@ -210,7 +210,7 @@ export const HolesEntryStep: React.FC<Props> = ({ data, onChange, onBack, onNext
                 setCurrentHole(currentHole + 1);
               }
             }}
-            placeholder={`Yardas hoyo ${currentHole + 1}`}
+            placeholder={`${trs("Yardas hoyo")} ${currentHole + 1}`}
             autoFocus
           />
           <div className="flex gap-2">

@@ -90,7 +90,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
     const amount = sign === 'pos' ? rawAmount : -rawAmount;
     const yearNum = yearStr.trim() ? parseInt(yearStr.trim(), 10) : null;
     if (yearNum !== null && (isNaN(yearNum) || yearNum < 1950 || yearNum > CURRENT_YEAR)) {
-      toast.error(`Año inválido (1950–${CURRENT_YEAR})`);
+      toast.error(`${trs("Año inválido (1950–")}${CURRENT_YEAR})`);
       return;
     }
     setSaving(true);
@@ -147,7 +147,7 @@ export const PreAppBalanceSheet: React.FC<PreAppBalanceSheetProps> = ({
         </SheetHeader>
 
         <div className="flex items-center justify-between p-3 bg-muted/40 border border-border rounded-lg">
-          <span className="text-xs text-muted-foreground">Total pre-GB:</span>
+          <span className="text-xs text-muted-foreground">{trs("Total pre-GB:")}</span>
           <span className={cn(
             'text-lg font-bold tabular-nums',
             total > 0 ? 'text-green-600 dark:text-green-500' :

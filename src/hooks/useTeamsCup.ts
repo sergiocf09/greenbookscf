@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -404,7 +405,7 @@ export function useTeamsCup(leaderboardId: string | null) {
       if (error) throw error;
       await fetchAll();
     } catch (err: any) {
-      toast.error('Error al actualizar equipo: ' + err.message);
+      toast.error(trs("Error al actualizar equipo: ") + err.message);
     }
   }, [fetchAll]);
 
@@ -417,7 +418,7 @@ export function useTeamsCup(leaderboardId: string | null) {
       if (error) throw error;
       await fetchAll();
     } catch (err: any) {
-      toast.error('Error al asignar equipo: ' + err.message);
+      toast.error(trs("Error al asignar equipo: ") + err.message);
     }
   }, [fetchAll]);
 
@@ -430,7 +431,7 @@ export function useTeamsCup(leaderboardId: string | null) {
       if (error) throw error;
       await fetchAll();
     } catch (err: any) {
-      toast.error('Error al actualizar hándicap: ' + err.message);
+      toast.error(trs("Error al actualizar hándicap: ") + err.message);
     }
   }, [fetchAll]);
 
@@ -512,7 +513,7 @@ export function useTeamsCup(leaderboardId: string | null) {
       await fetchAll();
       return true;
     } catch (err: any) {
-      toast.error('Error al guardar cambios: ' + err.message);
+      toast.error(trs("Error al guardar cambios: ") + err.message);
       return false;
     }
   }, [fetchAll, leaderboardId, participants]);
@@ -525,11 +526,11 @@ export function useTeamsCup(leaderboardId: string | null) {
         .insert({ leaderboard_id: leaderboardId, ...params } as any)
         .select().single();
       if (error) throw error;
-      toast.success('Match creado');
+      toast.success(trs("Match creado"));
       await fetchAll();
       return data as CupMatch;
     } catch (err: any) {
-      toast.error('Error al crear match: ' + err.message);
+      toast.error(trs("Error al crear match: ") + err.message);
       return null;
     }
   }, [leaderboardId, fetchAll]);
@@ -541,7 +542,7 @@ export function useTeamsCup(leaderboardId: string | null) {
       if (error) throw error;
       await fetchAll();
     } catch (err: any) {
-      toast.error('Error al actualizar match: ' + err.message);
+      toast.error(trs("Error al actualizar match: ") + err.message);
     }
   }, [fetchAll]);
 
@@ -549,10 +550,10 @@ export function useTeamsCup(leaderboardId: string | null) {
     try {
       const { error } = await supabase.from('cup_matches').delete().eq('id', matchId);
       if (error) throw error;
-      toast.success('Match eliminado');
+      toast.success(trs("Match eliminado"));
       await fetchAll();
     } catch (err: any) {
-      toast.error('Error al eliminar match: ' + err.message);
+      toast.error(trs("Error al eliminar match: ") + err.message);
     }
   }, [fetchAll]);
 

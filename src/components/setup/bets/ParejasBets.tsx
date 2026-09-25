@@ -455,7 +455,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       <BetSection
         id="teamPressures"
          title={trs("Foursomes")}
-         description="Match play por equipos, apertura automática"
+         description={trs("Match play por equipos, apertura automática")}
         enabled={config.teamPressures.enabled}
         onToggle={(enabled) => {
           onUpdateBet('teamPressures', { enabled });
@@ -468,7 +468,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         }}
         isExpanded={expandedSections.includes('teamPressures')}
         onExpandChange={(open) => onToggleSection('teamPressures', open)}
-        helpText="Match play por equipos de 2 vs 2. Se compara el score neto de cada equipo (según modalidad: Bola Baja, Bola Alta o Combinado). Se abre una nueva presión cuando un equipo va arriba por el umbral configurado."
+        helpText={trs("Match play por equipos de 2 vs 2. Se compara el score neto de cada equipo (según modalidad: Bola Baja, Bola Alta o Combinado). Se abre una nueva presión cuando un equipo va arriba por el umbral configurado.")}
       >
         {foursomesOptions.length === 5 && (
           <BasePairSelector
@@ -542,7 +542,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       <BetSection
         id="carritos"
         title={trs("Carritos (Medal Parejas)")}
-        description="Medal por equipos de 2"
+        description={trs("Medal por equipos de 2")}
         enabled={config.carritos.enabled}
         onToggle={(enabled) => {
           onUpdateBet('carritos', { enabled });
@@ -555,7 +555,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         }}
         isExpanded={expandedSections.includes('carritos')}
         onExpandChange={(open) => onToggleSection('carritos', open)}
-        helpText="Medal por equipos de 2 vs 2. Se suma el score neto del equipo según la modalidad (Bola Baja, Bola Alta o Combinado) y se compara Front 9, Back 9 y Total 18. El equipo con menor total gana cada segmento."
+        helpText={trs("Medal por equipos de 2 vs 2. Se suma el score neto del equipo según la modalidad (Bola Baja, Bola Alta o Combinado) y se compara Front 9, Back 9 y Total 18. El equipo con menor total gana cada segmento.")}
       >
         {/* Show add button if no carritos configured yet */}
         {carritosOptions.length === 5 && (
@@ -664,7 +664,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       {(config.sixesEnabled ?? ((config.sixesBets?.length ?? 0) > 0)) && (
       <BetSection
         id="sixes" title={trs("Sixes")}
-        description="3 sets de 6 hoyos con cambio de parejas"
+        description={trs("3 sets de 6 hoyos con cambio de parejas")}
         enabled={config.sixesEnabled ?? ((config.sixesBets?.length ?? 0) > 0)}
         onToggle={(enabled) => {
           if (enabled) {
@@ -685,7 +685,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         }}
         isExpanded={expandedSections.includes('sixes')}
         onExpandChange={(open) => onToggleSection('sixes', open)}
-        helpText="Se juegan 3 sets de 6 hoyos con parejas distintas. Cada instancia es una apuesta independiente de 4 jugadores."
+        helpText={trs("Se juegan 3 sets de 6 hoyos con parejas distintas. Cada instancia es una apuesta independiente de 4 jugadores.")}
       >
         {(config.sixesBets?.length ?? 0) === 0 ? (
           <div className="text-center py-4">
@@ -732,7 +732,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       {(config.vegasEnabled ?? ((config.vegasBets?.length ?? 0) > 0)) && (
       <BetSection
         id="vegas" title={trs("Las Vegas")}
-        description="Combina scores en números de 2 dígitos"
+        description={trs("Combina scores en números de 2 dígitos")}
         enabled={config.vegasEnabled ?? ((config.vegasBets?.length ?? 0) > 0)}
         onToggle={(enabled) => {
           if (enabled) {
@@ -754,7 +754,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         }}
         isExpanded={expandedSections.includes('vegas')}
         onExpandChange={(open) => onToggleSection('vegas', open)}
-        helpText="Cada equipo forma un número de 2 dígitos con sus scores netos. La diferencia entre los números determina el pago. Múltiples instancias permiten diferentes configuraciones de parejas."
+        helpText={trs("Cada equipo forma un número de 2 dígitos con sus scores netos. La diferencia entre los números determina el pago. Múltiples instancias permiten diferentes configuraciones de parejas.")}
       >
         {(config.vegasBets?.length ?? 0) === 0 ? (
           <div className="text-center py-4">
@@ -803,7 +803,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       {players.length >= 4 && players.length <= 6 && (
         <BetSection
           id="wolf" title="🐺 Loba"
-          description="Cada hoyo un jugador elige pareja o va solo"
+          description={trs("Cada hoyo un jugador elige pareja o va solo")}
           enabled={config.wolfSetup?.enabled ?? false}
           onToggle={(enabled) => {
             onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled } as any);
@@ -815,9 +815,9 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           }}
           isExpanded={expandedSections.includes('wolf')}
           onExpandChange={(open) => onToggleSection('wolf', open)}
-          helpText="En cada hoyo un jugador (Loba) elige un compañero o va solo (×2). Los demás son rivales. El equipo con mejor score neto gana."
+          helpText={trs("En cada hoyo un jugador (Loba) elige un compañero o va solo (×2). Los demás son rivales. El equipo con mejor score neto gana.")}
         >
-          <AmountInput label="Monto por hoyo" value={config.wolfSetup?.amountPerHole ?? 10}
+          <AmountInput label={trs("Monto por hoyo")} value={config.wolfSetup?.amountPerHole ?? 10}
             onChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, amountPerHole: v } as any)} />
 
           <div className="flex items-center justify-between mt-2">
@@ -1269,7 +1269,7 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>¿Eliminar Foursome {index + 1}?</AlertDialogTitle>
+                <AlertDialogTitle>{trs("¿Eliminar Foursome")}{' '}{index + 1}?</AlertDialogTitle>
                 <AlertDialogDescription>
                   {trs("Esta acción eliminará permanentemente esta apuesta. No se puede deshacer.")}
                 </AlertDialogDescription>
@@ -1703,7 +1703,7 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>¿Eliminar {label}?</AlertDialogTitle>
+                  <AlertDialogTitle>{trs("¿Eliminar")}{' '}{label}?</AlertDialogTitle>
                   <AlertDialogDescription>
                     {trs("Esta acción eliminará permanentemente esta apuesta de carritos. No se puede deshacer.")}
                   </AlertDialogDescription>
@@ -2029,7 +2029,7 @@ const SixesBetCard: React.FC<{
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar Sixes {index + 1}?</AlertDialogTitle>
+            <AlertDialogTitle>{trs("¿Eliminar Sixes")}{' '}{index + 1}?</AlertDialogTitle>
             <AlertDialogDescription>{trs("Esta acción eliminará permanentemente esta apuesta. No se puede deshacer.")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -2221,7 +2221,7 @@ const VegasBetCard: React.FC<{
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar Vegas {index + 1}?</AlertDialogTitle>
+            <AlertDialogTitle>{trs("¿Eliminar Vegas")}{' '}{index + 1}?</AlertDialogTitle>
             <AlertDialogDescription>{trs("Esta acción eliminará permanentemente esta apuesta. No se puede deshacer.")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -2244,7 +2244,7 @@ const VegasBetCard: React.FC<{
       </Select>
     </div>
 
-    <AmountInput label="Valor por punto" value={bet.valuePerPoint} onChange={(v) => onUpdate({ valuePerPoint: v })} />
+    <AmountInput label={trs("Valor por punto")} value={bet.valuePerPoint} onChange={(v) => onUpdate({ valuePerPoint: v })} />
 
     <div className="flex items-center gap-2">
       <Switch

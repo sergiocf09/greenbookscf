@@ -676,7 +676,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
       window.location.reload();
     } catch (err: any) {
       devError('Error reopening round:', err);
-      toast.error(`Error al reabrir ronda: ${err.message}`);
+      toast.error(`${trs("Error al reabrir ronda:")} ${err.message}`);
     } finally {
       setReopening(false);
       setReopenDialogOpen(false);
@@ -820,7 +820,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                               fontSize: '12px',
                               color: '#f8fafc',
                             }}
-                            formatter={(v: number) => [`${v} ronda${v !== 1 ? 's' : ''}`, '']}
+                            formatter={(v: number) => [`${v} ${trs("ronda")}${v !== 1 ? 's' : ''}`, '']}
                             labelStyle={{ color: '#94a3b8', fontSize: '11px' }}
                             cursor={{ fill: '#1e293b' }}
                           />

@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -351,7 +352,7 @@ export function useScorecardImporter() {
 
       for (const ep of editablePlayers) {
         const m = mappings[ep.key];
-        if (!m) throw new Error(`Falta mapeo para ${ep.nameInCard}`);
+        if (!m) throw new Error(`${trs("Falta mapeo para")} ${ep.nameInCard}`);
 
         if (m.kind === 'self') {
           const selfTee = teeFor(ep.key);
@@ -374,7 +375,7 @@ export function useScorecardImporter() {
             .update(selfUpdate)
             .eq('id', organizerRoundPlayerId);
         } else if (m.kind === 'registered') {
-          if (!m.profileId) throw new Error(`Falta perfil registrado para ${ep.nameInCard}`);
+          if (!m.profileId) throw new Error(`${trs("Falta perfil registrado para")} ${ep.nameInCard}`);
           const { data, error } = await supabase
             .from('round_players')
             .insert({
@@ -388,7 +389,7 @@ export function useScorecardImporter() {
             })
             .select('id')
             .single();
-          if (error) throw new Error(`Error agregando ${ep.nameInCard}: ${error.message}`);
+          if (error) throw new Error(`${trs("Error agregando")} ${ep.nameInCard}: ${error.message}`);
           playerRoundIds.set(ep.key, data.id);
           playerObjects.set(ep.key, {
             id: data.id,
@@ -406,7 +407,7 @@ export function useScorecardImporter() {
           try {
             safeName = validatePlayerName(ep.nameInCard);
           } catch (e: any) {
-            throw new Error(`Nombre de invitado inválido (${ep.nameInCard}): ${e?.message || 'inválido'}`);
+            throw new Error(`${trs("Nombre de invitado inválido (")}${ep.nameInCard}): ${e?.message || 'inválido'}`);
           }
           const guestInitials = initialsFromPlayerName(safeName);
           const { data, error } = await supabase
@@ -424,7 +425,7 @@ export function useScorecardImporter() {
             })
             .select('id')
             .single();
-          if (error) throw new Error(`Error agregando invitado ${safeName}: ${error.message}`);
+          if (error) throw new Error(`${trs("Error agregando invitado")} ${safeName}: ${error.message}`);
           playerRoundIds.set(ep.key, data.id);
           playerObjects.set(ep.key, {
             id: data.id,
@@ -446,7 +447,7 @@ export function useScorecardImporter() {
           .from('round_players')
           .delete()
           .eq('id', organizerRoundPlayerId);
-        if (delOrgErr) throw new Error(`No se pudo remover al capturista de la lista de jugadores: ${delOrgErr.message}`);
+        if (delOrgErr) throw new Error(`${trs("No se pudo remover al capturista de la lista de jugadores:")} ${delOrgErr.message}`);
       }
 
       // 4) SAVE SCORES for each player × 18 holes
@@ -513,7 +514,7 @@ export function useScorecardImporter() {
         const { error: scoreErr } = await supabase
           .from('hole_scores')
           .upsert(chunk, { onConflict: 'round_player_id,hole_number', ignoreDuplicates: false });
-        if (scoreErr) throw new Error(`Error guardando scores: ${scoreErr.message}`);
+        if (scoreErr) throw new Error(`${trs("Error guardando scores:")} ${scoreErr.message}`);
         setProgress(prev => ({
           ...prev,
           percent: Math.min(75, 45 + Math.round((30 * (i + chunk.length)) / holeScoresRows.length)),
@@ -551,14 +552,14 @@ export function useScorecardImporter() {
           },
           { onConflict: 'round_id', ignoreDuplicates: false }
         );
-      if (snapErr) throw new Error(`Error guardando snapshot: ${snapErr.message}`);
+      if (snapErr) throw new Error(`${trs("Error guardando snapshot:")} ${snapErr.message}`);
 
       // Mark round completed
       const { error: completeErr } = await supabase
         .from('rounds')
         .update({ status: 'completed' })
         .eq('id', roundId);
-      if (completeErr) throw new Error(`Error cerrando ronda: ${completeErr.message}`);
+      if (completeErr) throw new Error(`${trs("Error cerrando ronda:")} ${completeErr.message}`);
 
       // Best-effort rebuild (idempotent, non-fatal)
       try {

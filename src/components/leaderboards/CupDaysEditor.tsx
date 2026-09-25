@@ -106,7 +106,7 @@ export const CupDaysEditor: React.FC<Props> = ({ days, onChange, lockedSlots }) 
       {days.map((day, idx) => (
         <div key={idx} className="rounded-lg border p-2 space-y-2">
           <div className="flex items-center gap-1.5">
-            <span className="text-xs font-semibold w-11 shrink-0">Día {idx + 1}</span>
+            <span className="text-xs font-semibold w-11 shrink-0">{trs("Día")}{' '}{idx + 1}</span>
             <Input
               type="date"
               value={day.date ?? ''}

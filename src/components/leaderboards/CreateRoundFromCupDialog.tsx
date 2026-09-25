@@ -291,7 +291,7 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
     // Sanity: per-group size limit.
     const tooBig = groupsRaw.find(g => g.participantIds.length > MAX_PER_GROUP);
     if (tooBig) {
-      toast.error(`El grupo ${tooBig.groupNumber} tiene más de ${MAX_PER_GROUP} jugadores`);
+      toast.error(`${trs("El grupo")} ${tooBig.groupNumber} ${trs("tiene más de")} ${MAX_PER_GROUP} ${trs("jugadores")}`);
       return;
     }
 
@@ -617,7 +617,7 @@ const ReviewGroups: React.FC<ReviewGroupsProps> = ({
 
       {benchedInMatch.length > 0 && (
         <div className="rounded-md border border-amber-500/40 bg-amber-50 dark:bg-amber-950/20 p-2 text-[11px] text-amber-800 dark:text-amber-200">
-          <strong>Atención:</strong> {benchedInMatch.length} jugador(es) con match
+          <strong>{trs("Atención:")}</strong> {benchedInMatch.length} jugador(es) con match
           asignado no jugarán esta ronda. Sus matches quedarán sin uno de los
           contendientes.
           <ul className="mt-1 list-disc pl-4">
