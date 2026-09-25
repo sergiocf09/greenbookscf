@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { useState, useEffect } from "react";
 import { X, Download, Share, Plus, SquareArrowOutUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -94,7 +95,7 @@ export const PWAInstallBanner = () => {
           <img src="/pwa-icon-192.png" alt="GreenBook" className="h-10 w-10 rounded-lg" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-card-foreground">Instalar GreenBook</p>
-            <p className="text-xs text-muted-foreground truncate">Acceso rápido desde tu pantalla</p>
+            <p className="text-xs text-muted-foreground truncate">{trs("Acceso rápido desde tu pantalla")}</p>
           </div>
           <Button size="sm" onClick={handleInstall} className="shrink-0 gap-1.5">
             <Download className="h-4 w-4" />
@@ -103,7 +104,7 @@ export const PWAInstallBanner = () => {
           <button
             onClick={handleDismiss}
             className="shrink-0 p-1 text-muted-foreground hover:text-foreground"
-            aria-label="Cerrar"
+            aria-label={trs("Cerrar")}
           >
             <X className="h-4 w-4" />
           </button>
@@ -115,13 +116,13 @@ export const PWAInstallBanner = () => {
         <DialogContent className="max-w-sm mx-auto">
           <DialogHeader>
             <DialogTitle className="text-center text-lg">
-              Instalar GreenBook en iPhone
+              {trs("Instalar GreenBook en iPhone")}
             </DialogTitle>
           </DialogHeader>
 
           <div className="flex flex-col items-center gap-1 pb-2">
             <img src="/pwa-icon-192.png" alt="GreenBook" className="h-16 w-16 rounded-2xl shadow-md" />
-            <p className="text-xs text-muted-foreground">Tu ronda. Tus apuestas.</p>
+            <p className="text-xs text-muted-foreground">{trs("Tu ronda. Tus apuestas.")}</p>
           </div>
 
           <div className="space-y-4">
@@ -132,10 +133,10 @@ export const PWAInstallBanner = () => {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-foreground">
-                  Toca el botón de <strong>Compartir</strong>
+                  {trs("Toca el botón de")}{' '}<strong>Compartir</strong>
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Es el ícono <SquareArrowOutUpRight className="inline h-3.5 w-3.5 align-text-bottom" /> en la barra inferior de Safari.
+                  {trs("Es el ícono")}{' '}<SquareArrowOutUpRight className="inline h-3.5 w-3.5 align-text-bottom" />{' '}{trs("en la barra inferior de Safari.")}
                 </p>
               </div>
             </div>
@@ -147,10 +148,10 @@ export const PWAInstallBanner = () => {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-foreground">
-                  Desplázate y toca <strong>"Agregar a Inicio"</strong>
+                  {trs("Desplázate y toca")}{' '}<strong>{trs("\"Agregar a Inicio\"")}</strong>
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Busca la opción <Plus className="inline h-3.5 w-3.5 align-text-bottom" /> Agregar a pantalla de inicio.
+                  {trs("Busca la opción")}{' '}<Plus className="inline h-3.5 w-3.5 align-text-bottom" />{' '}{trs("Agregar a pantalla de inicio.")}
                 </p>
               </div>
             </div>
@@ -162,17 +163,17 @@ export const PWAInstallBanner = () => {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-foreground">
-                  Toca <strong>"Agregar"</strong> para confirmar
+                  Toca <strong>{trs("\"Agregar\"")}</strong>{' '}{trs("para confirmar")}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  ¡Listo! GreenBook aparecerá en tu pantalla de inicio.
+                  {trs("¡Listo! GreenBook aparecerá en tu pantalla de inicio.")}
                 </p>
               </div>
             </div>
           </div>
 
           <Button onClick={handleIOSGuideDone} className="w-full mt-2">
-            ¡Entendido!
+            {trs("¡Entendido!")}
           </Button>
         </DialogContent>
       </Dialog>

@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -89,7 +90,7 @@ export const CupSettingsDialog: React.FC<Props> = ({
 
   const handleSave = async () => {
     if (!name.trim()) {
-      toast.error('El nombre es requerido');
+      toast.error(trs("El nombre es requerido"));
       return;
     }
     setSaving(true);
@@ -137,7 +138,7 @@ export const CupSettingsDialog: React.FC<Props> = ({
       onOpenChange(false);
       await onSaved();
     } catch (err: any) {
-      toast.error('Error al guardar: ' + err.message);
+      toast.error(trs("Error al guardar: ") + err.message);
     } finally {
       setSaving(false);
     }
@@ -175,16 +176,16 @@ export const CupSettingsDialog: React.FC<Props> = ({
 
         <div className="space-y-4">
           <div>
-            <Label>Nombre *</Label>
+            <Label>{trs("Nombre *")}</Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Nombre de la competencia"
+              placeholder={trs("Nombre de la competencia")}
             />
           </div>
 
           <div>
-            <Label>Descripción</Label>
+            <Label>{trs("Descripción")}</Label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -217,12 +218,12 @@ export const CupSettingsDialog: React.FC<Props> = ({
           {/* Team editor (name + color) */}
           {(teams[0] || teams[1]) && (
             <div className="border-t pt-3 space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground">Equipos</p>
+              <p className="text-xs font-semibold text-muted-foreground">{trs("Equipos")}</p>
               <div className="grid grid-cols-2 gap-3">
                 {teams[0] && (
                   <div>
                     <Label className="text-xs" style={{ color: teamAColor }}>
-                      Equipo A
+                      {trs("Equipo A")}
                     </Label>
                     <Input
                       value={teamAName}
@@ -236,7 +237,7 @@ export const CupSettingsDialog: React.FC<Props> = ({
                 {teams[1] && (
                   <div>
                     <Label className="text-xs" style={{ color: teamBColor }}>
-                      Equipo B
+                      {trs("Equipo B")}
                     </Label>
                     <Input
                       value={teamBName}
@@ -267,7 +268,7 @@ export const CupSettingsDialog: React.FC<Props> = ({
               disabled={saving}
             >
               <Trash2 className="h-4 w-4" />
-              Eliminar competencia
+              {trs("Eliminar competencia")}
             </Button>
           </div>
         </div>

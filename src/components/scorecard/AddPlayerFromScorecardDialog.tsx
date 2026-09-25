@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -69,7 +70,7 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
 
   const handleSaveGuest = async () => {
     if (!canSave) {
-      toast.error('Ingresa un nombre válido');
+      toast.error(trs("Ingresa un nombre válido"));
       return;
     }
 
@@ -84,7 +85,7 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
         handicap: typeof handicap === 'number' ? handicap : 0,
       });
 
-      toast.success('Jugador agregado. Usa ⚡ para capturar scores.');
+      toast.success(trs("Jugador agregado. Usa ⚡ para capturar scores."));
       onOpenChange(false);
       setName('');
       setHandicap('');
@@ -101,15 +102,15 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Agregar jugador y capturar scores</DialogTitle>
+          <DialogTitle>{trs("Agregar jugador y capturar scores")}</DialogTitle>
         </DialogHeader>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
           <TabsList className="grid grid-cols-3 w-full">
-            <TabsTrigger value="guest">Invitado</TabsTrigger>
+            <TabsTrigger value="guest">{trs("Invitado")}</TabsTrigger>
             <TabsTrigger value="friends">
               <Users className="h-3.5 w-3.5 mr-1" />
-              Amigos
+              {trs("Amigos")}
             </TabsTrigger>
             <TabsTrigger value="invite">Link</TabsTrigger>
           </TabsList>
@@ -126,11 +127,11 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
             )}
             <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-3 items-end">
               <div>
-                <label className="text-xs text-muted-foreground">Nombre</label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej. Toño" />
+                <label className="text-xs text-muted-foreground">{trs("Nombre")}</label>
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={trs("Ej. Toño")} />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground">Hándicap</label>
+                <label className="text-xs text-muted-foreground">{trs("Hándicap")}</label>
                 <Input
                   type="number"
                   inputMode="decimal"
@@ -153,12 +154,12 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
             </div>
 
             <p className="text-xs text-muted-foreground">
-              El jugador se agregará a la ronda. Usa el ícono ⚡ en el scorecard para capturar sus scores.
+              {trs("El jugador se agregará a la ronda. Usa el ícono ⚡ en el scorecard para capturar sus scores.")}
             </p>
 
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-                Cancelar
+                {trs("Cancelar")}
               </Button>
               <Button onClick={handleSaveGuest} disabled={!canSave || saving}>
                 {saving ? 'Guardando…' : 'Agregar y confirmar'}
@@ -168,23 +169,23 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
 
           <TabsContent value="friends" className="mt-4 space-y-3">
             <p className="text-sm text-muted-foreground">
-              Selecciona jugadores de tu lista de amigos para agregarlos a la ronda.
+              {trs("Selecciona jugadores de tu lista de amigos para agregarlos a la ronda.")}
             </p>
             <Button 
               onClick={() => setShowFriendsDialog(true)} 
               className="w-full"
             >
               <Users className="h-4 w-4 mr-2" />
-              Abrir Lista de Amigos
+              {trs("Abrir Lista de Amigos")}
             </Button>
             <p className="text-xs text-muted-foreground">
-              Los jugadores agregados competirán en los 18 hoyos. Podrás capturar sus scores parcialmente.
+              {trs("Los jugadores agregados competirán en los 18 hoyos. Podrás capturar sus scores parcialmente.")}
             </p>
           </TabsContent>
 
           <TabsContent value="invite" className="mt-4 space-y-3">
             <p className="text-sm text-muted-foreground">
-              Para agregar un usuario registrado, compártele este link para que se una a la ronda.
+              {trs("Para agregar un usuario registrado, compártele este link para que se una a la ronda.")}
             </p>
             <div className="flex gap-2">
               <Input value={shareLink} readOnly className="text-xs font-mono bg-muted/50" />

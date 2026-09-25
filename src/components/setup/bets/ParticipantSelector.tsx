@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React from 'react';
 import { Player } from '@/types/golf';
 import { Switch } from '@/components/ui/switch';
@@ -73,7 +74,7 @@ export const ParticipantSelector: React.FC<ParticipantSelectorProps> = ({
         })}
       </div>
       <p className="text-[9px] text-muted-foreground">
-        Mínimo 2 participantes requeridos. Los jugadores desactivados no participan en esta apuesta.
+        {trs("Mínimo 2 participantes requeridos. Los jugadores desactivados no participan en esta apuesta.")}
       </p>
     </div>
   );

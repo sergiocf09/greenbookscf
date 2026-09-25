@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,7 +22,7 @@ const TeamsCupDetail = () => {
   if (!id) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="text-muted-foreground">Competencia no encontrada</p>
+        <p className="text-muted-foreground">{trs("Competencia no encontrada")}</p>
       </div>
     );
   }
@@ -52,10 +53,10 @@ const TeamsCupDetail = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => setShowProfileDialog(true)}>
-                <User className="h-4 w-4 mr-2" /> Perfil
+                <User className="h-4 w-4 mr-2" />{' '}{trs("Perfil")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={signOut}>
-                <LogOut className="h-4 w-4 mr-2" /> Cerrar Sesión
+                <LogOut className="h-4 w-4 mr-2" />{' '}{trs("Cerrar Sesión")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

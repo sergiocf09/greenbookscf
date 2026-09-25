@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -255,10 +256,10 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
       </Label>
       <Select value={value || '__none'} onValueChange={v => onChange(v === '__none' ? null : v)}>
         <SelectTrigger className="h-8 text-sm">
-          <SelectValue placeholder="Seleccionar" />
+          <SelectValue placeholder={trs("Seleccionar")} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="__none">— Sin asignar —</SelectItem>
+          <SelectItem value="__none">{trs("— Sin asignar —")}</SelectItem>
           {pool.map(p => (
             <SelectItem key={p.id} value={p.id}>
               <span className="inline-flex items-center">
@@ -288,7 +289,7 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
           {showSlotPicker && (
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label className="text-xs">Día</Label>
+                <Label className="text-xs">{trs("Día")}</Label>
                 <Select value={String(dayNumber)} onValueChange={v => setDayNumber(Number(v))}>
                   <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -301,7 +302,7 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
                 </Select>
               </div>
               <div>
-                <Label className="text-xs">Sesión</Label>
+                <Label className="text-xs">{trs("Sesión")}</Label>
                 <Select value={String(sessionNumber)} onValueChange={v => setSessionNumber(Number(v))}>
                   <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -357,7 +358,7 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
                 className="text-[11px] underline text-muted-foreground hover:text-foreground"
                 onClick={() => setHcpManuallyEdited(false)}
               >
-                ↺ Restaurar cálculo automático
+                {trs("↺ Restaurar cálculo automático")}
               </button>
             )}
           </div>
@@ -389,7 +390,7 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
           {/* Manual handicap override */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs">Golpes de ventaja</Label>
+              <Label className="text-xs">{trs("Golpes de ventaja")}</Label>
               <Input
                 type="number"
                 min={0}
@@ -400,7 +401,7 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
               />
             </div>
             <div>
-              <Label className="text-xs">¿Quién recibe?</Label>
+              <Label className="text-xs">{trs("¿Quién recibe?")}</Label>
               <Select value={advantageSide} onValueChange={v => { setAdvantageSide(v as any); setHcpManuallyEdited(true); }}>
                 <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -426,23 +427,23 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
               />
             </div>
             <div className="flex items-center gap-2">
-              <Label className="text-xs whitespace-nowrap">Resultado manual</Label>
+              <Label className="text-xs whitespace-nowrap">{trs("Resultado manual")}</Label>
               <Switch checked={resultOverride} onCheckedChange={setResultOverride} />
             </div>
           </div>
           <p className="text-[10px] text-muted-foreground -mt-2">
-            Empate (AS) reparte la mitad a cada equipo.
+            {trs("Empate (AS) reparte la mitad a cada equipo.")}
           </p>
           {resultOverride && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs">Resultado</Label>
+                <Label className="text-xs">{trs("Resultado")}</Label>
                 <Select value={resultType} onValueChange={v => setResultType(v as any)}>
-                  <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                  <SelectTrigger className="h-8 text-sm"><SelectValue placeholder={trs("Seleccionar")} /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="a_wins">{teamALabel} gana</SelectItem>
                     <SelectItem value="b_wins">{teamBLabel} gana</SelectItem>
-                    <SelectItem value="halved">Empate (AS)</SelectItem>
+                    <SelectItem value="halved">{trs("Empate (AS)")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -461,10 +462,10 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
           {/* Actions */}
           <div className="flex gap-2">
             <Button variant="outline" className="flex-1" onClick={onClose}>
-              Cancelar
+              {trs("Cancelar")}
             </Button>
             <Button className="flex-1" onClick={handleSave}>
-              Guardar
+              {trs("Guardar")}
             </Button>
           </div>
         </div>

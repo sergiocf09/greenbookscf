@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -128,7 +129,7 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
           <thead>
             <tr className="bg-muted/50">
               <th className="text-left px-1 py-1.5 font-medium text-muted-foreground sticky left-0 bg-muted/50 min-w-[56px]">
-                Hoyo
+                {trs("Hoyo")}
               </th>
               {frontNine.map(hole => (
                 <th 
@@ -183,7 +184,7 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
               <thead>
                 <tr className="bg-muted/50">
                   <th className="text-left px-1 py-1.5 font-medium text-muted-foreground sticky left-0 bg-muted/50 min-w-[56px]">
-                    Hoyo
+                    {trs("Hoyo")}
                   </th>
                   {backNine.map(hole => (
                     <th
@@ -243,7 +244,7 @@ export const HistoricalScorecard: React.FC<HistoricalScorecardProps> = ({
 
       {/* Player Handicaps Summary */}
       <div className="border-t border-border p-3">
-        <p className="text-xs text-muted-foreground mb-2">Handicaps y tees utilizados:</p>
+        <p className="text-xs text-muted-foreground mb-2">{trs("Handicaps y tees utilizados:")}</p>
         <div className="flex flex-wrap gap-2">
           {players.map(player => {
             const tee = player.teeColor;

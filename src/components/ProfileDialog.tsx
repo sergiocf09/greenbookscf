@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -96,7 +97,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
       return;
     }
     if (sanitizedName.length < 2) {
-      toast.error('El nombre debe tener al menos 2 caracteres');
+      toast.error(trs("El nombre debe tener al menos 2 caracteres"));
       return;
     }
 
@@ -116,10 +117,10 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
         data: { display_name: sanitizedName },
       });
 
-      toast.success('Nombre actualizado');
+      toast.success(trs("Nombre actualizado"));
       setSection('menu');
     } catch (e: any) {
-      toast.error('No se pudo actualizar el nombre', { description: e?.message });
+      toast.error(trs("No se pudo actualizar el nombre"), { description: e?.message });
     } finally {
       setSaving(false);
     }
@@ -130,12 +131,12 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
 
     const trimmedEmail = newEmail.trim().toLowerCase();
     if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      toast.error('Correo electrónico inválido');
+      toast.error(trs("Correo electrónico inválido"));
       return;
     }
 
     if (trimmedEmail === user.email) {
-      toast.error('El correo es el mismo que el actual');
+      toast.error(trs("El correo es el mismo que el actual"));
       return;
     }
 
@@ -154,17 +155,17 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
 
       if (error) {
         if (error.message.includes('already registered') || error.message.includes('already been registered')) {
-          toast.error('Este correo ya está registrado');
+          toast.error(trs("Este correo ya está registrado"));
         } else {
           throw error;
         }
         return;
       }
 
-      toast.success('Te enviamos un correo para confirmar el cambio. Revisa tu bandeja de entrada.');
+      toast.success(trs("Te enviamos un correo para confirmar el cambio. Revisa tu bandeja de entrada."));
       setSection('menu');
     } catch (e: any) {
-      toast.error('No se pudo actualizar el correo', { description: e?.message });
+      toast.error(trs("No se pudo actualizar el correo"), { description: e?.message });
     } finally {
       setSaving(false);
     }
@@ -172,11 +173,11 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
 
   const handleSavePassword = async () => {
     if (newPassword !== confirmPassword) {
-      toast.error('Las contraseñas no coinciden');
+      toast.error(trs("Las contraseñas no coinciden"));
       return;
     }
     if (newPassword.length < 6) {
-      toast.error('La contraseña debe tener al menos 6 caracteres');
+      toast.error(trs("La contraseña debe tener al menos 6 caracteres"));
       return;
     }
 
@@ -184,12 +185,12 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
-      toast.success('Contraseña actualizada');
+      toast.success(trs("Contraseña actualizada"));
       setNewPassword('');
       setConfirmPassword('');
       setSection('menu');
     } catch (e: any) {
-      toast.error('No se pudo actualizar la contraseña', { description: e?.message });
+      toast.error(trs("No se pudo actualizar la contraseña"), { description: e?.message });
     } finally {
       setSaving(false);
     }
@@ -199,7 +200,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
     if (!profile) return;
     const parsed = Number(String(manualHandicap).replace(',', '.'));
     if (!Number.isFinite(parsed)) {
-      toast.error('Handicap inválido');
+      toast.error(trs("Handicap inválido"));
       return;
     }
 
@@ -209,7 +210,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
       toast.success('Handicap actualizado');
       setSection('menu');
     } catch (e: any) {
-      toast.error('No se pudo actualizar', { description: e?.message });
+      toast.error(trs("No se pudo actualizar"), { description: e?.message });
     } finally {
       setSaving(false);
     }
@@ -232,7 +233,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
       </div>
 
       <div className="space-y-1">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Cuenta</p>
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">{trs("Cuenta")}</p>
 
         <button
           className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent transition-colors text-left"
@@ -240,7 +241,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
         >
           <span className="flex items-center gap-2.5">
             <Pencil className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">Cambiar nombre</span>
+            <span className="text-sm">{trs("Cambiar nombre")}</span>
           </span>
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </button>
@@ -251,7 +252,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
         >
           <span className="flex items-center gap-2.5">
             <Mail className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">Cambiar correo electrónico</span>
+            <span className="text-sm">{trs("Cambiar correo electrónico")}</span>
           </span>
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </button>
@@ -262,7 +263,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
         >
           <span className="flex items-center gap-2.5">
             <Lock className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">Cambiar contraseña</span>
+            <span className="text-sm">{trs("Cambiar contraseña")}</span>
           </span>
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </button>
@@ -277,7 +278,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
         >
           <span className="flex items-center gap-2.5">
             <MapPin className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">Agregar Campo Manual</span>
+            <span className="text-sm">{trs("Agregar Campo Manual")}</span>
           </span>
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </button>
@@ -301,7 +302,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Guardar'}
           </Button>
         </div>
-        <p className="text-[10px] text-muted-foreground">Sobreescribe el índice calculado por USGA.</p>
+        <p className="text-[10px] text-muted-foreground">{trs("Sobreescribe el índice calculado por USGA.")}</p>
       </div>
 
       <div className="border-t border-border pt-4 space-y-1">
@@ -323,7 +324,7 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
         className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-destructive hover:bg-destructive/10 transition-colors mt-2 border border-destructive/20"
       >
         <Trash2 className="h-4 w-4" />
-        Eliminar mi cuenta
+        {trs("Eliminar mi cuenta")}
       </button>
     </div>
   );
@@ -334,11 +335,11 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
     try {
       const { error } = await supabase.rpc('delete_user_account');
       if (error) throw error;
-      toast.success('Cuenta eliminada. ¡Hasta pronto!');
+      toast.success(trs("Cuenta eliminada. ¡Hasta pronto!"));
       onOpenChange(false);
       await supabase.auth.signOut();
     } catch (err: any) {
-      toast.error('Error al eliminar la cuenta: ' + (err.message ?? 'intenta de nuevo'));
+      toast.error(trs("Error al eliminar la cuenta: ") + (err.message ?? 'intenta de nuevo'));
     } finally {
       setDeleting(false);
     }
@@ -350,18 +351,16 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
 
       <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 space-y-2">
         <p className="text-sm font-medium text-destructive">
-          ⚠️ Esta acción eliminará tus credenciales de acceso
+          {trs("⚠️ Esta acción eliminará tus credenciales de acceso")}
         </p>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Tu email y contraseña serán eliminados permanentemente. Tu historial
-          de rondas y apuestas se conserva de forma anonimizada para no afectar
-          a los demás jugadores involucrados.
+          {trs("Tu email y contraseña serán eliminados permanentemente. Tu historial de rondas y apuestas se conserva de forma anonimizada para no afectar a los demás jugadores involucrados.")}
         </p>
       </div>
 
       <div className="space-y-1.5">
         <Label htmlFor="delete-confirm-email">
-          Escribe tu email para confirmar
+          {trs("Escribe tu email para confirmar")}
         </Label>
         <Input
           id="delete-confirm-email"
@@ -391,26 +390,26 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
         }}
         className="w-full text-muted-foreground"
       >
-        Cancelar
+        {trs("Cancelar")}
       </Button>
     </div>
   );
 
   const renderBackButton = () => (
     <Button variant="ghost" size="sm" onClick={() => setSection('menu')} className="mb-2 -ml-2">
-      ← Volver
+      {trs("← Volver")}
     </Button>
   );
 
   const renderReAuthField = () => (
     <div className="space-y-1.5">
-      <Label htmlFor="current-password">Contraseña actual</Label>
+      <Label htmlFor="current-password">{trs("Contraseña actual")}</Label>
       <Input
         id="current-password"
         type="password"
         value={currentPassword}
         onChange={(e) => { setCurrentPassword(e.target.value); setReAuthError(''); }}
-        placeholder="Ingresa tu contraseña actual"
+        placeholder={trs("Ingresa tu contraseña actual")}
         autoComplete="current-password"
       />
       {reAuthError && (
@@ -423,19 +422,19 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
     <div className="space-y-4">
       {renderBackButton()}
       <div className="space-y-1.5">
-        <Label htmlFor="edit-name">Nombre</Label>
+        <Label htmlFor="edit-name">{trs("Nombre")}</Label>
         <Input
           id="edit-name"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
-          placeholder="Tu nombre completo"
+          placeholder={trs("Tu nombre completo")}
           maxLength={100}
         />
-        <p className="text-xs text-muted-foreground">El nombre se mostrará en scorecards, dashboards e historial.</p>
+        <p className="text-xs text-muted-foreground">{trs("El nombre se mostrará en scorecards, dashboards e historial.")}</p>
       </div>
       <div className="flex gap-2 pt-2">
         <Button variant="outline" className="flex-1" onClick={() => setSection('menu')} disabled={saving}>
-          Cancelar
+          {trs("Cancelar")}
         </Button>
         <Button
           className="flex-1"
@@ -452,21 +451,21 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
     <div className="space-y-4">
       {renderBackButton()}
       <div className="space-y-1.5">
-        <Label htmlFor="edit-email">Nuevo correo electrónico</Label>
+        <Label htmlFor="edit-email">{trs("Nuevo correo electrónico")}</Label>
         <Input
           id="edit-email"
           type="email"
           value={newEmail}
           onChange={(e) => setNewEmail(e.target.value)}
-          placeholder="nuevo@correo.com"
+          placeholder={trs("nuevo@correo.com")}
           maxLength={255}
         />
-        <p className="text-xs text-muted-foreground">Recibirás un correo de confirmación en la nueva dirección.</p>
+        <p className="text-xs text-muted-foreground">{trs("Recibirás un correo de confirmación en la nueva dirección.")}</p>
       </div>
       {renderReAuthField()}
       <div className="flex gap-2 pt-2">
         <Button variant="outline" className="flex-1" onClick={() => setSection('menu')} disabled={saving}>
-          Cancelar
+          {trs("Cancelar")}
         </Button>
         <Button
           className="flex-1"
@@ -483,30 +482,30 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
     <div className="space-y-4">
       {renderBackButton()}
       <div className="space-y-1.5">
-        <Label htmlFor="new-password">Nueva contraseña</Label>
+        <Label htmlFor="new-password">{trs("Nueva contraseña")}</Label>
         <Input
           id="new-password"
           type="password"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
-          placeholder="Nueva contraseña"
+          placeholder={trs("Nueva contraseña")}
           minLength={6}
         />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="confirm-password">Confirmar contraseña</Label>
+        <Label htmlFor="confirm-password">{trs("Confirmar contraseña")}</Label>
         <Input
           id="confirm-password"
           type="password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          placeholder="Confirmar contraseña"
+          placeholder={trs("Confirmar contraseña")}
           minLength={6}
         />
       </div>
       <div className="flex gap-2 pt-2">
         <Button variant="outline" className="flex-1" onClick={() => setSection('menu')} disabled={saving}>
-          Cancelar
+          {trs("Cancelar")}
         </Button>
         <Button
           className="flex-1"

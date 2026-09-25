@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useMemo, useEffect } from 'react';
 import { BetConfig, BilateralHandicap, Player } from '@/types/golf';
 import { fmtMoney } from '@/lib/formatMoney';
@@ -114,7 +115,7 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Modifica el importe de esta apuesta solo para este par de jugadores.
+        {trs("Modifica el importe de esta apuesta solo para este par de jugadores.")}
       </p>
       
       {hasFront && (
@@ -161,10 +162,9 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
 
       {betType === 'units' && (
         <div className="space-y-2 pt-3 border-t border-border/50">
-          <Label className="text-sm font-semibold">Ventaja de Unidades</Label>
+          <Label className="text-sm font-semibold">{trs("Ventaja de Unidades")}</Label>
           <p className="text-xs text-muted-foreground">
-            Unidades fijas que un jugador otorga al otro para equilibrar.
-            El que da ventaja empieza debiendo ese número de unidades.
+            {trs("Unidades fijas que un jugador otorga al otro para equilibrar. El que da ventaja empieza debiendo ese número de unidades.")}
           </p>
           <div className="text-xs text-center text-muted-foreground italic">
             {unitsAdvantage === 0
@@ -211,9 +211,9 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
         <div className="space-y-2 pt-3 border-t border-border/50">
           <div className="flex items-center justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <Label className="text-sm font-semibold">Carry en empate</Label>
+              <Label className="text-sm font-semibold">{trs("Carry en empate")}</Label>
               <p className="text-[11px] text-muted-foreground">
-                Si un bloque empata, su importe se acumula al siguiente.
+                {trs("Si un bloque empata, su importe se acumula al siguiente.")}
               </p>
             </div>
             <Switch checked={carryOverOnTie} onCheckedChange={setCarryOverOnTie} />
@@ -230,10 +230,10 @@ const BetAmountEditor: React.FC<BetAmountEditorProps> = ({
       
       <div className="flex gap-2">
         <Button variant="outline" onClick={onClose} className="flex-1">
-          Cancelar
+          {trs("Cancelar")}
         </Button>
         <Button onClick={handleSave} className="flex-1">
-          Guardar
+          {trs("Guardar")}
         </Button>
       </div>
     </div>
@@ -275,7 +275,7 @@ const BilateralHandicapEditor: React.FC<BilateralHandicapEditorProps> = ({
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Este handicap se usará para <strong>todas las apuestas individuales</strong> entre estos dos jugadores (Medal, Presiones, Skins, Caros, Unidades, Manchas, etc.)
+        {trs("Este handicap se usará para")}{' '}<strong>{trs("todas las apuestas individuales")}</strong>{' '}{trs("entre estos dos jugadores (Medal, Presiones, Skins, Caros, Unidades, Manchas, etc.)")}
       </p>
       
       <div className="grid grid-cols-2 gap-4">
@@ -325,7 +325,7 @@ const BilateralHandicapEditor: React.FC<BilateralHandicapEditorProps> = ({
         <div className="bg-muted/50 p-3 rounded-lg text-center">
           <p className="text-sm">
             <strong>{formatPlayerName(playerReceives ? player.name : rival.name)}</strong> recibe{' '}
-            <span className="text-lg font-bold text-primary">{difference}</span> golpes
+            <span className="text-lg font-bold text-primary">{difference}</span>{' '}{trs("golpes")}
           </p>
         </div>
       )}
@@ -350,7 +350,7 @@ const BilateralHandicapEditor: React.FC<BilateralHandicapEditorProps> = ({
           })}
           className="flex-1"
         >
-          Guardar
+          {trs("Guardar")}
         </Button>
       </div>
     </div>

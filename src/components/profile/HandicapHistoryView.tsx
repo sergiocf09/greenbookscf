@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React from 'react';
 import { useHandicapHistory, HandicapHistoryEntry } from '@/hooks/useHandicapHistory';
 import { Loader2, AlertCircle, CheckCircle2, Flag, Calendar, Check, Clock } from 'lucide-react';
@@ -64,7 +65,7 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
     return (
       <div className="flex flex-col items-center gap-2 py-8 text-destructive">
         <AlertCircle className="h-8 w-8" />
-        <p className="text-sm">Error al cargar historial</p>
+        <p className="text-sm">{trs("Error al cargar historial")}</p>
       </div>
     );
   }
@@ -108,7 +109,7 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
           {playerName && (
             <p className="text-sm font-medium text-foreground mb-0.5">{playerName}</p>
           )}
-          <p className="text-xs text-muted-foreground uppercase tracking-wide">Índice USGA</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wide">{trs("Índice USGA")}</p>
           <p className="text-3xl font-bold text-foreground">
             {handicapIndex !== null ? handicapIndex.toFixed(1) : '-'}
           </p>
@@ -163,7 +164,7 @@ export const HandicapHistoryView: React.FC<HandicapHistoryViewProps> = ({ profil
       {/* Trend chart */}
       {chartData.length >= 3 && (
         <div className="rounded-xl bg-muted/30 p-3">
-          <p className="text-xs font-medium text-muted-foreground mb-2">Tendencia de Diferenciales</p>
+          <p className="text-xs font-medium text-muted-foreground mb-2">{trs("Tendencia de Diferenciales")}</p>
           <ResponsiveContainer width="100%" height={140}>
             <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
               <RechartsXAxis

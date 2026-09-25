@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useMemo } from 'react';
 import { Copy, Check, Link2, QrCode, Hash, Share2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -54,7 +55,7 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
       toast.success(type === 'link' ? 'Link copiado!' : 'Código copiado!');
       setTimeout(() => setCopiedType(null), 2000);
     } catch (err) {
-      toast.error('Error al copiar');
+      toast.error(trs("Error al copiar"));
     }
   };
 
@@ -64,8 +65,7 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
         <Card>
           <CardContent className="p-4">
             <p className="text-sm text-muted-foreground">
-              Estás en <span className="font-medium">modo preview</span>. Las rondas creadas aquí no existen en el sitio publicado.
-              Para invitar a otros sin problemas, publica la app y crea la ronda desde el sitio publicado antes de compartir.
+              {trs("Estás en")}{' '}<span className="font-medium">modo preview</span>{trs(". Las rondas creadas aquí no existen en el sitio publicado. Para invitar a otros sin problemas, publica la app y crea la ronda desde el sitio publicado antes de compartir.")}
             </p>
           </CardContent>
         </Card>
@@ -76,7 +76,7 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
         <CardContent className="p-4 space-y-2">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Link2 className="h-4 w-4" />
-            <span className="text-sm font-medium">Link de Invitación</span>
+            <span className="text-sm font-medium">{trs("Link de Invitación")}</span>
           </div>
           <div className="flex gap-2">
             <Input 
@@ -105,7 +105,7 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
         <CardContent className="p-4 space-y-2">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Hash className="h-4 w-4" />
-            <span className="text-sm font-medium">Código de Ronda</span>
+            <span className="text-sm font-medium">{trs("Código de Ronda")}</span>
           </div>
           <div className="flex gap-2 items-center">
             <div className="flex-1 bg-muted/50 rounded-md px-4 py-3 text-center">
@@ -127,7 +127,7 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
             </Button>
           </div>
           <p className="text-xs text-muted-foreground text-center">
-            Dicta este código a los otros jugadores
+            {trs("Dicta este código a los otros jugadores")}
           </p>
         </CardContent>
       </Card>
@@ -149,14 +149,14 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
             <div className="bg-white p-3 rounded-lg shadow-inner border">
               <img 
                 src={qrCodeUrl} 
-                alt="QR Code para unirse a la ronda"
+                alt={trs("QR Code para unirse a la ronda")}
                 width={200}
                 height={200}
                 className="block"
               />
             </div>
             <p className="text-xs text-muted-foreground mt-2 text-center">
-              Los jugadores pueden escanear para unirse
+              {trs("Los jugadores pueden escanear para unirse")}
             </p>
           </CardContent>
         </Card>
@@ -171,7 +171,7 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
             onClick={async () => {
               try {
                 await navigator.share({
-                  title: 'Únete a mi ronda de golf',
+                  title: trs("Únete a mi ronda de golf"),
                   text: `Únete a mi ronda de golf. Código: ${shortCode}`,
                   url: shareLink,
                 });
@@ -181,7 +181,7 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
             }}
           >
             <Share2 className="h-4 w-4 mr-2" />
-            Compartir vía...
+            {trs("Compartir vía...")}
           </Button>
         ) : (
           <Button
@@ -192,7 +192,7 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
             }))}
           >
             <Lock className="h-4 w-4 mr-2" />
-            Compartir disponible en Pro
+            {trs("Compartir disponible en Pro")}
           </Button>
         )
       )}

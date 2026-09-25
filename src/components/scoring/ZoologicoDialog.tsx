@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useMemo } from 'react';
 import { ZooEvent, ZooAnimalType, ZOO_ANIMALS, Player } from '@/types/golf';
 import { Button } from '@/components/ui/button';
@@ -127,14 +128,14 @@ export const ZoologicoDialog: React.FC<ZoologicoDialogProps> = ({
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline" size="sm" className="gap-1">
-            🐾 Zoológico
+            {trs("🐾 Zoológico")}
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="max-w-sm max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            🐾 Zoológico
+            {trs("🐾 Zoológico")}
           </DialogTitle>
           <DialogDescription>
             Registra eventos: Camello (bunker), Pez (agua), Gorila (OB)
@@ -188,7 +189,7 @@ export const ZoologicoDialog: React.FC<ZoologicoDialogProps> = ({
           
           {/* Animal Selection */}
           <div className="space-y-2">
-            <Label className="text-xs font-medium">Tipo de Evento</Label>
+            <Label className="text-xs font-medium">{trs("Tipo de Evento")}</Label>
             <div className="flex flex-wrap gap-2">
               {filteredAnimals.map(animal => {
                 const info = ZOO_ANIMALS[animal];
@@ -219,7 +220,7 @@ export const ZoologicoDialog: React.FC<ZoologicoDialogProps> = ({
           {/* Player Selection - Multi-select with counts */}
           {selectedAnimal && (
             <div className="space-y-2">
-              <Label className="text-xs font-medium">¿Quién cometió la incidencia? (selecciona todos)</Label>
+              <Label className="text-xs font-medium">{trs("¿Quién cometió la incidencia? (selecciona todos)")}</Label>
               <div className="space-y-2">
                 {players.map(player => {
                   const isSelected = selectedPlayers.has(player.id);
@@ -291,7 +292,7 @@ export const ZoologicoDialog: React.FC<ZoologicoDialogProps> = ({
                             togglePlayer(player.id);
                           }}
                         >
-                          Seleccionar
+                          {trs("Seleccionar")}
                         </Button>
                       )}
                     </div>
@@ -317,7 +318,7 @@ export const ZoologicoDialog: React.FC<ZoologicoDialogProps> = ({
                 </div>
               ))}
               <div className="border-t border-border pt-1 mt-1 flex justify-between font-bold">
-                <span>Total:</span>
+                <span>{trs("Total:")}</span>
                 <span className="text-destructive">${totalCost}</span>
               </div>
             </div>
@@ -326,7 +327,7 @@ export const ZoologicoDialog: React.FC<ZoologicoDialogProps> = ({
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => { setOpen(false); resetForm(); }}>
-            Cerrar
+            {trs("Cerrar")}
           </Button>
           <Button onClick={handleSubmit} disabled={!canSubmit} className="gap-1">
             <Plus className="h-4 w-4" />

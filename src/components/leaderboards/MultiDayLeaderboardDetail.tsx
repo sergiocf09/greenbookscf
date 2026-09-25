@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -276,7 +277,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
       setStandingsByDay(byDay);
     } catch (err: any) {
       console.error(err);
-      toast.error('Error cargando leaderboard: ' + err.message);
+      toast.error(trs("Error cargando leaderboard: ") + err.message);
     } finally {
       setLoading(false);
     }
@@ -323,7 +324,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
     if (!renameValue.trim() || !event) return;
     const { error } = await supabase.from('leaderboard_events').update({ name: renameValue.trim() }).eq('id', event.id);
     if (error) return toast.error(error.message);
-    toast.success('Nombre actualizado');
+    toast.success(trs("Nombre actualizado"));
     setShowRename(false);
     fetchAll();
   };
@@ -405,7 +406,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
         .eq('leaderboard_id', leaderboardId)
         .eq('round_id', roundId);
       if (error) throw error;
-      toast.success('Ronda desvinculada');
+      toast.success(trs("Ronda desvinculada"));
       await fetchLinkedRounds();
       fetchAll();
     } catch (err: any) {
@@ -440,7 +441,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
   };
 
   const copyCode = () => {
-    if (event?.code) { navigator.clipboard.writeText(event.code); toast.success('Código copiado'); }
+    if (event?.code) { navigator.clipboard.writeText(event.code); toast.success(trs("Código copiado")); }
   };
   const copyShareLink = () => {
     if (event?.code) {
@@ -459,8 +460,8 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
   if (!event) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-16">
-        <p className="text-muted-foreground">Leaderboard no encontrado</p>
-        {onBack && <Button onClick={onBack}>Volver</Button>}
+        <p className="text-muted-foreground">{trs("Leaderboard no encontrado")}</p>
+        {onBack && <Button onClick={onBack}>{trs("Volver")}</Button>}
       </div>
     );
   }
@@ -473,9 +474,9 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
       <thead>
         <tr className="text-xs border-b">
           <th className="h-8 w-8 text-center font-medium text-muted-foreground">#</th>
-          <th className="h-8 text-left font-medium text-muted-foreground">Jugador</th>
+          <th className="h-8 text-left font-medium text-muted-foreground">{trs("Jugador")}</th>
           <th className="h-8 w-10 text-center font-medium text-muted-foreground">Hcp</th>
-          <th className="h-8 w-10 text-center font-medium text-muted-foreground">Hoyos</th>
+          <th className="h-8 w-10 text-center font-medium text-muted-foreground">{trs("Hoyos")}</th>
           <th className="h-8 w-14 text-center font-medium text-muted-foreground">
             {sortMode === 'stableford' ? 'Pts' : 'Score'}
           </th>
@@ -525,7 +526,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
 
   const renderAccumulated = () => {
     if (accumulated.length === 0) {
-      return <p className="text-center text-sm text-muted-foreground py-8">Aún no hay resultados</p>;
+      return <p className="text-center text-sm text-muted-foreground py-8">{trs("Aún no hay resultados")}</p>;
     }
     const daysSorted = [...rules.days].sort((a, b) => a.day_number - b.day_number);
     const dayStandingsLookup: Record<number, Record<string, DayStanding>> = {};
@@ -561,7 +562,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
             <thead>
               <tr className="text-xs border-b bg-muted/30">
                 <th className={cn(rowH, 'w-8 text-center font-medium text-muted-foreground px-1')}>#</th>
-                <th className={cn(rowH, 'w-[120px] text-left font-medium text-muted-foreground px-1')}>Jugador</th>
+                <th className={cn(rowH, 'w-[120px] text-left font-medium text-muted-foreground px-1')}>{trs("Jugador")}</th>
                 <th className={cn(rowH, 'w-16 text-center font-semibold text-foreground px-1 bg-primary/5')}>
                   {totalLabel}
                 </th>
@@ -648,8 +649,8 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
               size="icon"
               className="h-7 w-7"
               onClick={onLinkRound}
-              aria-label="Vincular ronda"
-              title="Vincular ronda activa"
+              aria-label={trs("Vincular ronda")}
+              title={trs("Vincular ronda activa")}
             >
               <Link className="h-4 w-4" />
             </Button>
@@ -660,8 +661,8 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
               size="icon"
               className="h-7 w-7 text-destructive hover:text-destructive"
               onClick={onUnlinkRound}
-              aria-label="Desvincular ronda"
-              title="Desvincular ronda"
+              aria-label={trs("Desvincular ronda")}
+              title={trs("Desvincular ronda")}
             >
               <Link2Off className="h-4 w-4" />
             </Button>
@@ -674,8 +675,8 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
               type="button"
               onClick={copyCode}
               className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-border bg-muted/40 hover:bg-muted text-xs font-mono"
-              aria-label="Copiar código"
-              title="Copiar código del leaderboard"
+              aria-label={trs("Copiar código")}
+              title={trs("Copiar código del leaderboard")}
             >
               <Hash className="h-3 w-3 text-muted-foreground" />
               <span className="font-semibold tracking-wide">{event.code}</span>
@@ -684,24 +685,24 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
           {isCreator && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Configuración">
+                <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={trs("Configuración")}>
                   <Settings className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => { setRenameValue(event.name); setShowRename(true); }}>
-                  <Pencil className="h-4 w-4 mr-2" /> Editar nombre
+                  <Pencil className="h-4 w-4 mr-2" />{' '}{trs("Editar nombre")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setShowEditConfig(true)}>
-                  <Settings className="h-4 w-4 mr-2" /> Editar configuración
+                  <Settings className="h-4 w-4 mr-2" />{' '}{trs("Editar configuración")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { fetchLinkedRounds(); setShowLinkedRounds(true); }}>
-                  <Link2Off className="h-4 w-4 mr-2" /> Gestionar rondas vinculadas
+                  <Link2Off className="h-4 w-4 mr-2" />{' '}{trs("Gestionar rondas vinculadas")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {event.status === 'active' ? (
                   <DropdownMenuItem onClick={() => { setCloseText(''); setShowClose(true); }}>
-                    <CheckCircle className="h-4 w-4 mr-2" /> Cerrar competencia
+                    <CheckCircle className="h-4 w-4 mr-2" />{' '}{trs("Cerrar competencia")}
                   </DropdownMenuItem>
                 ) : (
                   <DropdownMenuItem onClick={handleReopen}>
@@ -713,7 +714,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                   className="text-destructive focus:text-destructive"
                   onClick={() => { setDeleteText(''); setShowDelete(true); }}
                 >
-                  <Trash2 className="h-4 w-4 mr-2" /> Eliminar leaderboard
+                  <Trash2 className="h-4 w-4 mr-2" />{' '}{trs("Eliminar leaderboard")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -731,7 +732,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
           </h1>
           <div className="flex items-center justify-center gap-1.5 flex-wrap">
             <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold uppercase">
-              Multi-día
+              {trs("Multi-día")}
             </span>
             {modesLabel && (
               <span className="text-[10px] border border-border px-2 py-0.5 rounded-full font-medium text-foreground">
@@ -823,17 +824,17 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
           <Dialog open={showRename} onOpenChange={setShowRename}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Editar nombre</DialogTitle>
-                <DialogDescription>Actualiza el nombre visible del leaderboard.</DialogDescription>
+                <DialogTitle>{trs("Editar nombre")}</DialogTitle>
+                <DialogDescription>{trs("Actualiza el nombre visible del leaderboard.")}</DialogDescription>
               </DialogHeader>
               <div className="space-y-2">
-                <Label>Nombre</Label>
+                <Label>{trs("Nombre")}</Label>
                 <Input value={renameValue} onChange={e => setRenameValue(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleRename()} />
               </div>
               <DialogFooter className="gap-2">
-                <Button variant="outline" onClick={() => setShowRename(false)}>Cancelar</Button>
-                <Button disabled={!renameValue.trim()} onClick={handleRename}>Guardar</Button>
+                <Button variant="outline" onClick={() => setShowRename(false)}>{trs("Cancelar")}</Button>
+                <Button disabled={!renameValue.trim()} onClick={handleRename}>{trs("Guardar")}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -841,17 +842,17 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
           <Dialog open={showClose} onOpenChange={setShowClose}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>¿Cerrar esta competencia?</DialogTitle>
+                <DialogTitle>{trs("¿Cerrar esta competencia?")}</DialogTitle>
                 <DialogDescription>
-                  Pasará a Historial. Escribe <strong>CERRAR</strong> para confirmar.
+                  {trs("Pasará a Historial. Escribe")}{' '}<strong>{trs("CERRAR")}</strong>{' '}{trs("para confirmar.")}
                 </DialogDescription>
               </DialogHeader>
               <Input value={closeText} onChange={e => setCloseText(e.target.value)}
-                placeholder="Escribe CERRAR" className="uppercase" />
+                placeholder={trs("Escribe CERRAR")} className="uppercase" />
               <DialogFooter className="gap-2">
-                <Button variant="outline" onClick={() => setShowClose(false)}>Cancelar</Button>
+                <Button variant="outline" onClick={() => setShowClose(false)}>{trs("Cancelar")}</Button>
                 <Button disabled={closeText.trim().toLowerCase() !== 'cerrar'} onClick={handleCloseLeaderboard}>
-                  Cerrar competencia
+                  {trs("Cerrar competencia")}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -860,19 +861,19 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
           <Dialog open={showDelete} onOpenChange={setShowDelete}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>¿Eliminar leaderboard?</DialogTitle>
+                <DialogTitle>{trs("¿Eliminar leaderboard?")}</DialogTitle>
                 <DialogDescription>
-                  Acción irreversible. Escribe <strong>ELIMINAR</strong> para confirmar.
+                  {trs("Acción irreversible. Escribe")}{' '}<strong>{trs("ELIMINAR")}</strong>{' '}{trs("para confirmar.")}
                 </DialogDescription>
               </DialogHeader>
               <Input value={deleteText} onChange={e => setDeleteText(e.target.value)}
-                placeholder="Escribe ELIMINAR" className="uppercase" />
+                placeholder={trs("Escribe ELIMINAR")} className="uppercase" />
               <DialogFooter className="gap-2">
-                <Button variant="outline" onClick={() => setShowDelete(false)}>Cancelar</Button>
+                <Button variant="outline" onClick={() => setShowDelete(false)}>{trs("Cancelar")}</Button>
                 <Button variant="destructive"
                   disabled={deleteText.trim().toLowerCase() !== 'eliminar'}
                   onClick={handleDelete}>
-                  Eliminar
+                  {trs("Eliminar")}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -881,14 +882,14 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
           <Dialog open={showLinkedRounds} onOpenChange={setShowLinkedRounds}>
             <DialogContent className="max-w-sm">
               <DialogHeader>
-                <DialogTitle>Rondas vinculadas</DialogTitle>
+                <DialogTitle>{trs("Rondas vinculadas")}</DialogTitle>
                 <DialogDescription>
-                  Desvincular una ronda elimina sus aportes al leaderboard. La ronda en sí no se borra.
+                  {trs("Desvincular una ronda elimina sus aportes al leaderboard. La ronda en sí no se borra.")}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-2 max-h-[50vh] overflow-y-auto">
                 {linkedRounds.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">No hay rondas vinculadas.</p>
+                  <p className="text-sm text-muted-foreground text-center py-6">{trs("No hay rondas vinculadas.")}</p>
                 ) : linkedRounds.map(r => (
                   <div key={r.round_id} className="flex items-center gap-2 p-2 rounded-md border">
                     <Link className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -913,7 +914,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                 ))}
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setShowLinkedRounds(false)}>Cerrar</Button>
+                <Button variant="outline" onClick={() => setShowLinkedRounds(false)}>{trs("Cerrar")}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>

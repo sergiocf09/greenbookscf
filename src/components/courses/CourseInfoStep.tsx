@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,11 +24,11 @@ export const CourseInfoStep: React.FC<Props> = ({ data, onChange, onNext }) => {
   return (
     <div className="space-y-4">
       <div className="space-y-1.5">
-        <Label>Nombre del campo</Label>
+        <Label>{trs("Nombre del campo")}</Label>
         <Input
           value={data.name}
           onChange={e => update({ name: e.target.value })}
-          placeholder="Ej. Club de Golf Los Pinos"
+          placeholder={trs("Ej. Club de Golf Los Pinos")}
           maxLength={100}
         />
       </div>
@@ -38,23 +39,23 @@ export const CourseInfoStep: React.FC<Props> = ({ data, onChange, onNext }) => {
           <Input
             value={data.city}
             onChange={e => update({ city: e.target.value })}
-            placeholder="Ej. Querétaro"
+            placeholder={trs("Ej. Querétaro")}
             maxLength={60}
           />
         </div>
         <div className="space-y-1.5">
-          <Label>País</Label>
+          <Label>{trs("País")}</Label>
           <Input
             value={data.country}
             onChange={e => update({ country: e.target.value })}
-            placeholder="México"
+            placeholder={trs("México")}
             maxLength={40}
           />
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <Label>Tee de salida</Label>
+        <Label>{trs("Tee de salida")}</Label>
         <ToggleGroup
           type="single"
           value={data.teeName}

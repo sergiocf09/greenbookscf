@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React from 'react';
 import * as Sentry from '@sentry/react';
 import { Button } from '@/components/ui/button';
@@ -48,7 +49,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
         <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
           <AlertTriangle className="h-12 w-12 text-destructive" />
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-foreground">Algo salió mal</h3>
+            <h3 className="text-lg font-semibold text-foreground">{trs("Algo salió mal")}</h3>
             <p className="text-sm text-muted-foreground">
               {this.state.error?.message ?? 'Error inesperado'}
             </p>
@@ -74,11 +75,11 @@ export const RouteErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ ch
         <div className="text-center space-y-2 max-w-md">
           <h1 className="text-xl font-bold text-foreground">Error inesperado</h1>
           <p className="text-sm text-muted-foreground">
-            Ocurrió un error. Si el problema persiste, cierra y vuelve a abrir la aplicación.
+            {trs("Ocurrió un error. Si el problema persiste, cierra y vuelve a abrir la aplicación.")}
           </p>
           {import.meta.env.DEV && (
             <pre className="mt-4 p-3 bg-muted rounded text-xs text-left overflow-auto max-h-40">
-              Revisa la consola para más detalles.
+              {trs("Revisa la consola para más detalles.")}
             </pre>
           )}
         </div>

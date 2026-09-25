@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLeaderboardDetail, StandingsEntry } from '@/hooks/useLeaderboards';
@@ -56,7 +57,7 @@ const LeaderboardDetail = () => {
   const copyCode = () => {
     if (event?.code) {
       navigator.clipboard.writeText(event.code);
-      toast.success('Código copiado');
+      toast.success(trs("Código copiado"));
     }
   };
 
@@ -79,8 +80,8 @@ const LeaderboardDetail = () => {
   if (!event) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
-        <p className="text-muted-foreground">Leaderboard no encontrado</p>
-        <Button onClick={() => navigate('/leaderboards')}>Volver</Button>
+        <p className="text-muted-foreground">{trs("Leaderboard no encontrado")}</p>
+        <Button onClick={() => navigate('/leaderboards')}>{trs("Volver")}</Button>
       </div>
     );
   }
@@ -173,16 +174,16 @@ const LeaderboardDetail = () => {
 
             {sortedStandings.length === 0 ? (
               <p className="text-center text-sm text-muted-foreground py-8">
-                No hay participantes registrados
+                {trs("No hay participantes registrados")}
               </p>
             ) : (
               <table className="table-fixed w-full caption-bottom text-sm">
                 <thead className="[&_tr]:border-b">
                   <tr className="text-xs border-b">
                     <th className="h-8 w-8 text-center px-1 py-1 font-medium text-muted-foreground">#</th>
-                    <th className="h-8 px-1 py-1 text-left font-medium text-muted-foreground">Jugador</th>
+                    <th className="h-8 px-1 py-1 text-left font-medium text-muted-foreground">{trs("Jugador")}</th>
                     <th className="h-8 text-center w-10 px-1 py-1 font-medium text-muted-foreground">Hcp</th>
-                    <th className="h-8 text-center w-10 px-1 py-1 font-medium text-muted-foreground">Hoyos</th>
+                    <th className="h-8 text-center w-10 px-1 py-1 font-medium text-muted-foreground">{trs("Hoyos")}</th>
                     <th className="h-8 text-center w-14 px-1 py-1 font-medium text-muted-foreground">
                       {sortMode === 'stableford' ? 'Pts' : 'Score'}
                     </th>

@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -31,7 +32,7 @@ export const CloseAttemptDialog: React.FC<CloseAttemptDialogProps> = ({
       await navigator.clipboard.writeText(text);
       toast.success('Reporte copiado');
     } catch {
-      toast.error('No se pudo copiar el reporte');
+      toast.error(trs("No se pudo copiar el reporte"));
     } finally {
       setCopying(false);
     }
@@ -41,23 +42,23 @@ export const CloseAttemptDialog: React.FC<CloseAttemptDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Diagnóstico de cierre</DialogTitle>
+          <DialogTitle>{trs("Diagnóstico de cierre")}</DialogTitle>
         </DialogHeader>
 
         {!report ? (
-          <div className="text-sm text-muted-foreground">No hay reporte disponible.</div>
+          <div className="text-sm text-muted-foreground">{trs("No hay reporte disponible.")}</div>
         ) : (
           <div className="space-y-3">
             <div className="text-sm">
               <div>
-                <span className="text-muted-foreground">Ronda:</span> {report.roundId}
+                <span className="text-muted-foreground">{trs("Ronda:")}</span> {report.roundId}
               </div>
               <div>
                 <span className="text-muted-foreground">Etapa fallida:</span> {failedStage ?? '—'}
               </div>
               {report.invalidProfileIds.length > 0 && (
                 <div className="mt-2">
-                  <div className="text-muted-foreground">profileId inválidos detectados:</div>
+                  <div className="text-muted-foreground">{trs("profileId inválidos detectados:")}</div>
                   <ul className="list-disc pl-5">
                     {report.invalidProfileIds.map((x) => (
                       <li key={`${x.playerId}-${x.profileId}`}>[{x.name}] {x.profileId}</li>
@@ -67,7 +68,7 @@ export const CloseAttemptDialog: React.FC<CloseAttemptDialogProps> = ({
               )}
               {report.discrepancyBreakdown && report.discrepancyBreakdown.length > 0 && (
                 <div className="mt-2">
-                  <div className="text-muted-foreground font-medium">Apuestas con discrepancia UI vs Motor:</div>
+                  <div className="text-muted-foreground font-medium">{trs("Apuestas con discrepancia UI vs Motor:")}</div>
                   <ul className="list-disc pl-5">
                     {report.discrepancyBreakdown.slice(0, 15).map((d, i) => (
                       <li key={i}>

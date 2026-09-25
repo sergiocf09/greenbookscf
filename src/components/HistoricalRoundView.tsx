@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -450,7 +451,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
           <div className="flex items-center justify-center gap-2 mt-1">
             <p className="text-xs text-green-600 flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-green-500" />
-              Vista histórica inmutable
+              {trs("Vista histórica inmutable")}
             </p>
             <Button
               variant="outline"
@@ -466,7 +467,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
         {!hasSnapshot && (
           <p className="text-xs text-amber-600 mt-1 flex items-center justify-center gap-1">
             <AlertCircle className="h-3 w-3" />
-            Ronda anterior al sistema de snapshots
+            {trs("Ronda anterior al sistema de snapshots")}
           </p>
         )}
       </div>
@@ -480,7 +481,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
           </TabsTrigger>
           <TabsTrigger value="bets" className="text-sm">
             <Trophy className="h-4 w-4 mr-1.5" />
-            Apuestas
+            {trs("Apuestas")}
           </TabsTrigger>
           {roundLeaderboards.length > 0 && (
             <TabsTrigger value="leaderboards" className="text-sm">
@@ -537,7 +538,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
 
           {historicalGroupTab === 'cross' && (!viewLedger || viewLedger.length === 0) ? (
             <div className="text-center py-8 text-muted-foreground text-sm">
-              No hay apuestas cruzadas registradas en esta ronda.
+              {trs("No hay apuestas cruzadas registradas en esta ronda.")}
             </div>
           ) : (
             <BetDashboard
@@ -588,7 +589,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
           {roundLeaderboards.length === 0 && (
             <div className="text-center py-8 text-muted-foreground text-sm flex flex-col items-center gap-2">
               <Trophy className="h-8 w-8 opacity-30" />
-              <p>Esta ronda no participó en ninguna competencia</p>
+              <p>{trs("Esta ronda no participó en ninguna competencia")}</p>
             </div>
           )}
         </TabsContent>

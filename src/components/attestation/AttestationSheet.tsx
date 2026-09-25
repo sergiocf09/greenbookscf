@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -49,14 +50,14 @@ export const AttestationSheet: React.FC<AttestationSheetProps> = ({
             Scores Attestation
           </SheetTitle>
           <SheetDescription>
-            Confirma los scores de tus compañeros de ronda. No puedes atestar tu propio score.
+            {trs("Confirma los scores de tus compañeros de ronda. No puedes atestar tu propio score.")}
           </SheetDescription>
         </SheetHeader>
 
         {rounds.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
             <Check className="h-10 w-10 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Sin scores pendientes de atestar</p>
+            <p className="text-sm text-muted-foreground">{trs("Sin scores pendientes de atestar")}</p>
           </div>
         ) : (
           <div className="mt-4 space-y-4">

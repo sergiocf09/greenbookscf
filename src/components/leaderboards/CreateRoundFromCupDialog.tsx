@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useEffect, useMemo, useState } from 'react';
 // (navigation kept local — caller decides where to go after onCreated)
 import { useQueryClient } from '@tanstack/react-query';
@@ -276,8 +277,8 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
 
 
   const handleCreate = async () => {
-    if (!courseId) { toast.error('Selecciona el campo'); return; }
-    if (playingCount === 0) { toast.error('Asigna al menos un jugador a un grupo'); return; }
+    if (!courseId) { toast.error(trs("Selecciona el campo")); return; }
+    if (playingCount === 0) { toast.error(trs("Asigna al menos un jugador a un grupo")); return; }
     // Build groups payload, normalized to compact group numbers starting at 1.
     const groupsRaw: { groupNumber: number; participantIds: string[] }[] = [];
     usedGroupNumbers.forEach((n, idx) => {
@@ -322,7 +323,7 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
       onClose();
     } catch (err: any) {
       console.error('createRoundFromCup error:', err);
-      toast.error('Error al crear ronda: ' + (err?.message ?? 'desconocido'));
+      toast.error(trs("Error al crear ronda: ") + (err?.message ?? 'desconocido'));
     } finally {
       setSubmitting(false);
     }
@@ -359,7 +360,7 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
                   'h-6 px-1.5 rounded text-[10px] font-semibold border',
                   active ? 'bg-destructive/20 border-destructive text-destructive' : 'border-muted-foreground/30 text-muted-foreground',
                 )}
-                title="No juega esta ronda"
+                title={trs("No juega esta ronda")}
               >
                 —
               </button>
@@ -399,7 +400,7 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
           <div className="space-y-3">
             {isMultiSlot && (
               <div className="flex items-center justify-between gap-2">
-                <Label className="text-xs">Jornada</Label>
+                <Label className="text-xs">{trs("Jornada")}</Label>
                 <select
                   value={`${slot.day}-${slot.session}`}
                   onChange={e => {
@@ -418,7 +419,7 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
             )}
 
             <div className="flex items-center justify-between gap-2">
-              <Label className="text-xs">Fecha</Label>
+              <Label className="text-xs">{trs("Fecha")}</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm" className="text-xs h-8">
@@ -464,9 +465,9 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
                   className="h-7 text-[10px] gap-1"
                   onClick={randomShuffle}
                   type="button"
-                  title="Distribuir al azar en foursomes de 4"
+                  title={trs("Distribuir al azar en foursomes de 4")}
                 >
-                  <Shuffle className="h-3 w-3" /> Al azar
+                  <Shuffle className="h-3 w-3" />{' '}{trs("Al azar")}
                 </Button>
                 <Button
                   size="sm"
@@ -474,7 +475,7 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
                   className="h-7 text-[10px] gap-1"
                   onClick={autoBalance}
                   type="button"
-                  title="Respetar matches y armar foursomes"
+                  title={trs("Respetar matches y armar foursomes")}
                 >
                   <Sparkles className="h-3 w-3" /> Auto-armar
                 </Button>
@@ -549,13 +550,13 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
             <>
               <div className="flex gap-2 pt-2 border-t">
                 <Button variant="outline" className="flex-1" onClick={onClose} disabled={submitting}>
-                  Cancelar
+                  {trs("Cancelar")}
                 </Button>
                 <Button
                   className="flex-1"
                   onClick={() => {
-                    if (!courseId) { toast.error('Selecciona el campo'); return; }
-                    if (playingCount === 0) { toast.error('Asigna al menos un jugador a un grupo'); return; }
+                    if (!courseId) { toast.error(trs("Selecciona el campo")); return; }
+                    if (playingCount === 0) { toast.error(trs("Asigna al menos un jugador a un grupo")); return; }
                     setPhase('review');
                   }}
                   disabled={submitting || !courseId || playingCount === 0}
@@ -564,8 +565,7 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
                 </Button>
               </div>
               <p className="text-[10px] text-muted-foreground text-center -mt-1">
-                Verás un resumen antes de confirmar. La ronda quedará vinculada y
-                los matches en espera se asignarán automáticamente.
+                {trs("Verás un resumen antes de confirmar. La ronda quedará vinculada y los matches en espera se asignarán automáticamente.")}
               </p>
             </>
           ) : (
@@ -613,11 +613,11 @@ const ReviewGroups: React.FC<ReviewGroupsProps> = ({
 
   return (
     <div className="space-y-3 pt-2 border-t">
-      <p className="text-xs font-semibold text-center">Confirma los grupos</p>
+      <p className="text-xs font-semibold text-center">{trs("Confirma los grupos")}</p>
 
       {benchedInMatch.length > 0 && (
         <div className="rounded-md border border-amber-500/40 bg-amber-50 dark:bg-amber-950/20 p-2 text-[11px] text-amber-800 dark:text-amber-200">
-          <strong>Atención:</strong> {benchedInMatch.length} jugador(es) con match
+          <strong>{trs("Atención:")}</strong> {benchedInMatch.length} jugador(es) con match
           asignado no jugarán esta ronda. Sus matches quedarán sin uno de los
           contendientes.
           <ul className="mt-1 list-disc pl-4">
@@ -676,7 +676,7 @@ const ReviewGroups: React.FC<ReviewGroupsProps> = ({
 
       <div className="flex gap-2 pt-1 border-t">
         <Button variant="outline" className="flex-1" onClick={onBack} disabled={submitting}>
-          ← Editar
+          {trs("← Editar")}
         </Button>
         <Button className="flex-1" onClick={onConfirm} disabled={submitting}>
           {submitting && <Loader2 className="h-4 w-4 animate-spin mr-1" />}

@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React from 'react';
 import { 
   Icon,
@@ -51,22 +52,22 @@ const MorelianaIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 export const manualUnitMarkers: MarkerConfig[] = [
   { key: 'sandyPar', icon: Flag, label: 'Sandy Par', description: 'Par desde bunker', type: 'unidad', emoji: '⛳', points: 1 },
   { key: 'holeOut', icon: Target, label: 'Hole Out', description: 'Embocada desde fuera', type: 'unidad', emoji: '🎯', points: 1 },
-  { key: 'aquaPar', icon: Waves, label: 'Aqua Par', description: 'Par después de agua', type: 'unidad', emoji: '💧', points: 1 },
-  { key: 'unidadGenerica', icon: Star, label: 'Unidad', description: 'Unidad genérica', type: 'unidad', emoji: '⭐' },
+  { key: 'aquaPar', icon: Waves, label: 'Aqua Par', description: trs("Par después de agua"), type: 'unidad', emoji: '💧', points: 1 },
+  { key: 'unidadGenerica', icon: Star, label: 'Unidad', description: trs("Unidad genérica"), type: 'unidad', emoji: '⭐' },
 ];
 
 // Manual stain markers (shown on putts row) - Pinkies y Paloma updated labels - LARGER SIZE
 // Removed cuatriput from manual markers - now auto-detected based on putts >= 4
 export const manualStainMarkers: MarkerConfig[] = [
-  { key: 'par3GirMas3', icon: CircleDot, label: 'Par 3 GIR>3', description: 'Par 3 sin GIR en 3+', type: 'mancha', emoji: '🔴' },
+  { key: 'par3GirMas3', icon: CircleDot, label: 'Par 3 GIR>3', description: trs("Par 3 sin GIR en 3+"), type: 'mancha', emoji: '🔴' },
   { key: 'trampa', icon: Hourglass, label: 'Trampa', description: 'Bunker a bunker', type: 'mancha', emoji: '⏳' },
-  { key: 'ladies', icon: PinkiesHeelIcon, label: 'Pinkies', description: 'Tiro de damas', type: 'mancha', emoji: '👠' },
-  { key: 'retruje', icon: Repeat, label: 'Retruje', description: 'Golpe para atrás', type: 'mancha', emoji: '🔄' },
-  { key: 'dobleAgua', icon: Droplets, label: 'Doble Agua', description: '2+ veces en agua', type: 'mancha', emoji: '💦' },
-  { key: 'swingBlanco', icon: Bird, label: 'Paloma', description: 'Swing en blanco', type: 'mancha', emoji: '🕊️' },
-  { key: 'dobleOB', icon: XCircle, label: 'Doble OB', description: '2+ veces fuera de límites', type: 'mancha', emoji: '🚫' },
-  { key: 'moreliana', icon: MorelianaIcon, label: 'Moreliana', description: 'Se salió del green poteando', type: 'mancha', emoji: '🎭' },
-  { key: 'manchaGenerica', icon: Square, label: 'Mancha', description: 'Mancha genérica', type: 'mancha', emoji: '⬛' },
+  { key: 'ladies', icon: PinkiesHeelIcon, label: 'Pinkies', description: trs("Tiro de damas"), type: 'mancha', emoji: '👠' },
+  { key: 'retruje', icon: Repeat, label: 'Retruje', description: trs("Golpe para atrás"), type: 'mancha', emoji: '🔄' },
+  { key: 'dobleAgua', icon: Droplets, label: 'Doble Agua', description: trs("2+ veces en agua"), type: 'mancha', emoji: '💦' },
+  { key: 'swingBlanco', icon: Bird, label: 'Paloma', description: trs("Swing en blanco"), type: 'mancha', emoji: '🕊️' },
+  { key: 'dobleOB', icon: XCircle, label: 'Doble OB', description: trs("2+ veces fuera de límites"), type: 'mancha', emoji: '🚫' },
+  { key: 'moreliana', icon: MorelianaIcon, label: 'Moreliana', description: trs("Se salió del green poteando"), type: 'mancha', emoji: '🎭' },
+  { key: 'manchaGenerica', icon: Square, label: 'Mancha', description: trs("Mancha genérica"), type: 'mancha', emoji: '⬛' },
 ];
 
 // Export marker labels for external use (short versions)

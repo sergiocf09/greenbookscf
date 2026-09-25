@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React from 'react';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -33,7 +34,7 @@ export const HandicapRankingRows: React.FC<Props> = ({ entries, currentProfileId
             <p className="text-[11px] font-medium truncate leading-tight">
               {toTitleCase(entry.display_name)}
               {entry.profile_id === currentProfileId && (
-                <span className="text-[10px] text-muted-foreground ml-1">(tú)</span>
+                <span className="text-[10px] text-muted-foreground ml-1">{trs("(tú)")}</span>
               )}
             </p>
             <p className="text-[10px] text-muted-foreground leading-tight">

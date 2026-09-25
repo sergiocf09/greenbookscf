@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import GreenBookLogo from '@/components/GreenBookLogo';
@@ -80,15 +81,15 @@ const Auth = () => {
         redirect_uri: getAuthRedirectOrigin(),
       });
       if (result.error) {
-        toast.error('Error al iniciar con Google', { description: String(result.error) });
+        toast.error(trs("Error al iniciar con Google"), { description: String(result.error) });
         setIsGoogleLoading(false);
         return;
       }
       if (!result.redirected) {
-        toast.success('¡Bienvenido!');
+        toast.success(trs("¡Bienvenido!"));
       }
     } catch (err) {
-      toast.error('Error al iniciar con Google');
+      toast.error(trs("Error al iniciar con Google"));
     }
     setIsGoogleLoading(false);
   };
@@ -100,10 +101,10 @@ const Auth = () => {
     if (error) {
       const unconfirmed = (error.message || '').toLowerCase().includes('email not confirmed');
       if (unconfirmed) setNeedsConfirmation(true);
-      toast.error('Error al iniciar sesión', { description: translateAuthError(error.message) });
+      toast.error(trs("Error al iniciar sesión"), { description: translateAuthError(error.message) });
     } else {
       setNeedsConfirmation(false);
-      toast.success('¡Bienvenido!');
+      toast.success(trs("¡Bienvenido!"));
       const pending = sessionStorage.getItem('pendingReturnTo');
       if (pending) {
         sessionStorage.removeItem('pendingReturnTo');
@@ -116,7 +117,7 @@ const Auth = () => {
 
   const handleResendConfirmation = async () => {
     if (!email.trim()) {
-      toast.error('Ingresa tu correo electrónico');
+      toast.error(trs("Ingresa tu correo electrónico"));
       return;
     }
     setIsResending(true);
@@ -126,10 +127,10 @@ const Auth = () => {
       options: { emailRedirectTo: getAuthRedirectOrigin() },
     });
     if (error) {
-      toast.error('No pudimos reenviar el correo', { description: translateAuthError(error.message) });
+      toast.error(trs("No pudimos reenviar el correo"), { description: translateAuthError(error.message) });
     } else {
-      toast.success('Correo reenviado', {
-        description: 'Revisa tu bandeja (y la carpeta de spam). Usa el enlace más reciente.',
+      toast.success(trs("Correo reenviado"), {
+        description: trs("Revisa tu bandeja (y la carpeta de spam). Usa el enlace más reciente."),
       });
     }
     setIsResending(false);
@@ -138,7 +139,7 @@ const Auth = () => {
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotEmail.trim()) {
-      toast.error('Ingresa tu correo electrónico');
+      toast.error(trs("Ingresa tu correo electrónico"));
       return;
     }
     setIsLoading(true);
@@ -146,9 +147,9 @@ const Auth = () => {
       redirectTo: getAuthRedirectUrl('/reset-password'),
     });
     if (error) {
-      toast.error('Error al enviar correo', { description: translateAuthError(error.message) });
+      toast.error(trs("Error al enviar correo"), { description: translateAuthError(error.message) });
     } else {
-      toast.success('Correo enviado', { description: 'Revisa tu bandeja de entrada para restablecer tu contraseña.' });
+      toast.success(trs("Correo enviado"), { description: trs("Revisa tu bandeja de entrada para restablecer tu contraseña.") });
       setForgotMode(false);
     }
     setIsLoading(false);
@@ -157,7 +158,7 @@ const Auth = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!displayName.trim()) {
-      toast.error('Por favor ingresa tu nombre');
+      toast.error(trs("Por favor ingresa tu nombre"));
       return;
     }
     const passwordValidation = validatePassword(password);
@@ -168,10 +169,10 @@ const Auth = () => {
     setIsLoading(true);
     const { error } = await signUp(email, password, displayName);
     if (error) {
-      toast.error('Error al registrarse', { description: translateAuthError(error.message) });
+      toast.error(trs("Error al registrarse"), { description: translateAuthError(error.message) });
     } else {
       setNeedsConfirmation(true);
-      toast.success('¡Cuenta creada! Revisa tu correo para confirmar.');
+      toast.success(trs("¡Cuenta creada! Revisa tu correo para confirmar."));
     }
     setIsLoading(false);
   };
@@ -189,19 +190,19 @@ const Auth = () => {
         </Button>
         <Card className="w-full max-w-md border-primary/20 shadow-lg">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-primary">Recuperar Contraseña</CardTitle>
-            <CardDescription>Te enviaremos un enlace para restablecer tu contraseña</CardDescription>
+            <CardTitle className="text-2xl font-bold text-primary">{trs("Recuperar Contraseña")}</CardTitle>
+            <CardDescription>{trs("Te enviaremos un enlace para restablecer tu contraseña")}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleForgotPassword} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="forgot-email">Correo electrónico</Label>
+                <Label htmlFor="forgot-email">{trs("Correo electrónico")}</Label>
                 <Input
                   id="forgot-email"
                   type="email"
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
-                  placeholder="tu@email.com"
+                  placeholder={trs("tu@email.com")}
                   required
                 />
               </div>
@@ -209,7 +210,7 @@ const Auth = () => {
                 {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Enviar Enlace'}
               </Button>
               <Button type="button" variant="ghost" className="w-full" onClick={() => setForgotMode(false)}>
-                Volver a Iniciar Sesión
+                {trs("Volver a Iniciar Sesión")}
               </Button>
             </form>
           </CardContent>
@@ -235,25 +236,25 @@ const Auth = () => {
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Iniciar Sesión</TabsTrigger>
+              <TabsTrigger value="signin">{trs("Iniciar Sesión")}</TabsTrigger>
               <TabsTrigger value="signup">Registrarse</TabsTrigger>
             </TabsList>
             
             <TabsContent value="signin">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Correo electrónico</Label>
+                  <Label htmlFor="email">{trs("Correo electrónico")}</Label>
                   <Input
                     id="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="tu@email.com"
+                    placeholder={trs("tu@email.com")}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">Contraseña</Label>
+                  <Label htmlFor="password">{trs("Contraseña")}</Label>
                   <div className="relative">
                     <Input
                       id="password"
@@ -281,13 +282,13 @@ const Auth = () => {
                   className="w-full text-sm text-muted-foreground hover:text-primary transition-colors"
                   onClick={() => setForgotMode(true)}
                 >
-                  ¿Olvidaste tu contraseña?
+                  {trs("¿Olvidaste tu contraseña?")}
                 </button>
 
                 {needsConfirmation && (
                   <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2">
                     <p className="text-xs text-muted-foreground">
-                      Tu correo aún no está confirmado. Si no encuentras el mensaje o el enlace ya expiró, te enviamos uno nuevo.
+                      {trs("Tu correo aún no está confirmado. Si no encuentras el mensaje o el enlace ya expiró, te enviamos uno nuevo.")}
                     </p>
                     <Button
                       type="button"
@@ -303,7 +304,7 @@ const Auth = () => {
 
                 <div className="relative my-2">
                   <Separator />
-                  <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">o</span>
+                  <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">{trs("o")}</span>
                 </div>
 
                 <Button
@@ -326,29 +327,29 @@ const Auth = () => {
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Nombre</Label>
+                  <Label htmlFor="name">{trs("Nombre")}</Label>
                   <Input
                     id="name"
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="Tu nombre"
+                    placeholder={trs("Tu nombre")}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email-signup">Correo electrónico</Label>
+                  <Label htmlFor="email-signup">{trs("Correo electrónico")}</Label>
                   <Input
                     id="email-signup"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="tu@email.com"
+                    placeholder={trs("tu@email.com")}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password-signup">Contraseña</Label>
+                  <Label htmlFor="password-signup">{trs("Contraseña")}</Label>
                   <div className="relative">
                     <Input
                       id="password-signup"
@@ -368,7 +369,7 @@ const Auth = () => {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  <p className="text-xs text-muted-foreground">Mínimo 8 caracteres, con 1 mayúscula, 1 minúscula, 1 número y 1 signo (! @ # $ %). Evita contraseñas comunes.</p>
+                  <p className="text-xs text-muted-foreground">{trs("Mínimo 8 caracteres, con 1 mayúscula, 1 minúscula, 1 número y 1 signo (! @ # $ %). Evita contraseñas comunes.")}</p>
                 </div>
                 <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
                   <input
@@ -380,11 +381,11 @@ const Auth = () => {
                   <span>
                     Acepto los{' '}
                     <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline text-primary">
-                      Términos de Servicio
+                      {trs("Términos de Servicio")}
                     </a>
                     {' '}y la{' '}
                     <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline text-primary">
-                      Política de Privacidad
+                      {trs("Política de Privacidad")}
                     </a>
                   </span>
                 </label>
@@ -395,7 +396,7 @@ const Auth = () => {
 
                 <div className="relative my-2">
                   <Separator />
-                  <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">o</span>
+                  <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">{trs("o")}</span>
                 </div>
 
                 <Button

@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -412,10 +413,10 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
 
       // Remove from local state
       setRounds(prev => prev.filter(r => r.id !== roundToDelete.id));
-      toast.success('Ronda eliminada y balances actualizados');
+      toast.success(trs("Ronda eliminada y balances actualizados"));
     } catch (err) {
       devError('Error deleting round:', err);
-      toast.error('Error al eliminar la ronda. Solo el organizador puede eliminarla.');
+      toast.error(trs("Error al eliminar la ronda. Solo el organizador puede eliminarla."));
     } finally {
       setDeleting(false);
       setDeleteDialogOpen(false);
@@ -427,7 +428,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
     e.stopPropagation();
     
     if (!onViewRound) {
-      toast.info('Función de visualización no disponible');
+      toast.info(trs("Función de visualización no disponible"));
       return;
     }
 
@@ -497,7 +498,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
       });
     } catch (err) {
       devError('Error loading scorecard:', err);
-      toast.error('Error al cargar la tarjeta');
+      toast.error(trs("Error al cargar la tarjeta"));
     } finally {
       setLoadingScorecard(null);
     }
@@ -507,7 +508,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
     e.stopPropagation();
     
     if (!onCloneRound) {
-      toast.info('Función de duplicación no disponible');
+      toast.info(trs("Función de duplicación no disponible"));
       return;
     }
 
@@ -567,10 +568,10 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
         players: clonePlayers,
       });
 
-      toast.success('Datos cargados. Ajusta y guarda la nueva ronda.');
+      toast.success(trs("Datos cargados. Ajusta y guarda la nueva ronda."));
     } catch (err) {
       devError('Error cloning round:', err);
-      toast.error('Error al cargar datos de la ronda');
+      toast.error(trs("Error al cargar datos de la ronda"));
     } finally {
       setLoadingClone(null);
     }
@@ -581,7 +582,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
     e.stopPropagation();
     
     if (!onCloneFullRound) {
-      toast.info('Función de duplicación íntegra no disponible');
+      toast.info(trs("Función de duplicación íntegra no disponible"));
       return;
     }
 
@@ -645,10 +646,10 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
         sourceRoundId: round.id,
       });
 
-      toast.success('Ronda íntegra cargada con todos los scores. Revisa y cierra la tarjeta.');
+      toast.success(trs("Ronda íntegra cargada con todos los scores. Revisa y cierra la tarjeta."));
     } catch (err) {
       devError('Error full cloning round:', err);
-      toast.error('Error al cargar ronda íntegra');
+      toast.error(trs("Error al cargar ronda íntegra"));
     } finally {
       setLoadingClone(null);
     }
@@ -668,7 +669,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
       const { error } = await supabase.rpc('reset_round_for_reclose', { p_round_id: roundToReopen.id });
       if (error) throw error;
 
-      toast.success('Ronda re-abierta correctamente');
+      toast.success(trs("Ronda re-abierta correctamente"));
       
       // Auto-load the round after reopening
       sessionStorage.setItem('restore_round_id', roundToReopen.id);
@@ -690,16 +691,15 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
           <Lock className="h-8 w-8 text-muted-foreground" />
         </div>
         <div className="space-y-1">
-          <p className="font-semibold">Historial bloqueado</p>
+          <p className="font-semibold">{trs("Historial bloqueado")}</p>
           <p className="text-sm text-muted-foreground">
-            Has completado tus 4 rondas de acceso gratuito al historial.
-            Suscríbete para ver todas tus rondas anteriores.
+            {trs("Has completado tus 4 rondas de acceso gratuito al historial. Suscríbete para ver todas tus rondas anteriores.")}
           </p>
         </div>
         <Button onClick={() => window.dispatchEvent(new CustomEvent('greenbook:show-upgrade', {
           detail: { reason: 'history' }
         }))}>
-          Ver planes
+          {trs("Ver planes")}
         </Button>
       </div>
     );
@@ -717,8 +717,8 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
     return (
       <div className="text-center py-8 text-muted-foreground">
         <Trophy className="h-12 w-12 mx-auto mb-3 opacity-50" />
-        <p>No hay rondas completadas</p>
-        <p className="text-sm">Completa tu primera ronda para ver el historial</p>
+        <p>{trs("No hay rondas completadas")}</p>
+        <p className="text-sm">{trs("Completa tu primera ronda para ver el historial")}</p>
       </div>
     );
   }
@@ -743,7 +743,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
               size="sm"
               className="shrink-0 px-3"
               onClick={toggleActivity}
-              title="Mi actividad mensual"
+              title={trs("Mi actividad mensual")}
             >
               <BarChart2 className="h-4 w-4" />
             </Button>
@@ -768,13 +768,13 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
               {/* Encabezado con crucecita para cerrar */}
               <div className="relative z-10 flex shrink-0 items-center justify-between border-b border-border bg-card px-4 pb-2 pt-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  Mi Actividad · Últimos 12 meses
+                  {trs("Mi Actividad · Últimos 12 meses")}
                 </p>
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleActivity(); }}
                   className="p-1 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                  title="Cerrar"
-                  aria-label="Cerrar panel de actividad"
+                  title={trs("Cerrar")}
+                  aria-label={trs("Cerrar panel de actividad")}
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -783,7 +783,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
               {activityData.points.length < 2 ? (
                 <div className="p-4 text-center">
                   <p className="text-xs text-muted-foreground">
-                    Completa rondas en al menos 2 meses diferentes para ver tu actividad
+                    {trs("Completa rondas en al menos 2 meses diferentes para ver tu actividad")}
                   </p>
                 </div>
               ) : (
@@ -795,7 +795,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
 
                     {/* Gráfica 1: Rondas por mes */}
                     <div>
-                      <p className="text-xs text-muted-foreground mb-2">Rondas por mes</p>
+                      <p className="text-xs text-muted-foreground mb-2">{trs("Rondas por mes")}</p>
                       <ResponsiveContainer width="100%" height={150}>
                         <BarChart data={activityData.points} margin={{ top: 4, right: 8, left: -24, bottom: 0 }} barSize={20}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
@@ -835,7 +835,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                     {/* Gráfica 2: Score promedio por mes */}
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs text-muted-foreground">Score promedio por mes</p>
+                        <p className="text-xs text-muted-foreground">{trs("Score promedio por mes")}</p>
                         <span className="text-[11px] text-muted-foreground">
                           Prom. global: <span className="font-semibold text-foreground">{activityData.globalAvg}</span>
                         </span>
@@ -950,7 +950,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                               ))}
                             </div>
                           ) : (
-                            <p className="text-xs text-muted-foreground">No hay campos jugados en este período.</p>
+                            <p className="text-xs text-muted-foreground">{trs("No hay campos jugados en este período.")}</p>
                           )}
                         </div>
                       )}
@@ -993,8 +993,8 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                   {round.capturedOnly && !round.isIncomplete && (
                     <span
                       className="flex-shrink-0 ml-1 inline-flex items-center"
-                      title="Ronda capturada — no participaste como jugador"
-                      aria-label="Ronda capturada — no participaste"
+                      title={trs("Ronda capturada — no participaste como jugador")}
+                      aria-label={trs("Ronda capturada — no participaste")}
                     >
                       <ImagePlus className="h-3 w-3 text-muted-foreground" />
                     </span>
@@ -1002,14 +1002,14 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                   {round.capturedOnly ? (
                     <span
                       className="ml-auto flex-shrink-0 mr-1 inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground border border-border"
-                      title="Creaste esta ronda pero no participaste como jugador."
+                      title={trs("Creaste esta ronda pero no participaste como jugador.")}
                     >
-                      Sin jugar
+                      {trs("Sin jugar")}
                     </span>
                   ) : round.isIncomplete ? (
                     <span
                       className="ml-auto flex-shrink-0 mr-1 inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-700"
-                      title="Cerrada automáticamente. Reabre para completar scores y calcular handicap."
+                      title={trs("Cerrada automáticamente. Reabre para completar scores y calcular handicap.")}
                     >
                       <AlertTriangle className="h-2.5 w-2.5" />
                       Incompleta
@@ -1041,14 +1041,14 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                     {round.capturedOnly && (
                       <div className="text-[11px] text-muted-foreground flex items-center gap-1 pt-0.5">
                         <ImagePlus className="h-3 w-3" />
-                        <span>Capturada por ti — no participaste como jugador.</span>
+                        <span>{trs("Capturada por ti — no participaste como jugador.")}</span>
                       </div>
                     )}
                     {round.isIncomplete && !round.capturedOnly && (
                       <div className="text-[11px] text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900 rounded-md p-2 mt-1 space-y-1">
-                        <p className="font-medium">Ronda no cerrada en tiempo</p>
+                        <p className="font-medium">{trs("Ronda no cerrada en tiempo")}</p>
                         <p className="text-[10px] text-orange-700/90 dark:text-orange-400/90">
-                          Se cerró automáticamente a las 24h sin snapshots, cálculo de handicap ni liquidación de apuestas. Si el organizador o un co-admin la reabre y completa los scores, podrá cerrarla con el flujo tradicional para generar snapshot, sliding, handicap y ledger.
+                          {trs("Se cerró automáticamente a las 24h sin snapshots, cálculo de handicap ni liquidación de apuestas. Si el organizador o un co-admin la reabre y completa los scores, podrá cerrarla con el flujo tradicional para generar snapshot, sliding, handicap y ledger.")}
                         </p>
                       </div>
                     )}
@@ -1139,14 +1139,14 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar esta ronda?</AlertDialogTitle>
+            <AlertDialogTitle>{trs("¿Eliminar esta ronda?")}</AlertDialogTitle>
             <AlertDialogDescription>
               Esta acción no se puede deshacer. Se eliminarán todos los scores, 
               transacciones y datos asociados a esta ronda del {roundToDelete && format(parseLocalDate(roundToDelete.date), "d 'de' MMMM, yyyy", { locale: es })}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>{trs("Cancelar")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               disabled={deleting}
@@ -1169,13 +1169,13 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
       <AlertDialog open={reopenDialogOpen} onOpenChange={setReopenDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Re-abrir esta ronda?</AlertDialogTitle>
+            <AlertDialogTitle>{trs("¿Re-abrir esta ronda?")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Esto eliminará el snapshot, ledger e historial de sliding actuales. Podrás volver a cerrarla con los scores u overrides corregidos.
+              {trs("Esto eliminará el snapshot, ledger e historial de sliding actuales. Podrás volver a cerrarla con los scores u overrides corregidos.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={reopening}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={reopening}>{trs("Cancelar")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleReopenConfirm}
               disabled={reopening}

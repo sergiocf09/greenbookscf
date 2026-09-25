@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -168,13 +169,13 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
       {isSix ? (
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <Label className="text-[10px] text-muted-foreground">Parejas</Label>
+            <Label className="text-[10px] text-muted-foreground">{trs("Parejas")}</Label>
             <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => cycle(-1)}
                 className="flex items-center text-[11px] text-primary border border-primary/30 rounded-md px-1.5 py-1 hover:bg-primary/5 transition-colors"
-                aria-label="Combinación anterior"
+                aria-label={trs("Combinación anterior")}
               >
                 <ChevronLeft className="h-3 w-3" />
               </button>
@@ -212,7 +213,7 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
                 }
               >
                 <SelectTrigger className="h-9 text-xs">
-                  <SelectValue placeholder="Seleccionar" />
+                  <SelectValue placeholder={trs("Seleccionar")} />
                 </SelectTrigger>
                 <SelectContent>
                   {playerOptions.map((o) => (
@@ -251,7 +252,7 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
               {isFoursomes ? (
                 <SelectItem value="matchOnly">Match Play</SelectItem>
               ) : (
-                <SelectItem value="all">Suma Total (Todos)</SelectItem>
+                <SelectItem value="all">{trs("Suma Total (Todos)")}</SelectItem>
               )}
             </SelectContent>
           </Select>
@@ -267,10 +268,10 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="individual">Full Hándicap</SelectItem>
+              <SelectItem value="individual">{trs("Full Hándicap")}</SelectItem>
               <SelectItem value="baseCero">Base Cero</SelectItem>
-              <SelectItem value="diferencialEquipo">Diferencial Equipo</SelectItem>
-              <SelectItem value="slidingEquipo">Sliding Equipo</SelectItem>
+              <SelectItem value="diferencialEquipo">{trs("Diferencial Equipo")}</SelectItem>
+              <SelectItem value="slidingEquipo">{trs("Sliding Equipo")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -278,7 +279,7 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
         {isFoursomes && scoringType === 'matchOnly' && (
           <div className="flex items-center justify-between">
             <Label className="text-[10px] text-muted-foreground">
-              Match Play por 18 hoyos
+              {trs("Match Play por 18 hoyos")}
             </Label>
             <Switch checked={continua} onCheckedChange={setContinua} className="scale-75" />
           </div>
@@ -287,7 +288,7 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
         {matchOnly18 ? (
           <div className="space-y-1">
             <Label className="text-[10px] text-muted-foreground text-center block">
-              Match 18 (único)
+              {trs("Match 18 (único)")}
             </Label>
             <AmountInput label="" value={totalAmount} onChange={setTotalAmount} />
           </div>
@@ -314,7 +315,7 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
             </div>
             <div className="space-y-1">
               <Label className="text-[10px] text-muted-foreground text-center block">
-                Total 18
+                {trs("Total 18")}
               </Label>
               <AmountInput label="" value={totalAmount} onChange={setTotalAmount} />
             </div>
@@ -357,7 +358,7 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="acumulados">Acumulados</SelectItem>
-                      <SelectItem value="sangron">Sangrón</SelectItem>
+                      <SelectItem value="sangron">{trs("Sangrón")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -390,12 +391,12 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
           </AlertDialogHeader>
 
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-            <AlertDialogCancel className="mt-0">Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className="mt-0">{trs("Cancelar")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => run('add')}
               className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
             >
-              Agregar faltantes
+              {trs("Agregar faltantes")}
             </AlertDialogAction>
             <AlertDialogAction onClick={() => run('replace')}>
               Reemplazar

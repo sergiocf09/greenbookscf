@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -139,7 +140,7 @@ const JoinLeaderboard = () => {
             🏆 Teams Cup
           </h1>
           <p className="text-sm text-muted-foreground max-w-xs">
-            ¿A qué equipo perteneces?
+            {trs("¿A qué equipo perteneces?")}
           </p>
         </div>
 
@@ -161,7 +162,7 @@ const JoinLeaderboard = () => {
                 </div>
                 {assigningTeam
                   ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  : <Badge variant="secondary">Seleccionar →</Badge>
+                  : <Badge variant="secondary">{trs("Seleccionar →")}</Badge>
                 }
               </CardContent>
             </Card>
@@ -169,10 +170,10 @@ const JoinLeaderboard = () => {
         </div>
 
         <Button variant="ghost" size="sm" onClick={() => handleTeamSelect(null)}>
-          Entrar sin elegir equipo
+          {trs("Entrar sin elegir equipo")}
         </Button>
         <p className="text-xs text-center text-muted-foreground max-w-xs">
-          El organizador también puede asignarte equipo desde el panel de la competencia.
+          {trs("El organizador también puede asignarte equipo desde el panel de la competencia.")}
         </p>
       </div>
     );
@@ -203,7 +204,7 @@ const JoinLeaderboard = () => {
       <div className="text-center space-y-2">
         <h1 className="text-xl font-bold flex items-center justify-center gap-2">
           <Trophy className="h-5 w-5 text-amber-500" />
-          Únete al Leaderboard
+          {trs("Únete al Leaderboard")}
         </h1>
         <p className="text-sm text-muted-foreground max-w-xs">
           Te invitaron a un leaderboard en GreenBook.
@@ -220,11 +221,10 @@ const JoinLeaderboard = () => {
             onClick={() => { window.location.href = appUrl; }}
           >
             <ExternalLink className="h-4 w-4" />
-            Abrir en GreenBook App
+            {trs("Abrir en GreenBook App")}
           </Button>
           <p className="text-xs text-center text-muted-foreground">
-            Si no tienes la app instalada, también puedes unirte desde aquí.
-            El leaderboard aparecerá en tu cuenta.
+            {trs("Si no tienes la app instalada, también puedes unirte desde aquí. El leaderboard aparecerá en tu cuenta.")}
           </p>
         </div>
       )}

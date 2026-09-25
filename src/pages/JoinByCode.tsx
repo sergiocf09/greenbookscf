@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -72,7 +73,7 @@ const JoinByCode = () => {
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Volver
+          {trs("Volver")}
         </Button>
 
         <Card>
@@ -80,9 +81,9 @@ const JoinByCode = () => {
             <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
               <Hash className="h-6 w-6 text-primary" />
             </div>
-            <CardTitle className="text-xl">Unirse con Código</CardTitle>
+            <CardTitle className="text-xl">{trs("Unirse con Código")}</CardTitle>
             <CardDescription>
-              Ingresa el código de 6 caracteres que te compartieron
+              {trs("Ingresa el código de 6 caracteres que te compartieron")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -102,7 +103,7 @@ const JoinByCode = () => {
                   <p className="text-sm text-destructive text-center">{error}</p>
                 )}
                 <p className="text-xs text-muted-foreground text-center">
-                  El código tiene 6 letras y números
+                  {trs("El código tiene 6 letras y números")}
                 </p>
               </div>
 

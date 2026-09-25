@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -47,16 +48,16 @@ export const CrossBetInvitationsSheet: React.FC<CrossBetInvitationsSheetProps> =
         <SheetHeader className="pb-4">
           <div className="flex items-center gap-2">
             <Swords className="h-5 w-5 text-primary" />
-            <SheetTitle className="text-base">Invitaciones de Cruce</SheetTitle>
+            <SheetTitle className="text-base">{trs("Invitaciones de Cruce")}</SheetTitle>
           </div>
           <p className="text-xs text-muted-foreground">
-            Alguien quiere cruzar tarjeta contigo. Al aceptar quedas registrado en su ronda.
+            {trs("Alguien quiere cruzar tarjeta contigo. Al aceptar quedas registrado en su ronda.")}
           </p>
         </SheetHeader>
         {invitations.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 gap-2">
             <Swords className="h-8 w-8 text-muted-foreground/30" />
-            <p className="text-sm text-muted-foreground">Sin invitaciones pendientes</p>
+            <p className="text-sm text-muted-foreground">{trs("Sin invitaciones pendientes")}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -76,7 +77,7 @@ export const CrossBetInvitationsSheet: React.FC<CrossBetInvitationsSheetProps> =
                     </div>
                   </div>
                   <div className="bg-muted/30 rounded-lg px-3 py-2">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Apuestas propuestas</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">{trs("Apuestas propuestas")}</p>
                     <p className="text-xs font-medium">{summarizeBetConfig(inv.betConfigProposal)}</p>
                   </div>
                   <div className="flex gap-2">

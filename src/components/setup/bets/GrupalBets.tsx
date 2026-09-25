@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React from 'react';
 import { BetConfig, Player, ConejaHandicapMode, StablefordPlayerConfig, DEFAULT_STABLEFORD_POINTS, ZooAnimalType, ZOO_ANIMALS, GroupBetScope, SkinsGrupalBetConfig, NinesBetInstance } from '@/types/golf';
 import { BetSection } from './BetSection';
@@ -38,7 +39,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
   return (
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground mb-2">
-        Apuestas donde todos participan en un pool. Definen su hándicap propio (excepto Coneja).
+        {trs("Apuestas donde todos participan en un pool. Definen su hándicap propio (excepto Coneja).")}
       </p>
 
       {/* Grupal Participation Matrix */}
@@ -64,12 +65,12 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           <AmountInput label="Cantidad por coneja" value={config.coneja?.amount ?? 50} onChange={(v) => onUpdateBet('coneja', { amount: v })} />
           <CollapsibleSubSection label="Configuración" summary={`Handicap: ${(config.coneja?.handicapMode ?? 'individual') === 'individual' ? 'USGA' : 'Sliding'}`}>
             <div className="space-y-3">
-              <Label className="text-xs text-muted-foreground">Modo de Handicap</Label>
+              <Label className="text-xs text-muted-foreground">{trs("Modo de Handicap")}</Label>
               <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                 <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateBet('coneja', { handicapMode: 'individual' as ConejaHandicapMode }); }}
                   className={cn("flex-1 px-3 py-2 text-xs rounded transition-colors border", (config.coneja?.handicapMode ?? 'individual') === 'individual' ? "bg-golf-gold text-golf-dark font-medium border-golf-gold" : "bg-muted text-muted-foreground hover:bg-muted/80 border-border")}>
                   <div className="font-medium">Handicap USGA</div>
-                  <div className="text-[9px] opacity-80">Hcp único por jugador</div>
+                  <div className="text-[9px] opacity-80">{trs("Hcp único por jugador")}</div>
                 </button>
                 <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateBet('coneja', { handicapMode: 'bilateral' as ConejaHandicapMode }); }}
                   className={cn("flex-1 px-3 py-2 text-xs rounded transition-colors border", config.coneja?.handicapMode === 'bilateral' ? "bg-primary text-primary-foreground font-medium border-primary" : "bg-muted text-muted-foreground hover:bg-muted/80 border-border")}>
@@ -79,16 +80,16 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
               </div>
               {config.coneja?.handicapMode === 'bilateral' && (
                 <p className="text-[9px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-2 rounded mt-2">
-                  ⚠️ Coneja es GRUPAL pero usa la Matriz de Hándicaps Bilaterales (igual que apuestas individuales).
+                  {trs("⚠️ Coneja es GRUPAL pero usa la Matriz de Hándicaps Bilaterales (igual que apuestas individuales).")}
                 </p>
               )}
             </div>
           </CollapsibleSubSection>
           <div className="text-[9px] text-muted-foreground mt-3 space-y-1">
-            <p><strong>Estructura:</strong> 3 sets de 6 hoyos (1-6, 7-12, 13-18)</p>
+            <p><strong>Estructura:</strong>{' '}{trs("3 sets de 6 hoyos (1-6, 7-12, 13-18)")}</p>
             <p><strong>Pata:</strong> Ganador absoluto del hoyo gana pata; quien pierde un hoyo, pierde una pata</p>
-            <p><strong>Coneja:</strong> Al cierre del set, quien tenga ≥1 pata cobra a todos los demás</p>
-            <p><strong>Acumulación:</strong> Si nadie tiene pata al cierre, la coneja se acumula al siguiente set</p>
+            <p><strong>Coneja:</strong>{' '}{trs("Al cierre del set, quien tenga ≥1 pata cobra a todos los demás")}</p>
+            <p><strong>{trs("Acumulación:")}</strong>{' '}{trs("Si nadie tiene pata al cierre, la coneja se acumula al siguiente set")}</p>
           </div>
         </BetSection>
       )}
@@ -120,7 +121,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
       {/* Zoológico */}
       {show('zoologico') && (
         <BetSection
-          id="zoologico" title="Zoológico 🐾"
+          id="zoologico" title={trs("Zoológico 🐾")}
           description="Camello (bunker), Pez (agua), Gorila (OB) - último paga"
           enabled={config.zoologico?.enabled ?? false}
           onToggle={(enabled) => onUpdateBet('zoologico', { enabled })}
@@ -148,7 +149,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
               </div>
             </div>
           </CollapsibleSubSection>
-          <p className="text-[9px] text-muted-foreground mt-2">El último jugador en cometer cada tipo de incidencia paga a todos los demás.</p>
+          <p className="text-[9px] text-muted-foreground mt-2">{trs("El último jugador en cometer cada tipo de incidencia paga a todos los demás.")}</p>
         </BetSection>
       )}
 
@@ -178,16 +179,16 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
                 <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateBet('skinsGrupal', { modality: 'acumulados' } as any); }}
                   className={cn("flex-1 px-3 py-2 text-xs rounded transition-colors border", (config.skinsGrupal?.modality ?? 'acumulados') === 'acumulados' ? "bg-primary text-primary-foreground font-medium border-primary" : "bg-muted text-muted-foreground hover:bg-muted/80 border-border")}>
                   <div className="font-medium">Acumulados</div>
-                  <div className="text-[9px] opacity-80">Empates se acumulan</div>
+                  <div className="text-[9px] opacity-80">{trs("Empates se acumulan")}</div>
                 </button>
                 <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateBet('skinsGrupal', { modality: 'sinAcumular' } as any); }}
                   className={cn("flex-1 px-3 py-2 text-xs rounded transition-colors border", config.skinsGrupal?.modality === 'sinAcumular' ? "bg-primary text-primary-foreground font-medium border-primary" : "bg-muted text-muted-foreground hover:bg-muted/80 border-border")}>
-                  <div className="font-medium">Sin Acumular</div>
-                  <div className="text-[9px] opacity-80">Solo gana hoyo limpio</div>
+                  <div className="font-medium">{trs("Sin Acumular")}</div>
+                  <div className="text-[9px] opacity-80">{trs("Solo gana hoyo limpio")}</div>
                 </button>
               </div>
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Handicaps para Skins Grupal</Label>
+                <Label className="text-xs text-muted-foreground">{trs("Handicaps para Skins Grupal")}</Label>
                 {players.map(player => {
                   const playerHandicaps = config.skinsGrupal?.playerHandicaps || [];
                   const playerConfig = playerHandicaps.find(pc => pc.playerId === player.id);
@@ -217,7 +218,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
               </div>
             </div>
           </CollapsibleSubSection>
-          <p className="text-[9px] text-muted-foreground mt-2">El ganador de cada skin cobra a todos los demás participantes.</p>
+          <p className="text-[9px] text-muted-foreground mt-2">{trs("El ganador de cada skin cobra a todos los demás participantes.")}</p>
         </BetSection>
       )}
 
@@ -248,7 +249,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
                     ? "bg-primary text-primary-foreground font-medium border-primary"
                     : "bg-muted text-muted-foreground hover:bg-muted/80 border-border"
                 )}>
-                Solo Total 18
+                {trs("Solo Total 18")}
               </button>
               <button type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateBet('medalGeneral', { segmentMode: 'segments', frontAmount: config.medalGeneral?.frontAmount ?? 50, backAmount: config.medalGeneral?.backAmount ?? 100 }); }}
@@ -257,7 +258,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
                     ? "bg-primary text-primary-foreground font-medium border-primary"
                     : "bg-muted text-muted-foreground hover:bg-muted/80 border-border"
                 )}>
-                F9 + B9 + Total
+                {trs("F9 + B9 + Total")}
               </button>
             </div>
           </div>
@@ -274,7 +275,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
                 <AmountInput label="" value={config.medalGeneral?.backAmount ?? 100} onChange={(v) => onUpdateBet('medalGeneral', { backAmount: v })} />
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] text-muted-foreground text-center block">Total 18</Label>
+                <Label className="text-[10px] text-muted-foreground text-center block">{trs("Total 18")}</Label>
                 <AmountInput label="" value={config.medalGeneral?.amount ?? 100} onChange={(v) => onUpdateBet('medalGeneral', { amount: v })} />
               </div>
             </div>
@@ -291,7 +292,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
 
           {/* Handicap mode: USGA (individual) vs Sliding (bilateral matrix) */}
           <div className="space-y-1">
-            <Label className="text-[10px] font-semibold text-primary">Modalidad Hándicap</Label>
+            <Label className="text-[10px] font-semibold text-primary">{trs("Modalidad Hándicap")}</Label>
             <div className="flex gap-2">
               <button type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateBet('medalGeneral', { handicapMode: 'individual' }); }}
@@ -300,7 +301,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
                     ? "bg-golf-gold text-golf-dark font-medium border-golf-gold"
                     : "bg-muted text-muted-foreground hover:bg-muted/80 border-border"
                 )}>
-                USGA Hándicap
+                {trs("USGA Hándicap")}
               </button>
               <button type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateBet('medalGeneral', { handicapMode: 'bilateral' }); }}
@@ -322,7 +323,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           <CollapsibleSubSection label="Configuración" summary="Handicaps por jugador">
 
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Handicaps para Medal General</Label>
+              <Label className="text-xs text-muted-foreground">{trs("Handicaps para Medal General")}</Label>
               {players.map(player => {
                 const playerHandicaps = config.medalGeneral?.playerHandicaps || [];
                 const playerConfig = playerHandicaps.find(pc => pc.playerId === player.id);
@@ -351,7 +352,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
               })}
             </div>
           </CollapsibleSubSection>
-          <p className="text-[9px] text-muted-foreground mt-2">El ganador (o ganadores en empate) cobra la cantidad a cada perdedor.</p>
+          <p className="text-[9px] text-muted-foreground mt-2">{trs("El ganador (o ganadores en empate) cobra la cantidad a cada perdedor.")}</p>
         </BetSection>
       )}
 
@@ -376,7 +377,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
                     ? "bg-primary text-primary-foreground font-medium border-primary"
                     : "bg-muted text-muted-foreground hover:bg-muted/80 border-border"
                 )}>
-                Solo Total 18
+                {trs("Solo Total 18")}
               </button>
               <button type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateConfig?.({ ...config, puttsGeneral: { ...(config as any).puttsGeneral, segmentMode: 'segments', frontAmount: (config as any).puttsGeneral?.frontAmount ?? 50, backAmount: (config as any).puttsGeneral?.backAmount ?? 100 } } as any); }}
@@ -385,7 +386,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
                     ? "bg-primary text-primary-foreground font-medium border-primary"
                     : "bg-muted text-muted-foreground hover:bg-muted/80 border-border"
                 )}>
-                F9 + B9 + Total
+                {trs("F9 + B9 + Total")}
               </button>
             </div>
           </div>
@@ -402,7 +403,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
                 <AmountInput label="" value={(config as any).puttsGeneral?.backAmount ?? 100} onChange={(v) => onUpdateConfig?.({ ...config, puttsGeneral: { ...(config as any).puttsGeneral, backAmount: v } } as any)} />
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] text-muted-foreground text-center block">Total 18</Label>
+                <Label className="text-[10px] text-muted-foreground text-center block">{trs("Total 18")}</Label>
                 <AmountInput label="" value={(config as any).puttsGeneral?.amount ?? 100} onChange={(v) => onUpdateConfig?.({ ...config, puttsGeneral: { ...(config as any).puttsGeneral, amount: v } } as any)} />
               </div>
             </div>
@@ -410,7 +411,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
             <AmountInput label="Cantidad por jugador" value={(config as any).puttsGeneral?.amount ?? 100} onChange={(v) => onUpdateConfig?.({ ...config, puttsGeneral: { ...(config as any).puttsGeneral, amount: v } } as any)} />
           )}
 
-          <p className="text-[9px] text-muted-foreground mt-2">El ganador con menos putts totales cobra a cada perdedor. No aplica hándicap.</p>
+          <p className="text-[9px] text-muted-foreground mt-2">{trs("El ganador con menos putts totales cobra a cada perdedor. No aplica hándicap.")}</p>
         </BetSection>
       )}
 
@@ -435,7 +436,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
                     ? "bg-primary text-primary-foreground font-medium border-primary"
                     : "bg-muted text-muted-foreground hover:bg-muted/80 border-border"
                 )}>
-                Solo Total 18
+                {trs("Solo Total 18")}
               </button>
               <button type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUpdateConfig?.({ ...config, girGeneral: { ...(config as any).girGeneral, segmentMode: 'segments', frontAmount: (config as any).girGeneral?.frontAmount ?? 50, backAmount: (config as any).girGeneral?.backAmount ?? 100 } } as any); }}
@@ -444,7 +445,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
                     ? "bg-primary text-primary-foreground font-medium border-primary"
                     : "bg-muted text-muted-foreground hover:bg-muted/80 border-border"
                 )}>
-                F9 + B9 + Total
+                {trs("F9 + B9 + Total")}
               </button>
             </div>
           </div>
@@ -460,7 +461,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
                 <AmountInput label="" value={(config as any).girGeneral?.backAmount ?? 100} onChange={(v) => onUpdateConfig?.({ ...config, girGeneral: { ...(config as any).girGeneral, backAmount: v } } as any)} />
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] text-muted-foreground text-center block">Total 18</Label>
+                <Label className="text-[10px] text-muted-foreground text-center block">{trs("Total 18")}</Label>
                 <AmountInput label="" value={(config as any).girGeneral?.amount ?? 100} onChange={(v) => onUpdateConfig?.({ ...config, girGeneral: { ...(config as any).girGeneral, amount: v } } as any)} />
               </div>
             </div>
@@ -468,7 +469,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
             <AmountInput label="Cantidad por jugador" value={(config as any).girGeneral?.amount ?? 100} onChange={(v) => onUpdateConfig?.({ ...config, girGeneral: { ...(config as any).girGeneral, amount: v } } as any)} />
           )}
 
-          <p className="text-[9px] text-muted-foreground mt-2">El ganador con más GIRs cobra a cada perdedor. No aplica hándicap.</p>
+          <p className="text-[9px] text-muted-foreground mt-2">{trs("El ganador con más GIRs cobra a cada perdedor. No aplica hándicap.")}</p>
         </BetSection>
       )}
 
@@ -497,7 +498,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
           <CollapsibleSubSection label="Configuración" summary="Puntos y Handicaps">
             <div className="space-y-3">
               <div className="p-3 bg-muted/30 rounded-lg space-y-2">
-                <Label className="text-xs font-medium">Puntos por resultado</Label>
+                <Label className="text-xs font-medium">{trs("Puntos por resultado")}</Label>
                 <div className="space-y-1.5">
                   <PointInput label="Albatros" value={config.stableford?.points?.albatross ?? 5} onChange={(v) => onUpdateBet('stableford', { points: { ...config.stableford.points, albatross: v } })} />
                   <PointInput label="Águila" value={config.stableford?.points?.eagle ?? 4} onChange={(v) => onUpdateBet('stableford', { points: { ...config.stableford.points, eagle: v } })} />
@@ -510,7 +511,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Handicaps para Stableford</Label>
+                <Label className="text-xs text-muted-foreground">{trs("Handicaps para Stableford")}</Label>
                 {players.map(player => {
                   const playerHandicaps = config.stableford?.playerHandicaps || [];
                   const playerConfig = playerHandicaps.find(pc => pc.playerId === player.id);
@@ -540,7 +541,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
               </div>
             </div>
           </CollapsibleSubSection>
-          <p className="text-[9px] text-muted-foreground mt-2">El ganador con más puntos Stableford cobra a los demás.</p>
+          <p className="text-[9px] text-muted-foreground mt-2">{trs("El ganador con más puntos Stableford cobra a los demás.")}</p>
         </BetSection>
       )}
 
@@ -566,13 +567,13 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
         >
           {(config.ninesBets?.length ?? 0) === 0 ? (
             <div className="text-center py-4">
-              <p className="text-xs text-muted-foreground mb-2">No hay apuestas de Nines configuradas</p>
+              <p className="text-xs text-muted-foreground mb-2">{trs("No hay apuestas de Nines configuradas")}</p>
               <Button variant="outline" size="sm" onClick={() => {
                 if (!onUpdateConfig) return;
                  const nueva: NinesBetInstance = { id: `nines-${Date.now()}`, valuePerPoint: 10, playerIds: [], playerHandicaps: {} };
                 onUpdateConfig({ ...config, ninesBets: [nueva] });
               }} className="gap-1">
-                <Plus className="h-3.5 w-3.5" /> Agregar apuesta Nines
+                <Plus className="h-3.5 w-3.5" />{' '}{trs("Agregar apuesta Nines")}
               </Button>
             </div>
           ) : (
@@ -595,7 +596,7 @@ export const GrupalBets: React.FC<GrupalBetsProps> = ({
                 const nueva: NinesBetInstance = { id: `nines-${Date.now()}`, valuePerPoint: 10, playerIds: [], playerHandicaps: {} };
                 onUpdateConfig({ ...config, ninesBets: [...(config.ninesBets ?? []), nueva] });
               }}>
-                <Plus className="h-3.5 w-3.5" /> Agregar otra apuesta Nines
+                <Plus className="h-3.5 w-3.5" />{' '}{trs("Agregar otra apuesta Nines")}
               </Button>
             </>
           )}
@@ -643,7 +644,7 @@ const NinesBetCard: React.FC<{
       <AmountInput label="Valor por punto" value={bet.valuePerPoint} onChange={(v) => onUpdate({ valuePerPoint: v })} />
 
       <div className="space-y-2">
-        <Label className="text-[10px] font-semibold text-primary">Jugadores (selecciona 3)</Label>
+        <Label className="text-[10px] font-semibold text-primary">{trs("Jugadores (selecciona 3)")}</Label>
         <div className="grid grid-cols-2 gap-1.5">
           {players.map(p => {
             const isSelected = selectedIds.includes(p.id);
@@ -669,7 +670,7 @@ const NinesBetCard: React.FC<{
         )}
         {selectedIds.length === 3 && (
           <>
-            <p className="text-[9px] text-muted-foreground">Distribución: 5 primero · 3 segundo · 1 tercero</p>
+            <p className="text-[9px] text-muted-foreground">{trs("Distribución: 5 primero · 3 segundo · 1 tercero")}</p>
             <div className="space-y-1.5 mt-2">
               <Label className="text-[10px] font-semibold text-primary">Handicaps</Label>
               {selectedIds.map(pid => {

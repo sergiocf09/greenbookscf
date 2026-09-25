@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -112,7 +113,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
       }
       setJornadas(jornadasData);
     } catch (err: any) {
-      toast.error('Error cargando liga: ' + err.message);
+      toast.error(trs("Error cargando liga: ") + err.message);
     } finally {
       setLoading(false);
     }
@@ -130,7 +131,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
     if (!confirm('¿Cerrar la liga? Los standings quedarán congelados.')) return;
     const { error } = await supabase.rpc('close_leaderboard' as any, { p_leaderboard_id: leaderboardId });
     if (error) { toast.error(error.message); return; }
-    toast.success('Liga cerrada');
+    toast.success(trs("Liga cerrada"));
     await fetchData();
   };
 
@@ -142,7 +143,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
       await (navigator as any).share({ text }).catch(() => {});
     } else {
       await navigator.clipboard.writeText(text);
-      toast.success('Código copiado');
+      toast.success(trs("Código copiado"));
     }
   };
 
@@ -170,7 +171,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
       <div className="flex items-center gap-2 p-3 border-b border-border shrink-0">
-        <Button variant="ghost" size="icon" onClick={onBack} aria-label="Volver">
+        <Button variant="ghost" size="icon" onClick={onBack} aria-label={trs("Volver")}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1 min-w-0">
@@ -223,7 +224,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
             <div className="space-y-2">
               {standings.length === 0 && (
                 <div className="text-center text-sm text-muted-foreground py-8">
-                  Sin jornadas registradas aún. Vincula rondas para ver los standings.
+                  {trs("Sin jornadas registradas aún. Vincula rondas para ver los standings.")}
                 </div>
               )}
               {standings.map(row => (
@@ -243,7 +244,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                       {!row.qualifies && rules.min_rounds_to_qualify > 0 && (
                         <span className="flex items-center gap-1 text-amber-600">
                           <Clock className="h-3 w-3" />
-                          No clasifica aún
+                          {trs("No clasifica aún")}
                         </span>
                       )}
                     </div>
@@ -272,7 +273,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
             <div className="space-y-4">
               {jornadas.length === 0 && (
                 <div className="text-center text-sm text-muted-foreground py-8">
-                  Sin jornadas registradas aún.
+                  {trs("Sin jornadas registradas aún.")}
                 </div>
               )}
               {jornadas.map((jornada, idx) => (
@@ -337,7 +338,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                   {/* Resumen del jugador */}
                   <div className="grid grid-cols-2 gap-2">
                     <div className="bg-card border border-border rounded-xl p-3">
-                      <div className="text-[11px] text-muted-foreground uppercase tracking-wide">Posición</div>
+                      <div className="text-[11px] text-muted-foreground uppercase tracking-wide">{trs("Posición")}</div>
                       <div className={cn('text-2xl font-bold', positionColor(selectedStanding.position))}>
                         {selectedStanding.position}°
                       </div>
@@ -370,11 +371,11 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                   <div className="bg-card border border-border rounded-xl overflow-hidden">
                     <div className="px-3 py-2 border-b border-border bg-muted/40 text-sm font-semibold flex items-center gap-2">
                       <Star className="h-4 w-4 text-primary" />
-                      Historial de jornadas
+                      {trs("Historial de jornadas")}
                     </div>
                     {participantJornadas.length === 0 && (
                       <div className="p-4 text-sm text-muted-foreground text-center">
-                        Sin jornadas registradas.
+                        {trs("Sin jornadas registradas.")}
                       </div>
                     )}
                     <div className="divide-y divide-border">
@@ -403,7 +404,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
 
               {!selectedParticipant && (
                 <div className="text-center text-sm text-muted-foreground py-8">
-                  Selecciona un jugador para ver su detalle.
+                  {trs("Selecciona un jugador para ver su detalle.")}
                 </div>
               )}
             </div>
@@ -415,7 +416,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
       {isCreator && event?.status === 'active' && (
         <div className="p-3 border-t border-border shrink-0">
           <Button variant="destructive" className="w-full" onClick={handleCloseLeague}>
-            Cerrar liga y congelar standings
+            {trs("Cerrar liga y congelar standings")}
           </Button>
         </div>
       )}

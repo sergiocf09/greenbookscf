@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useMemo, useState } from 'react';
 import { useHandicapRanking } from '@/hooks/useHandicapRanking';
 import { useAuth } from '@/contexts/AuthContext';
@@ -36,7 +37,7 @@ export const HandicapRankingView: React.FC<Props> = ({ roundId }) => {
     return (
       <div className="space-y-4 mt-6">
         <p className="text-xs text-muted-foreground text-center py-2">
-          Inicia una ronda para ver el ranking de hándicap del grupo
+          {trs("Inicia una ronda para ver el ranking de hándicap del grupo")}
         </p>
       </div>
     );
@@ -49,12 +50,12 @@ export const HandicapRankingView: React.FC<Props> = ({ roundId }) => {
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
       ) : displayEntries.length === 0 ? (
-        <p className="text-center text-sm text-muted-foreground py-6">Sin datos de hándicap disponibles</p>
+        <p className="text-center text-sm text-muted-foreground py-6">{trs("Sin datos de hándicap disponibles")}</p>
       ) : (
         <Card>
           <CardHeader className="pb-1 px-3">
             <CardTitle className="text-sm">
-              <HandicapRankingHeader title="Ranking de Hándicap" sortKey={sortKey} sortDirection={sortDir} onSortChange={handleSortChange} />
+              <HandicapRankingHeader title={trs("Ranking de Hándicap")} sortKey={sortKey} sortDirection={sortDir} onSortChange={handleSortChange} />
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0 px-3">

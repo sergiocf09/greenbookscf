@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
@@ -272,7 +273,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
         }
       }
 
-      toast.success('Ronda vinculada al leaderboard');
+      toast.success(trs("Ronda vinculada al leaderboard"));
       onOpenChange(false);
     } catch (err: any) {
       toast.error('Error: ' + err.message);
@@ -286,9 +287,9 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
       await supabase.from('cup_matches')
         .update({ round_id: linkingRoundId, status: 'active' } as any)
         .eq('id', selectedMatchId);
-      toast.success('Ronda vinculada al match');
+      toast.success(trs("Ronda vinculada al match"));
     } else {
-      toast.success('Ronda vinculada al leaderboard');
+      toast.success(trs("Ronda vinculada al leaderboard"));
     }
     onOpenChange(false);
   };
@@ -321,7 +322,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
             <>
               {/* Join by code */}
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Buscar por código</Label>
+                <Label className="text-xs text-muted-foreground">{trs("Buscar por código")}</Label>
                 <div className="flex gap-2">
                   <Input
                     placeholder="Ej: a1b2c3"
@@ -338,14 +339,14 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
 
               {/* Active leaderboards list */}
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">O selecciona uno existente</Label>
+                <Label className="text-xs text-muted-foreground">{trs("O selecciona uno existente")}</Label>
                 {loadingEvents ? (
                   <div className="flex justify-center py-6">
                     <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                   </div>
                 ) : activeEvents.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-6">
-                    No hay leaderboards activos
+                    {trs("No hay leaderboards activos")}
                   </p>
                 ) : (
                   activeEvents.map(ev => {
@@ -405,9 +406,9 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
 
                     {isMd && (
                       <div className="rounded-lg border border-border p-3 space-y-2">
-                        <p className="text-xs font-semibold">¿A qué día del torneo se vinculará la ronda?</p>
+                        <p className="text-xs font-semibold">{trs("¿A qué día del torneo se vinculará la ronda?")}</p>
                         <p className="text-[11px] text-muted-foreground">
-                          Selecciona manualmente. Fecha de tu ronda: <strong>{roundDate || '—'}</strong>
+                          {trs("Selecciona manualmente. Fecha de tu ronda:")}{' '}<strong>{roundDate || '—'}</strong>
                         </p>
                         <div className="grid grid-cols-1 gap-1.5">
                           {mdDays.map(d => {
@@ -427,7 +428,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
                                 {d.label ? <span className="text-muted-foreground"> · {d.label}</span> : null}
                                 <span className="text-muted-foreground"> · {d.date}</span>
                                 {isMatch && (
-                                  <span className="ml-2 text-[10px] text-primary font-semibold">coincide con tu fecha</span>
+                                  <span className="ml-2 text-[10px] text-primary font-semibold">{trs("coincide con tu fecha")}</span>
                                 )}
                               </button>
                             );
@@ -437,7 +438,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
                         {mismatch && effectiveDay && (
                           <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 p-2.5 text-[11px]">
                             <p className="text-amber-800 dark:text-amber-200">
-                              ⚠ Tu ronda es del <strong>{roundDate}</strong> pero la estás vinculando al Día {effectiveDay.day_number} (<strong>{effectiveDay.date}</strong>). Al vincular, ajustaremos la fecha de la ronda al día seleccionado.
+                              {trs("⚠ Tu ronda es del")}{' '}<strong>{roundDate}</strong> pero la estás vinculando al Día {effectiveDay.day_number} (<strong>{effectiveDay.date}</strong>{trs("). Al vincular, ajustaremos la fecha de la ronda al día seleccionado.")}
                             </p>
                           </div>
                         )}
@@ -448,7 +449,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
 
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground">
-                        Selecciona jugadores y asigna handicap para el leaderboard
+                        {trs("Selecciona jugadores y asigna handicap para el leaderboard")}
                       </Label>
                       {allPlayers.map(player => {
                         const isSelected = selectedPlayerIds.has(player.id);
@@ -474,7 +475,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
                               <span className="text-sm font-medium truncate block">{player.name}</span>
                               {alreadyIn && (
                                 <span className="text-[10px] text-muted-foreground italic">
-                                  Ya está en este leaderboard
+                                  {trs("Ya está en este leaderboard")}
                                 </span>
                               )}
                             </div>
@@ -519,7 +520,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
           {step === 'select-cup-match' && (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                ¿Vincular esta ronda a algún match de la Teams Cup?
+                {trs("¿Vincular esta ronda a algún match de la Teams Cup?")}
               </p>
               {openMatches.map((m: any) => (
                 <button
@@ -531,7 +532,7 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
                 >
                   <div className="text-sm">
                     <span className="font-medium">{getMatchPlayerName(m.player_a1_id)}</span>
-                    <span className="text-muted-foreground mx-1.5">vs</span>
+                    <span className="text-muted-foreground mx-1.5">{trs("vs")}</span>
                     <span className="font-medium">{getMatchPlayerName(m.player_b1_id)}</span>
                   </div>
                   {selectedMatchId === m.id && <Check className="h-4 w-4 text-primary" />}

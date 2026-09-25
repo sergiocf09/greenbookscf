@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Player } from '@/types/golf';
 import { useSlidingPersistence } from '@/hooks/useSlidingPersistence';
@@ -98,7 +99,7 @@ const CrossGroupHandicapWidget: React.FC<CrossGroupHandicapWidgetProps> = ({
       <CardHeader className="py-2 px-3">
         <CardTitle className="text-xs flex items-center gap-2 text-accent-foreground">
           <Users className="h-3.5 w-3.5" />
-          Ventaja entre grupos
+          {trs("Ventaja entre grupos")}
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0 pb-3 px-3 space-y-2">

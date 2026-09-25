@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useMemo } from 'react';
 import { BetConfig, Player, NinesBetInstance } from '@/types/golf';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -239,7 +240,7 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
 
   return (
     <div className="border rounded-lg bg-card p-2 space-y-2">
-      <p className="text-xs font-medium text-foreground px-1">Configuración Rápida</p>
+      <p className="text-xs font-medium text-foreground px-1">{trs("Configuración Rápida")}</p>
 
       <div className="overflow-x-auto -mx-2 px-0">
         <table className="w-full text-[10px] border-collapse">
@@ -329,7 +330,7 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
           if (count === 3 || count === 4) return null;
           return (
             <p className="text-[10px] text-amber-500 px-2 mt-1">
-              Selecciona exactamente 3 jugadores para Nines
+              {trs("Selecciona exactamente 3 jugadores para Nines")}
             </p>
           );
         }
@@ -337,13 +338,13 @@ export const GrupalParticipationMatrix: React.FC<GrupalParticipationMatrixProps>
         if (allGroupsValid) {
           return (
             <p className="text-[10px] text-blue-500 px-2 mt-1">
-              Múltiples grupos de Nines activos
+              {trs("Múltiples grupos de Nines activos")}
             </p>
           );
         }
         return (
           <p className="text-[10px] text-amber-500 px-2 mt-1">
-            Selecciona exactamente 3 jugadores por cada grupo de Nines
+            {trs("Selecciona exactamente 3 jugadores por cada grupo de Nines")}
           </p>
         );
       })()}

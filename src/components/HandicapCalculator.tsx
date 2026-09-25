@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Calculator, Info, Loader2 } from 'lucide-react';
@@ -33,7 +34,7 @@ export const HandicapCalculator: React.FC<HandicapCalculatorProps> = ({ onClose 
     return (
       <div className="text-center py-8 text-muted-foreground">
         <Calculator className="h-12 w-12 mx-auto mb-3 opacity-50" />
-        <p>Se necesitan al menos 3 rondas</p>
+        <p>{trs("Se necesitan al menos 3 rondas")}</p>
         <p className="text-sm">Tienes {totalRounds} ronda{totalRounds !== 1 ? 's' : ''} completada{totalRounds !== 1 ? 's' : ''}</p>
       </div>
     );
@@ -84,11 +85,11 @@ export const HandicapCalculator: React.FC<HandicapCalculatorProps> = ({ onClose 
       {bestUsed && worstUsed && (
         <div className="bg-muted/50 rounded-lg p-3">
           <div className="grid grid-cols-3 items-center gap-2">
-            <p className="text-xs text-muted-foreground text-left">Mejor</p>
+            <p className="text-xs text-muted-foreground text-left">{trs("Mejor")}</p>
             <p className="text-xs font-medium text-center">
               {numToUse} de {totalRounds}
             </p>
-            <p className="text-xs text-muted-foreground text-right">Peor</p>
+            <p className="text-xs text-muted-foreground text-right">{trs("Peor")}</p>
 
             <p className={cn(
               "font-semibold text-lg text-left",
@@ -96,7 +97,7 @@ export const HandicapCalculator: React.FC<HandicapCalculatorProps> = ({ onClose 
             )}>
               {formatDiff(bestUsed.differential)}
             </p>
-            <p className="text-[10px] text-muted-foreground text-center">rondas usadas</p>
+            <p className="text-[10px] text-muted-foreground text-center">{trs("rondas usadas")}</p>
             <p className={cn(
               "font-semibold text-lg text-right",
               worstUsed.differential < 0 ? "text-green-600" : ""
@@ -118,7 +119,7 @@ export const HandicapCalculator: React.FC<HandicapCalculatorProps> = ({ onClose 
       {/* Rounds Table */}
       <div className="space-y-1">
         <div className="grid grid-cols-4 text-xs text-muted-foreground px-2 py-1">
-          <span>Fecha</span>
+          <span>{trs("Fecha")}</span>
           <span className="text-center">Gross</span>
           <span className="text-center">Dif.</span>
           <span className="text-right">Usado</span>
@@ -154,7 +155,7 @@ export const HandicapCalculator: React.FC<HandicapCalculatorProps> = ({ onClose 
       </div>
 
       <p className="text-xs text-muted-foreground text-center">
-        * Ajuste Net Double Bogey aplicado. Ratings por tee del campo.
+        {trs("* Ajuste Net Double Bogey aplicado. Ratings por tee del campo.")}
       </p>
     </div>
   );

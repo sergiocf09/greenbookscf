@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 // Complete Bet Dashboard - reorganized with bet type rows and bet override capability
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { fmtMoney, roundToNearest5, roundGroupToNearest5Map } from '@/lib/formatMoney';
@@ -1841,7 +1842,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   if (isHistorical && players.length < 2) {
     return (
       <div className="text-center py-8 text-muted-foreground text-sm">
-        No hay apuestas en este grupo (solo 1 jugador).
+        {trs("No hay apuestas en este grupo (solo 1 jugador).")}
       </div>
     );
   }
@@ -1880,7 +1881,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             <div className="flex flex-col gap-2">
               {/* FIRST: Group selector (Ver Grupos 1, 2, 3...) */}
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Ver Grupo:</span>
+                <span className="text-xs text-muted-foreground">{trs("Ver Grupo:")}</span>
                 <GroupSelector
                   currentGroupIndex={displayGroupIndex}
                   players={players}
@@ -1916,7 +1917,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     )}
                   >
-                    Solo Grupo
+                    {trs("Solo Grupo")}
                   </button>
                   <button
                     type="button"
@@ -1930,7 +1931,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     )}
                   >
-                    + Apuestas Cruzadas
+                    {trs("+ Apuestas Cruzadas")}
                   </button>
                 </div>
               </div>
@@ -2111,7 +2112,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                             )}
                           >
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground">vs</span>
+                              <span className="text-xs text-muted-foreground">{trs("vs")}</span>
                               <PlayerAvatar 
                                 initials={getPlayerAbbr(other)} 
                                 background={other.color} 
@@ -2194,7 +2195,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           <CardTitle className="text-sm flex items-center gap-2 min-w-0">
             <span className="text-muted-foreground">Balance</span>
             <span className="font-bold truncate">{formatPlayerName(basePlayer?.name || '—')}</span>
-            <span className="text-muted-foreground">vs</span>
+            <span className="text-muted-foreground">{trs("vs")}</span>
           </CardTitle>
 
           {/* Show group indicator when in 'all' mode */}
@@ -2317,12 +2318,12 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         <div className="w-20 h-8 rounded-lg flex items-center justify-center bg-muted/50 border-2 border-dashed border-muted-foreground/30">
                           <UserPlus className="h-4 w-4 text-muted-foreground" />
                         </div>
-                        <span className="text-[10px] text-muted-foreground">+ Grupo</span>
+                        <span className="text-[10px] text-muted-foreground">{trs("+ Grupo")}</span>
                       </button>
                     </DialogTrigger>
                     <DialogContent className="max-w-sm">
                       <DialogHeader>
-                        <DialogTitle className="text-base">Agregar Jugadores de Otros Grupos</DialogTitle>
+                        <DialogTitle className="text-base">{trs("Agregar Jugadores de Otros Grupos")}</DialogTitle>
                       </DialogHeader>
                       <div className="space-y-3 max-h-60 overflow-y-auto">
                         {Array.from({ length: 1 + playerGroups.length }, (_, i) => i)
@@ -2377,7 +2378,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           })}
                         {playerGroups.length === 0 && (
                           <p className="text-sm text-muted-foreground text-center py-4">
-                            No hay otros grupos de juego
+                            {trs("No hay otros grupos de juego")}
                           </p>
                         )}
                       </div>
@@ -2474,8 +2475,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
                   <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
                   <div className="text-xs text-amber-700 space-y-1">
-                     <p className="font-medium">Agregar jugadores faltantes</p>
-                     <p>Revisa la configuración en la sección de Apuestas.</p>
+                     <p className="font-medium">{trs("Agregar jugadores faltantes")}</p>
+                     <p>{trs("Revisa la configuración en la sección de Apuestas.")}</p>
                   </div>
                 </div>
               </CardContent>
@@ -2527,8 +2528,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
                   <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
                   <div className="text-xs text-amber-700 space-y-1">
-                     <p className="font-medium">Agregar jugadores faltantes</p>
-                     <p>Revisa la configuración en la sección de Apuestas.</p>
+                     <p className="font-medium">{trs("Agregar jugadores faltantes")}</p>
+                     <p>{trs("Revisa la configuración en la sección de Apuestas.")}</p>
                   </div>
                 </div>
               </CardContent>
@@ -3039,7 +3040,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     <span className="font-medium truncate">
                       {displayTeamAPlayers.map(p => disambiguatedNames.get(p.id) || formatPlayerName(p.name).split(' ')[0]).join(' / ')}
                     </span>
-                    <span className="text-muted-foreground text-xs mx-2">vs</span>
+                    <span className="text-muted-foreground text-xs mx-2">{trs("vs")}</span>
                     <span className="font-medium truncate text-right">
                       {displayTeamBPlayers.map(p => disambiguatedNames.get(p.id) || formatPlayerName(p.name).split(' ')[0]).join(' / ')}
                     </span>
@@ -3100,7 +3101,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     <CollapsibleTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
                         <ChevronDown className="h-4 w-4" />
-                        <span className="sr-only">Ver detalle</span>
+                        <span className="sr-only">{trs("Ver detalle")}</span>
                       </Button>
                     </CollapsibleTrigger>
                   </div>
@@ -3168,7 +3169,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                   )}
                                   <p className="flex justify-between"><span>Valor unidad</span><span className="tabular-nums">${bet.unitsConfig?.valuePerUnit}</span></p>
                                   <p className="flex justify-between font-semibold">
-                                    <span>Resultado</span>
+                                    <span>{trs("Resultado")}</span>
                                     <span className={cn('tabular-nums', unitsMoneyBase > 0 ? 'text-green-600' : unitsMoneyBase < 0 ? 'text-destructive' : '')}>
                                       {unitsMoneyBase >= 0 ? '+' : '-'}${fmtMoney(Math.abs(unitsMoneyBase))}
                                     </span>
@@ -3239,7 +3240,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                   <p className="flex justify-between"><span>Diferencial</span><span className="tabular-nums font-semibold">{oyesesDetail.diff >= 0 ? `+${oyesesDetail.diff}` : oyesesDetail.diff}</span></p>
                                   <p className="flex justify-between"><span>Valor oyes</span><span className="tabular-nums">${oyesesDetail.valuePerOyes}</span></p>
                                   <p className="flex justify-between font-semibold">
-                                    <span>Resultado</span>
+                                    <span>{trs("Resultado")}</span>
                                     <span className={cn('tabular-nums', oyesesMoneyBase > 0 ? 'text-green-600' : oyesesMoneyBase < 0 ? 'text-destructive' : '')}>
                                       {oyesesMoneyBase >= 0 ? '+' : '-'}${fmtMoney(Math.abs(oyesesMoneyBase))}
                                     </span>
@@ -3292,17 +3293,17 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                   <p className="flex justify-between"><span>Valor mancha</span><span className="tabular-nums">${manchasDetail.valueStd}</span></p>
                                   {manchasDetail.includeGeneric && (
                                     <>
-                                      <p className="flex justify-between"><span>Diferencial genéricas</span><span className="tabular-nums font-semibold">{manchasDetail.diffGen >= 0 ? `+${manchasDetail.diffGen}` : manchasDetail.diffGen}</span></p>
-                                      <p className="flex justify-between"><span>Valor genérica</span><span className="tabular-nums">${manchasDetail.valueGen}</span></p>
+                                      <p className="flex justify-between"><span>{trs("Diferencial genéricas")}</span><span className="tabular-nums font-semibold">{manchasDetail.diffGen >= 0 ? `+${manchasDetail.diffGen}` : manchasDetail.diffGen}</span></p>
+                                      <p className="flex justify-between"><span>{trs("Valor genérica")}</span><span className="tabular-nums">${manchasDetail.valueGen}</span></p>
                                     </>
                                   )}
                                   <p className="flex justify-between font-semibold">
-                                    <span>Resultado</span>
+                                    <span>{trs("Resultado")}</span>
                                     <span className={cn('tabular-nums', manchasMoneyBase > 0 ? 'text-green-600' : manchasMoneyBase < 0 ? 'text-destructive' : '')}>
                                       {manchasMoneyBase >= 0 ? '+' : '-'}${fmtMoney(Math.abs(manchasMoneyBase))}
                                     </span>
                                   </p>
-                                  <p className="text-[10px] text-muted-foreground pt-1">El equipo con más manchas paga la diferencia.</p>
+                                  <p className="text-[10px] text-muted-foreground pt-1">{trs("El equipo con más manchas paga la diferencia.")}</p>
                                 </div>
                               </div>
                             </PopoverContent>
@@ -3324,7 +3325,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   {/* Hole by hole grid with tooltips */}
                   <div className="bg-muted/30 rounded-lg p-2 space-y-2">
                     <div className="text-[10px] text-muted-foreground text-center">
-                      Toca en un hoyo para ver el desglose
+                      {trs("Toca en un hoyo para ver el desglose")}
                     </div>
                     
                     {bet.continua && bet.scoringType === 'matchOnly' ? (() => {
@@ -3490,7 +3491,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                       {(bet.scoringType === 'highBall' || bet.scoringType === 'combined') && (
                                         <p className="flex justify-between"><span>Bola Alta</span><span className="tabular-nums">{detail.highBallWinner === 'A' ? 'Tu equipo' : detail.highBallWinner === 'B' ? 'Rival' : 'Empate'}</span></p>
                                       )}
-                                      <p className="flex justify-between font-medium"><span>Puntos</span><span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span></p>
+                                      <p className="flex justify-between font-medium"><span>{trs("Puntos")}</span><span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span></p>
                                     </div>
                                     <p className="text-[10px] text-muted-foreground border-t border-border/50 pt-1">
                                       Presiones: {pressureDisplay}
@@ -3585,7 +3586,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                       {(bet.scoringType === 'highBall' || bet.scoringType === 'combined') && (
                                         <p className="flex justify-between"><span>Bola Alta</span><span className="tabular-nums">{detail.highBallWinner === 'A' ? 'Tu equipo' : detail.highBallWinner === 'B' ? 'Rival' : 'Empate'}</span></p>
                                       )}
-                                      <p className="flex justify-between font-medium"><span>Puntos</span><span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span></p>
+                                      <p className="flex justify-between font-medium"><span>{trs("Puntos")}</span><span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span></p>
                                     </div>
                                     <p className="text-[10px] text-muted-foreground border-t border-border/50 pt-1">
                                       Presiones: {pressureDisplay}
@@ -3601,7 +3602,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     {/* Total 18 - Running cumulative across all 18 holes */}
                     <div className="space-y-1 pt-2 border-t border-border/50">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium">Total 18</span>
+                        <span className="text-xs font-medium">{trs("Total 18")}</span>
                         <div className="flex items-center gap-2">
                           <span className={cn('text-xs font-bold tabular-nums', total18 > 0 ? 'text-green-600' : total18 < 0 ? 'text-destructive' : 'text-muted-foreground')}>
                             {total18 >= 0 ? '+' : ''}{total18}
@@ -3838,7 +3839,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           <div className="mt-4 space-y-2">
             <div className="flex items-center gap-2 px-1">
               <Swords className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold">Apuestas de Cruce</span>
+              <span className="text-sm font-semibold">{trs("Apuestas de Cruce")}</span>
             </div>
             {crossBets.map(cb => {
               const isInitiator = cb.initiatorProfileId === basePlayerId;
@@ -3871,14 +3872,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   {enabledBets.length === 0 ? (
                     <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-3">
                       <p className="text-xs text-muted-foreground">
-                        Aún no hay apuestas individuales configuradas en la ronda.
-                        Ve a <strong>Apuestas → Individuales</strong> para activarlas y luego aparecerán aquí para incluirlas en este cruce.
+                        {trs("Aún no hay apuestas individuales configuradas en la ronda. Ve a")}{' '}<strong>{trs("Apuestas → Individuales")}</strong>{' '}{trs("para activarlas y luego aparecerán aquí para incluirlas en este cruce.")}
                       </p>
                     </div>
                   ) : (
                     <div className="space-y-1.5">
                       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                        Apuestas a incluir en este cruce
+                        {trs("Apuestas a incluir en este cruce")}
                       </p>
                       {enabledBets.map(b => {
                         const included = isIncluded(b.key);
@@ -3906,7 +3906,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         );
                       })}
                       <p className="text-[10px] text-muted-foreground pt-1">
-                        Los montos se heredan de tu configuración de Apuestas Individuales. Los strokes de este cruce usan el sliding bilateral entre ambos perfiles y pueden ajustarse desde la vista bilateral del rival.
+                        {trs("Los montos se heredan de tu configuración de Apuestas Individuales. Los strokes de este cruce usan el sliding bilateral entre ambos perfiles y pueden ajustarse desde la vista bilateral del rival.")}
                       </p>
                     </div>
                   )}

@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useMemo } from 'react';
 import { SideBet, Player } from '@/types/golf';
 import { Button } from '@/components/ui/button';
@@ -147,7 +148,7 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
             {editingBet ? 'Editar Side Bet' : 'Side Bets'}
           </DialogTitle>
           <DialogDescription>
-            Captura rápida de apuestas entre jugadores (sin hándicap)
+            {trs("Captura rápida de apuestas entre jugadores (sin hándicap)")}
           </DialogDescription>
         </DialogHeader>
 
@@ -209,7 +210,7 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
           
           {/* Winners */}
           <div className="space-y-2">
-            <Label className="text-xs font-medium text-green-600">¿Quién cobra? (Ganadores)</Label>
+            <Label className="text-xs font-medium text-green-600">{trs("¿Quién cobra? (Ganadores)")}</Label>
             <div className="flex flex-wrap gap-2">
               {players.map(player => {
                 const isSelected = winners.includes(player.id);
@@ -240,7 +241,7 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
 
           {/* Losers */}
           <div className="space-y-2">
-            <Label className="text-xs font-medium text-destructive">¿Quién paga? (Perdedores)</Label>
+            <Label className="text-xs font-medium text-destructive">{trs("¿Quién paga? (Perdedores)")}</Label>
             <div className="flex flex-wrap gap-2">
               {players.map(player => {
                 const isSelected = losers.includes(player.id);
@@ -275,7 +276,7 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
 
           {/* Amount */}
           <div className="space-y-2">
-            <Label className="text-xs font-medium">Importe por persona</Label>
+            <Label className="text-xs font-medium">{trs("Importe por persona")}</Label>
             <div className="flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-muted-foreground" />
               <Input
@@ -305,11 +306,11 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
 
           {/* Description (optional) */}
           <div className="space-y-2">
-            <Label className="text-xs font-medium text-muted-foreground">Descripción (opcional)</Label>
+            <Label className="text-xs font-medium text-muted-foreground">{trs("Descripción (opcional)")}</Label>
             <Input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Ej: Birdie en hoyo 7"
+              placeholder={trs("Ej: Birdie en hoyo 7")}
               className="text-xs"
             />
           </div>
@@ -332,11 +333,11 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
         <DialogFooter className="gap-2">
           {editingBet && (
             <Button variant="outline" onClick={resetForm} className="flex-1">
-              Cancelar Edición
+              {trs("Cancelar Edición")}
             </Button>
           )}
           <Button variant="outline" onClick={() => { setOpen(false); resetForm(); }}>
-            Cerrar
+            {trs("Cerrar")}
           </Button>
           <Button onClick={handleSubmit} disabled={!canSubmit} className="gap-1">
             <Plus className="h-4 w-4" />

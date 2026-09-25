@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useMemo } from 'react';
 import { Player, TeamHandicapConfig, TeamHandicapMode, GolfCourse } from '@/types/golf';
 import { calculateStrokesPerHole, calculateStrokesPerHoleWithHalf } from '@/lib/handicapUtils';
@@ -303,11 +304,11 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
           variant="ghost"
           size="icon"
           className={cn('h-6 w-6 text-muted-foreground hover:text-primary', className)}
-          title="Ver hándicaps y modalidad"
+          title={trs("Ver hándicaps y modalidad")}
           onClick={(e) => e.stopPropagation()}
         >
           <Info className="h-3.5 w-3.5" />
-          <span className="sr-only">Ver hándicaps y modalidad</span>
+          <span className="sr-only">{trs("Ver hándicaps y modalidad")}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent side="top" align="end" className="w-[360px] max-h-[70vh] overflow-y-auto p-3">
@@ -362,7 +363,7 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
                 );
               })}
               <div className="text-[10px] text-center text-muted-foreground">
-                Cada línea: <span className="text-foreground">jugador · HCP campo · golpes en el tramo</span>
+                {trs("Cada línea:")}{' '}<span className="text-foreground">{trs("jugador · HCP campo · golpes en el tramo")}</span>
               </div>
             </div>
           ) : grouped ? (
@@ -373,7 +374,7 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
                 <TeamColumn label={teamBLabel} teamRows={rowsB} align="right" />
               </div>
               <div className="text-[10px] text-center text-muted-foreground">
-                Cada línea: <span className="text-foreground">jugador · HCP campo · golpes</span>
+                {trs("Cada línea:")}{' '}<span className="text-foreground">{trs("jugador · HCP campo · golpes")}</span>
               </div>
               {useHandicap && (
                 <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5 text-[10px] tabular-nums flex items-center justify-between">
@@ -392,10 +393,10 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
           ) : (
             <div className="rounded-md border border-border overflow-hidden">
               <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 px-2 py-1 bg-muted/60 text-[9px] uppercase tracking-wide text-muted-foreground">
-                <span>Jugador</span>
+                <span>{trs("Jugador")}</span>
                 <span className="text-center">Tee</span>
-                <span className="text-right">HCP campo</span>
-                <span className="text-right">Golpes</span>
+                <span className="text-right">{trs("HCP campo")}</span>
+                <span className="text-right">{trs("Golpes")}</span>
               </div>
               {rows.map(({ player, courseHcp, strokes }) => (
                 <div
@@ -419,8 +420,7 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
           <p className="text-[10px] text-muted-foreground leading-snug">{calcText}</p>
           {note && <p className="text-[10px] text-muted-foreground leading-snug">{note}</p>}
           <p className="text-[9px] text-muted-foreground/80 leading-snug">
-            El HCP de campo ya incluye rating y slope del tee de cada jugador. Los golpes mostrados son los que usa el
-            motor de cálculo para esta apuesta.
+            {trs("El HCP de campo ya incluye rating y slope del tee de cada jugador. Los golpes mostrados son los que usa el motor de cálculo para esta apuesta.")}
           </p>
         </div>
       </PopoverContent>

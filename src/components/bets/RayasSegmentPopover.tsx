@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 /**
  * RayasSegmentPopover - Shows detailed breakdown of rayas for a segment (Front/Back)
  * Top row: Skins (hole-by-hole grid)
@@ -232,7 +233,7 @@ export const RayasSegmentPopover: React.FC<RayasSegmentPopoverProps> = ({
                 <span className="text-[10px] font-bold text-green-700 dark:text-green-400">
                   {skinsHoles.filter(h => h.winner === 'A').reduce((s, h) => s + h.skinsWon, 0)}
                 </span>
-                <span className="text-[9px] text-muted-foreground">vs</span>
+                <span className="text-[9px] text-muted-foreground">{trs("vs")}</span>
                 <span className="text-[10px] font-bold text-destructive">
                   {skinsHoles.filter(h => h.winner === 'B').reduce((s, h) => s + h.skinsWon, 0)}
                 </span>

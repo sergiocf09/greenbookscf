@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState } from 'react';
 import {
   AlertDialog,
@@ -50,26 +51,26 @@ export const CloseRoundConfirmDialog: React.FC<CloseRoundConfirmDialogProps> = (
             <div className="p-2 rounded-full bg-destructive/10">
               <AlertTriangle className="h-6 w-6 text-destructive" />
             </div>
-            <AlertDialogTitle>¿Confirmar cierre de ronda?</AlertDialogTitle>
+            <AlertDialogTitle>{trs("¿Confirmar cierre de ronda?")}</AlertDialogTitle>
           </div>
           <AlertDialogDescription className="space-y-3">
             <p>
-              Esta acción es <strong>irreversible</strong>. Una vez cerrada la ronda:
+              {trs("Esta acción es")}{' '}<strong>irreversible</strong>{trs(". Una vez cerrada la ronda:")}
             </p>
             <ul className="list-disc pl-5 space-y-1 text-sm">
-              <li>Los scores quedarán guardados permanentemente</li>
-              <li>Los resultados de apuestas se calcularán y persistirán</li>
-              <li>No se podrán modificar scores ni configuración</li>
-              <li>El historial reflejará exactamente este estado</li>
+              <li>{trs("Los scores quedarán guardados permanentemente")}</li>
+              <li>{trs("Los resultados de apuestas se calcularán y persistirán")}</li>
+              <li>{trs("No se podrán modificar scores ni configuración")}</li>
+              <li>{trs("El historial reflejará exactamente este estado")}</li>
             </ul>
             <div className="mt-4 pt-4 border-t">
               <p className="text-sm font-medium mb-2">
-                Para confirmar, escribe <span className="font-mono bg-muted px-1 rounded">CERRAR</span>:
+                {trs("Para confirmar, escribe")}{' '}<span className="font-mono bg-muted px-1 rounded">{trs("CERRAR")}</span>:
               </p>
               <Input
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
-                placeholder="Escribe CERRAR"
+                placeholder={trs("Escribe CERRAR")}
                 className="font-mono"
                 autoComplete="off"
                 disabled={isLoading}
@@ -78,7 +79,7 @@ export const CloseRoundConfirmDialog: React.FC<CloseRoundConfirmDialogProps> = (
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isLoading}>Cancelar</AlertDialogCancel>
+          <AlertDialogCancel disabled={isLoading}>{trs("Cancelar")}</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleConfirm}
             disabled={!isConfirmValid || isLoading}

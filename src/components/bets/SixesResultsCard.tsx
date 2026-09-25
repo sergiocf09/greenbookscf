@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { useTranslation } from 'react-i18next';
 import React, { useMemo, useState } from 'react';
 import { Player, PlayerScore, GolfCourse, SixesConfig } from '@/types/golf';
@@ -214,7 +215,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                     <span className="text-xs font-bold">{disambiguated.get(myTeam[0]) ?? '?'}</span>
                     <span className="text-xs font-bold">{disambiguated.get(myTeam[1]) ?? '?'}</span>
                   </div>
-                  <span className="text-[9px] text-muted-foreground">vs</span>
+                  <span className="text-[9px] text-muted-foreground">{trs("vs")}</span>
                   <div className="flex flex-col items-end">
                     <span className="text-xs font-bold">{disambiguated.get(rivalTeam[0]) ?? '?'}</span>
                     <span className="text-xs font-bold">{disambiguated.get(rivalTeam[1]) ?? '?'}</span>
@@ -274,7 +275,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                         <div className="space-y-1">
                           <p className="text-xs font-medium">Hoyo {hd.holeNumber} · {diff > 0 ? `+${diff}` : `${diff}`} pts</p>
                           <div className="flex justify-between text-[10px] text-muted-foreground">
-                            <span>Tu equipo</span>
+                            <span>{trs("Tu equipo")}</span>
                             <span>Rival</span>
                           </div>
                           {[0, 1].map(i => {

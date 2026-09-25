@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ManualCourseData } from '@/hooks/useManualCourse';
@@ -41,7 +42,7 @@ export const CourseReviewStep: React.FC<Props> = ({ data, saving, onBack, onSave
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-border text-muted-foreground">
-              <th className="py-1 text-left">Hoyo</th>
+              <th className="py-1 text-left">{trs("Hoyo")}</th>
               <th className="py-1 text-center">Par</th>
               <th className="py-1 text-center">HCP</th>
               {data.captureYards && <th className="py-1 text-center">Yds</th>}
@@ -83,7 +84,7 @@ export const CourseReviewStep: React.FC<Props> = ({ data, saving, onBack, onSave
 
       <div className="flex gap-2">
         <Button variant="outline" onClick={onBack} className="flex-1" disabled={saving}>
-          ← Editar hoyos
+          {trs("← Editar hoyos")}
         </Button>
         <Button onClick={onSave} className="flex-1" disabled={saving}>
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Guardar Campo Manual'}

@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
@@ -194,7 +195,7 @@ export function AppDialogs(props: AppDialogsProps) {
       <Dialog open={dialogs.history} onOpenChange={(v: boolean) => setDialog('history', v)}>
         <DialogContent className="max-w-md px-3 sm:px-6">
           <DialogHeader>
-            <DialogTitle>Historial de Rondas</DialogTitle>
+            <DialogTitle>{trs("Historial de Rondas")}</DialogTitle>
           </DialogHeader>
           <RoundHistory
             onClose={() => closeDialog('history')}
@@ -313,7 +314,7 @@ export function AppDialogs(props: AppDialogsProps) {
       <Dialog open={dialogs.handicap} onOpenChange={(v: boolean) => setDialog('handicap', v)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Calculadora de Handicap</DialogTitle>
+            <DialogTitle>{trs("Calculadora de Handicap")}</DialogTitle>
           </DialogHeader>
           <HandicapCalculator onClose={() => closeDialog('handicap')} />
         </DialogContent>
@@ -323,7 +324,7 @@ export function AppDialogs(props: AppDialogsProps) {
       <Dialog open={dialogs.handicapHistory} onOpenChange={(v: boolean) => setDialog('handicapHistory', v)}>
         <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Historial de Handicap</DialogTitle>
+            <DialogTitle>{trs("Historial de Handicap")}</DialogTitle>
           </DialogHeader>
           <HandicapHistoryView profileId={profile?.id ?? null} playerName={profile?.display_name} />
         </DialogContent>
@@ -334,7 +335,7 @@ export function AppDialogs(props: AppDialogsProps) {
         <DialogContent className="max-w-lg max-h-[90vh] p-0 overflow-hidden">
           <div className="overflow-y-auto overflow-x-hidden max-h-[90vh] p-6">
           <DialogHeader>
-            <DialogTitle>Ronda Histórica</DialogTitle>
+            <DialogTitle>{trs("Ronda Histórica")}</DialogTitle>
           </DialogHeader>
           {historicalScorecardData && getCourseById(historicalScorecardData.courseId) && (
             <HistoricalRoundView
@@ -354,7 +355,7 @@ export function AppDialogs(props: AppDialogsProps) {
       <Dialog open={dialogs.share} onOpenChange={(v: boolean) => setDialog('share', v)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Invitar Jugadores</DialogTitle>
+            <DialogTitle>{trs("Invitar Jugadores")}</DialogTitle>
           </DialogHeader>
           {roundState.id && (
             <ShareRoundDialog
@@ -369,7 +370,7 @@ export function AppDialogs(props: AppDialogsProps) {
       <Dialog open={dialogs.balances} onOpenChange={(v: boolean) => setDialog('balances', v)}>
         <DialogContent className="max-w-md px-2 sm:px-6">
           <DialogHeader>
-            <DialogTitle>Balances Históricos</DialogTitle>
+            <DialogTitle>{trs("Balances Históricos")}</DialogTitle>
           </DialogHeader>
           <HistoricalBalances
             onClose={() => closeDialog('balances')}
@@ -602,24 +603,24 @@ export function AppDialogs(props: AppDialogsProps) {
       }}>
         <DialogContent className="max-w-sm max-h-[calc(100vh-4rem)] mt-14 top-0 translate-y-0 flex flex-col">
           <DialogHeader>
-            <DialogTitle>Menú de perfil</DialogTitle>
+            <DialogTitle>{trs("Menú de perfil")}</DialogTitle>
           </DialogHeader>
           <ul className="space-y-3 mt-2 overflow-y-auto flex-1 pr-1">
-            <li className="flex gap-3 text-sm"><span>🌙</span><span><strong>Modo oscuro / Modo claro</strong> — Alterna entre el tema oscuro y claro de la app. Tu preferencia se guarda automáticamente.</span></li>
-            <li className="flex gap-3 text-sm"><span>⚙️</span><span><strong>Perfil</strong> — Edita tu nombre, iniciales, color de avatar y handicap actual</span></li>
-            <li className="flex gap-3 text-sm"><span>#️⃣</span><span><strong>Unirse con Código</strong> — Ingresa el código o escanea el QR de una ronda para unirte como jugador</span></li>
-            <li className="flex gap-3 text-sm"><span>🏆</span><span><strong>Leaderboards</strong> — Crea tus propios leaderboards e invita a otros jugadores a unirse a tu competencia con un código. Consulta rankings, resultados acumulados y el desempeño de cada participante ronda a ronda.</span></li>
-            <li className="flex gap-3 text-sm"><span>📊</span><span><strong>Rankings</strong> — Consulta el Scoring Ranking (Handicap Index USGA, promedio y mejor score) y crea Rankings de Dinero para rastrear balances bilaterales entre los miembros de tu grupo con filtros por período.</span></li>
-            <li className="flex gap-3 text-sm"><span>📋</span><span><strong>Historial de Rondas</strong> — Consulta todas tus rondas anteriores con scorecard y resultados de apuestas</span></li>
-            <li className="flex gap-3 text-sm"><span>💰</span><span><strong>Balances Históricos</strong> — Ve cuánto has ganado o perdido con cada jugador a lo largo del tiempo</span></li>
-            <li className="flex gap-3 text-sm"><span>▶️</span><span><strong>Rondas Pendientes</strong> — Rondas que iniciaste y no has cerrado todavía (aparece solo si hay pendientes)</span></li>
-            <li className="flex gap-3 text-sm"><span>🧮</span><span><strong>Calcular Handicap</strong> — Calcula tu Handicap Index USGA con tus rondas recientes</span></li>
-            <li className="flex gap-3 text-sm"><span>📉</span><span><strong>Historial de Handicap</strong> — Ve cómo ha evolucionado tu handicap ronda a ronda</span></li>
-            <li className="flex gap-3 text-sm"><span>🚪</span><span><strong>Cerrar Sesión</strong></span></li>
+            <li className="flex gap-3 text-sm"><span>🌙</span><span><strong>Modo oscuro / Modo claro</strong>{' '}{trs("— Alterna entre el tema oscuro y claro de la app. Tu preferencia se guarda automáticamente.")}</span></li>
+            <li className="flex gap-3 text-sm"><span>⚙️</span><span><strong>{trs("Perfil")}</strong>{' '}{trs("— Edita tu nombre, iniciales, color de avatar y handicap actual")}</span></li>
+            <li className="flex gap-3 text-sm"><span>#️⃣</span><span><strong>{trs("Unirse con Código")}</strong>{' '}{trs("— Ingresa el código o escanea el QR de una ronda para unirte como jugador")}</span></li>
+            <li className="flex gap-3 text-sm"><span>🏆</span><span><strong>Leaderboards</strong>{' '}{trs("— Crea tus propios leaderboards e invita a otros jugadores a unirse a tu competencia con un código. Consulta rankings, resultados acumulados y el desempeño de cada participante ronda a ronda.")}</span></li>
+            <li className="flex gap-3 text-sm"><span>📊</span><span><strong>Rankings</strong>{' '}{trs("— Consulta el Scoring Ranking (Handicap Index USGA, promedio y mejor score) y crea Rankings de Dinero para rastrear balances bilaterales entre los miembros de tu grupo con filtros por período.")}</span></li>
+            <li className="flex gap-3 text-sm"><span>📋</span><span><strong>{trs("Historial de Rondas")}</strong>{' '}{trs("— Consulta todas tus rondas anteriores con scorecard y resultados de apuestas")}</span></li>
+            <li className="flex gap-3 text-sm"><span>💰</span><span><strong>{trs("Balances Históricos")}</strong>{' '}{trs("— Ve cuánto has ganado o perdido con cada jugador a lo largo del tiempo")}</span></li>
+            <li className="flex gap-3 text-sm"><span>▶️</span><span><strong>{trs("Rondas Pendientes")}</strong>{' '}{trs("— Rondas que iniciaste y no has cerrado todavía (aparece solo si hay pendientes)")}</span></li>
+            <li className="flex gap-3 text-sm"><span>🧮</span><span><strong>Calcular Handicap</strong>{' '}{trs("— Calcula tu Handicap Index USGA con tus rondas recientes")}</span></li>
+            <li className="flex gap-3 text-sm"><span>📉</span><span><strong>{trs("Historial de Handicap")}</strong>{' '}{trs("— Ve cómo ha evolucionado tu handicap ronda a ronda")}</span></li>
+            <li className="flex gap-3 text-sm"><span>🚪</span><span><strong>{trs("Cerrar Sesión")}</strong></span></li>
           </ul>
           <div className="pt-3 border-t border-border">
             <Button variant="outline" className="w-full" onClick={() => closeDialog('profileMenuHelp')}>
-              Cerrar
+              {trs("Cerrar")}
             </Button>
           </div>
         </DialogContent>

@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -180,7 +181,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
       return;
     }
 
-    toast.success('Nombre del ranking actualizado');
+    toast.success(trs("Nombre del ranking actualizado"));
     setShowRenameDialog(false);
     await fetchDetail();
   };
@@ -254,20 +255,20 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
         {isCreator && (
           <div className="flex gap-2">
             <Button variant="outline" size="sm" className="flex-1 text-xs h-8" onClick={() => { setRenameValue(ranking?.name ?? ''); setShowRenameDialog(true); }}>
-              <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
+              <Pencil className="h-3.5 w-3.5 mr-1" />{' '}{trs("Editar")}
             </Button>
             <Button variant="outline" size="sm" className="flex-1 text-xs h-8" onClick={() => { setShowAddMember(true); setSearchQuery(''); setSearchResults([]); }}>
-              <UserPlus className="h-3.5 w-3.5 mr-1" /> Agregar
+              <UserPlus className="h-3.5 w-3.5 mr-1" />{' '}{trs("Agregar")}
             </Button>
             <Button variant="destructive" size="sm" className="flex-1 text-xs h-8" onClick={() => { setShowDeleteConfirm(true); setDeleteConfirmText(''); }}>
-              <Trash2 className="h-3.5 w-3.5 mr-1" /> Eliminar
+              <Trash2 className="h-3.5 w-3.5 mr-1" />{' '}{trs("Eliminar")}
             </Button>
           </div>
         )}
 
         {!isCreator && (
           <Button variant="outline" size="sm" className="w-full" onClick={handleLeave}>
-            <UserMinus className="h-4 w-4 mr-1" /> Salir del ranking
+            <UserMinus className="h-4 w-4 mr-1" />{' '}{trs("Salir del ranking")}
           </Button>
         )}
 
@@ -277,7 +278,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
               <DollarSign className="h-3.5 w-3.5" /> Dinero
             </TabsTrigger>
             <TabsTrigger value="handicap" className="flex-1 gap-1">
-              <Award className="h-3.5 w-3.5" /> Hándicap
+              <Award className="h-3.5 w-3.5" />{' '}{trs("Hándicap")}
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -305,7 +306,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
             ) : balances.length === 0 ? (
               <div className="text-center py-10 space-y-2">
                 <TrendingUp className="h-10 w-10 mx-auto text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Sin saldos registrados en este período</p>
+                <p className="text-sm text-muted-foreground">{trs("Sin saldos registrados en este período")}</p>
               </div>
             ) : (
               <Card>
@@ -325,7 +326,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
                         <div className="flex items-center gap-1 py-0.5">
                           {isCreator && (
                             canRemove ? (
-                              <button className="shrink-0 p-0.5 rounded hover:bg-destructive/10 transition-colors" onClick={() => handleRemoveMember(memberRow!.id)} title="Remover del ranking">
+                              <button className="shrink-0 p-0.5 rounded hover:bg-destructive/10 transition-colors" onClick={() => handleRemoveMember(memberRow!.id)} title={trs("Remover del ranking")}>
                                 <UserMinus className="h-3 w-3 text-destructive" />
                               </button>
                             ) : (
@@ -337,7 +338,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-medium truncate leading-tight">
                                 {toTitleCase(entry.display_name)}
-                                {entry.profile_id === profile?.id && <span className="text-[10px] text-muted-foreground ml-1">(tú)</span>}
+                                {entry.profile_id === profile?.id && <span className="text-[10px] text-muted-foreground ml-1">{trs("(tú)")}</span>}
                               </p>
                               <p className="text-[10px] text-muted-foreground">{entry.rounds_played} {entry.rounds_played === 1 ? 'ronda' : 'rondas'}</p>
                             </div>
@@ -351,7 +352,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
                 </CardContent>
               </Card>
             )}
-            <p className="text-xs text-muted-foreground text-center">Toca cualquier jugador para ver sus saldos bilaterales</p>
+            <p className="text-xs text-muted-foreground text-center">{trs("Toca cualquier jugador para ver sus saldos bilaterales")}</p>
           </>
         )}
 
@@ -362,7 +363,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
             ) : displayHandicapEntries.length === 0 ? (
               <div className="text-center py-10 space-y-2">
                 <Award className="h-10 w-10 mx-auto text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Sin datos de hándicap disponibles</p>
+                <p className="text-sm text-muted-foreground">{trs("Sin datos de hándicap disponibles")}</p>
               </div>
             ) : (
               <Card>
@@ -376,7 +377,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
                 </CardContent>
               </Card>
             )}
-            <p className="text-xs text-muted-foreground text-center">HCP Index, promedio y mejor score basados en las últimas 20 rondas</p>
+            <p className="text-xs text-muted-foreground text-center">{trs("HCP Index, promedio y mejor score basados en las últimas 20 rondas")}</p>
           </>
         )}
       </div>
@@ -384,15 +385,15 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
       <Dialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar nombre del ranking</DialogTitle>
-            <DialogDescription>Actualiza el nombre visible del ranking.</DialogDescription>
+            <DialogTitle>{trs("Editar nombre del ranking")}</DialogTitle>
+            <DialogDescription>{trs("Actualiza el nombre visible del ranking.")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Label htmlFor="rename-ranking">Nombre</Label>
+            <Label htmlFor="rename-ranking">{trs("Nombre")}</Label>
             <Input id="rename-ranking" value={renameValue} onChange={(e) => setRenameValue(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleRename()} />
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowRenameDialog(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setShowRenameDialog(false)}>{trs("Cancelar")}</Button>
             <Button disabled={!renameValue.trim() || renaming} onClick={handleRename}>
               {renaming && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Guardar
@@ -404,16 +405,15 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>¿Eliminar ranking?</DialogTitle>
+            <DialogTitle>{trs("¿Eliminar ranking?")}</DialogTitle>
             <DialogDescription>
-              Esta acción no se puede deshacer. Se eliminarán el ranking y todos sus miembros.
-              Escribe <strong>ELIMINAR</strong> para confirmar.
+              {trs("Esta acción no se puede deshacer. Se eliminarán el ranking y todos sus miembros. Escribe")}{' '}<strong>{trs("ELIMINAR")}</strong>{' '}{trs("para confirmar.")}
             </DialogDescription>
           </DialogHeader>
-          <Input value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)} placeholder="Escribe ELIMINAR" className="uppercase" />
+          <Input value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)} placeholder={trs("Escribe ELIMINAR")} className="uppercase" />
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>Cancelar</Button>
-            <Button variant="destructive" disabled={deleteConfirmText.toLowerCase() !== 'eliminar'} onClick={handleDelete}>Eliminar</Button>
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>{trs("Cancelar")}</Button>
+            <Button variant="destructive" disabled={deleteConfirmText.toLowerCase() !== 'eliminar'} onClick={handleDelete}>{trs("Eliminar")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -421,8 +421,8 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
       <Dialog open={showCustomPeriod} onOpenChange={setShowCustomPeriod}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Período personalizado</DialogTitle>
-            <DialogDescription>Selecciona las fechas de inicio y fin del período.</DialogDescription>
+            <DialogTitle>{trs("Período personalizado")}</DialogTitle>
+            <DialogDescription>{trs("Selecciona las fechas de inicio y fin del período.")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div>
@@ -454,9 +454,9 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
               </Popover>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">Deja «Hasta» vacío para que sea hasta hoy.</p>
+          <p className="text-xs text-muted-foreground">{trs("Deja «Hasta» vacío para que sea hasta hoy.")}</p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCustomPeriod(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setShowCustomPeriod(false)}>{trs("Cancelar")}</Button>
             <Button disabled={!customDateFrom} onClick={applyCustomPeriod}>Aplicar</Button>
           </DialogFooter>
         </DialogContent>
@@ -464,10 +464,10 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
 
       <Dialog open={showAddMember} onOpenChange={setShowAddMember}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Agregar jugador al ranking</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{trs("Agregar jugador al ranking")}</DialogTitle></DialogHeader>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar por nombre..." className="pl-9" value={searchQuery} onChange={(e) => handleSearch(e.target.value)} autoFocus />
+            <Input placeholder={trs("Buscar por nombre...")} className="pl-9" value={searchQuery} onChange={(e) => handleSearch(e.target.value)} autoFocus />
           </div>
           {searching && <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>}
           <div className="mt-3 space-y-2">
@@ -477,11 +477,11 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
                   <p className="text-sm font-medium truncate">{toTitleCase(p.display_name)}</p>
                   <p className="text-xs text-muted-foreground">HCP {p.current_handicap}</p>
                 </div>
-                <Button size="sm" variant="outline" onClick={() => handleAddMember(p.id)}>Agregar</Button>
+                <Button size="sm" variant="outline" onClick={() => handleAddMember(p.id)}>{trs("Agregar")}</Button>
               </div>
             ))}
             {searchQuery.length >= 2 && !searching && searchResults.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">Sin resultados</p>
+              <p className="text-sm text-muted-foreground text-center py-4">{trs("Sin resultados")}</p>
             )}
           </div>
         </DialogContent>
@@ -499,7 +499,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
           {loadingBilateral ? (
             <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
           ) : bilateral.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">Sin saldos bilaterales en este período</p>
+            <p className="text-sm text-muted-foreground text-center py-8">{trs("Sin saldos bilaterales en este período")}</p>
           ) : (
             <div className="mt-4 space-y-2">
               {bilateral.map((b) => (

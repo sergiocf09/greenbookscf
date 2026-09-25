@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -36,13 +37,13 @@ export function DeleteRoundButton({ roundId, onDeleted, disabled }: DeleteRoundB
     try {
       const { error } = await supabase.rpc('delete_round_with_financials', { p_round_id: roundId });
       if (error) throw error;
-      toast.success('Ronda eliminada por completo');
+      toast.success(trs("Ronda eliminada por completo"));
       setOpen(false);
       setConfirmText('');
       onDeleted();
     } catch (err) {
       devError('Error deleting round from results screen:', err);
-      toast.error('No se pudo eliminar la ronda. Solo el organizador puede eliminarla.');
+      toast.error(trs("No se pudo eliminar la ronda. Solo el organizador puede eliminarla."));
     } finally {
       setDeleting(false);
     }
@@ -57,22 +58,20 @@ export function DeleteRoundButton({ roundId, onDeleted, disabled }: DeleteRoundB
         className="w-full border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
       >
         <Trash2 className="h-4 w-4 mr-2" />
-        Eliminar Ronda
+        {trs("Eliminar Ronda")}
       </Button>
 
       <AlertDialog open={open} onOpenChange={(o) => { if (!deleting) { setOpen(o); if (!o) setConfirmText(''); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar esta ronda?</AlertDialogTitle>
+            <AlertDialogTitle>{trs("¿Eliminar esta ronda?")}</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2 text-sm">
                 <p>
-                  Se borra <strong>todo</strong> lo que se configuró y capturó: jugadores,
-                  hándicaps, scores, apuestas y balances.
+                  {trs("Se borra")}{' '}<strong>todo</strong>{' '}{trs("lo que se configuró y capturó: jugadores, hándicaps, scores, apuestas y balances.")}
                 </p>
                 <p>
-                  <strong>No se guarda nada</strong> en el historial, ni en estadísticas,
-                  ni en balances entre jugadores. Es irreversible.
+                  <strong>{trs("No se guarda nada")}</strong>{' '}{trs("en el historial, ni en estadísticas, ni en balances entre jugadores. Es irreversible.")}
                 </p>
               </div>
             </AlertDialogDescription>
@@ -80,20 +79,20 @@ export function DeleteRoundButton({ roundId, onDeleted, disabled }: DeleteRoundB
 
           <div className="space-y-2">
             <Label htmlFor="delete-round-confirm" className="text-xs">
-              Escribe <strong>ELIMINAR</strong> para confirmar
+              Escribe <strong>{trs("ELIMINAR")}</strong>{' '}{trs("para confirmar")}
             </Label>
             <Input
               id="delete-round-confirm"
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
-              placeholder="ELIMINAR"
+              placeholder={trs("ELIMINAR")}
               autoComplete="off"
               autoCapitalize="characters"
             />
           </div>
 
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>{trs("Cancelar")}</AlertDialogCancel>
             <Button
               variant="destructive"
               onClick={handleDelete}

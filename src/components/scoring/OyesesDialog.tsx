@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useMemo, useState } from 'react';
 import { Player, BetConfig, OyesModality } from '@/types/golf';
 import { Button } from '@/components/ui/button';
@@ -313,7 +314,7 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
               {effectiveTab === 'sangron' ? (
                 <>
                   <Zap className="h-4 w-4 text-golf-gold fill-golf-gold" />
-                  <span>Modalidad Sangrón</span>
+                  <span>{trs("Modalidad Sangrón")}</span>
                 </>
               ) : (
                 <span>Modalidad Acumulado</span>
@@ -342,7 +343,7 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
           
           {players.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
-              No hay jugadores
+              {trs("No hay jugadores")}
             </p>
           ) : (
             <div className="space-y-3">
@@ -432,12 +433,12 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
             {effectiveTab === 'acumulado' && (
               <p>• Sin selección = no subió al green (acumula para el siguiente par 3)</p>
             )}
-            <p>• El número más bajo gana el hoyo</p>
+            <p>{trs("• El número más bajo gana el hoyo")}</p>
             {effectiveTab === 'sangron' && (
               <>
-                <p className="text-golf-gold">• Sangrón: todas las posiciones deben asignarse para resolver</p>
-                <p>• Los valores de Acumulado se muestran como espejo (borde punteado)</p>
-                <p>• Click en un espejo lo confirma para Sangrón</p>
+                <p className="text-golf-gold">{trs("• Sangrón: todas las posiciones deben asignarse para resolver")}</p>
+                <p>{trs("• Los valores de Acumulado se muestran como espejo (borde punteado)")}</p>
+                <p>{trs("• Click en un espejo lo confirma para Sangrón")}</p>
               </>
             )}
           </div>
@@ -446,7 +447,7 @@ export const OyesesDialog: React.FC<OyesesDialogProps> = ({
         <div className="flex items-center justify-between gap-2 pt-2">
           {effectiveTab === 'sangron' && canAcceptMirrors ? (
             <Button variant="outline" onClick={handleAcceptMirrors}>
-              Aceptar espejos
+              {trs("Aceptar espejos")}
             </Button>
           ) : (
             <span />

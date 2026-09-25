@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 /**
  * Quick Score Entry Component
  * 
@@ -306,7 +307,7 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
         <DialogHeader className="px-4 pt-4 pb-2 border-b space-y-2 shrink-0">
           <DialogTitle className="flex items-center gap-2 text-base">
             <Zap className="h-4 w-4 text-primary" />
-            Captura Rápida
+            {trs("Captura Rápida")}
           </DialogTitle>
           <div className="flex items-center gap-2">
             <PlayerAvatar initials={playerInitials} background={playerColor} size="sm" />
@@ -319,9 +320,9 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
 
         {/* Column Headers */}
         <div className="grid grid-cols-[2.5rem_2rem_1fr_1fr_3rem] items-center gap-1 px-2 py-1.5 bg-muted/50 text-xs font-medium text-muted-foreground border-b shrink-0">
-          <span className="text-center">Hoyo</span>
+          <span className="text-center">{trs("Hoyo")}</span>
           <span className="text-center">Par</span>
-          <span className="text-center">Golpes</span>
+          <span className="text-center">{trs("Golpes")}</span>
           <span className="text-center">Putts</span>
           <span className="text-center">OK</span>
         </div>
@@ -384,7 +385,7 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
           {/* Total */}
           {showFront && showBack && (
             <div className="text-center text-sm font-bold py-2 border-t bg-card">
-              Total: <span className="text-primary">
+              {trs("Total:")}{' '}<span className="text-primary">
                 {typeof frontTotal === 'number' && typeof backTotal === 'number'
                   ? frontTotal + backTotal
                   : '-'}

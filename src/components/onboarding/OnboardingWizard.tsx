@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,7 @@ const steps = [
   {
     icon: <GreenBookLogo className="h-16 w-16" />,
     title: 'Bienvenido a GreenBook by SCF',
-    description: 'La forma más fácil de llevar tus rondas y apuestas de golf.',
+    description: trs("La forma más fácil de llevar tus rondas y apuestas de golf."),
   },
   {
     icon: <Settings className="h-12 w-12 text-primary" />,
@@ -18,8 +19,8 @@ const steps = [
   },
   {
     icon: <Dices className="h-12 w-12 text-primary" />,
-    title: 'Apuestas',
-    description: 'Hay tres categorías: Individuales (Medal, Skins, Presiones, Rayas, Unidades, Manchas, Oyeses), Parejas (Carritos, Presiones Parejas) y Grupales (Medal General, Stableford, Culebras, Pingüinos). Activa las que quieras y ajusta los montos.',
+    title: trs("Apuestas"),
+    description: trs("Hay tres categorías: Individuales (Medal, Skins, Presiones, Rayas, Unidades, Manchas, Oyeses), Parejas (Carritos, Presiones Parejas) y Grupales (Medal General, Stableford, Culebras, Pingüinos). Activa las que quieras y ajusta los montos."),
   },
   {
     icon: (
@@ -29,13 +30,13 @@ const steps = [
         <div className="absolute -top-1 -left-1 h-5 w-5 rounded-full bg-accent text-accent-foreground text-[8px] font-bold flex items-center justify-center border-2 border-primary-foreground/30">1</div>
       </div>
     ),
-    title: 'Scorecard y Captura',
-    description: 'El botón flotante siempre visible (esquina inferior derecha) lleva a capturar golpes y putts de todos los jugadores. El ícono ⚡ junto a cada jugador es carga rápida. En hoyos par 3 con Oyeses activos aparece un ícono especial para registrar proximidad al pin.',
+    title: trs("Scorecard y Captura"),
+    description: trs("El botón flotante siempre visible (esquina inferior derecha) lleva a capturar golpes y putts de todos los jugadores. El ícono ⚡ junto a cada jugador es carga rápida. En hoyos par 3 con Oyeses activos aparece un ícono especial para registrar proximidad al pin."),
   },
   {
     icon: <CoinDollarIcon className="h-12 w-12 text-primary" />,
-    title: 'Resultados',
-    description: 'El Balance General muestra el saldo neto de cada jugador. Selecciona un jugador y luego su rival para ver el desglose completo de apuestas individuales, de parejas y grupales entre ellos.',
+    title: trs("Resultados"),
+    description: trs("El Balance General muestra el saldo neto de cada jugador. Selecciona un jugador y luego su rival para ver el desglose completo de apuestas individuales, de parejas y grupales entre ellos."),
   },
 ];
 
@@ -87,16 +88,16 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ open, onClose }) =>
           <div className="flex gap-3 w-full">
             {step > 0 && (
               <Button variant="outline" onClick={() => setStep(step - 1)} className="flex-1">
-                Anterior
+                {trs("Anterior")}
               </Button>
             )}
             {isLast ? (
               <Button onClick={handleFinish} className="flex-1">
-                Entendido, no mostrar más
+                {trs("Entendido, no mostrar más")}
               </Button>
             ) : (
               <Button onClick={() => setStep(step + 1)} className="flex-1">
-                Siguiente
+                {trs("Siguiente")}
               </Button>
             )}
           </div>

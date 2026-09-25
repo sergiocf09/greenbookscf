@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useEffect } from 'react';
 import { useTeamsCup, CupMatch, CupTeam, CupParticipant, CupMatchResult, CupHoleBreakdown } from '@/hooks/useTeamsCup';
 import { useLeaderboardDetail } from '@/hooks/useLeaderboards';
@@ -121,7 +122,7 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
       >
         <div className="flex flex-col gap-1.5">
           {filledIds.length === 0 && (
-            <span className="text-xs italic text-muted-foreground">— Sin asignar —</span>
+            <span className="text-xs italic text-muted-foreground">{trs("— Sin asignar —")}</span>
           )}
           {filledIds.map(id => {
             const p = getName(id);
@@ -239,7 +240,7 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
     if (!hasBreakdown) {
       return (
         <p className="text-xs text-muted-foreground text-center py-2">
-          Sin hoyos jugados todavía.
+          {trs("Sin hoyos jugados todavía.")}
         </p>
       );
     }
@@ -283,7 +284,7 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
               <button
                 type="button"
                 className="flex-1 text-left grid grid-cols-[1fr_68px_1fr] gap-1 items-stretch hover:opacity-95 transition-opacity min-w-0"
-                aria-label="Ver detalle por hoyo"
+                aria-label={trs("Ver detalle por hoyo")}
               >
                 {renderSide(
                   [match.player_a1_id, match.player_a2_id],
@@ -303,7 +304,7 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
             <PopoverContent className="w-[320px] p-3" align="center">
               <div className="space-y-2">
                 <div className="text-xs font-semibold text-center">
-                  Estado por hoyo
+                  {trs("Estado por hoyo")}
                 </div>
                 {renderTooltipBody()}
               </div>
@@ -317,7 +318,7 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
                 size="icon"
                 className="h-7 w-7"
                 onClick={onEdit}
-                aria-label="Editar match"
+                aria-label={trs("Editar match")}
               >
                 <Pencil className="h-3.5 w-3.5" />
               </Button>
@@ -326,7 +327,7 @@ const CupMatchRow: React.FC<MatchRowProps> = ({
                 size="icon"
                 className="h-7 w-7 text-destructive hover:text-destructive"
                 onClick={onDelete}
-                aria-label="Eliminar match"
+                aria-label={trs("Eliminar match")}
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
@@ -482,10 +483,10 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           { onConflict: 'leaderboard_id,profile_id' }
         );
       if (error) throw error;
-      toast.success('Te agregaste como jugador');
+      toast.success(trs("Te agregaste como jugador"));
       await cup.fetchAll();
     } catch (err: any) {
-      toast.error('Error al agregarte: ' + err.message);
+      toast.error(trs("Error al agregarte: ") + err.message);
     } finally {
       setAddingSelf(false);
     }
@@ -516,7 +517,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       setParticipantToRemove(null);
       await cup.fetchAll();
     } catch (err: any) {
-      toast.error('Error al eliminar: ' + err.message);
+      toast.error(trs("Error al eliminar: ") + err.message);
     } finally {
       setRemovingParticipant(false);
     }
@@ -605,12 +606,12 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         .update({ round_id: null, status: 'pending' } as any)
         .eq('leaderboard_id', leaderboardId).eq('round_id', roundId);
 
-      toast.success('Ronda desvinculada');
+      toast.success(trs("Ronda desvinculada"));
       setIsRoundLinked(false);
       setShowUnlinkConfirm(false);
       await cup.fetchAll();
     } catch (err: any) {
-      toast.error('Error al desvincular: ' + err.message);
+      toast.error(trs("Error al desvincular: ") + err.message);
     } finally {
       setUnlinking(false);
     }
@@ -619,7 +620,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   const copyCode = () => {
     if (event?.code) {
       navigator.clipboard.writeText(event.code);
-      toast.success('Código copiado');
+      toast.success(trs("Código copiado"));
     }
   };
 
@@ -650,7 +651,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       queryClient.invalidateQueries({ queryKey: ['leaderboard_events'] });
       onBack();
     } catch (err: any) {
-      toast.error('Error al eliminar: ' + err.message);
+      toast.error(trs("Error al eliminar: ") + err.message);
     } finally {
       setDeleting(false);
       setShowDeleteConfirm(false);
@@ -694,7 +695,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
   const refreshIndexesFromProfiles = async () => {
     const ids = cup.participants.map(p => p.profile_id).filter((v): v is string => !!v);
     if (ids.length === 0) {
-      toast.info('No hay jugadores registrados para actualizar');
+      toast.info(trs("No hay jugadores registrados para actualizar"));
       return;
     }
     setRefreshingIndexes(true);
@@ -726,7 +727,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       );
     } catch (err) {
       console.error('refreshIndexesFromProfiles', err);
-      toast.error('No se pudieron actualizar los hándicaps');
+      toast.error(trs("No se pudieron actualizar los hándicaps"));
     } finally {
       setRefreshingIndexes(false);
     }
@@ -1000,8 +1001,8 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             variant="ghost"
             size="icon"
             onClick={() => setShowLinkDialog(true)}
-            aria-label="Vincular ronda"
-            title="Vincular ronda activa"
+            aria-label={trs("Vincular ronda")}
+            title={trs("Vincular ronda activa")}
           >
             <Link2 className="h-4 w-4" />
           </Button>
@@ -1012,8 +1013,8 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             size="icon"
             onClick={() => setShowUnlinkConfirm(true)}
             disabled={unlinking}
-            aria-label="Desvincular ronda"
-            title="Desvincular ronda"
+            aria-label={trs("Desvincular ronda")}
+            title={trs("Desvincular ronda")}
             className="text-destructive hover:text-destructive"
           >
             {unlinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unlink className="h-4 w-4" />}
@@ -1027,8 +1028,8 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             type="button"
             onClick={copyCode}
             className="inline-flex items-center gap-1 h-8 px-2 rounded-md border border-border bg-muted/40 hover:bg-muted text-xs font-mono"
-            aria-label="Copiar código"
-            title="Copiar código del leaderboard"
+            aria-label={trs("Copiar código")}
+            title={trs("Copiar código del leaderboard")}
           >
             <Hash className="h-3 w-3 text-muted-foreground" />
             <span className="font-semibold tracking-wide">{event.code}</span>
@@ -1039,7 +1040,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             variant="ghost"
             size="icon"
             onClick={() => setShowSettings(true)}
-            aria-label="Configuración"
+            aria-label={trs("Configuración")}
           >
             <Settings className="h-4 w-4" />
           </Button>
@@ -1053,7 +1054,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
               onClick={() => { setCloseConfirmText(''); setShowCloseConfirm(true); }}
             >
               <CheckCircle className="h-3.5 w-3.5" />
-              Cerrar competencia
+              {trs("Cerrar competencia")}
             </Button>
           ) : (
             <Button
@@ -1117,7 +1118,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                   : 'bg-background text-muted-foreground border-border hover:bg-muted'
               }`}
             >
-              Total
+              {trs("Total")}
             </button>
             {slotOptions.map(o => {
               const s2 = cup.standingsBySlot.get(o.key);
@@ -1147,11 +1148,11 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             disabled={!canShareSelection}
             onClick={() => canShareSelection
               ? setShowShareImage(true)
-              : toast.info('Disponible cuando el organizador cierre la ronda')}
+              : toast.info(trs("Disponible cuando el organizador cierre la ronda"))}
             title={canShareSelection
               ? 'Compartir resultado'
               : 'Disponible cuando el organizador cierre la ronda'}
-            aria-label="Compartir resultado"
+            aria-label={trs("Compartir resultado")}
           >
             <Share2 className="h-3.5 w-3.5" />
           </Button>
@@ -1172,7 +1173,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
               : 'Disponible cuando el organizador cierre la ronda'}
           >
             <Share2 className="h-3.5 w-3.5" />
-            Compartir resultado
+            {trs("Compartir resultado")}
           </Button>
         </div>
       )}
@@ -1230,7 +1231,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             <p className="text-xs text-muted-foreground text-center mt-2">
               {isMultiSlot && <span className="font-medium">Acumulado · </span>}
               {st.matches_total} matches · {st.matches_completed} completados
-              {st.has_in_progress && <span className="ml-1 italic">· en vivo</span>}
+              {st.has_in_progress && <span className="ml-1 italic">{trs("· en vivo")}</span>}
             </p>
             {slotSt && (
               <div className="mt-3 pt-3 border-t text-center">
@@ -1244,7 +1245,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                 </p>
                 <p className="text-[11px] text-muted-foreground">
                   {slotSt.matches_total} matches · {slotSt.matches_completed} completados
-                  {slotSt.has_in_progress && <span className="ml-1 italic">· en vivo</span>}
+                  {slotSt.has_in_progress && <span className="ml-1 italic">{trs("· en vivo")}</span>}
                 </p>
               </div>
             )}
@@ -1253,7 +1254,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       ) : (
         <Card>
           <CardContent className="p-5 text-center text-sm text-muted-foreground">
-            Configura los matches para ver el marcador
+            {trs("Configura los matches para ver el marcador")}
           </CardContent>
         </Card>
       )}
@@ -1263,8 +1264,8 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         <Card>
           <CardContent className="p-3 space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold">Por jornada</h2>
-              <p className="text-[11px] text-muted-foreground">Toca para ver matches</p>
+              <h2 className="text-base font-bold">{trs("Por jornada")}</h2>
+              <p className="text-[11px] text-muted-foreground">{trs("Toca para ver matches")}</p>
             </div>
 
             {slotOptions.map(o => {
@@ -1334,7 +1335,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                       {tot > 0 && <span className="ml-1">· {pct}%</span>}
                     </p>
                     <span className="flex items-center gap-0.5 text-xs font-medium text-primary shrink-0">
-                      Ver <ChevronRight className="h-3.5 w-3.5" />
+                      {trs("Ver")}{' '}<ChevronRight className="h-3.5 w-3.5" />
                     </span>
                   </div>
                 </button>
@@ -1358,7 +1359,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
               className="gap-1"
               onClick={() => { setEditingMatch(null); setShowMatchEditor(true); }}
             >
-              <Plus className="h-3.5 w-3.5" /> Agregar Match
+              <Plus className="h-3.5 w-3.5" />{' '}{trs("Agregar Match")}
             </Button>
           )}
         </div>
@@ -1367,7 +1368,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           <p className="text-xs text-muted-foreground italic py-1">
             {activeSlotOption
               ? 'No hay matches en esta jornada todavía.'
-              : <>Aún no hay matches. Usa <span className="font-medium">+ Agregar Match</span> para crear el primero.</>}
+              : <>{trs("Aún no hay matches. Usa")}{' '}<span className="font-medium">{trs("+ Agregar Match")}</span>{' '}{trs("para crear el primero.")}</>}
           </p>
         ) : (
           <div className="space-y-4">
@@ -1431,8 +1432,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                   {activeSlotOption ? ` · ${activeSlotOption.label}` : ''}
                 </p>
                 <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
-                  Genera la ronda donde estos jugadores capturarán sus scores y arma los
-                  foursomes. La ronda queda enlazada automáticamente.
+                  {trs("Genera la ronda donde estos jugadores capturarán sus scores y arma los foursomes. La ronda queda enlazada automáticamente.")}
                 </p>
               </div>
             </div>
@@ -1455,10 +1455,9 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             <div className="flex items-start gap-2">
               <Calendar className="h-4 w-4 text-primary mt-0.5 shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold">Foursomes de la Ronda</p>
+                <p className="text-sm font-semibold">{trs("Foursomes de la Ronda")}</p>
                 <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
-                  Mueve jugadores entre foursomes, agrega nuevos grupos o suma
-                  jugadores que se incorporen después (incluye invitados).
+                  {trs("Mueve jugadores entre foursomes, agrega nuevos grupos o suma jugadores que se incorporen después (incluye invitados).")}
                 </p>
               </div>
             </div>
@@ -1468,7 +1467,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
               className="w-full gap-1"
               onClick={() => setShowManageFoursomes(true)}
             >
-              <Settings className="h-3.5 w-3.5" /> Editar Foursomes
+              <Settings className="h-3.5 w-3.5" />{' '}{trs("Editar Foursomes")}
             </Button>
           </CardContent>
         </Card>
@@ -1479,9 +1478,9 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       {isCreator && cup.participants.length === 0 && (
         <Card className="border-dashed">
           <CardContent className="p-4 text-center space-y-2">
-            <p className="text-sm font-medium">Aún no hay jugadores</p>
+            <p className="text-sm font-medium">{trs("Aún no hay jugadores")}</p>
             <p className="text-xs text-muted-foreground">
-              Agrega participantes para empezar a armar los matches.
+              {trs("Agrega participantes para empezar a armar los matches.")}
             </p>
             <div className="flex flex-col gap-2 pt-1">
               {!creatorIsParticipant && profile && (
@@ -1491,7 +1490,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                 </Button>
               )}
               <Button size="sm" className="gap-1" onClick={() => setShowAddParticipants(true)}>
-                <Plus className="h-3.5 w-3.5" /> Agregar Jugadores
+                <Plus className="h-3.5 w-3.5" />{' '}{trs("Agregar Jugadores")}
               </Button>
             </div>
           </CardContent>
@@ -1512,7 +1511,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                 </Button>
               )}
               <Button size="sm" className="gap-1" onClick={() => setShowAddParticipants(true)}>
-                <Plus className="h-3.5 w-3.5" /> Agregar
+                <Plus className="h-3.5 w-3.5" />{' '}{trs("Agregar")}
               </Button>
               <Button
                 variant="outline"
@@ -1520,7 +1519,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                 onClick={() => setShowAssignPanel(true)}
                 disabled={cup.participants.length === 0}
               >
-                Asignar Equipos
+                {trs("Asignar Equipos")}
               </Button>
             </div>
           )}
@@ -1538,7 +1537,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                 />
               </div>
               {partsA.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic">Sin jugadores</p>
+                <p className="text-xs text-muted-foreground italic">{trs("Sin jugadores")}</p>
               ) : partsA.map(p => (
                 <div key={p.id} className="flex items-center gap-1.5 py-1 min-w-0">
                   <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
@@ -1574,7 +1573,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                 />
               </div>
               {partsB.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic">Sin jugadores</p>
+                <p className="text-xs text-muted-foreground italic">{trs("Sin jugadores")}</p>
               ) : partsB.map(p => (
                 <div key={p.id} className="flex items-center gap-1.5 py-1 min-w-0">
                   <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
@@ -1602,7 +1601,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           </div>
           {partsNone.length > 0 && (
             <div className="mt-3">
-              <p className="text-xs font-semibold text-muted-foreground mb-1">Sin equipo asignado</p>
+              <p className="text-xs font-semibold text-muted-foreground mb-1">{trs("Sin equipo asignado")}</p>
               {partsNone.map(p => (
                 <div key={p.id} className="flex items-center gap-1.5 py-1 min-w-0">
                   <PlayerAvatar initials={p.initials} background={p.avatar_color} size="xs" />
@@ -1745,7 +1744,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             return (
               <div className="space-y-2">
                 <div className="sticky top-0 z-10 -mx-2.5 px-2.5 pt-1 pb-2 bg-background border-b space-y-2">
-                  <DialogTitle className="text-base">Asignar Equipos y Hándicaps</DialogTitle>
+                  <DialogTitle className="text-base">{trs("Asignar Equipos y Hándicaps")}</DialogTitle>
                   <div className="flex gap-1.5">
                     <Button
                       size="sm"
@@ -1753,7 +1752,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                       className="h-8 flex-1 text-xs min-w-0"
                       disabled={refreshingIndexes}
                       onClick={() => void refreshIndexesFromProfiles()}
-                      title="Traer el Hándicap Index actual de cada jugador"
+                      title={trs("Traer el Hándicap Index actual de cada jugador")}
                     >
                       {refreshingIndexes
                         ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
@@ -1769,13 +1768,13 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                         if (saved) setShowAssignPanel(false);
                       }}
                     >
-                      Guardar
+                      {trs("Guardar")}
                     </Button>
                   </div>
                 </div>
                 {draftPartsNone.length > 0 && (
                   <div className="space-y-1">
-                    <p className="text-xs font-semibold text-muted-foreground">Sin asignar</p>
+                    <p className="text-xs font-semibold text-muted-foreground">{trs("Sin asignar")}</p>
                     <ColumnHeader />
                     <div className="space-y-1.5">{draftPartsNone.map(renderRow)}</div>
                   </div>
@@ -1786,7 +1785,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                       {teamA.name}
                     </p>
                     {draftPartsA.length === 0 ? (
-                      <p className="text-xs text-muted-foreground italic px-1">Sin jugadores</p>
+                      <p className="text-xs text-muted-foreground italic px-1">{trs("Sin jugadores")}</p>
                     ) : (
                       <>
                         <ColumnHeader />
@@ -1801,7 +1800,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                       {teamB.name}
                     </p>
                     {draftPartsB.length === 0 ? (
-                      <p className="text-xs text-muted-foreground italic px-1">Sin jugadores</p>
+                      <p className="text-xs text-muted-foreground italic px-1">{trs("Sin jugadores")}</p>
                     ) : (
                       <>
                         <ColumnHeader />
@@ -1981,14 +1980,13 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar esta competencia?</AlertDialogTitle>
+            <AlertDialogTitle>{trs("¿Eliminar esta competencia?")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Se eliminarán todos los matches, equipos y participantes vinculados.
-              Esta acción no se puede deshacer.
+              {trs("Se eliminarán todos los matches, equipos y participantes vinculados. Esta acción no se puede deshacer.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>{trs("Cancelar")}</AlertDialogCancel>
             <AlertDialogAction
               disabled={deleting}
               onClick={(e) => { e.preventDefault(); handleDeleteEvent(); }}
@@ -2005,20 +2003,19 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       <Dialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>¿Cerrar esta competencia?</DialogTitle>
+            <DialogTitle>{trs("¿Cerrar esta competencia?")}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Pasará a Historial. Los resultados quedan guardados y se pueden consultar.
-            Puedes reactivarla más adelante si es necesario. Escribe <strong>CERRAR</strong> para confirmar.
+            {trs("Pasará a Historial. Los resultados quedan guardados y se pueden consultar. Puedes reactivarla más adelante si es necesario. Escribe")}{' '}<strong>{trs("CERRAR")}</strong>{' '}{trs("para confirmar.")}
           </p>
           <Input
             value={closeConfirmText}
             onChange={(e) => setCloseConfirmText(e.target.value)}
-            placeholder="Escribe CERRAR"
+            placeholder={trs("Escribe CERRAR")}
             className="uppercase"
           />
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setShowCloseConfirm(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setShowCloseConfirm(false)}>{trs("Cancelar")}</Button>
             <Button
               disabled={closeConfirmText.trim().toLowerCase() !== 'cerrar'}
               onClick={async () => {
@@ -2027,7 +2024,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                 setCloseConfirmText('');
               }}
             >
-              Cerrar competencia
+              {trs("Cerrar competencia")}
             </Button>
           </div>
         </DialogContent>
@@ -2035,15 +2032,13 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       <AlertDialog open={showUnlinkConfirm} onOpenChange={setShowUnlinkConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Desvincular ronda?</AlertDialogTitle>
+            <AlertDialogTitle>{trs("¿Desvincular ronda?")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Al desvincular la ronda, todos los matches configurados perderán su
-              vínculo con los resultados en vivo y volverán a estado "pending".
-              Tendrás que volver a vincular y reconfigurar para evitar reprocesos.
+              {trs("Al desvincular la ronda, todos los matches configurados perderán su vínculo con los resultados en vivo y volverán a estado \"pending\". Tendrás que volver a vincular y reconfigurar para evitar reprocesos.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={unlinking}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={unlinking}>{trs("Cancelar")}</AlertDialogCancel>
             <AlertDialogAction
               disabled={unlinking}
               onClick={(e) => { e.preventDefault(); handleUnlinkRound(); }}
@@ -2063,13 +2058,13 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar este match?</AlertDialogTitle>
+            <AlertDialogTitle>{trs("¿Eliminar este match?")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Se quitará de la competencia y no contará para el marcador. Esta acción no se puede deshacer.
+              {trs("Se quitará de la competencia y no contará para el marcador. Esta acción no se puede deshacer.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deletingMatch}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={deletingMatch}>{trs("Cancelar")}</AlertDialogCancel>
             <AlertDialogAction
               disabled={deletingMatch}
               onClick={(e) => { e.preventDefault(); handleDeleteMatch(); }}
@@ -2110,7 +2105,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={removingParticipant}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={removingParticipant}>{trs("Cancelar")}</AlertDialogCancel>
             {participantToRemove && matchesContainingParticipant(participantToRemove.id).length === 0 && (
               <AlertDialogAction
                 disabled={removingParticipant}

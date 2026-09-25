@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React from 'react';
 import { GroupBetScope } from '@/types/golf';
 import { cn } from '@/lib/utils';
@@ -9,15 +10,15 @@ interface BetScopeSelectorProps {
 }
 
 const options: { value: GroupBetScope; label: string; description: string; icon: React.ReactNode }[] = [
-  { value: 'group', label: 'Por Grupo', description: 'Una apuesta dentro de cada grupo', icon: <Users className="h-3.5 w-3.5" /> },
-  { value: 'global', label: 'General', description: 'Una sola apuesta entre todos', icon: <Globe className="h-3.5 w-3.5" /> },
-  { value: 'both', label: 'Ambas', description: 'Apuesta por grupo + una general', icon: <Layers className="h-3.5 w-3.5" /> },
+  { value: 'group', label: 'Por Grupo', description: trs("Una apuesta dentro de cada grupo"), icon: <Users className="h-3.5 w-3.5" /> },
+  { value: 'global', label: 'General', description: trs("Una sola apuesta entre todos"), icon: <Globe className="h-3.5 w-3.5" /> },
+  { value: 'both', label: 'Ambas', description: trs("Apuesta por grupo + una general"), icon: <Layers className="h-3.5 w-3.5" /> },
 ];
 
 export const BetScopeSelector: React.FC<BetScopeSelectorProps> = ({ scope, onChange }) => {
   return (
     <div className="space-y-1.5">
-      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Alcance Multi-grupo</span>
+      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">{trs("Alcance Multi-grupo")}</span>
       <div className="grid grid-cols-3 gap-1.5">
         {options.map(opt => (
           <button

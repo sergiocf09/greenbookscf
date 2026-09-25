@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -40,7 +41,7 @@ export const HistoricalStrokeSummaryCard: React.FC<{ competition: HistoricalComp
             <CardTitle className="text-base truncate">{lb.name}</CardTitle>
             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
               {lb.competition_type === 'multi_day' && (
-                <Badge variant="secondary" className="text-xs">Multidía</Badge>
+                <Badge variant="secondary" className="text-xs">{trs("Multidía")}</Badge>
               )}
               {dayLabel && (
                 <Badge variant="outline" className="text-xs">{dayLabel}</Badge>
@@ -133,7 +134,7 @@ export const HistoricalStrokeSummaryCard: React.FC<{ competition: HistoricalComp
               <span className="text-sm flex-1 min-w-0 truncate">
                 {s.display_name}
                 {s.isMe && (
-                  <span className="ml-1 text-xs text-primary font-medium">(tú)</span>
+                  <span className="ml-1 text-xs text-primary font-medium">{trs("(tú)")}</span>
                 )}
               </span>
               <span className={cn(

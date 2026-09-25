@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -60,7 +61,7 @@ export const EditLeaderboardConfigDialog: React.FC<Props> = ({ open, onOpenChang
         })
         .eq('id', event.id);
       if (error) throw error;
-      toast.success('Configuración actualizada');
+      toast.success(trs("Configuración actualizada"));
       onSaved?.();
       onOpenChange(false);
     } catch (err: any) {
@@ -74,20 +75,20 @@ export const EditLeaderboardConfigDialog: React.FC<Props> = ({ open, onOpenChang
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>Editar configuración</DialogTitle>
-          <DialogDescription>Modifica los datos del leaderboard.</DialogDescription>
+          <DialogTitle>{trs("Editar configuración")}</DialogTitle>
+          <DialogDescription>{trs("Modifica los datos del leaderboard.")}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Nombre *</Label>
+            <Label>{trs("Nombre *")}</Label>
             <Input value={name} onChange={e => setName(e.target.value)} />
           </div>
           <div>
-            <Label>Descripción</Label>
+            <Label>{trs("Descripción")}</Label>
             <Input value={description} onChange={e => setDescription(e.target.value)} />
           </div>
           <div>
-            <Label>Fecha</Label>
+            <Label>{trs("Fecha")}</Label>
             <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
           </div>
           <div>
@@ -103,7 +104,7 @@ export const EditLeaderboardConfigDialog: React.FC<Props> = ({ open, onOpenChang
           </div>
         </div>
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{trs("Cancelar")}</Button>
           <Button disabled={!name.trim() || modes.length === 0 || saving} onClick={handleSave}>
             {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Guardar

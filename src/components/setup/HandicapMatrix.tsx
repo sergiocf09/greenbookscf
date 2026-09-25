@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 /**
  * HandicapMatrix - Compact Matrix for Bilateral Handicaps (v3)
  * 
@@ -234,7 +235,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
   const saveAllChanges = useCallback(async () => {
     if (pendingChanges.size === 0) return;
     if (!hasRoundPlayerIds) {
-      toast.error('Jugadores aún no sincronizados. Espera un momento.');
+      toast.error(trs("Jugadores aún no sincronizados. Espera un momento."));
       return;
     }
     setSaving(true);
@@ -292,7 +293,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
 
   const applyFullHandicap = useCallback(async () => {
     if (!hasRoundPlayerIds) {
-      toast.error('Jugadores aún no sincronizados. Espera un momento.');
+      toast.error(trs("Jugadores aún no sincronizados. Espera un momento."));
       return;
     }
     setSaving(true);
@@ -356,7 +357,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
   /** Apply all sliding suggestions at once and auto-save */
   const applyAllSliding = useCallback(async () => {
     if (!hasRoundPlayerIds) {
-      toast.error('Jugadores aún no sincronizados. Espera un momento.');
+      toast.error(trs("Jugadores aún no sincronizados. Espera un momento."));
       return;
     }
 
@@ -373,7 +374,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     }
 
     if (pairs.length === 0) {
-      toast.info('No hay sliding histórico para ningún par');
+      toast.info(trs("No hay sliding histórico para ningún par"));
       return;
     }
 
@@ -413,7 +414,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        <span className="ml-2 text-muted-foreground">Cargando hándicaps...</span>
+        <span className="ml-2 text-muted-foreground">{trs("Cargando hándicaps...")}</span>
       </div>
     );
   }
@@ -422,7 +423,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        <span className="ml-2 text-muted-foreground">Sincronizando jugadores...</span>
+        <span className="ml-2 text-muted-foreground">{trs("Sincronizando jugadores...")}</span>
       </div>
     );
   }
@@ -432,7 +433,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground">
           <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          <p>Se necesitan al menos 2 jugadores para definir hándicaps</p>
+          <p>{trs("Se necesitan al menos 2 jugadores para definir hándicaps")}</p>
         </CardContent>
       </Card>
     );
@@ -444,10 +445,10 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Hándicaps Bilaterales
+            {trs("Hándicaps Bilaterales")}
           </CardTitle>
           <CardDescription className="mt-1">
-            Cada renglón muestra cómo se ve ese jugador vs. los demás. Toca una celda para ajustar.
+            {trs("Cada renglón muestra cómo se ve ese jugador vs. los demás. Toca una celda para ajustar.")}
           </CardDescription>
           <div className="flex gap-2 mt-2">
             {slidingSuggestions.size > 0 && !slidingApplied && (
@@ -471,7 +472,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
                 className="gap-1.5 border-primary text-primary hover:bg-primary/5"
               >
                 <Users className="h-3.5 w-3.5" />
-                Aplicar Full Hándicap
+                {trs("Aplicar Full Hándicap")}
               </Button>
             )}
             {hasPendingChanges && (
@@ -491,7 +492,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
                 <button
                   key={i}
                   onClick={() => {
-                    if (hasPendingChanges) { toast.warning('Guarda los cambios primero'); return; }
+                    if (hasPendingChanges) { toast.warning(trs("Guarda los cambios primero")); return; }
                     setSelectedGroupIndex(i);
                   }}
                   className={cn(
@@ -611,11 +612,11 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
           <div className="flex flex-wrap items-center justify-center gap-4 text-[10px] text-muted-foreground mt-4 pt-3 border-t border-border/30">
             <div className="flex items-center gap-1">
               <div className="w-3 h-3 rounded bg-destructive/20 border border-destructive/40" />
-              <span>Da golpes</span>
+              <span>{trs("Da golpes")}</span>
             </div>
             <div className="flex items-center gap-1">
               <div className="w-3 h-3 rounded bg-green-500/20 border border-green-500/40" />
-              <span>Recibe golpes</span>
+              <span>{trs("Recibe golpes")}</span>
             </div>
             <div className="flex items-center gap-1">
               <div className="w-3 h-3 rounded bg-muted/40 border border-border" />
@@ -624,7 +625,7 @@ export const HandicapMatrix: React.FC<HandicapMatrixProps> = ({
             {slidingSuggestions.size > 0 && (
               <div className="flex items-center gap-1">
                 <Sparkles className="h-3 w-3 text-amber-600" />
-                <span>Sliding disponible — usa el botón arriba</span>
+                <span>{trs("Sliding disponible — usa el botón arriba")}</span>
               </div>
             )}
           </div>
@@ -739,7 +740,7 @@ const CellEditor: React.FC<CellEditorProps> = ({
           background={rowPlayer.color}
           size="sm"
         />
-        <span className="text-xs font-medium">vs</span>
+        <span className="text-xs font-medium">{trs("vs")}</span>
         <PlayerAvatar
           initials={disambiguated.get(colPlayer.id) || colPlayer.initials}
           background={colPlayer.color}

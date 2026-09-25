@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useMemo } from 'react';
 import { BetConfig, Player } from '@/types/golf';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -264,7 +265,7 @@ export const ParticipationMatrix: React.FC<ParticipationMatrixProps> = ({
 
   return (
     <div className="border rounded-lg bg-card p-2 space-y-2">
-      <p className="text-xs font-medium text-foreground px-1">Configuración Rápida</p>
+      <p className="text-xs font-medium text-foreground px-1">{trs("Configuración Rápida")}</p>
 
       <div className="overflow-x-auto -mx-2 px-0">
         <table className="w-full text-[10px] border-collapse">
@@ -317,7 +318,7 @@ export const ParticipationMatrix: React.FC<ParticipationMatrixProps> = ({
                         <button
                           type="button"
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleOneVsAllRevert(bet.key); }}
-                          title="Volver a Todos vs Todos"
+                          title={trs("Volver a Todos vs Todos")}
                         >
                           <Badge variant="secondary" className="text-[8px] px-1 py-0 h-3.5 cursor-pointer hover:bg-destructive/20">
                             {anchorPlayer.initials} vs Todos ✕

@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Settings, Dices, RefreshCw, Trophy, BarChart3 } from 'lucide-react';
@@ -8,7 +9,7 @@ type AppView = 'setup' | 'betsetup' | 'scoring' | 'scorecard' | 'bets' | 'handic
 const helpContent: Record<string, { icon: React.ReactNode; title: string; items: string[] }> = {
   scoring: {
     icon: <Settings className="h-5 w-5 text-primary" />,
-    title: '📓 Captura de Scores',
+    title: trs("📓 Captura de Scores"),
     items: [
       'Navega entre hoyos tocando el número en la barra superior. Los hoyos confirmados aparecen en verde.',
       'Para cada jugador ingresa los golpes (strokes) y los putts del hoyo. Los badges de birdie 🐦, águila 🦅 y doble dígito 🔟 se detectan automáticamente al capturar.',
@@ -22,7 +23,7 @@ const helpContent: Record<string, { icon: React.ReactNode; title: string; items:
   },
   setup: {
     icon: <Settings className="h-5 w-5 text-primary" />,
-    title: '⚙️ Configuración de Ronda',
+    title: trs("⚙️ Configuración de Ronda"),
     items: [
       'PASO 1 — Campo y tee: selecciona el campo de golf y el color de tee (Azul, Blanco, Dorado, Rojo). El tee define rating y slope, base del cálculo de hándicaps, así que verifícalo antes de iniciar. Si no encuentras tu campo, usa la búsqueda y si aun así no aparece, agrégalo manualmente con sus pares y handicaps por hoyo.',
       'PASO 2 — Hoyos y salida: define si la ronda es de 18 o 9 hoyos y el hoyo de salida (1 o 10). Si salen del 10, la app remapea automáticamente Front y Back para que los segmentos se calculen correctamente.',
@@ -36,7 +37,7 @@ const helpContent: Record<string, { icon: React.ReactNode; title: string; items:
   },
   betsetup: {
     icon: <Dices className="h-5 w-5 text-primary" />,
-    title: '🎲 Configuración de Apuestas',
+    title: trs("🎲 Configuración de Apuestas"),
     items: [
       'CÓMO CONFIGURAR: cada apuesta tiene un switch para activarla. Al activarla (o al tocar su nombre) la tarjeta se expande hacia abajo y ahí aparecen todos sus campos: montos por Front 9, Back 9 y Total 18, uso de hándicap, modalidades y la matriz de participación. Si no expandes la tarjeta, la apuesta queda con los montos por defecto — ábrela siempre para ajustar los importes.',
       'MATRIZ DE PARTICIPACIÓN: dentro de cada apuesta puedes decidir quién juega contra quién. Las matrices inician colapsadas; ábrelas para desactivar pares o jugadores que no entran en esa apuesta. Lo que quede marcado en la matriz es lo que se cobra, sin excepción.',
@@ -54,7 +55,7 @@ const helpContent: Record<string, { icon: React.ReactNode; title: string; items:
 
   handicaps: {
     icon: <RefreshCw className="h-5 w-5 text-primary" />,
-    title: '🔄 Matriz de Hándicaps',
+    title: trs("🔄 Matriz de Hándicaps"),
     items: [
       'Esta es la pantalla donde se decide, de verdad, cuántos strokes se dan entre jugadores. El Índice capturado en el Setup solo sirve como punto de partida.',
       'CÓMO LEERLA: busca tu nombre en las filas (izquierda) y el de tu rival en las columnas. El número de esa celda son los strokes que TÚ le das a él: positivo = tú los das, negativo = él te los da a ti, 0 = juegan parejo (scratch).',

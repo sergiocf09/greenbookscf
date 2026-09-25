@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { useTranslation } from 'react-i18next';
 import React, { useMemo, useState } from 'react';
 import { Player, PlayerScore, GolfCourse, WolfConfig, WolfHoleState } from '@/types/golf';
@@ -272,7 +273,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
               )}
               {detail.wentSolo && wolfConfig.scoringMode !== 'lowBall' && (
                 <p className="text-[9px] text-amber-600 mt-1">
-                  ⚠️ Lone Wolf: se aplica Bola Baja independientemente del modo configurado
+                  {trs("⚠️ Lone Wolf: se aplica Bola Baja independientemente del modo configurado")}
                 </p>
               )}
             </div>

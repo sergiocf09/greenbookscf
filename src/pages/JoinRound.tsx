@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -208,7 +209,7 @@ const JoinRound = () => {
     }
 
     if (roundInfo && roundInfo.groups.length > 1 && !selectedGroupId) {
-      toast.error('Selecciona un grupo para unirte');
+      toast.error(trs("Selecciona un grupo para unirte"));
       return;
     }
 
@@ -222,11 +223,11 @@ const JoinRound = () => {
       if (joinError) throw joinError;
       if (!rpId) throw new Error('No se pudo unir a la ronda');
 
-      toast.success('Te has unido a la ronda');
+      toast.success(trs("Te has unido a la ronda"));
       navigate('/');
     } catch (err) {
       console.error('Error joining round:', err);
-      toast.error('Error al unirse a la ronda');
+      toast.error(trs("Error al unirse a la ronda"));
     } finally {
       setJoining(false);
     }
@@ -234,12 +235,12 @@ const JoinRound = () => {
 
   const handleJoinAsGuest = async () => {
     if (!roundId || !guestName.trim()) {
-      toast.error('Ingresa tu nombre');
+      toast.error(trs("Ingresa tu nombre"));
       return;
     }
 
     if (roundInfo && roundInfo.groups.length > 1 && !selectedGroupId) {
-      toast.error('Selecciona un grupo para unirte');
+      toast.error(trs("Selecciona un grupo para unirte"));
       return;
     }
 
@@ -276,7 +277,7 @@ const JoinRound = () => {
       // Save guest session to localStorage
       localStorage.setItem(`guest_session_${roundId}`, JSON.stringify(sessionData));
 
-      toast.success('Te has unido a la ronda como invitado');
+      toast.success(trs("Te has unido a la ronda como invitado"));
       // Navigate to main app — anon session passes ProtectedRoute
       navigate('/');
     } catch (err: any) {
@@ -305,7 +306,7 @@ const JoinRound = () => {
           </CardHeader>
           <CardContent>
             <Button onClick={() => navigate('/')} className="w-full">
-              Volver al Inicio
+              {trs("Volver al Inicio")}
             </Button>
           </CardContent>
         </Card>
@@ -329,7 +330,7 @@ const JoinRound = () => {
       <div className="max-w-md mx-auto pt-8">
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-xl">Unirse a Ronda</CardTitle>
+            <CardTitle className="text-xl">{trs("Unirse a Ronda")}</CardTitle>
             <CardDescription>
               {formatPlayerName(roundInfo.organizer.display_name)} te invita a jugar
             </CardDescription>
@@ -358,7 +359,7 @@ const JoinRound = () => {
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">
-                    Selecciona un grupo para unirte
+                    {trs("Selecciona un grupo para unirte")}
                   </span>
                 </div>
                 <div className="space-y-2">
@@ -402,7 +403,7 @@ const JoinRound = () => {
                         </div>
                       ) : (
                         <p className="text-xs text-muted-foreground italic">
-                          Sin jugadores registrados aún
+                          {trs("Sin jugadores registrados aún")}
                         </p>
                       )}
                     </button>
@@ -433,7 +434,7 @@ const JoinRound = () => {
                     </div>
                   ))}
                   {(!roundInfo.groups[0] || roundInfo.groups[0].players.length === 0) && (
-                    <p className="text-sm text-muted-foreground">No hay jugadores registrados aún</p>
+                    <p className="text-sm text-muted-foreground">{trs("No hay jugadores registrados aún")}</p>
                   )}
                 </div>
               </div>
@@ -442,7 +443,7 @@ const JoinRound = () => {
             {/* Status */}
             {roundInfo.status === 'completed' && (
               <div className="text-center text-muted-foreground text-sm py-2">
-                Esta ronda ya ha finalizado
+                {trs("Esta ronda ya ha finalizado")}
               </div>
             )}
 
@@ -467,23 +468,23 @@ const JoinRound = () => {
                     onClick={() => setShowConversionModal(true)}
                   >
                     <UserPlus className="h-4 w-4 mr-2" />
-                    Crear cuenta y conservar historial
+                    {trs("Crear cuenta y conservar historial")}
                   </Button>
                 )}
               </div>
             ) : alreadyJoined ? (
               <Button className="w-full" variant="secondary" disabled>
                 <CheckCircle className="h-4 w-4 mr-2" />
-                Ya estás en esta ronda
+                {trs("Ya estás en esta ronda")}
               </Button>
             ) : roundInfo.status !== 'completed' ? (
               <div className="space-y-3">
                 {/* Guest mode form */}
                 {showGuestMode ? (
                   <div className="space-y-3 p-3 rounded-lg border border-border bg-muted/30">
-                    <div className="text-sm font-medium text-center">¿Cómo te llamas?</div>
+                    <div className="text-sm font-medium text-center">{trs("¿Cómo te llamas?")}</div>
                     <Input
-                      placeholder="Tu nombre"
+                      placeholder={trs("Tu nombre")}
                       value={guestName}
                       onChange={(e) => setGuestName(e.target.value)}
                       maxLength={40}
@@ -495,7 +496,7 @@ const JoinRound = () => {
                         className="flex-1"
                         onClick={() => { setShowGuestMode(false); setGuestName(''); }}
                       >
-                        Cancelar
+                        {trs("Cancelar")}
                       </Button>
                       <Button
                         className="flex-1"
@@ -535,7 +536,7 @@ const JoinRound = () => {
                         onClick={() => setShowGuestMode(true)}
                       >
                         <UserPlus className="h-4 w-4 mr-2" />
-                        Entrar sin cuenta
+                        {trs("Entrar sin cuenta")}
                       </Button>
                     )}
                   </>
@@ -543,7 +544,7 @@ const JoinRound = () => {
               </div>
             ) : (
               <Button onClick={() => navigate('/')} className="w-full">
-                Volver al Inicio
+                {trs("Volver al Inicio")}
               </Button>
             )}
           </CardContent>
@@ -561,7 +562,7 @@ const JoinRound = () => {
           displayName={guestSession.display_name}
           onConverted={() => {
             setShowConversionModal(false);
-            toast.success('¡Bienvenido! Tu historial está vinculado.');
+            toast.success(trs("¡Bienvenido! Tu historial está vinculado."));
             navigate('/');
           }}
           onDismissed={() => {

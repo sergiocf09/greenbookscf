@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useEffect, useState } from 'react';
 import {
   Dialog,
@@ -130,7 +131,7 @@ export const USGAHandicapDialog: React.FC<USGAHandicapDialogProps> = ({
             Índice USGA - {playerName}
           </DialogTitle>
           <DialogDescription>
-            El handicap de juego se ajusta según el campo y tee seleccionados
+            {trs("El handicap de juego se ajusta según el campo y tee seleccionados")}
           </DialogDescription>
         </DialogHeader>
 
@@ -141,7 +142,7 @@ export const USGAHandicapDialog: React.FC<USGAHandicapDialogProps> = ({
         ) : error ? (
           <div className="flex flex-col items-center gap-2 py-8 text-destructive">
             <AlertCircle className="h-8 w-8" />
-            <p className="text-sm">Error al cargar datos</p>
+            <p className="text-sm">{trs("Error al cargar datos")}</p>
           </div>
         ) : totalRounds < minimumRoundsNeeded ? (
           <div className="flex flex-col items-center gap-4 py-8 text-center">
@@ -161,7 +162,7 @@ export const USGAHandicapDialog: React.FC<USGAHandicapDialogProps> = ({
             <div className="grid grid-cols-2 gap-3">
               {/* Handicap Index */}
               <div className="bg-muted/50 rounded-xl p-3 text-center">
-                <p className="text-xs text-muted-foreground mb-1">Índice USGA</p>
+                <p className="text-xs text-muted-foreground mb-1">{trs("Índice USGA")}</p>
                 <p className="text-2xl font-bold text-foreground">
                   {handicapIndex !== null ? handicapIndex.toFixed(1) : '-'}
                 </p>
@@ -174,7 +175,7 @@ export const USGAHandicapDialog: React.FC<USGAHandicapDialogProps> = ({
               <div className="bg-primary/10 rounded-xl p-3 text-center border-2 border-primary/30">
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <Target className="h-3 w-3 text-primary" />
-                  <p className="text-xs text-primary font-medium">Handicap de Juego</p>
+                  <p className="text-xs text-primary font-medium">{trs("Handicap de Juego")}</p>
                 </div>
                 <p className="text-2xl font-bold text-primary">
                   {courseHandicap !== null ? courseHandicap : handicapIndex !== null ? Math.round(handicapIndex) : '-'}
@@ -205,18 +206,18 @@ export const USGAHandicapDialog: React.FC<USGAHandicapDialogProps> = ({
             <div className="bg-muted/50 rounded-lg p-3 text-xs">
               <p className="font-medium mb-1">Escala USGA:</p>
               <div className="grid grid-cols-2 gap-1 text-muted-foreground">
-                <span>3-5 rondas → 1 diferencial</span>
-                <span>6-8 rondas → 2 diferenciales</span>
-                <span>9-11 rondas → 3 diferenciales</span>
-                <span>12-14 rondas → 4 diferenciales</span>
-                <span>15-16 rondas → 5 diferenciales</span>
-                <span>20+ rondas → 8 diferenciales</span>
+                <span>{trs("3-5 rondas → 1 diferencial")}</span>
+                <span>{trs("6-8 rondas → 2 diferenciales")}</span>
+                <span>{trs("9-11 rondas → 3 diferenciales")}</span>
+                <span>{trs("12-14 rondas → 4 diferenciales")}</span>
+                <span>{trs("15-16 rondas → 5 diferenciales")}</span>
+                <span>{trs("20+ rondas → 8 diferenciales")}</span>
               </div>
             </div>
 
             {/* Rounds List */}
             <div className="space-y-2">
-              <p className="text-sm font-medium">Historial de Rondas</p>
+              <p className="text-sm font-medium">{trs("Historial de Rondas")}</p>
               <div className="max-h-48 overflow-y-auto space-y-1.5">
                 {differentials.map((round) => (
                   <RoundRow

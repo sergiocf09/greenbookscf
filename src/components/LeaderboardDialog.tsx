@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useMemo, useState } from 'react';
 import {
   Dialog,
@@ -210,16 +211,16 @@ export const LeaderboardDialog: React.FC<LeaderboardDialogProps> = ({
         <div className="flex-1 overflow-auto">
           {leaderboard.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
-              No hay jugadores registrados
+              {trs("No hay jugadores registrados")}
             </p>
           ) : (
             <table className="table-fixed w-full caption-bottom text-sm">
               <thead className="sticky top-0 z-10 bg-background [&_tr]:border-b">
                 <tr className="text-xs border-b">
                   <th className="h-9 w-7 text-center px-1 py-1.5 align-middle font-medium text-muted-foreground">#</th>
-                  <th className="h-9 px-1 py-1.5 text-left align-middle font-medium text-muted-foreground">Jugador</th>
+                  <th className="h-9 px-1 py-1.5 text-left align-middle font-medium text-muted-foreground">{trs("Jugador")}</th>
                   <th className="h-9 text-center w-8 px-1 py-1.5 align-middle font-medium text-muted-foreground">Grp</th>
-                  <th className="h-9 text-center w-9 px-1 py-1.5 align-middle font-medium text-muted-foreground">Hoyo</th>
+                  <th className="h-9 text-center w-9 px-1 py-1.5 align-middle font-medium text-muted-foreground">{trs("Hoyo")}</th>
                   <th 
                     className={cn(
                       "h-9 text-center w-12 px-1 py-1.5 align-middle font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors",

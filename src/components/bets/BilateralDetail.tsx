@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React, { useState, useMemo } from 'react';
 import { Player, PlayerScore, BetConfig, GolfCourse, BilateralHandicap, MarkerState, markerInfo, BetOverride } from '@/types/golf';
 import { SnapshotPairBreakdowns, SnapshotPairSegmentResults } from '@/lib/roundSnapshot';
@@ -1784,7 +1785,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       <div className="px-4 py-2 pl-10 bg-background/50 space-y-2">
         {type === 'units' && activeAdvantage !== 0 && (
           <div className="flex items-center gap-2 text-xs px-2 py-1.5 rounded bg-amber-500/10 border border-amber-500/30">
-            <span className="font-semibold text-amber-700">Ventaja:</span>
+            <span className="font-semibold text-amber-700">{trs("Ventaja:")}</span>
             <span className="text-foreground">
               {activeAdvantage > 0
                 ? `Tú das ${activeAdvantage} unidad${activeAdvantage !== 1 ? 'es' : ''}`
@@ -1835,7 +1836,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
               size="lg" 
               isLoggedInUser={player.id === basePlayerId || player.profileId === basePlayerId}
             />
-            <span className="text-muted-foreground text-sm">vs</span>
+            <span className="text-muted-foreground text-sm">{trs("vs")}</span>
             <PlayerAvatar 
               initials={getPlayerAbbr(rival)} 
               background={rival.color} 
@@ -1857,9 +1858,9 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         <div className="mt-3 p-2 bg-muted/30 rounded-lg">
           <div className="flex items-center gap-2">
             <Settings2 className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs font-medium">Ventaja de Golpes</span>
+            <span className="text-xs font-medium">{trs("Ventaja de Golpes")}</span>
             <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
-              Definido en Matriz
+              {trs("Definido en Matriz")}
             </span>
           </div>
           
@@ -1875,7 +1876,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
             </div>
           ) : (
             <p className="text-xs text-muted-foreground mt-2 text-center">
-              Ambos jugadores juegan scratch (sin ventaja)
+              {trs("Ambos jugadores juegan scratch (sin ventaja)")}
             </p>
           )}
         </div>
@@ -1884,7 +1885,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       <CardContent className="pt-0 space-y-2">
         {betTypeGroups.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-6">
-            Sin apuestas calculadas aún
+            {trs("Sin apuestas calculadas aún")}
           </p>
         ) : (
           betTypeGroups.map((group) => {
@@ -2074,7 +2075,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     )}
                                     onClick={() => setVariant('sinAcumular')}
                                   >
-                                    Sin acumular
+                                    {trs("Sin acumular")}
                                   </button>
                                 </div>
                                 {/* Zapato toggle - right side, vertically centered */}
@@ -2114,7 +2115,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     {/* Colored skins count instead of description text */}
                                     <span className="flex items-center gap-1 cursor-pointer">
                                       <span className="text-sm font-bold text-green-600">{data.playerNet}</span>
-                                      <span className="text-[10px] text-muted-foreground">vs</span>
+                                      <span className="text-[10px] text-muted-foreground">{trs("vs")}</span>
                                       <span className="text-sm font-bold text-destructive">{data.rivalNet}</span>
                                     </span>
                                   </button>
@@ -2147,7 +2148,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       </div>
                                       <div className="text-[10px] text-center pt-1 border-t border-border/50 flex items-center justify-center gap-2">
                                         <span>{player.initials}: <span className="font-bold text-green-600">{skinsSegData.totalSkinsA}</span></span>
-                                        <span className="text-muted-foreground">vs</span>
+                                        <span className="text-muted-foreground">{trs("vs")}</span>
                                         <span>{rival.initials}: <span className="font-bold text-destructive">{skinsSegData.totalSkinsB}</span></span>
                                       </div>
                                       <div className="flex flex-wrap gap-2 text-[8px] text-muted-foreground pt-1 border-t border-border/30">
@@ -2176,7 +2177,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                       (() => {
                         const bloquesData = (group as any).bloquesDetail as BloqueResult[] | undefined;
                         if (!bloquesData || bloquesData.length === 0) {
-                          return <div className="px-4 py-3 text-xs text-muted-foreground">Sin datos</div>;
+                          return <div className="px-4 py-3 text-xs text-muted-foreground">{trs("Sin datos")}</div>;
                         }
                         const bh = effectiveBetConfig.bilateralHandicaps?.find(h =>
                           (h.playerAId === player.id && h.playerBId === rival.id) ||
@@ -2312,7 +2313,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                         if (playerAHoles.length === 0 && !showTabs) {
                           return (
                             <div className="px-4 py-2 pl-10 bg-background/50 text-xs text-muted-foreground">
-                              Sin datos de Oyeses registrados
+                              {trs("Sin datos de Oyeses registrados")}
                             </div>
                           );
                         }
@@ -2353,13 +2354,13 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       : "text-muted-foreground hover:text-foreground"
                                   )}
                                 >
-                                  Sangrón
+                                  {trs("Sangrón")}
                                 </button>
                               </div>
                             )}
                             {/* Mode hint when only one modality applies but it's Sangrón */}
                             {!showTabs && activeModality === 'sangron' && (
-                              <div className="text-[10px] text-muted-foreground">Modalidad Sangrón</div>
+                              <div className="text-[10px] text-muted-foreground">{trs("Modalidad Sangrón")}</div>
                             )}
                             {/* Empty state for the active tab */}
                             {playerAHoles.length === 0 && (
@@ -2451,7 +2452,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     H{h.holeNumber}
                                   </div>
                                 ))}
-                                <div className="w-12 text-center font-bold text-muted-foreground">Total</div>
+                                <div className="w-12 text-center font-bold text-muted-foreground">{trs("Total")}</div>
                               </div>
                             </div>
                             
@@ -2703,7 +2704,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                         });
                                       }}
                                     >
-                                      Sin acumular
+                                      {trs("Sin acumular")}
                                     </button>
                                 </div>
                               </div>
@@ -2727,7 +2728,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     <div className="flex items-center gap-1.5 mb-2">
                                       <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
                                       <p className="text-[10px] text-amber-600 dark:text-amber-400">
-                                        Configuraciones distintas — define qué juegan
+                                        {trs("Configuraciones distintas — define qué juegan")}
                                       </p>
                                     </div>
                                   )}
@@ -2795,7 +2796,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   {allOff && (
                                     <div className="text-[10px] text-muted-foreground text-center mt-1 flex items-center justify-center gap-1">
                                       <X className="h-3 w-3" />
-                                      <span>Rayas desactivadas para este par — valor $0</span>
+                                      <span>{trs("Rayas desactivadas para este par — valor $0")}</span>
                                     </div>
                                   )}
                                 </div>
@@ -2843,7 +2844,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             {/* Front 9 total */}
                             <div className="flex items-center justify-between text-sm bg-muted/30 rounded px-2 py-1">
                               <div className="flex items-center gap-2">
-                                <span className="text-muted-foreground">Total Front:</span>
+                                <span className="text-muted-foreground">{trs("Total Front:")}</span>
                                 <span className={cn('font-bold', frontTotalRayas > 0 ? 'text-green-600' : frontTotalRayas < 0 ? 'text-destructive' : '')}>
                                   {frontTotalRayas}
                                 </span>
@@ -2888,7 +2889,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             {/* Back 9 total */}
                             <div className="flex items-center justify-between text-sm bg-muted/30 rounded px-2 py-1">
                               <div className="flex items-center gap-2">
-                                <span className="text-muted-foreground">Total Back:</span>
+                                <span className="text-muted-foreground">{trs("Total Back:")}</span>
                                 <span className={cn('font-bold', backTotalRayas > 0 ? 'text-green-600' : backTotalRayas < 0 ? 'text-destructive' : '')}>
                                   {backTotalRayas}
                                 </span>
@@ -2914,7 +2915,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   hasAll18 ? "bg-primary/10 border-primary/20" : "bg-amber-500/10 border-amber-500/20"
                                 )}>
                                   <div className="flex items-center gap-2">
-                                    <span className="font-medium">Medal Total</span>
+                                    <span className="font-medium">{trs("Medal Total")}</span>
                                     {hasScores && (
                                       <span className="text-xs text-muted-foreground">
                                         ({playerNetTotal} vs {rivalNetTotal})
@@ -2933,7 +2934,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             
                             {/* Grand Total */}
                             <div className="flex items-center justify-between text-base font-bold border-t border-border/50 pt-2 mt-2">
-                              <span>TOTAL RAYAS</span>
+                              <span>{trs("TOTAL RAYAS")}</span>
                               <span className={cn(grandTotal > 0 ? 'text-green-600' : grandTotal < 0 ? 'text-destructive' : '')}>
                                 {showAmtSigned(grandTotal)}
                               </span>
@@ -3097,7 +3098,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                     )}>
                                       {isSkins ? `${data.playerNet}` : (data.playerNet !== undefined && data.playerNet !== null ? data.playerNet : '-')}
                                     </span>
-                                    <span className="text-muted-foreground">vs</span>
+                                    <span className="text-muted-foreground">{trs("vs")}</span>
                                     <span className={cn(
                                       'font-semibold min-w-[28px] text-center',
                                       data.rivalNet < data.playerNet ? 'text-green-600' : 
@@ -3277,7 +3278,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       {/* Final result */}
                                       <div className="text-[10px] text-center pt-1 border-t border-border/50 flex items-center justify-center gap-2">
                                         <span>{getShortName(player)}: <span className="font-bold text-green-600">{skinsSegmentData.totalSkinsA}</span></span>
-                                        <span className="text-muted-foreground">vs</span>
+                                        <span className="text-muted-foreground">{trs("vs")}</span>
                                         <span>{getShortName(rival)}: <span className="font-bold text-destructive">{skinsSegmentData.totalSkinsB}</span></span>
                                         {skinsSegmentData.hasZapato && <span className="ml-1">🥾</span>}
                                       </div>
@@ -3301,7 +3302,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       const rS = rivalScores.find(s => s.confirmed && s.holeNumber === h && typeof s.putts === 'number');
                                       if (pS && rS) holes.push({ h, pP: pS.putts || 0, pR: rS.putts || 0 });
                                     }
-                                    if (holes.length === 0) return <span className="text-xs text-muted-foreground">Sin datos</span>;
+                                    if (holes.length === 0) return <span className="text-xs text-muted-foreground">{trs("Sin datos")}</span>;
                                     const totalP = holes.reduce((s, x) => s + x.pP, 0);
                                     const totalR = holes.reduce((s, x) => s + x.pR, 0);
                                     return (
@@ -3369,7 +3370,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   {isBloques && (() => {
                                     const bloquesData = (group as any).bloquesDetail as BloqueResult[] | undefined;
                                     if (!bloquesData || bloquesData.length === 0) {
-                                      return <span className="text-xs text-muted-foreground">Sin datos</span>;
+                                      return <span className="text-xs text-muted-foreground">{trs("Sin datos")}</span>;
                                     }
                                     // Resolve bilateral handicap (per pair) for net dot indicator
                                     const bh = effectiveBetConfig.bilateralHandicaps?.find(h =>
@@ -3484,7 +3485,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       <Dialog open={!!editingBetType} onOpenChange={() => setEditingBetType(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Modificar importe de apuesta</DialogTitle>
+            <DialogTitle>{trs("Modificar importe de apuesta")}</DialogTitle>
           </DialogHeader>
           <BetAmountEditor
             betType={editingBetType || ''}
@@ -3609,7 +3610,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>El match quedó Carry en el Front</AlertDialogTitle>
+            <AlertDialogTitle>{trs("El match quedó Carry en el Front")}</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2 text-sm">
                 <p>
@@ -3620,16 +3621,16 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 <p>
                   Si aplicas este cambio, cada presión del Back valdrá{' '}
                   <strong>{fmtMoney(pressuresCarryConfirm?.newBack ?? 0)}</strong> y el{' '}
-                  <strong>Total 18 se paga por separado</strong> con su propio importe.
+                  <strong>{trs("Total 18 se paga por separado")}</strong>{' '}{trs("con su propio importe.")}
                 </p>
                 <p className="text-muted-foreground">
-                  Podrás revertir esto borrando el override del Back o restaurando el monto de la fórmula.
+                  {trs("Podrás revertir esto borrando el override del Back o restaurando el monto de la fórmula.")}
                 </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>{trs("Cancelar")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (pressuresCarryConfirm && editingBetType) {
