@@ -31,7 +31,7 @@ const TeamHoleGrid: React.FC<{
   <div className="space-y-0.5">
     <div className="flex justify-between text-[10px] text-muted-foreground">
       <span>{t('dashboard.yourTeam')}</span>
-      <span>Rival</span>
+      <span>{t('dashboard.rival')}</span>
     </div>
     {/* Player row 1 */}
     <div className="grid text-sm tabular-nums" style={{ gridTemplateColumns: '1fr auto auto 12px auto auto 1fr' }}>
@@ -134,6 +134,7 @@ interface CarritosResultsCardProps {
 }
 
 const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, players, basePlayerId, title = 'Carritos (Equipos)', roundHoles = 18, onCancel, isDisabled, onToggleDisabled, teamHandicaps, handicapConfig, amountsHidden = false }) => {
+  const { t } = useTranslation();
 
   const showAmtSigned = (value: number): string =>
     amountsHidden ? '••••' : `${value >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(value))}`;
