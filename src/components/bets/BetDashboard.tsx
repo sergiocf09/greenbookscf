@@ -2176,7 +2176,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               const rounded = roundGroupToNearest5Map(raws);
               return Array.from(rounded.values()).reduce((s, v) => s + v, 0);
             })()}`}
-            <span className="ml-1">(debe ser $0)</span>
+            <span className="ml-1">({trs("debe ser $0")})</span>
           </div>
           {tablaGeneralPlayers.some(p => p.isFounder) && (
             <div className="flex items-center justify-center gap-1.5 py-1 text-xs text-golf-gold">
