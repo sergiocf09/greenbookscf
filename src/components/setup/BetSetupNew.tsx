@@ -10,6 +10,7 @@ import { BookMarked, Lock, Pencil, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { setGroupBetOverride, resolveConfigForGroup } from '@/lib/groupBetOverrides';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface BetSetupProps {
   config: BetConfig;
@@ -38,6 +39,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
   getLocalPairStrokeState,
 }) => {
   const { profile } = useAuth();
+  const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState<BetCategory>('individual');
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [showTemplatesDialog, setShowTemplatesDialog] = useState(false);
@@ -183,7 +185,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
               )}
             >
               <Lock className="h-3.5 w-3.5" />
-              Grupo 1 (heredado)
+              {t('betSetup.inherited')}
             </button>
             <button
               type="button"
@@ -196,7 +198,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
               )}
             >
               <Pencil className="h-3.5 w-3.5" />
-              Mi Grupo
+              {t('betSetup.myGroup')}
             </button>
           </div>
 
@@ -206,10 +208,10 @@ export const BetSetup: React.FC<BetSetupProps> = ({
               <Lock className="h-4 w-4 text-amber-600 shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-amber-800 dark:text-amber-200 leading-tight">
-                  Configuración base del Grupo 1 (solo lectura)
+                  {t('betSetup.inheritedTitle')}
                 </p>
                 <p className="text-[10px] text-amber-600 dark:text-amber-400 leading-tight mt-0.5">
-                  Esta es la plantilla que tu grupo hereda. No se puede modificar desde aquí.
+                  {t('betSetup.inheritedDesc')}
                 </p>
               </div>
             </div>
@@ -218,10 +220,10 @@ export const BetSetup: React.FC<BetSetupProps> = ({
               <Pencil className="h-4 w-4 text-primary shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-foreground leading-tight">
-                  Apuestas de tu grupo
+                  {t('betSetup.myGroupTitle')}
                 </p>
                 <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
-                  Heredas la base del Grupo 1. Aquí puedes modificar montos o activar/desactivar apuestas para tu grupo.
+                  {t('betSetup.myGroupDesc')}
                 </p>
               </div>
             </div>
@@ -238,8 +240,8 @@ export const BetSetup: React.FC<BetSetupProps> = ({
       {(!isSecondaryGroup || groupTab === 'mygroup') && (
         <div className="flex items-center gap-3 bg-muted/40 p-3 rounded-xl border border-border/30">
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-foreground leading-tight">Guarda esta configuración como plantilla</p>
-            <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Cárgala después para iniciar rondas recurrentes</p>
+            <p className="text-xs font-medium text-foreground leading-tight">{t('betSetup.saveTemplate')}</p>
+            <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{t('betSetup.saveTemplateDesc')}</p>
           </div>
           <Button
             variant="secondary"
@@ -248,7 +250,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
             onClick={() => setShowTemplatesDialog(true)}
           >
             <BookMarked className="h-4 w-4" />
-            Plantillas
+            {t('betSetup.templates')}
           </Button>
         </div>
       )}

@@ -122,5 +122,25 @@
     "strokes": "Golpes",
     "player": "Jugador",
     "quickEntry": "Captura rápida"
+  },
+  "betSetup": {
+    "individual": "Individuales",
+    "individualDesc": "Jugador vs Jugador",
+    "pairs": "Parejas",
+    "pairsDesc": "Pareja vs Pareja",
+    "group": "Grupales",
+    "groupDesc": "Todos vs Todos",
+    "inherited": "Grupo 1 (heredado)",
+    "myGroup": "Mi Grupo",
+    "inheritedTitle": "Configuración base del Grupo 1 (solo lectura)",
+    "inheritedDesc": "Esta es la plantilla que tu grupo hereda. No se puede modificar desde aquí.",
+    "myGroupTitle": "Apuestas de tu grupo",
+    "myGroupDesc": "Heredas la base del Grupo 1. Aquí puedes modificar montos o activar/desactivar apuestas para tu grupo.",
+    "saveTemplate": "Guarda esta configuración como plantilla",
+    "saveTemplateDesc": "Cárgala después para iniciar rondas recurrentes",
+    "templates": "Plantillas"
+  },
+  "dashboard": {
+    "summary": "Resumen General"
   }
 }

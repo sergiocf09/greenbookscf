@@ -1,6 +1,7 @@
 import React from 'react';
 import { Users, Users2, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 import { BetCategory } from '@/types/golf';
 
 interface BetCategoryTabsProps {
@@ -11,21 +12,21 @@ interface BetCategoryTabsProps {
 const categories: { id: BetCategory; label: string; icon: React.ReactNode; description: string }[] = [
   { 
     id: 'individual', 
-    label: 'Individuales', 
+    label: 'betSetup.individual', 
     icon: <Users className="h-5 w-5" />,
-    description: 'Jugador vs Jugador'
+    description: 'betSetup.individualDesc'
   },
   { 
     id: 'parejas', 
-    label: 'Parejas', 
+    label: 'betSetup.pairs', 
     icon: <Users2 className="h-5 w-5" />,
-    description: 'Pareja vs Pareja'
+    description: 'betSetup.pairsDesc'
   },
   { 
     id: 'grupal', 
-    label: 'Grupales', 
+    label: 'betSetup.group', 
     icon: <Globe className="h-5 w-5" />,
-    description: 'Todos vs Todos'
+    description: 'betSetup.groupDesc'
   },
 ];
 
@@ -33,6 +34,7 @@ export const BetCategoryTabs: React.FC<BetCategoryTabsProps> = ({
   activeCategory,
   onCategoryChange,
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="flex gap-2 w-full bg-muted/70 p-2 rounded-xl">
       {categories.map((cat) => (
@@ -47,12 +49,12 @@ export const BetCategoryTabs: React.FC<BetCategoryTabsProps> = ({
           )}
         >
           {cat.icon}
-          <span className="text-xs font-medium">{cat.label}</span>
+          <span className="text-xs font-medium">{t(cat.label)}</span>
           <span className={cn(
             'text-[9px]',
             activeCategory === cat.id ? 'text-primary-foreground/80' : 'text-muted-foreground'
           )}>
-            {cat.description}
+            {t(cat.description)}
           </span>
         </button>
       ))}
