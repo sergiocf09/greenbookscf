@@ -42,7 +42,7 @@ const PERIOD_LABELS: Record<RankingPeriod, string> = {
 };
 
 const NetBadge = ({ amount }: { amount: number }) => {
-  if (amount >{' '}{trs("0) return")}{' '}<span className="text-green-600 dark:text-green-400 font-semibold text-sm">+${fmtMoney(amount)}</span>;
+  if (amount > 0) return <span className="text-green-600 dark:text-green-400 font-semibold text-sm">+${fmtMoney(amount)}</span>;
   if (amount < 0) return <span className="text-red-600 dark:text-red-400 font-semibold text-sm">-${fmtMoney(Math.abs(amount))}</span>;
   return <span className="text-muted-foreground font-semibold text-sm">$0</span>;
 };
