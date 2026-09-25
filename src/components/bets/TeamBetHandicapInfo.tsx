@@ -285,12 +285,12 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
       }
       case 'diferencialEquipo': {
         const list = receivers.map(r => `${getName(r.player)} +${fmtHcp(r.strokes)}`).join(', ');
-        return `${trs("Diferencial Equipo: se compara la suma de hándicaps de campo de cada pareja y solo el equipo con hándicap más alto recibe la diferencia${list ?")} ` (${list})` : ''}.`;
+        return `${trs("Diferencial Equipo: se compara la suma de hándicaps de campo de cada pareja y solo el equipo con hándicap más alto recibe la diferencia")}${list ? ` (${list})` : ''}.`;
       }
       case 'slidingEquipo': {
         const half = handicapConfig?.slidingHalfPointMode === 'halfPoint';
         const list = receivers.map(r => `${getName(r.player)} +${fmtHcp(r.strokes)}`).join(', ');
-        return `${trs("Sliding Equipo: se toman los cuatro cruces bilaterales (A-C, A-D, B-C, B-D) de la matriz de hándicaps y se consolidan en la ventaja del equipo${list ?")} ` (${list})` : ''}. Medio punto: ${half ? trs("sí") : trs("no (se redondea hacia abajo)")}.`;
+        return `${trs("Sliding Equipo: se toman los cuatro cruces bilaterales (A-C, A-D, B-C, B-D) de la matriz de hándicaps y se consolidan en la ventaja del equipo")}${list ? ` (${list})` : ''}. ${trs("Medio punto")}: ${half ? trs("sí") : trs("no (se redondea hacia abajo)")}.`;
       }
       default:
         return 'Full Hándicap: cada jugador juega su hándicap de campo completo (según su tee), sin ajustes entre equipos.';
