@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useMemo, useState } from 'react';
 import { Player, PlayerScore, GolfCourse, VegasConfig } from '@/types/golf';
 import { disambiguateInitials, disambiguateShortNames, formatPlayerName } from '@/lib/playerInput';
@@ -28,6 +29,7 @@ interface VegasResultsCardProps {
 export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
   players, vegasConfig, scores, course, basePlayerId, isDisabled, onToggleDisabled, startingHole = 1,
 }) => {
+  const { t } = useTranslation();
   const [detailOpen, setDetailOpen] = useState(false);
   const [expandedSet, setExpandedSet] = useState<number | null>(null);
 
@@ -103,8 +105,8 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
           <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
             <div className="text-xs text-amber-700 space-y-1">
-               <p className="font-medium">Agregar jugadores faltantes</p>
-               <p>Revisa la configuración en la sección de Apuestas.</p>
+               <p className="font-medium">{t('dashboard.addMissingPlayers')}</p>
+               <p>{t('dashboard.checkBetSetup')}</p>
             </div>
           </div>
         </CardContent>
@@ -158,7 +160,7 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
   const vegasVariantLabel = vegasConfig.variant === 'fixed' ? 'Parejas Fijas' : 'Rotatoria';
   const vegasSummary = [
     vegasVariantLabel,
-    vegasConfig.useHandicap ? 'Con Hándicap' : 'Sin Hándicap',
+    vegasConfig.useHandicap ? t('dashboard.withHcp') : t('dashboard.withoutHcp'),
     vegasConfig.birdieMultiplier ? 'Birdie ×2' : null,
     `$${fmtMoney(vegasConfig.valuePerPoint)}/pto`,
   ].filter(Boolean).join(' · ');
@@ -175,7 +177,7 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
               effectiveHandicaps={vegasConfig.teamHandicaps}
               handicapConfig={vegasConfig.handicapConfig}
               useHandicap={vegasConfig.useHandicap}
-              title="Las Vegas — Hándicaps"
+              title={`Las Vegas — ${t('dashboard.handicaps')}`}
               modalityLine={vegasSummary}
               course={course}
               segments={hcpSegments}
@@ -263,7 +265,7 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
               return (
                 <div className="bg-muted/30 rounded-lg p-2 space-y-1">
                   <div className="text-[10px] text-muted-foreground text-center mb-1">
-                    Set H{SET_LABELS[sr.setNumber]} · Toca en un hoyo para ver detalle
+                    Set H{SET_LABELS[sr.setNumber]} · {t('dashboard.tapHoleDetail')}
                   </div>
                   <div className="grid grid-cols-6 gap-1">
                     {sr.holeDetails.map(hd => {
@@ -336,7 +338,7 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
                   return (
                     <div key={sr.setNumber || 'all'} className="bg-muted/30 rounded-lg p-2 space-y-1">
                       <div className="text-[10px] text-muted-foreground text-center">
-                        Toca en un hoyo para ver el desglose
+                        {t('dashboard.tapHoleBreakdown')}
                       </div>
                       <div className={cn('grid gap-1', 'grid-cols-9')}>
                         {/* Front 9 */}

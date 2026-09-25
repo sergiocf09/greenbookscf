@@ -141,6 +141,20 @@
     "templates": "Templates"
   },
   "dashboard": {
-    "summary": "Overall Summary"
+    "summary": "Overall Summary",
+    "noHolesYet": "No holes completed yet",
+    "ninesPoints": "Nines — Points",
+    "addMissingPlayers": "Add missing players",
+    "checkBetSetup": "Check the setup in the Bets section.",
+    "holeDetail": "Hole-by-Hole Detail",
+    "tapOutside": "Tap outside to close",
+    "withHcp": "With Handicap",
+    "withoutHcp": "Without Handicap",
+    "handicaps": "Handicaps",
+    "tapHoleDetail": "Tap a hole to see details",
+    "tapHoleBreakdown": "Tap a hole to see the breakdown",
+    "points": "Points",
+    "ninesSplit": "5-3-1 split · ${{v}}/pt",
+    "ninesNote": "Nines splits 9 points per hole among the 3 players by net score; each player plays with their own strokes (no team formats)."
   }
 }

@@ -141,6 +141,20 @@
     "templates": "Plantillas"
   },
   "dashboard": {
-    "summary": "Resumen General"
+    "summary": "Resumen General",
+    "noHolesYet": "Sin hoyos completados aún",
+    "ninesPoints": "Nines — Puntos",
+    "addMissingPlayers": "Agregar jugadores faltantes",
+    "checkBetSetup": "Revisa la configuración en la sección de Apuestas.",
+    "holeDetail": "Detalle por Hoyo",
+    "tapOutside": "Toca afuera para cerrar",
+    "withHcp": "Con Hándicap",
+    "withoutHcp": "Sin Hándicap",
+    "handicaps": "Hándicaps",
+    "tapHoleDetail": "Toca en un hoyo para ver detalle",
+    "tapHoleBreakdown": "Toca en un hoyo para ver el desglose",
+    "points": "Puntos",
+    "ninesSplit": "Reparto 5-3-1 · ${{v}}/pto",
+    "ninesNote": "Nines reparte 9 puntos por hoyo entre los 3 jugadores según su score neto; cada jugador juega con sus propios golpes (no hay modalidades de equipo)."
   }
 }

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useMemo, useState } from 'react';
 import { Player, PlayerScore, GolfCourse, WolfConfig, WolfHoleState } from '@/types/golf';
 import { disambiguateInitials, disambiguateShortNames } from '@/lib/playerInput';
@@ -24,6 +25,7 @@ interface WolfResultsCardProps {
 export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
   players, wolfConfig, holeStates, scores, course, basePlayerId, isDisabled, onToggleDisabled,
 }) => {
+  const { t } = useTranslation();
   const [openSection, setOpenSection] = useState<string | null>(null);
 
   // Filter out contaminated hole states (players not in current participantIds)
@@ -262,7 +264,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
                     </span>
                   </p>
                   <p className="flex justify-between"><span>Bola Alta</span><span>{detail.highBallWinner === 'wolf' ? 'Loba' : detail.highBallWinner === 'rival' ? 'Rival' : 'Empate'}</span></p>
-                  <p className="flex justify-between"><span>Puntos</span><span>{detail.pointsWolf}–{detail.pointsRival}</span></p>
+                  <p className="flex justify-between"><span>{t('dashboard.points')}</span><span>{detail.pointsWolf}–{detail.pointsRival}</span></p>
                 </>
               )}
               {(detail.carryoverHoles ?? 0) > 0 && (
@@ -283,7 +285,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
   const scoringLabel = wolfConfig.scoringMode === 'lowBall' ? 'Bola Baja' : wolfConfig.scoringMode === 'lowHighBall' ? 'BB + BA' : 'Score Neto';
   const configSummary = [
     scoringLabel,
-    wolfConfig.useHandicap ? 'Con Hándicap' : 'Sin Hándicap',
+    wolfConfig.useHandicap ? t('dashboard.withHcp') : t('dashboard.withoutHcp'),
     wolfConfig.carryover ? 'Carryover' : null,
     `$${fmtMoney(wolfConfig.amountPerHole)}/hoyo`,
   ].filter(Boolean).join(' · ');
