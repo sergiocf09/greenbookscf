@@ -6,7 +6,7 @@
 - [ ] Phase 5: emails, share images, terms/privacy
 
 ## English translation (approved plan 2026-09-25)
-- [~] Stage A: playing a round — score entry buttons, scorecard headers, bet summary done; dashboard result cards, head-to-head detail, close dialogs pending
+- [~] Stage A: playing a round — score entry buttons, scorecard headers, bet summary done; most result cards done (Nines, Sixes, Vegas, Wolf, Team Carts, Blocks); head-to-head detail, close dialogs pending
 - [ ] Stage B: bet setup
 - [ ] Stage C: help, history, stats, rankings, leaderboards, auth, onboarding
 - [ ] Stage D: share images, terms, privacy
