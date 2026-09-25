@@ -76,9 +76,9 @@
  "Acum.": "Carry",
  "Acumula en empate": "Carry on tie",
  "Acumulación:": "Carry:",
- "Acumulado": "Carried Over",
+ "Acumulado": "Overall",
  "Acumulado de la copa": "Cup Carry",
- "Acumulado ·": "Carried Over ·",
+ "Acumulado ·": "Overall ·",
  "Acumulados": "Carried Over",
  "Acumulados: debe llegar al green en 1 golpe. Sangrón: todos compiten sin acumular.": "Carry: must reach green in 1 shot. Sandbagger: everyone competes without carry.",
  "Agrega al menos 2 días con fecha": "Add at least 2 days with dates",
@@ -186,7 +186,7 @@
  "Back 9": "Back 9",
  "Back 9 (por skin)": "Back 9 (per skin)",
  "Balance": "Balance",
- "Balance Acumulado": "Carry Balance",
+ "Balance Acumulado": "Cumulative Balance",
  "Balance General": "Overall Balance",
  "Balance Total": "Total Balance",
  "Balance total período": "Total period balance",
@@ -1864,5 +1864,6 @@
  "Este año": "This Year",
  "Hoy": "Today",
  "Resultado de esta ronda": "Result for this round",
- "golpes brutos": "gross strokes"
+ "golpes brutos": "gross strokes",
+ "1A": "1Y"
 }
