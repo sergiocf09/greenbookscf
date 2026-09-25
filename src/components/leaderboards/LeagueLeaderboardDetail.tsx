@@ -129,7 +129,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
   };
 
   const handleCloseLeague = async () => {
-    if (!confirm('¿Cerrar la liga? Los standings quedarán congelados.')) return;
+    if (!confirm(trs('¿Cerrar la liga? Los standings quedarán congelados.'))) return;
     const { error } = await supabase.rpc('close_leaderboard' as any, { p_leaderboard_id: leaderboardId });
     if (error) { toast.error(error.message); return; }
     toast.success(trs("Liga cerrada"));

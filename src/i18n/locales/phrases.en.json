@@ -1865,5 +1865,14 @@
  "Hoy": "Today",
  "Resultado de esta ronda": "Result for this round",
  "golpes brutos": "gross strokes",
- "1A": "1Y"
+ "1A": "1Y",
+ "¿Cerrar la liga? Los standings quedarán congelados.": "Close the league? The standings will be frozen.",
+ "Este jugador aparece en": "This player appears in",
+ "el match": "the match",
+ "los matches": "the matches",
+ "Primero edita o elimina": "First edit or delete",
+ "ese match": "that match",
+ "esos matches": "those matches",
+ "y vuelve a intentar.": "and try again.",
+ "Saldrá de esta competencia. Podrás volver a agregarlo más adelante si lo necesitas.": "They will leave this competition. You can add them again later if needed."
 }

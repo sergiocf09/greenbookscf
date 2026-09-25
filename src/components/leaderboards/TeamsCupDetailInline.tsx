@@ -2085,7 +2085,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              ¿Eliminar a {participantToRemove ? formatPlayerName(participantToRemove.display_name) : ''}?
+              {trs('¿Eliminar a')} {participantToRemove ? formatPlayerName(participantToRemove.display_name) : ''}?
             </AlertDialogTitle>
             <AlertDialogDescription>
               {(() => {
@@ -2094,13 +2094,13 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
                 if (inMatches.length > 0) {
                   return (
                     <>
-                      Este jugador aparece en {inMatches.length === 1 ? 'el match' : 'los matches'}{' '}
+                      {trs('Este jugador aparece en')} {trs(inMatches.length === 1 ? 'el match' : 'los matches')}{' '}
                       <strong>#{inMatches.sort((a, b) => a - b).join(', #')}</strong>.
-                      Primero edita o elimina {inMatches.length === 1 ? 'ese match' : 'esos matches'} y vuelve a intentar.
+                      {' '}{trs('Primero edita o elimina')} {trs(inMatches.length === 1 ? 'ese match' : 'esos matches')} {trs('y vuelve a intentar.')}
                     </>
                   );
                 }
-                return 'Saldrá de esta competencia. Podrás volver a agregarlo más adelante si lo necesitas.';
+                 return trs('Saldrá de esta competencia. Podrás volver a agregarlo más adelante si lo necesitas.');
               })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
