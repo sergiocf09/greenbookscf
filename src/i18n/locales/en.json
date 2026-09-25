@@ -122,5 +122,25 @@
     "strokes": "Strokes",
     "player": "Player",
     "quickEntry": "Quick entry"
+  },
+  "betSetup": {
+    "individual": "Individual",
+    "individualDesc": "Player vs Player",
+    "pairs": "Foursomes",
+    "pairsDesc": "Pair vs Pair",
+    "group": "Group",
+    "groupDesc": "Everyone vs Everyone",
+    "inherited": "Group 1 (inherited)",
+    "myGroup": "My Group",
+    "inheritedTitle": "Group 1 base setup (read only)",
+    "inheritedDesc": "This is the template your group inherits. It can't be changed here.",
+    "myGroupTitle": "Your group's bets",
+    "myGroupDesc": "You inherit Group 1's setup. Here you can change amounts or turn bets on/off for your group.",
+    "saveTemplate": "Save this setup as a template",
+    "saveTemplateDesc": "Load it later to start recurring rounds",
+    "templates": "Templates"
+  },
+  "dashboard": {
+    "summary": "Overall Summary"
   }
 }

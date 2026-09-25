@@ -175,7 +175,7 @@ export const GeneralBetTable: React.FC<GeneralBetTableProps> = ({
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden">
       <div className="bg-primary/10 px-3 py-2 border-b border-border">
-        <h3 className="text-sm font-semibold text-primary">Resumen General</h3>
+        <h3 className="text-sm font-semibold text-primary">{t('dashboard.summary')}</h3>
       </div>
 
       <div className="divide-y divide-border">
