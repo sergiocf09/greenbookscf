@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useMemo } from 'react';
 import { Player, PlayerScore, GolfCourse, NinesConfig } from '@/types/golf';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
@@ -41,14 +42,14 @@ export const NinesLiveTable: React.FC<NinesLiveTableProps> = ({
   if (confirmedHoles.size === 0) {
     return (
       <p className="text-xs text-muted-foreground text-center mb-2">
-        Sin hoyos completados aún
+        {t('dashboard.noHolesYet')}
       </p>
     );
   }
 
   return (
     <div className="rounded-lg border border-border bg-card p-2 mb-3">
-      <p className="text-[10px] font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">Nines — Puntos</p>
+      <p className="text-[10px] font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">{t('dashboard.ninesPoints')}</p>
       <div className="space-y-1">
         {summaries.map((s, i) => {
           const player = players.find(p => p.id === s.playerId);

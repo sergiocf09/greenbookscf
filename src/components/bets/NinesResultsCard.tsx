@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useMemo } from 'react';
 import { Player, PlayerScore, GolfCourse, NinesConfig } from '@/types/golf';
 import { buildNinesHoleDetails, calculateNinesPlayerSummaries, calculateNinesBets, distributeNinesPoints } from '@/lib/bets/nines';
@@ -180,8 +181,8 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
           <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
             <div className="text-xs text-amber-700 space-y-1">
-               <p className="font-medium">Agregar jugadores faltantes</p>
-               <p>Revisa la configuración en la sección de Apuestas.</p>
+               <p className="font-medium">{t('dashboard.addMissingPlayers')}</p>
+               <p>{t('dashboard.checkBetSetup')}</p>
             </div>
           </div>
         </CardContent>
@@ -214,9 +215,9 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
           <TeamBetHandicapInfo
             players={activePlayers}
             effectiveHandicaps={ninesConfig.playerHandicaps}
-            title="Nines — Hándicaps"
-            modalityLine={`Reparto 5-3-1 · $${fmtMoney(ninesConfig.valuePerPoint)}/pto`}
-            note="Nines reparte 9 puntos por hoyo entre los 3 jugadores según su score neto; cada jugador juega con sus propios golpes (no hay modalidades de equipo)."
+            title={`Nines — ${t('dashboard.handicaps')}`}
+            modalityLine={t('dashboard.ninesSplit', { v: fmtMoney(ninesConfig.valuePerPoint) })}
+            note={t('dashboard.ninesNote')}
           />
         </CardTitle>
 
@@ -263,7 +264,7 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
             <div className="space-y-2">
               <div className="font-semibold text-sm flex items-center gap-2">
                 <Star className="h-4 w-4 text-amber-500" />
-                Nines (5-3-1) — Detalle por Hoyo
+                Nines (5-3-1) — {t('dashboard.holeDetail')}
               </div>
               {/* Front 9 */}
               <div className={cn('grid gap-0.5 text-[8px] text-muted-foreground',
@@ -328,7 +329,7 @@ export const NinesResultsCard: React.FC<NinesResultsCardProps> = ({
                 );
               })}
               <div className="border-t-2 border-primary/40 pt-2 mt-2 text-center text-[10px] text-muted-foreground">
-                Toca afuera para cerrar
+                {t('dashboard.tapOutside')}
               </div>
             </div>
           </PopoverContent>

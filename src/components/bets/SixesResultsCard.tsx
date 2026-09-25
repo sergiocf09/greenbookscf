@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useMemo, useState } from 'react';
 import { Player, PlayerScore, GolfCourse, SixesConfig } from '@/types/golf';
 import { disambiguateInitials, disambiguateShortNames, formatPlayerName } from '@/lib/playerInput';
@@ -120,8 +121,8 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
           <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
             <div className="text-xs text-amber-700 space-y-1">
-               <p className="font-medium">Agregar jugadores faltantes</p>
-               <p>Revisa la configuración en la sección de Apuestas.</p>
+               <p className="font-medium">{t('dashboard.addMissingPlayers')}</p>
+               <p>{t('dashboard.checkBetSetup')}</p>
             </div>
           </div>
         </CardContent>
@@ -136,7 +137,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
   const sixesSummary = [
     sixesScoringLabel,
     sixesCobroLabel,
-    sixesConfig.useHandicap ? 'Con Hándicap' : 'Sin Hándicap',
+    sixesConfig.useHandicap ? t('dashboard.withHcp') : t('dashboard.withoutHcp'),
     `$${fmtMoney(sixesConfig.amount)}`,
   ].filter(Boolean).join(' · ');
 
@@ -151,7 +152,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
               effectiveHandicaps={sixesConfig.teamHandicaps}
               handicapConfig={sixesConfig.handicapConfig}
               useHandicap={sixesConfig.useHandicap}
-              title="Sixes — Hándicaps"
+              title={`Sixes — ${t('dashboard.handicaps')}`}
               modalityLine={`${sixesScoringLabel} · ${sixesCobroLabel}`}
               course={course}
               segments={hcpSegments}
@@ -237,7 +238,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
           return (
             <div className="bg-muted/30 rounded-lg p-2 space-y-1">
               <div className="text-[10px] text-muted-foreground text-center mb-1">
-                Set H{SET_LABELS[sr.setNumber]} · Toca en un hoyo para ver detalle
+                Set H{SET_LABELS[sr.setNumber]} · {t('dashboard.tapHoleDetail')}
               </div>
               <div className="grid grid-cols-6 gap-1">
                 {sr.holeDetails.map(hd => {
