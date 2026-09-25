@@ -75,7 +75,7 @@ export const HistoricalStrokeSummaryCard: React.FC<{ competition: HistoricalComp
                       'text-sm font-semibold tabular-nums',
                       mode === 'stableford' ? 'text-amber-600' : 'text-foreground',
                     )}>
-                      mode === 'stableford' ? `${v} pts` : `${fmtVsPar(v)} vs par`}
+                      {mode === 'stableford' ? `${v} pts` : `${fmtVsPar(v)} vs par`}
                     </span>
                     {pos !== null && (
                       <span className="text-xs text-muted-foreground">
