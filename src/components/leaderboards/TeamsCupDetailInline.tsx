@@ -512,7 +512,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
         .update({ is_active: false, cup_team_id: null })
         .eq('id', participantToRemove.id);
       if (error) throw error;
-      toast.success(`${formatPlayerName(participantToRemove.display_name)} eliminado`);
+      toast.success(`${formatPlayerName(participantToRemove.display_name)} ${trs("eliminado")}`);
       setParticipantToRemove(null);
       await cup.fetchAll();
     } catch (err: any) {
@@ -721,7 +721,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
       });
       toast.success(
         changed > 0
-          ? `${changed} hándicap(s) actualizados — revisa y presiona Guardar`
+          ? `${changed} ${trs("hándicap(s) actualizados — revisa y presiona Guardar")}`
           : trs("Todos los hándicaps ya están al día")
       );
     } catch (err) {

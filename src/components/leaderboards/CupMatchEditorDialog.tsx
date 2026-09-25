@@ -295,7 +295,7 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
                   <SelectContent>
                     {days.map(d => (
                       <SelectItem key={d.day_number} value={String(d.day_number)}>
-                        {d.label?.trim() || `Día ${d.day_number}`}
+                        {d.label?.trim() || `${trs("Día")} ${d.day_number}`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -308,7 +308,7 @@ export const CupMatchEditorDialog: React.FC<Props> = ({
                   <SelectContent>
                     {(currentDay?.sessions ?? []).map(s => (
                       <SelectItem key={s.session_number} value={String(s.session_number)}>
-                        {s.label?.trim() || `Sesión ${s.session_number}`}
+                        {s.label?.trim() || `${trs("Sesión")} ${s.session_number}`}
                         {' · '}{s.format === 'fourball' ? 'Fourball' : 'Individual'}
                       </SelectItem>
                     ))}

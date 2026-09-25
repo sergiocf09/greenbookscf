@@ -172,7 +172,7 @@ export const ShareRoundDialog: React.FC<ShareRoundDialogProps> = ({
               try {
                 await navigator.share({
                   title: trs("Únete a mi ronda de golf"),
-                  text: `Únete a mi ronda de golf. Código: ${shortCode}`,
+                  text: `${trs("Únete a mi ronda de golf. Código:")} ${shortCode}`,
                   url: shareLink,
                 });
               } catch (err) {

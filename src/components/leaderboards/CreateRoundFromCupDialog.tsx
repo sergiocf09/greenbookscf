@@ -291,7 +291,7 @@ export const CreateRoundFromCupDialog: React.FC<Props> = ({
     // Sanity: per-group size limit.
     const tooBig = groupsRaw.find(g => g.participantIds.length > MAX_PER_GROUP);
     if (tooBig) {
-      toast.error(`El grupo ${tooBig.groupNumber} tiene más de ${MAX_PER_GROUP} jugadores`);
+      toast.error(`${trs("El grupo")} ${tooBig.groupNumber} ${trs("tiene más de")} ${MAX_PER_GROUP} ${trs("jugadores")}`);
       return;
     }
 

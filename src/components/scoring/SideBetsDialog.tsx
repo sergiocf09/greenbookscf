@@ -218,7 +218,7 @@ export const SideBetsDialog: React.FC<SideBetsDialogProps> = ({
                   <button
                     key={player.id}
                     onClick={() => toggleWinner(player.id)}
-                    aria-label={`Ganador ${getAbbr(player)}`}
+                    aria-label={`${trs("Ganador")} ${getAbbr(player)}`}
                     className={cn(
                       'flex items-center gap-1 p-1 rounded-full transition-all border',
                       isSelected

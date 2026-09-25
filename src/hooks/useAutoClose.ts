@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -40,7 +41,7 @@ export function useAutoClose(
 
       for (const round of data as PendingAutoCloseRound[]) {
         setCurrentRound(round);
-        devLog(`[AutoClose] Procesando ronda ${round.round_id} — completa: ${round.all_players_complete}`);
+        devLog(`${trs("[AutoClose] Procesando ronda")} ${round.round_id} — completa: ${round.all_players_complete}`);
 
         if (round.all_players_complete) {
           window.dispatchEvent(new CustomEvent('greenbook:auto-close-round', {
@@ -51,9 +52,9 @@ export function useAutoClose(
             p_round_id: round.round_id,
           });
           if (closeErr) {
-            devError(`[AutoClose] Error cerrando ronda incompleta ${round.round_id}:`, closeErr);
+            devError(`${trs("[AutoClose] Error cerrando ronda incompleta")} ${round.round_id}:`, closeErr);
           } else {
-            devLog(`[AutoClose] Ronda incompleta cerrada: ${round.round_id}`);
+            devLog(`${trs("[AutoClose] Ronda incompleta cerrada:")} ${round.round_id}`);
             onCloseComplete?.(round.round_id, false);
           }
         }

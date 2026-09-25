@@ -79,7 +79,7 @@ const MoneyRankings = () => {
           <div className="min-w-0">
             <CardTitle className="text-base truncate">{r.name}</CardTitle>
             <CardDescription className="text-xs">
-              {r.is_creator ? trs("Creado por ti") : `Creado por ${r.creator_name}`}
+              {r.is_creator ? trs("Creado por ti") : `${trs("Creado por")} ${r.creator_name}`}
               {' · '}{format(new Date(r.created_at), 'd MMM yyyy', { locale: es })}
             </CardDescription>
           </div>

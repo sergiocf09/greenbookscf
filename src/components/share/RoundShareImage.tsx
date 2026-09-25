@@ -434,7 +434,7 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
           await navigator.share({
             files: [file],
             title: `GreenBook — ${courseName}`,
-            text: `🏌️ Mis resultados de golf en ${courseName}\n📲 golfgreenbookscf.com`,
+            text: `${trs("🏌️ Mis resultados de golf en")} ${courseName}\n📲 golfgreenbookscf.com`,
           });
           return;
         } catch {

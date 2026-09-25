@@ -96,7 +96,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
         <p className="text-[10px] text-[hsl(50,95%,55%)]/70">
           {isRedemption
             ? `$${fmtMoney(wolfConfig.amountPerHole * 3)} (×3) · Solo obligatorio`
-            : `$${fmtMoney(wolfConfig.amountPerHole)} por hoyo · ${timingLabels[wolfConfig.timing] ?? wolfConfig.timing}`}
+            : `$${fmtMoney(wolfConfig.amountPerHole)} ${trs("por hoyo ·")} ${timingLabels[wolfConfig.timing] ?? wolfConfig.timing}`}
         </p>
       </div>
 

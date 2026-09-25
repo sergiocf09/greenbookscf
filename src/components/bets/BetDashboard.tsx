@@ -2998,7 +2998,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     teamB={displayTeamBPlayers}
                     effectiveHandicaps={bet.teamHandicaps}
                     handicapConfig={bet.handicapConfig}
-                    title={`Foursome ${idx + 1} — Hándicaps`}
+                    title={`Foursome ${idx + 1} ${trs("— Hándicaps")}`}
                     modalityLine={[
                       bet.scoringType === 'lowBall' ? 'Low Ball'
                         : bet.scoringType === 'highBall' ? 'High Ball'

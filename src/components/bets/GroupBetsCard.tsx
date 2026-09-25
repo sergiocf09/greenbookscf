@@ -3367,8 +3367,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       const medalSliding = isMedal && betConfig.medalGeneral?.handicapMode === 'bilateral';
       const modeSuffix = medalSliding ? ' · Sliding' : isMedal ? ' · USGA' : '';
       const sheetTitle = (segmentMode === 'segments'
-        ? `${betLabel} — Por tramo`
-        : `${betLabel} — Total 18`) + modeSuffix;
+        ? `${betLabel} ${trs("— Por tramo")}`
+        : `${betLabel} ${trs("— Total 18")}`) + modeSuffix;
 
       return (
         <GroupBetAuditSheet

@@ -1013,7 +1013,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
         if (wonByPlayer.length > 0) parts.push(`B${wonByPlayer.join(',')}`);
         if (tied.length > 0) parts.push(`Empate B${tied.join(',')}`);
         const inCurso = bloquesDetail.filter(b => !b.resolved && (b.holesPlayed ?? 0) > 0);
-        if (inCurso.length > 0) parts.push(`En curso B${inCurso.map(b => b.blockNumber).join(',')}`);
+        if (inCurso.length > 0) parts.push(`${trs("En curso B")}${inCurso.map(b => b.blockNumber).join(',')}`);
         bloquesDesc = parts.join(' · ') || '—';
       }
 
@@ -1593,7 +1593,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
               rivalNet: isWinner ? 0 : 1,
               amount,
               description: bet.holeNumber 
-                ? `Hoyo ${bet.holeNumber}${bet.description ? `: ${bet.description}` : ''}` 
+                ? `${trs("Hoyo")} ${bet.holeNumber}${bet.description ? `: ${bet.description}` : ''}` 
                 : (bet.description || 'Side Bet'),
             };
           },
@@ -1788,7 +1788,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
             <span className="font-semibold text-amber-700">Ventaja:</span>
             <span className="text-foreground">
               {activeAdvantage > 0
-                ? `Tú das ${activeAdvantage} unidad${activeAdvantage !== 1 ? 'es' : ''}`
+                ? `${trs("Tú das")} ${activeAdvantage} unidad${activeAdvantage !== 1 ? 'es' : ''}`
                 : `Rival da ${Math.abs(activeAdvantage)} unidad${Math.abs(activeAdvantage) !== 1 ? 'es' : ''}`}
             </span>
             <span className="ml-auto font-bold tabular-nums">
@@ -2202,7 +2202,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-xs font-medium">{trs("Modalidad")}</span>
                               <span className="text-[10px] text-muted-foreground">
-                                {`${effCarry ? 'Carry   ' : ''}${effectiveBetConfig.bloques.holesPerBlock} Hoyos   $${effAmt} p/bloque`}
+                                {`${effCarry ? 'Carry   ' : ''}${effectiveBetConfig.bloques.holesPerBlock} ${trs("Hoyos   $")}${effAmt} p/bloque`}
                               </span>
                             </div>
                             <BloquesStrip
@@ -2475,7 +2475,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       h.isAccumulated ? 'bg-muted text-muted-foreground' :
                                       'bg-muted/30 text-muted-foreground'
                                     )}
-                                    title={h.isWin && h.accumulatedAmount ? `Ganó $${h.accumulatedAmount}` : undefined}
+                                    title={h.isWin && h.accumulatedAmount ? `${trs("Ganó $")}${h.accumulatedAmount}` : undefined}
                                   >
                                     {h.playerOrder !== null ? `#${h.playerOrder}` : '–'}
                                   </div>
@@ -2510,7 +2510,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       h.isAccumulated ? 'bg-muted text-muted-foreground' :
                                       'bg-muted/30 text-muted-foreground'
                                     )}
-                                    title={h.isWin && h.accumulatedAmount ? `Ganó $${h.accumulatedAmount}` : undefined}
+                                    title={h.isWin && h.accumulatedAmount ? `${trs("Ganó $")}${h.accumulatedAmount}` : undefined}
                                   >
                                     {h.playerOrder !== null ? `#${h.playerOrder}` : '–'}
                                   </div>
@@ -3396,7 +3396,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                         <div className="flex items-center justify-between">
                                           <span className="font-medium text-sm">{trs("Modalidad")}</span>
                                           <span className="text-[10px] text-muted-foreground">
-                                            {`${effCarry2 ? 'Carry   ' : ''}${effectiveBetConfig.bloques.holesPerBlock} Hoyos   $${effAmt2} p/bloque`}
+                                            {`${effCarry2 ? 'Carry   ' : ''}${effectiveBetConfig.bloques.holesPerBlock} ${trs("Hoyos   $")}${effAmt2} p/bloque`}
                                           </span>
                                         </div>
                                         <BloquesStrip

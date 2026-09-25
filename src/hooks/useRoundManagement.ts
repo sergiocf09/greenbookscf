@@ -1218,7 +1218,7 @@ export const useRoundManagement = ({
       const actualPairs = bilateralHandicapsMap?.size || 0;
       
       if (betConfig.pressures?.enabled && loggedInPlayers.length >= 2 && actualPairs === 0) {
-        devWarn(`⚠️ VALIDATION WARNING: Presiones enabled with ${loggedInPlayers.length} logged-in players but no bilateral handicaps found.`);
+        devWarn(`⚠️ VALIDATION WARNING: Presiones enabled with ${loggedInPlayers.length} ${trs("logged-in players but no bilateral handicaps found.")}`);
       } else if (betConfig.pressures?.enabled && actualPairs < expectedPairs) {
         devWarn(`⚠️ VALIDATION: Expected ${expectedPairs} bilateral handicap pairs, found ${actualPairs}.`);
       }
@@ -1534,7 +1534,7 @@ export const useRoundManagement = ({
       // ─── END SPRINT 3 BET CALCULATION ────────────────────────────────────────
 
       const allBetResults = [...intraGroupBetResults, ...crossGroupSummaries, ...sprint3Summaries];
-      devLog(`Close engine: ${intraGroupBetResults.length} intra-group + ${crossGroupSummaries.length} cross-group + ${sprint3Summaries.length} sprint3 = ${allBetResults.length} total bet summaries`);
+      devLog(`Close engine: ${intraGroupBetResults.length} intra-group + ${crossGroupSummaries.length} cross-group + ${sprint3Summaries.length} sprint3 = ${allBetResults.length} ${trs("total bet summaries")}`);
       // ─── END SYNCHRONOUS BET CALCULATION ────────────────────────────────────
 
       // ─── SIDE BETS DIAGNOSTIC LOG ───────────────────────────────────────────
@@ -1771,9 +1771,9 @@ export const useRoundManagement = ({
         // ─── End breakdown ───────────────────────────────────────────────────
 
         // BLOCKING GUARDRAIL: Abort closure if discrepancy exceeds $1
-        const errorMsg = `Discrepancia UI vs Motor detectada (máx Δ$${maxDelta}):\n${discrepancies.join('\n')}\n\nEl cierre fue bloqueado. Revisa la configuración de participantes en las apuestas.`;
+        const errorMsg = `${trs("Discrepancia UI vs Motor detectada (máx Δ$")}${maxDelta}):\n${discrepancies.join('\n')}${trs("\\n\\nEl cierre fue bloqueado. Revisa la configuración de participantes en las apuestas.")}`;
         await fail('preValidation', new Error(errorMsg), report.attemptId);
-        toast.error(`Cierre bloqueado: discrepancia de $${maxDelta} entre UI y motor de cálculo. Revisa participantes.`, { duration: 8000 });
+        toast.error(`${trs("Cierre bloqueado: discrepancia de $")}${maxDelta} ${trs("entre UI y motor de cálculo. Revisa participantes.")}`, { duration: 8000 });
         return false;
       } else if (maxDelta > 1 && !uiProvidedResults) {
         devWarn(`[CLOSE] PRE-VALIDATION skipped: UI provided 0 summaries (BetDashboard not mounted). Engine is authoritative. Max delta: $${maxDelta}`);
@@ -1792,7 +1792,7 @@ export const useRoundManagement = ({
         if (!hasParticipants) return;
         const found = expectedTypes.some(t => engineBetTypes.has(t));
         if (!found) {
-          structuralWarnings.push(`${label} está habilitada con participantes pero no generó resultados en el motor`);
+          structuralWarnings.push(`${label} ${trs("está habilitada con participantes pero no generó resultados en el motor")}`);
         }
       };
 
@@ -1997,7 +1997,7 @@ export const useRoundManagement = ({
         const isIntegrityFailure = errMsg.includes('integrity check failed');
         toast.error(
           isIntegrityFailure
-            ? `Error de integridad en el snapshot: ${errMsg.split(':')[1]?.trim() ?? errMsg}`
+            ? `${trs("Error de integridad en el snapshot:")} ${errMsg.split(':')[1]?.trim() ?? errMsg}`
             : 'Error al generar snapshot'
         );
         return false;
@@ -2205,7 +2205,7 @@ export const useRoundManagement = ({
                 devLog(`[CloseUSGA] ${player.name}: new Handicap Index = ${newIndex}`);
               }
             } catch (usgaErr) {
-              devError(`[CloseUSGA] Error recalculating index for ${player.name}:`, usgaErr);
+              devError(`${trs("[CloseUSGA] Error recalculating index for")} ${player.name}:`, usgaErr);
             }
           })
         );
@@ -2286,8 +2286,8 @@ export const useRoundManagement = ({
                 : change === 0 
                   ? 'Empate Total → Sin ajuste'
                   : change > 0 
-                    ? `A gana Total → +${change} golpe` 
-                    : `B gana Total → ${change} golpe`;
+                    ? `${trs("A gana Total → +")}${change} golpe` 
+                    : `${trs("B gana Total →")} ${change} golpe`;
               devLog(`Sliding ${r.playerAProfileId.slice(0,8)} vs ${r.playerBProfileId.slice(0,8)}: ${r.strokesUsed} → ${r.strokesNext} (${desc})`);
             });
           }
@@ -2728,7 +2728,7 @@ export const useRoundManagement = ({
       return true;
     } catch (err: any) {
       devError('[resetRoundForReclose]', err);
-      toast.error(`Error al reabrir ronda: ${err.message}`);
+      toast.error(`${trs("Error al reabrir ronda:")} ${err.message}`);
       return false;
     }
   }, [roundState.id]);

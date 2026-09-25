@@ -228,12 +228,12 @@ export const ManageFoursomesDialog: React.FC<Props> = ({
           if (error) throw error;
         } else if (orig && target != null && target !== orig.groupNumber) {
           const newGid = numToId.get(target);
-          if (!newGid) throw new Error(`Grupo ${target} no encontrado`);
+          if (!newGid) throw new Error(`Grupo ${target} ${trs("no encontrado")}`);
           const { error } = await supabase.from('round_players').update({ group_id: newGid }).eq('id', orig.rpId);
           if (error) throw error;
         } else if (!orig && target != null) {
           const gid = numToId.get(target);
-          if (!gid) throw new Error(`Grupo ${target} no encontrado`);
+          if (!gid) throw new Error(`Grupo ${target} ${trs("no encontrado")}`);
           const tee = (part.tee_color ?? 'white') as TeeColor;
           const td = teeData.get(tee);
           const index = Number(part.handicap_for_leaderboard ?? 0);
@@ -502,7 +502,7 @@ const GroupSection: React.FC<GroupSectionProps> = ({
                 </button>
                 <button
                   onClick={() => {
-                    if (confirm(`¿Eliminar a ${p.display_name} del Cup completo? Esta acción lo quita del leaderboard, sus equipos y matches.`)) {
+                    if (confirm(`${trs("¿Eliminar a")} ${p.display_name} del Cup completo? Esta acción lo quita del leaderboard, sus equipos y matches.`)) {
                       onRemoveFromCup(p.id);
                     }
                   }}

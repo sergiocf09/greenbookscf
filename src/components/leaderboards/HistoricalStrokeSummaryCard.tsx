@@ -30,7 +30,7 @@ export const HistoricalStrokeSummaryCard: React.FC<{ competition: HistoricalComp
         : s.netVsPar;
 
   const dayLabel = lb.dayNumber
-    ? `Día ${lb.dayNumber}${lb.totalDays > 1 ? ` de ${lb.totalDays}` : ''}`
+    ? `${trs("Día")} ${lb.dayNumber}${lb.totalDays > 1 ? ` de ${lb.totalDays}` : ''}`
     : null;
 
   return (

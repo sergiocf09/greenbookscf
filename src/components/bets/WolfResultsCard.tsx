@@ -288,7 +288,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
     scoringLabel,
     wolfConfig.useHandicap ? t('dashboard.withHcp') : t('dashboard.withoutHcp'),
     wolfConfig.carryover ? 'Carryover' : null,
-    `$${fmtMoney(wolfConfig.amountPerHole)}/hoyo`,
+    `$${fmtMoney(wolfConfig.amountPerHole)}${trs("/hoyo")}`,
   ].filter(Boolean).join(' · ');
 
   return (

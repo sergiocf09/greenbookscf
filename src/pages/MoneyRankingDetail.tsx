@@ -177,7 +177,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
     setRenaming(false);
 
     if (error) {
-      toast.error(`No se pudo actualizar el nombre: ${error.message}`);
+      toast.error(`${trs("No se pudo actualizar el nombre:")} ${error.message}`);
       return;
     }
 

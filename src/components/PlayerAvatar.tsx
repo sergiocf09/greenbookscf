@@ -1,3 +1,4 @@
+import { trs } from '@/i18n/tr';
 import React from "react";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +31,7 @@ export const PlayerAvatar = React.forwardRef<HTMLDivElement, PlayerAvatarProps>(
             sizeClasses[size],
             className
           )}
-          aria-label={`Jugador ${initials}`}
+          aria-label={`${trs("Jugador")} ${initials}`}
         >
           {initials}
         </div>
@@ -46,7 +47,7 @@ export const PlayerAvatar = React.forwardRef<HTMLDivElement, PlayerAvatarProps>(
           sizeClasses[size],
           className
         )}
-        aria-label={`Jugador ${initials}`}
+        aria-label={`${trs("Jugador")} ${initials}`}
       >
         {initials}
       </div>

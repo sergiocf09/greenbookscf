@@ -46,7 +46,7 @@ export const useManualCourse = () => {
     // Validate all holes have par and strokeIndex
     for (let i = 0; i < 18; i++) {
       if (!data.holes[i].par || !data.holes[i].strokeIndex) {
-        toast.error(`Hoyo ${i + 1} incompleto`);
+        toast.error(`${trs("Hoyo")} ${i + 1} incompleto`);
         return null;
       }
     }

@@ -262,7 +262,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         <BetSection
           id="caros"
           title={trs("Caros")}
-          description={`Hoyos ${carosStart}-${carosEnd} (ganador único)`}
+          description={`${trs("Hoyos")} ${carosStart}-${carosEnd} ${trs("(ganador único)")}`}
           enabled={config.caros.enabled}
           onToggle={(enabled) => onUpdateBet('caros', { enabled })}
           isExpanded={expandedSections.includes('caros')}
@@ -270,7 +270,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
           helpText={trs("Match de score neto en un rango de hoyos configurable, contados en orden de juego (por defecto los últimos 4 hoyos de la ronda). El jugador con menor total neto en esos hoyos gana la apuesta.")}
         >
           <AmountInput label={trs("Importe total")} value={config.caros.amount} onChange={(v) => onUpdateBet('caros', { amount: v })} />
-          <CollapsibleSubSection label={trs("Configuración")} summary={`Hoyos ${carosStart} a ${carosEnd}`}>
+          <CollapsibleSubSection label={trs("Configuración")} summary={`${trs("Hoyos")} ${carosStart} a ${carosEnd}`}>
 
             <CarosRange
               maxHole={carosMaxHole}
@@ -461,7 +461,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
         <BetSection
           id="bloques"
           title={trs("Bloques")}
-          description={`Mini-medal por ${config.bloques?.holesPerBlock ?? 3} hoyos · ${(isNineHole ? 9 : 18) / (config.bloques?.holesPerBlock ?? 3)} bloques`}
+          description={`${trs("Mini-medal por")} ${config.bloques?.holesPerBlock ?? 3} ${trs("hoyos ·")} ${(isNineHole ? 9 : 18) / (config.bloques?.holesPerBlock ?? 3)} ${trs("bloques")}`}
           enabled={config.bloques?.enabled ?? false}
           onToggle={(enabled) => onUpdateBet('bloques' as any, { enabled })}
           isExpanded={expandedSections.includes('bloques')}

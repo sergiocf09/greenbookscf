@@ -267,7 +267,7 @@ export const AddCupParticipantsDialog: React.FC<Props> = ({
         if (error) throw error;
       }
 
-      toast.success(`${profileRows.length + guestRows.length} jugador(es) agregado(s)`);
+      toast.success(`${profileRows.length + guestRows.length} ${trs("jugador(es) agregado(s)")}`);
       onAdded();
       onClose();
     } catch (err: any) {
