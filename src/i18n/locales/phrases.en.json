@@ -1525,6 +1525,8 @@
  "actualizado. Recalcula HCP si aplica.": "updated. Recalculate HCP if applicable.",
  "agregado a la ronda": "added to round",
  "agregado al grupo": "added to group",
+ "alto": "high",
+ "bajo": "low",
  "betSetup.groupDesc": "betSetup.groupDesc",
  "betSetup.individualDesc": "betSetup.individualDesc",
  "betSetup.pairsDesc": "betSetup.pairsDesc",

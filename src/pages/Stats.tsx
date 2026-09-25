@@ -142,7 +142,7 @@ function KPIGrid({ stats, profile, canViewStats, hcpInfo, liveIndex }: { stats: 
     <span className="flex flex-col gap-0.5">
       <span>{hcpInfo.used} {trs("de")}{' '}{hcpInfo.totalRounds} scores</span>
       {hcpInfo.lowScore != null && hcpInfo.highScore != null && (
-        <span>bajo: {hcpInfo.lowScore} — alto: {hcpInfo.highScore}</span>
+        <span>{trs("bajo")}: {hcpInfo.lowScore} — {trs("alto")}: {hcpInfo.highScore}</span>
       )}
     </span>
   ) : undefined;
@@ -154,7 +154,7 @@ function KPIGrid({ stats, profile, canViewStats, hcpInfo, liveIndex }: { stats: 
       <KPICard icon={<Target className={cn("h-5 w-5", girColor)} />} label="G.I.R." value={fmtPct(stats.gir_pct != null ? Number(stats.gir_pct) : null)} sub={<span className="flex flex-col gap-0.5"><span>P3: {fmtPct(stats.gir_pct_par3 != null ? Number(stats.gir_pct_par3) : null, 0)}</span><span>P4: {fmtPct(stats.gir_pct_par4 != null ? Number(stats.gir_pct_par4) : null, 0)}</span><span>P5: {fmtPct(stats.gir_pct_par5 != null ? Number(stats.gir_pct_par5) : null, 0)}</span></span>} />
       <KPICard icon={<Circle className="h-5 w-5 text-primary" />} label={trs("Putts por GIR")} value={fmtAvg(stats.avg_putts_per_gir != null ? Number(stats.avg_putts_per_gir) : null, 2)} sub={<span className="flex flex-col gap-0.5"><span>1-putt: {fmtPct(stats.pct_one_putt != null ? Number(stats.pct_one_putt) : null, 0)}</span><span>3-putt+: {fmtPct(stats.pct_three_putt_plus != null ? Number(stats.pct_three_putt_plus) : null, 0)}</span><span className="font-bold">{trs("Avg/ronda:")}{' '}{fmtAvg(stats.avg_putts_per_round != null ? Number(stats.avg_putts_per_round) : null, 1)}</span></span>} />
       <KPICard icon={<Feather className="h-5 w-5 text-emerald-500" />} label="% Birdies" value={fmtPct(birdiesPct)} sub={`Total: ${stats.birdies_count} birdies`} locked={!canViewStats} />
-      <KPICard icon={<Minus className="h-5 w-5 text-muted-foreground" />} label="% Pares" value={fmtPct(parsPct)} sub={`Bogeys: ${fmtPct(bogeysPct, 0)}`} locked={!canViewStats} />
+      <KPICard icon={<Minus className="h-5 w-5 text-muted-foreground" />} label={`% ${trs("Pares")}`} value={fmtPct(parsPct)} sub={`Bogeys: ${fmtPct(bogeysPct, 0)}`} locked={!canViewStats} />
     </div>
   );
 }
