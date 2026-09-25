@@ -30,7 +30,7 @@ export const AttestationSheet: React.FC<AttestationSheetProps> = ({
       toast.success(`Score de ${name} atestado`);
     } catch (err) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      toast.error((err as any)?.message ?? 'No se pudo atestar');
+      toast.error((err as any)?.message ?? trs("No se pudo atestar"));
     } finally {
       setAttestingId(null);
     }
@@ -91,7 +91,7 @@ export const AttestationSheet: React.FC<AttestationSheetProps> = ({
                           <span className="truncate">{pp.name}</span>
                         </div>
                         <p className="text-xs text-muted-foreground tabular-nums mt-0.5">
-                          {pp.totalStrokes > 0 ? `${pp.totalStrokes} golpes` : 'Sin score'}
+                          {pp.totalStrokes > 0 ? `${pp.totalStrokes} golpes` : trs("Sin score")}
                         </p>
                       </div>
                       <Button

@@ -1120,7 +1120,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     className="flex items-center gap-1 text-[10px] text-muted-foreground/70 hover:text-muted-foreground transition-colors"
                   >
                     {showGuests ? <UserX className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
-                    {showGuests ? 'Ocultar invitados' : 'Ver invitados'}
+                    {showGuests ? 'Ocultar invitados' : trs("Ver invitados")}
                   </button>
                   {showGuests && (
                     <p className="text-[11px] text-muted-foreground px-1">
@@ -1159,7 +1159,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                   <button
                     onClick={() => setIncludePreApp(v => !v)}
                     aria-pressed={includePreApp}
-                    title={includePreApp ? 'Ocultar Pre-GB del total' : 'Incluir Pre-GB en el total'}
+                    title={includePreApp ? trs("Ocultar Pre-GB del total") : trs("Incluir Pre-GB en el total")}
                     className={cn(
                       'flex items-center gap-1 text-[10px] rounded-md border px-1.5 py-0.5 transition-colors',
                       includePreApp
@@ -1378,7 +1378,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     : 'bg-muted text-muted-foreground border-border'
                 )}
               >
-                {opt.label}
+                {trs(String(opt.label))}
               </button>
             ))}
           </div>
@@ -1474,7 +1474,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     className="flex-1 min-w-0 max-w-[52%] mr-auto h-7 text-[11px] bg-muted border border-border rounded-full px-2 text-foreground"
                   >
                     {betsRivalOptions.map(o => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
+                      <option key={o.value} value={o.value}>{trs(String(o.label))}</option>
                     ))}
                   </select>
                 )}
@@ -1665,7 +1665,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                     className="flex-1 min-w-0 max-w-[52%] h-7 text-[11px] bg-muted border border-border rounded-full px-2 text-foreground"
                   >
                     {betsRivalOptions.map(o => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
+                      <option key={o.value} value={o.value}>{trs(String(o.label))}</option>
                     ))}
                   </select>
                 )}
@@ -1837,7 +1837,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                         className="flex-1 min-w-0 text-xs bg-muted border border-border rounded-lg px-3 py-2 text-foreground"
                       >
                         {betsRivalOptions.map(o => (
-                          <option key={o.value} value={o.value}>{o.label}</option>
+                          <option key={o.value} value={o.value}>{trs(String(o.label))}</option>
                         ))}
                       </select>
                       <button

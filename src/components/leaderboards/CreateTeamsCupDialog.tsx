@@ -225,7 +225,7 @@ export const CreateTeamsCupDialog: React.FC<Props> = ({ open, onClose }) => {
                 onClick={handleCreate}
               >
                 {creating && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
-                Crear Competencia ✓
+                {trs("Crear Competencia ✓")}
               </Button>
             </div>
           </div>

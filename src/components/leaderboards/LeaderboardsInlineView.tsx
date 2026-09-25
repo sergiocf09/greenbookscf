@@ -287,7 +287,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                           checked={formModes.includes(mode.key)}
                           onCheckedChange={() => toggleMode(mode.key)}
                         />
-                        <span className="text-sm">{mode.label}</span>
+                        <span className="text-sm">{trs(String(mode.label))}</span>
                       </label>
                     ))}
                   </div>
@@ -301,7 +301,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                   className="w-full"
                 >
                   {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Crear
+                  {trs("Crear")}
                 </Button>
               </div>
             )}
@@ -405,7 +405,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                           checked={formModes.includes(mode.key)}
                           onCheckedChange={() => toggleMode(mode.key)}
                         />
-                        <span className="text-sm">{mode.label}</span>
+                        <span className="text-sm">{trs(String(mode.label))}</span>
                       </label>
                     ))}
                   </div>
@@ -420,7 +420,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                   className="w-full"
                 >
                   {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Crear Multi-día
+                  {trs("Crear Multi-día")}
                 </Button>
               </div>
             )}

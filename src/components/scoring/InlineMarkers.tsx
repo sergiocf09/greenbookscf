@@ -225,7 +225,7 @@ export const InlineMarkers: React.FC<InlineMarkersProps> = ({
                   isUnidad ? 'bg-primary text-primary-foreground' : 'bg-destructive text-destructive-foreground'
                 )}
               >
-                <p className="font-semibold">{marker.label}</p>
+                <p className="font-semibold">{trs(String(marker.label))}</p>
                 <p className="text-[10px] opacity-90">{marker.description}</p>
               </TooltipContent>
             </Tooltip>
@@ -261,7 +261,7 @@ export const AutoDetectedBadge: React.FC<AutoDetectedBadgeProps> = ({ type, show
       'px-1.5 py-0.5 rounded-full text-[10px] font-bold',
       config.color
     )}>
-      {config.label}
+      {trs(String(config.label))}
     </span>
   );
 };

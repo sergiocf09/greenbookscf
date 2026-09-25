@@ -214,7 +214,7 @@ const Leaderboards = () => {
                             checked={formModes.includes(mode.key)}
                             onCheckedChange={() => toggleMode(mode.key)}
                           />
-                          <span className="text-sm">{mode.label}</span>
+                          <span className="text-sm">{trs(String(mode.label))}</span>
                         </label>
                       ))}
                     </div>
@@ -229,7 +229,7 @@ const Leaderboards = () => {
                       className="flex-1"
                     >
                       {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                      Crear
+                      {trs("Crear")}
                     </Button>
                   </div>
                 </div>

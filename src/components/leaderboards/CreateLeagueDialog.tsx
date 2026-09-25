@@ -182,7 +182,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
                 <SelectContent>
                   {PERIOD_OPTIONS.map(o => (
                     <SelectItem key={o.value} value={String(o.value)}>
-                      {o.label}
+                      {trs(String(o.label))}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -377,7 +377,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
           </Button>
           <Button onClick={handleCreate} disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-            Crear Liga
+            {trs("Crear Liga")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -209,7 +209,7 @@ export const ZoologicoDialog: React.FC<ZoologicoDialogProps> = ({
                     )}
                   >
                     <span className="text-lg">{info.emoji}</span>
-                    {info.label}
+                    {trs(String(info.label))}
                     {isSelected && <Check className="h-3 w-3" />}
                   </button>
                 );

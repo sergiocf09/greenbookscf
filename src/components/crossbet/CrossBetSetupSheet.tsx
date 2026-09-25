@@ -135,7 +135,7 @@ export const CrossBetSetupSheet: React.FC<CrossBetSetupSheetProps> = ({
 
         <Button className="w-full gap-2" disabled={isSending || !hasAnyBet} onClick={handleSend}>
           {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ChevronRight className="h-4 w-4" />}
-          Enviar Invitación
+          {trs("Enviar Invitación")}
         </Button>
       </SheetContent>
     </Sheet>

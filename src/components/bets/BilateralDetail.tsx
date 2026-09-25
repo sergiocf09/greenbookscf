@@ -1458,7 +1458,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                 ? `Ganado: Set${wonSets.length > 1 ? 's' : ''} ${wonSets.join(', ')}`
                 : lostSets.length > 0
                   ? `Perdido: Set${lostSets.length > 1 ? 's' : ''} ${lostSets.join(', ')}`
-                  : 'Sin resultado';
+                  : trs("Sin resultado");
               return {
                 playerNet: playerWinsFromRival,
                 rivalNet: rivalWinsFromPlayer,
@@ -1925,7 +1925,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                             ? 'text-muted-foreground hover:text-green-500' 
                             : 'text-muted-foreground hover:text-destructive'
                         )}
-                        title={isDisabled ? 'Habilitar apuesta' : 'Cancelar apuesta'}
+                        title={isDisabled ? trs("Habilitar apuesta") : trs("Cancelar apuesta")}
                       >
                         {isDisabled ? <Check className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
                       </button>
@@ -1940,7 +1940,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                     )}
                     <div className="flex flex-col">
                       <span className={cn('font-semibold text-sm', isDisabled && 'line-through')}>
-                        {group.label}
+                        {trs(String(group.label))}
                       </span>
                       {group.isInfoOnly && !isDisabled && (
                         <span className="text-[9px] text-muted-foreground">{trs("Solo conteo")}</span>
@@ -2124,7 +2124,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                   {skinsSegData && (
                                     <div className="space-y-2">
                                       <div className="flex items-center justify-between gap-4">
-                                        <span className="font-medium text-sm">{segment.label}</span>
+                                        <span className="font-medium text-sm">{trs(String(segment.label))}</span>
                                       </div>
                                       <div className="overflow-x-auto">
                                         <div className="flex gap-0.5 min-w-max">
@@ -2959,8 +2959,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                               <div className="flex items-center gap-1.5">
                                 <span className="text-[10px] text-muted-foreground">
                                   {currentOnlyMatch
-                                    ? (betConfig.pressures?.continua ? 'Sin Presiones · Match Play 18' : 'Sin Presiones')
-                                    : 'Sin Presiones'}
+                                    ? (betConfig.pressures?.continua ? trs("Sin Presiones · Match Play 18") : trs("Sin Presiones"))
+                                    : trs("Sin Presiones")}
                                 </span>
                                 {isOverridden && (
                                   <span className="text-[9px] text-amber-500 bg-amber-500/10 rounded px-1">{trs("✱ este par")}</span>

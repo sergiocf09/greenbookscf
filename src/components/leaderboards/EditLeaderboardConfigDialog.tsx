@@ -97,7 +97,7 @@ export const EditLeaderboardConfigDialog: React.FC<Props> = ({ open, onOpenChang
               {MODES.map(m => (
                 <label key={m.key} className="flex cursor-pointer items-center gap-2">
                   <Checkbox checked={modes.includes(m.key)} onCheckedChange={() => toggleMode(m.key)} />
-                  <span className="text-sm">{m.label}</span>
+                  <span className="text-sm">{trs(String(m.label))}</span>
                 </label>
               ))}
             </div>
@@ -107,7 +107,7 @@ export const EditLeaderboardConfigDialog: React.FC<Props> = ({ open, onOpenChang
           <Button variant="outline" onClick={() => onOpenChange(false)}>{trs("Cancelar")}</Button>
           <Button disabled={!name.trim() || modes.length === 0 || saving} onClick={handleSave}>
             {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Guardar
+            {trs("Guardar")}
           </Button>
         </DialogFooter>
       </DialogContent>

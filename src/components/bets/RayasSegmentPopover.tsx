@@ -261,7 +261,7 @@ export const RayasSegmentPopover: React.FC<RayasSegmentPopoverProps> = ({
                         )}
                       >
                         <span className="font-semibold">H{evt.holeNumber}</span>
-                        <span>{evt.label}</span>
+                        <span>{trs(String(evt.label))}</span>
                         {evt.count > 1 && <span className="font-bold">×{evt.count}</span>}
                       </span>
                     );

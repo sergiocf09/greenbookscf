@@ -1094,7 +1094,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                           ) : (
                             <Eye className="h-4 w-4 mr-1 flex-shrink-0" />
                           )}
-                          Ver Tarjeta
+                          {trs("Ver Tarjeta")}
                         </Button>
                       </div>
                       {/* Bottom row: Duplicar con scores + Reabrir, centered */}
@@ -1112,7 +1112,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
                               ) : (
                                 <Copy className="h-4 w-4 mr-1" />
                               )}
-                              Duplicar con scores
+                              {trs("Duplicar con scores")}
                             </Button>
                           )}
                           <Button

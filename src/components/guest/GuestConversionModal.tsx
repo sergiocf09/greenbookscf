@@ -122,7 +122,7 @@ export const GuestConversionModal: React.FC<GuestConversionModalProps> = ({
             </div>
             <DialogTitle className="text-center">{trs("Confirma tu correo")}</DialogTitle>
             <DialogDescription className="text-center">
-              Hemos enviado un enlace de confirmación a:
+              {trs("Hemos enviado un enlace de confirmación a:")}
             </DialogDescription>
           </DialogHeader>
 
@@ -209,7 +209,7 @@ export const GuestConversionModal: React.FC<GuestConversionModalProps> = ({
               ) : (
                 <UserPlus className="h-4 w-4 mr-2" />
               )}
-              Crear cuenta gratis
+              {trs("Crear cuenta gratis")}
             </Button>
 
             <Button

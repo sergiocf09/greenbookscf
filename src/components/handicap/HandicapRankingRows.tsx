@@ -48,7 +48,7 @@ export const HandicapRankingRows: React.FC<Props> = ({ entries, currentProfileId
                 handicapTrendColorClass(trendInfo.status),
               )}
               title={trendInfo.referenceHandicap === null
-                ? 'Sin referencia 30d'
+                ? trs("Sin referencia 30d")
                 : `Δ30d: ${trendInfo.referenceHandicap.toFixed(1)} → ${entry.current_handicap.toFixed(1)}`}
             >
               {formatHandicapTrendDelta(trendInfo.trend)}

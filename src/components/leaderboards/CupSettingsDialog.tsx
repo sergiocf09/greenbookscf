@@ -259,7 +259,7 @@ export const CupSettingsDialog: React.FC<Props> = ({
               ) : (
                 <Save className="h-4 w-4" />
               )}
-              Guardar cambios
+              {trs("Guardar cambios")}
             </Button>
             <Button
               variant="outline"

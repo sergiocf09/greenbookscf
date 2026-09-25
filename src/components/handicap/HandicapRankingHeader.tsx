@@ -34,7 +34,7 @@ export const HandicapRankingHeader = ({ sortKey, sortDirection, onSortChange, ti
             )}
             onClick={() => onSortChange(option.key)}
           >
-            <span className={cn('text-[10px] font-semibold leading-tight', isActive && 'text-foreground')}>{option.label}</span>
+            <span className={cn('text-[10px] font-semibold leading-tight', isActive && 'text-foreground')}>{trs(String(option.label))}</span>
             <div className="flex">
               <ChevronUp className={cn('h-2 w-2', isActive && sortDirection === 'asc' ? 'text-foreground' : 'text-muted-foreground/30')} />
               <ChevronDown className={cn('h-2 w-2', isActive && sortDirection === 'desc' ? 'text-foreground' : 'text-muted-foreground/30')} />

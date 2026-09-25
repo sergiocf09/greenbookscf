@@ -790,7 +790,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
               {rules.days.map(d => (
                 <TabsContent key={d.day_number} value={String(d.day_number)} className="mt-2">
                   <div className="text-[11px] text-muted-foreground mb-1.5 px-1">
-                    {d.label ? <span className="font-medium text-foreground">{d.label} · </span> : null}
+                    {d.label ? <span className="font-medium text-foreground">{trs(String(d.label))} · </span> : null}
                     {d.date ? format(parseLocalDate(d.date), "d 'de' MMM yyyy", { locale: es }) : ''}
                     {d.date === todayStr && <span className="ml-1 text-primary font-semibold">{trs("· Hoy")}</span>}
                   </div>
@@ -896,7 +896,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium truncate">{r.course_name}</p>
                       <p className="text-[10px] text-muted-foreground">
-                        {r.date}{r.day_number ? ` · Día ${r.day_number}` : ' · Sin día'}
+                        {r.date}{r.day_number ? ` · Día ${r.day_number}` : trs(" · Sin día")}
                       </p>
                     </div>
                     <Button

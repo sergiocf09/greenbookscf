@@ -87,7 +87,7 @@ export const CourseReviewStep: React.FC<Props> = ({ data, saving, onBack, onSave
           {trs("← Editar hoyos")}
         </Button>
         <Button onClick={onSave} className="flex-1" disabled={saving}>
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Guardar Campo Manual'}
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : trs("Guardar Campo Manual")}
         </Button>
       </div>
     </div>

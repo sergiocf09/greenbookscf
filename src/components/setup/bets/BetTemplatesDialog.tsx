@@ -160,7 +160,7 @@ export const BetTemplatesDialog: React.FC<BetTemplatesDialogProps> = ({
   const title = mode === 'save' ? 'Guardar Plantilla'
     : mode === 'load' ? 'Cargar Plantilla'
     : mode === 'manage' ? 'Administrar Plantillas'
-    : 'Plantillas de Apuestas';
+    : trs("Plantillas de Apuestas");
 
   return (
     <>
@@ -234,7 +234,7 @@ export const BetTemplatesDialog: React.FC<BetTemplatesDialogProps> = ({
                 </Button>
                 <Button onClick={handleSave} disabled={isSaving || !saveName.trim()} className="flex-1">
                   {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                  Guardar
+                  {trs("Guardar")}
                 </Button>
               </div>
             </div>

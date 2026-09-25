@@ -56,7 +56,7 @@ function formatPayload(entry: AuditLogEntry): string {
     case 'hole_confirmed':
       return `Hoyo ${p.hole_number} confirmado`;
     case 'bet_config_changed':
-      return p.description ?? 'Configuración de apuestas actualizada';
+      return p.description ?? trs("Configuración de apuestas actualizada");
     case 'handicap_changed':
       return `${entry.targetName ?? '?'}: HCP ${p.prev_handicap}→${p.new_handicap}`;
     case 'player_added':
@@ -157,7 +157,7 @@ export const RoundAuditSheet: React.FC<RoundAuditSheetProps> = ({
                     : 'bg-muted text-muted-foreground border-border'
                 )}
               >
-                {g.label}
+                {trs(String(g.label))}
               </button>
             ))}
           </div>

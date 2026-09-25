@@ -73,7 +73,7 @@ export const StatsInlineView: React.FC = () => {
           <Button variant="outline" className="w-full justify-between">
             <span className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
-              {selectedCourse ? selectedCourse.course_name : 'Global — Todos los campos'}
+              {selectedCourse ? selectedCourse.course_name : trs("Global — Todos los campos")}
             </span>
             <ChevronDown className="h-4 w-4 opacity-50" />
           </Button>
@@ -380,7 +380,7 @@ function Milestones({ milestones: m, roundsPlayed, courseName }: { milestones: P
                   <p className={cn("text-xl font-bold", it.special && "text-amber-500")}>{it.value}</p>
                </div>
                {it.sub && <p className="text-muted-foreground leading-tight text-sm">{it.sub}</p>}
-               <p className="text-muted-foreground leading-tight text-sm">{it.label}</p>
+               <p className="text-muted-foreground leading-tight text-sm">{trs(String(it.label))}</p>
              </div>
           );
         })}
@@ -407,7 +407,7 @@ function RecentRoundsSection({ rounds, courseName }: { rounds: RecentRound[]; co
 
   return (
     <section>
-      <h2 className="text-sm font-semibold text-foreground mb-3">{courseName ? `Últimas Rondas · ${courseName}` : 'Últimas Rondas'}</h2>
+      <h2 className="text-sm font-semibold text-foreground mb-3">{courseName ? `Últimas Rondas · ${courseName}` : trs("Últimas Rondas")}</h2>
       <div className="space-y-1.5">
         {rounds.map((r, i) => (
           <div key={i} className={cn("flex items-center gap-2 px-3 py-2 rounded-lg bg-card border border-l-4", borderColor(r.vs_par))}>

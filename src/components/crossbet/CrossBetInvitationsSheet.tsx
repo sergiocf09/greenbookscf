@@ -29,7 +29,7 @@ function summarizeBetConfig(cfg: Record<string, any>): string {
       const amount = (v as any)?.amount ?? (v as any)?.totalAmount;
       return amount ? `${BET_LABELS[k]} $${fmtMoney(amount)}` : BET_LABELS[k];
     });
-  return active.length > 0 ? active.join(' · ') : 'Sin apuestas definidas';
+  return active.length > 0 ? active.join(' · ') : trs("Sin apuestas definidas");
 }
 
 export const CrossBetInvitationsSheet: React.FC<CrossBetInvitationsSheetProps> = ({
@@ -90,7 +90,7 @@ export const CrossBetInvitationsSheet: React.FC<CrossBetInvitationsSheetProps> =
                     <Button size="sm" className="flex-1 gap-1.5"
                       disabled={busy} onClick={() => handle(onAccept, inv.invitationId)}>
                       {busy && isAccepting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-                      Aceptar
+                      {trs("Aceptar")}
                     </Button>
                   </div>
                 </div>

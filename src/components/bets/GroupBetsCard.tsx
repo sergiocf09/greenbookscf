@@ -330,7 +330,7 @@ const ConejaSection: React.FC<ConejaSectionProps> = ({
             </span>
           </div>
           <span className="text-xs text-muted-foreground">
-            {conejaResult.amount > 0 ? `$${fmtMoney(conejaResult.amount)} c/set` : 'Sin importe'}
+            {conejaResult.amount > 0 ? `$${fmtMoney(conejaResult.amount)} c/set` : trs("Sin importe")}
           </span>
         </div>
         
@@ -590,7 +590,7 @@ const MedalResultBlock: React.FC<{
     return (
       <div className="text-xs text-muted-foreground p-2 bg-muted/20 rounded">
         {label && <span className="font-medium mr-1">{label}:</span>}
-        Sin scores confirmados suficientes
+        {trs("Sin scores confirmados suficientes")}
       </div>
     );
   }
@@ -958,7 +958,7 @@ const GroupBetAuditSheet: React.FC<GroupBetAuditSheetProps> = ({
             <Tabs defaultValue={initialTab} className="w-full">
               <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${sections.length}, minmax(0, 1fr))` }}>
                 {sections.map(s => (
-                  <TabsTrigger key={s.key} value={s.key} className="text-xs">{s.label}</TabsTrigger>
+                  <TabsTrigger key={s.key} value={s.key} className="text-xs">{trs(String(s.label))}</TabsTrigger>
                 ))}
               </TabsList>
               {sections.map(s => (
@@ -2616,7 +2616,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                         !r || !r.hasValidScores || r.winners.length === 0 ? 'bg-muted/50 border border-border/50' : 'bg-green-500/10 border border-green-500/30'
                       )}>
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-[10px] font-semibold text-muted-foreground">{seg.label} — ${seg.amount} c/u</span>
+                          <span className="text-[10px] font-semibold text-muted-foreground">{trs(String(seg.label))} — ${seg.amount} c/u</span>
                         </div>
                         {!r || !r.hasValidScores ? (
                           <span className="text-xs text-muted-foreground">{trs("Sin datos")}</span>
@@ -2783,7 +2783,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                           !r || r.perWinner === 0 ? 'bg-muted/50 border border-border/50' : 'bg-green-500/10 border border-green-500/30'
                         )}>
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] font-semibold text-muted-foreground">{seg.label} — ${seg.amount} c/u</span>
+                            <span className="text-[10px] font-semibold text-muted-foreground">{trs(String(seg.label))} — ${seg.amount} c/u</span>
                           </div>
                           {!r ? (
                             <span className="text-xs text-muted-foreground">{trs("Sin datos")}</span>
@@ -2902,7 +2902,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                           !r || r.perWinner === 0 ? 'bg-muted/50 border border-border/50' : 'bg-green-500/10 border border-green-500/30'
                         )}>
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] font-semibold text-muted-foreground">{seg.label} — ${seg.amount} c/u</span>
+                            <span className="text-[10px] font-semibold text-muted-foreground">{trs(String(seg.label))} — ${seg.amount} c/u</span>
                           </div>
                           {!r ? (
                             <span className="text-xs text-muted-foreground">{trs("Sin datos")}</span>

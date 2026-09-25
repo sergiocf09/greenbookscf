@@ -376,7 +376,7 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
             <Button variant="outline" onClick={() => setShowRenameDialog(false)}>{trs("Cancelar")}</Button>
             <Button disabled={!renameValue.trim() || renaming} onClick={handleRename}>
               {renaming && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Guardar
+              {trs("Guardar")}
             </Button>
           </DialogFooter>
         </DialogContent>

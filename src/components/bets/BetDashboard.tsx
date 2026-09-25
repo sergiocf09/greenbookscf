@@ -3024,7 +3024,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       size="icon"
                       className={cn('h-6 w-6', pressureDisabled ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-destructive')}
                       onClick={() => toggleTeamBetDisabled(bet.id)}
-                      title={pressureDisabled ? 'Reactivar Foursome' : 'No considerar Foursome'}
+                      title={pressureDisabled ? 'Reactivar Foursome' : trs("No considerar Foursome")}
                     >
                       {pressureDisabled ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
                     </Button>
@@ -3389,7 +3389,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                             <PopoverTrigger asChild>{pill}</PopoverTrigger>
                             <PopoverContent side="top" className="w-[95vw] max-w-sm p-3">
                               <div className="text-xs space-y-1">
-                                <p className="font-medium">Hoyo {holeNum} • {rawDetail.net > 0 ? 'Tu equipo' : rawDetail.net < 0 ? 'Rival' : 'Empate'}</p>
+                                <p className="font-medium">Hoyo {holeNum} • {rawDetail.net > 0 ? trs("Tu equipo") : rawDetail.net < 0 ? 'Rival' : trs("Empate")}</p>
                                 <TeamHoleGrid
                                   teamAPlayers={displayTeamAPlayers}
                                   teamBPlayers={displayTeamBPlayers}
@@ -3896,7 +3896,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                 onChange={(e) => { void toggleIncluded(b.key, e.target.checked); }}
                               />
                               <span className={cn('font-medium', !included && 'text-muted-foreground line-through')}>
-                                {b.label}
+                                {trs(String(b.label))}
                               </span>
                             </span>
                             {b.amount !== undefined && b.amount > 0 && (

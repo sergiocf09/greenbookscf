@@ -33,7 +33,7 @@ export const BetScopeSelector: React.FC<BetScopeSelectorProps> = ({ scope, onCha
             )}
           >
             {opt.icon}
-            <span className="text-[10px] font-semibold leading-tight">{opt.label}</span>
+            <span className="text-[10px] font-semibold leading-tight">{trs(String(opt.label))}</span>
             <span className="text-[8px] leading-tight opacity-80">{opt.description}</span>
           </button>
         ))}

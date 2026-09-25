@@ -524,8 +524,8 @@ const JoinRound = () => {
                       {user ? (
                         hasMultipleGroups && !selectedGroupId 
                           ? 'Selecciona un grupo' 
-                          : 'Unirme a la Ronda'
-                      ) : 'Iniciar Sesión para Unirme'}
+                          : trs("Unirme a la Ronda")
+                      ) : trs("Iniciar Sesión para Unirme")}
                     </Button>
 
                     {/* Secondary: guest join (only show if not logged in) */}
