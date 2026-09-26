@@ -54,7 +54,7 @@ export const CloseAttemptDialog: React.FC<CloseAttemptDialogProps> = ({
                 <span className="text-muted-foreground">{trs("Ronda:")}</span> {report.roundId}
               </div>
               <div>
-                <span className="text-muted-foreground">Etapa fallida:</span> {failedStage ?? '—'}
+                <span className="text-muted-foreground">{trs("Etapa fallida:")}</span> {failedStage ?? '—'}
               </div>
               {report.invalidProfileIds.length > 0 && (
                 <div className="mt-2">
@@ -72,7 +72,7 @@ export const CloseAttemptDialog: React.FC<CloseAttemptDialogProps> = ({
                   <ul className="list-disc pl-5">
                     {report.discrepancyBreakdown.slice(0, 15).map((d, i) => (
                       <li key={i}>
-                        <span className="font-mono">Δ${d.delta}</span> · {d.playerAName} ↔ {d.playerBName} · <strong>{d.betType}</strong>{d.segment ? ` (${d.segment})` : ''} · UI=${d.uiAmount} Motor=${d.engineAmount}
+                        <span className="font-mono">Δ${d.delta}</span> · {d.playerAName} ↔ {d.playerBName} · <strong>{trs(d.betType)}</strong>{d.segment ? ` (${trs(d.segment)})` : ''} · UI=${d.uiAmount} {trs("Motor")}=${d.engineAmount}
                       </li>
                     ))}
                   </ul>

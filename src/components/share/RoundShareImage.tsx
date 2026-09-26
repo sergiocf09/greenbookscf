@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
+import i18n from '@/i18n';
 
 export interface RoundShareImageProps {
   open: boolean;
@@ -76,6 +77,7 @@ function drawCanvas(
   highlights?: RoundShareImageProps['highlights'],
   roundHoles?: 9 | 18,
 ) {
+  const english = i18n.language === 'en';
   const W = CANVAS_W;
   const H = computeCanvasHeight(players.length, !!highlights);
   ctx.clearRect(0, 0, W, H);
@@ -165,14 +167,14 @@ function drawCanvas(
   ctx.fillStyle = 'rgba(255,255,255,0.60)';
   ctx.font = '500 20px Arial, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('R E S U L T A D O S   F I N A L E S', W / 2, 250);
+  ctx.fillText(english ? 'F I N A L   R E S U L T S' : 'R E S U L T A D O S   F I N A L E S', W / 2, 250);
 
   // ── Player rows ──
   const sorted = [...players].sort((a, b) => b.totalNet - a.totalNet);
   const allPlayerNames = sorted.map(p => p.name);
   const rowH = 150;
   const startY = 275;
-  const posLabels = ['1°', '2°', '3°', '4°', '5°', '6°'];
+  const posLabels = english ? ['1st', '2nd', '3rd', '4th', '5th', '6th'] : ['1°', '2°', '3°', '4°', '5°', '6°'];
 
   sorted.forEach((player, idx) => {
     const y = startY + idx * rowH;
@@ -200,14 +202,14 @@ function drawCanvas(
       ctx.fillStyle = '#003d2e';
       ctx.font = 'bold 26px Georgia, serif';
       ctx.textAlign = 'center';
-      ctx.fillText('1°', 95, y + rowH / 2 + 9);
+      ctx.fillText(posLabels[0], 95, y + rowH / 2 + 9);
     } else {
       ctx.fillStyle = 'rgba(252,227,0,0.25)';
       ctx.beginPath(); ctx.arc(95, y + rowH / 2, 28, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = GOLD;
       ctx.font = 'bold 22px Georgia, serif';
       ctx.textAlign = 'center';
-      ctx.fillText(posLabels[idx] || `${idx + 1}°`, 95, y + rowH / 2 + 8);
+      ctx.fillText(posLabels[idx] || (english ? `${idx + 1}th` : `${idx + 1}°`), 95, y + rowH / 2 + 8);
     }
 
     // ── LEFT COLUMN: Name + Score + Stats (all inline on row 2) ──
@@ -332,7 +334,7 @@ function drawCanvas(
       ctx.fillStyle = 'rgba(252,227,0,0.60)';
       ctx.font = '13px Arial, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(badge.label.toUpperCase(), bx + badgeW / 2, curY + 18);
+      ctx.fillText(trs(badge.label).toUpperCase(), bx + badgeW / 2, curY + 18);
 
       const namesTop = curY + labelAreaH; // where names area starts
 
@@ -378,7 +380,7 @@ function drawCanvas(
   ctx.fillStyle = 'rgba(255,255,255,0.40)';
   ctx.font = '18px Arial, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('¿Quieres llevar tus apuestas de golf?', W / 2, footerY + 20);
+  ctx.fillText(trs('¿Quieres llevar tus apuestas de golf?'), W / 2, footerY + 20);
   ctx.fillStyle = GOLD;
   ctx.font = 'bold 24px Arial, sans-serif';
   ctx.fillText('golfgreenbookscf.com', W / 2, footerY + 52);
@@ -426,7 +428,8 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
 
     canvas.toBlob(async (blob) => {
       if (!blob) return;
-      const file = new File([blob], 'greenbook-resultado.png', { type: 'image/png' });
+      const filename = i18n.language === 'en' ? 'greenbook-results.png' : 'greenbook-resultado.png';
+      const file = new File([blob], filename, { type: 'image/png' });
 
       // Try native Web Share API with file
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
@@ -446,7 +449,7 @@ export const RoundShareImage: React.FC<RoundShareImageProps> = ({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'greenbook-resultado.png';
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

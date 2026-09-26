@@ -1,7 +1,8 @@
 import { trs } from '@/i18n/tr';
 import React, { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { enUS, es } from 'date-fns/locale';
+import i18n from '@/i18n';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Loader2, LayoutGrid, Trophy, AlertCircle, Share2 } from 'lucide-react';
@@ -445,7 +446,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
       <div className="text-center pb-2 border-b border-border">
         <h3 className="font-semibold text-lg text-primary">{displayData.courseName}</h3>
         <p className="text-sm text-muted-foreground">
-          {format(parseLocalDate(displayData.date), "d 'de' MMMM, yyyy", { locale: es })} • Tee {displayData.teeLabel}
+          {format(parseLocalDate(displayData.date), i18n.language === 'en' ? 'MMMM d, yyyy' : "d 'de' MMMM, yyyy", { locale: i18n.language === 'en' ? enUS : es })} • {trs("Tee")} {trs(displayData.teeLabel)}
         </p>
         {hasSnapshot && (
           <div className="flex items-center justify-center gap-2 mt-1">
@@ -601,7 +602,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
             open={showShare}
             onClose={() => setShowShare(false)}
             courseName={displayData.courseName}
-            date={format(parseLocalDate(displayData.date), "d 'de' MMMM yyyy", { locale: es })}
+            date={format(parseLocalDate(displayData.date), i18n.language === 'en' ? 'MMMM d, yyyy' : "d 'de' MMMM yyyy", { locale: i18n.language === 'en' ? enUS : es })}
             players={
               (snapshot.balances || []).map((b: any) => {
                 const sp = snapshot.players.find((p: any) => p.id === b.playerId);
