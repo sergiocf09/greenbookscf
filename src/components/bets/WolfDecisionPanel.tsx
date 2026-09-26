@@ -95,7 +95,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
       <div className="px-3 pb-1 bg-[hsl(155,100%,15%)]">
         <p className="text-[10px] text-[hsl(50,95%,55%)]/70">
           {isRedemption
-            ? `$${fmtMoney(wolfConfig.amountPerHole * 3)} (×3) · Solo obligatorio`
+            ? `$${fmtMoney(wolfConfig.amountPerHole * 3)} (×3) · ${trs("Solo obligatorio")}`
             : `$${fmtMoney(wolfConfig.amountPerHole)} ${trs("por hoyo ·")} ${timingLabels[wolfConfig.timing] ?? wolfConfig.timing}`}
         </p>
       </div>
@@ -108,7 +108,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
             canDecide ? (
               <div className="space-y-3">
                 <p className="text-xs text-muted-foreground">
-                  🔥 <span className="font-semibold">{players.find(p => p.id === redemptionCandidateId)?.name?.split(' ')[0]}</span> {trs("es el máximo perdedor")}{redemptionCandidateLoss ? ` (-$${fmtMoney(Math.abs(redemptionCandidateLoss))})` : ''} y puede tomar la Recuperación (Solo ×3).
+                   🔥 <span className="font-semibold">{players.find(p => p.id === redemptionCandidateId)?.name?.split(' ')[0]}</span> {trs("es el máximo perdedor")}{redemptionCandidateLoss ? ` (-$${fmtMoney(Math.abs(redemptionCandidateLoss))})` : ''} {trs("y puede tomar la Recuperación (Solo ×3).")}
                 </p>
                 <div className="flex gap-2">
                   <Button
@@ -141,7 +141,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
             canDecide ? (
               <div className="space-y-3">
                 <p className="text-xs text-muted-foreground">
-                  🔥 Recuperación: {wolfPlayer.name.split(' ')[0]} va solo con apuesta ×3
+                   🔥 {trs("Recuperación")}: {wolfPlayer.name.split(' ')[0]} {trs("va solo con apuesta ×3")}
                 </p>
                 <Button
                   size="sm"

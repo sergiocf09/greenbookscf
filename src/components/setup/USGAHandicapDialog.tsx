@@ -128,7 +128,7 @@ export const USGAHandicapDialog: React.FC<USGAHandicapDialogProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <TrendingDown className="h-5 w-5 text-primary" />
-            Índice USGA - {playerName}
+            {trs("Índice USGA")} - {playerName}
           </DialogTitle>
           <DialogDescription>
             {trs("El handicap de juego se ajusta según el campo y tee seleccionados")}
@@ -149,10 +149,10 @@ export const USGAHandicapDialog: React.FC<USGAHandicapDialogProps> = ({
             <AlertCircle className="h-12 w-12 text-muted-foreground" />
             <div>
               <p className="font-medium text-foreground">
-                Se necesitan mínimo {minimumRoundsNeeded} rondas completas
+                {trs("Se necesitan mínimo")} {minimumRoundsNeeded} {trs("rondas completas")}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                Tienes {totalRounds} ronda{totalRounds !== 1 ? 's' : ''} confirmada{totalRounds !== 1 ? 's' : ''}
+                {trs("Tienes")} {totalRounds} {trs(totalRounds === 1 ? "ronda confirmada" : "rondas confirmadas")}
               </p>
             </div>
           </div>

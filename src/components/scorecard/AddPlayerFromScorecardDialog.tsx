@@ -92,7 +92,7 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
       setTab('guest');
     } catch (e: any) {
       console.error(e);
-      toast.error(e?.message || 'No se pudo agregar el jugador');
+      toast.error(e?.message || trs('No se pudo agregar el jugador'));
     } finally {
       setSaving(false);
     }
@@ -120,8 +120,8 @@ export const AddPlayerFromScorecardDialog: React.FC<Props> = ({
               <Alert variant="default" className="bg-amber-500/10 border-amber-500/50">
                 <AlertTriangle className="h-4 w-4 text-amber-500" />
                 <AlertDescription className="text-amber-700 dark:text-amber-400 text-sm">
-                  Ya tienes {currentPlayerCount} jugadores (máximo recomendado: {maxPlayersRecommended}). 
-                  Puedes continuar, pero algunas apuestas pueden no estar optimizadas para más jugadores.
+                  {trs("Ya tienes")} {currentPlayerCount} {trs("jugadores")} ({trs("máximo recomendado")}: {maxPlayersRecommended}).{' '}
+                  {trs("Puedes continuar, pero algunas apuestas pueden no estar optimizadas para más jugadores.")}
                 </AlertDescription>
               </Alert>
             )}

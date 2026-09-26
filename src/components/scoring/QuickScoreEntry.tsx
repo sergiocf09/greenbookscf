@@ -215,7 +215,7 @@ export const QuickScoreEntry: React.FC<QuickScoreEntryProps> = ({
       setConfirmedInSession(prev => new Set(prev).add(holeNumber));
     } catch (error: any) {
       console.error('Error saving hole:', error);
-      toast.error(error?.message || 'Error al guardar');
+      toast.error(error?.message || trs('Error al guardar'));
     } finally {
       setSaving(false);
     }

@@ -71,7 +71,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
         const teamA = pick([...s.team1]);
         const teamB = pick([...s.team2]);
         if (teamA.length === 0 || teamB.length === 0) return null;
-        return { label: `Tramo ${setNum}`, holes, teamA, teamB, teamALabel: 'Equipo 1', teamBLabel: 'Equipo 2' };
+        return { label: `${trs("Tramo")} ${setNum}`, holes, teamA, teamB, teamALabel: trs('Equipo 1'), teamBLabel: trs('Equipo 2') };
       })
       .filter((s): s is NonNullable<typeof s> => s !== null);
   }, [players, sixesConfig.sets]);
@@ -158,7 +158,7 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
               modalityLine={`${sixesScoringLabel} · ${sixesCobroLabel}`}
               course={course}
               segments={hcpSegments}
-              note="El total de golpes de cada jugador es el mismo en los tres tramos, pero los golpes caen en los hoyos según el índice del campo, por lo que cada tramo puede tener ventajas distintas."
+              note={trs("El total de golpes de cada jugador es el mismo en los tres tramos, pero los golpes caen en los hoyos según el índice del campo, por lo que cada tramo puede tener ventajas distintas.")}
             />
 
           </span>
@@ -299,8 +299,8 @@ export const SixesResultsCard: React.FC<SixesResultsCardProps> = ({
                             );
                           })}
                           <div className="pt-1 border-t border-border/50 text-xs flex justify-between">
-                            {hd.lowBallWinner && <span>BB: {hd.lowBallWinner === side ? 'Tu equipo' : hd.lowBallWinner === 'tied' ? 'Empate' : 'Rival'}</span>}
-                            {hd.highBallWinner && <span>BA: {hd.highBallWinner === side ? 'Tu equipo' : hd.highBallWinner === 'tied' ? 'Empate' : 'Rival'}</span>}
+                            {hd.lowBallWinner && <span>BB: {trs(hd.lowBallWinner === side ? 'Tu equipo' : hd.lowBallWinner === 'tied' ? 'Empate' : 'Rival')}</span>}
+                            {hd.highBallWinner && <span>BA: {trs(hd.highBallWinner === side ? 'Tu equipo' : hd.highBallWinner === 'tied' ? 'Empate' : 'Rival')}</span>}
                             <span className="font-medium">Pts: {myPts}–{rvPts}</span>
                           </div>
                         </div>

@@ -69,8 +69,8 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
       const teamB = pick([ids[2]!, ids[3]!]);
       if (!teamA.length || !teamB.length) return [];
       return [
-        { label: 'Primera vuelta', holes: order.slice(0, 9), teamA, teamB, teamALabel: 'Equipo 1', teamBLabel: 'Equipo 2' },
-        { label: 'Segunda vuelta', holes: order.slice(9, 18), teamA, teamB, teamALabel: 'Equipo 1', teamBLabel: 'Equipo 2' },
+        { label: trs('Primera vuelta'), holes: order.slice(0, 9), teamA, teamB, teamALabel: trs('Equipo 1'), teamBLabel: trs('Equipo 2') },
+        { label: trs('Segunda vuelta'), holes: order.slice(9, 18), teamA, teamB, teamALabel: trs('Equipo 1'), teamBLabel: trs('Equipo 2') },
       ];
     }
     const rotation: Array<[[number, number], [number, number]]> = [
@@ -84,12 +84,12 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
         const teamB = pick([ids[b[0]]!, ids[b[1]]!]);
         if (!teamA.length || !teamB.length) return null;
         return {
-          label: `Tramo ${i + 1}`,
+          label: `${trs("Tramo")} ${i + 1}`,
           holes: order.slice(i * 6, i * 6 + 6),
           teamA,
           teamB,
-          teamALabel: 'Equipo 1',
-          teamBLabel: 'Equipo 2',
+          teamALabel: trs('Equipo 1'),
+          teamBLabel: trs('Equipo 2'),
         };
       })
       .filter((s): s is NonNullable<typeof s> => s !== null);
@@ -158,7 +158,7 @@ export const VegasResultsCard: React.FC<VegasResultsCardProps> = ({
 
   const SET_LABELS: Record<number, string> = { 1: '1–6', 2: '7–12', 3: '13–18' };
 
-  const vegasVariantLabel = vegasConfig.variant === 'fixed' ? 'Parejas Fijas' : 'Rotatoria';
+  const vegasVariantLabel = trs(vegasConfig.variant === 'fixed' ? 'Parejas Fijas' : 'Rotatoria');
   const vegasSummary = [
     vegasVariantLabel,
     vegasConfig.useHandicap ? t('dashboard.withHcp') : t('dashboard.withoutHcp'),
@@ -463,7 +463,7 @@ function renderHolePill(
               </div>
             </div>
             {hd.multiplierApplied !== 'none' && (
-              <p className="text-[10px] text-amber-600">🐦 Birdie → ×2 ({hd.multiplierApplied === (myTeam1 ? 'team1' : 'team2') ? 'Tu equipo' : 'Rival'})</p>
+              <p className="text-[10px] text-amber-600">🐦 Birdie → ×2 ({trs(hd.multiplierApplied === (myTeam1 ? 'team1' : 'team2') ? 'Tu equipo' : 'Rival')})</p>
             )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">{trs("Diferencia")}</span>
