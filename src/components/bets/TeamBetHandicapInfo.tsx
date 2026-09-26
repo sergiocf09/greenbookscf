@@ -379,12 +379,12 @@ export const TeamBetHandicapInfo: React.FC<TeamBetHandicapInfoProps> = ({
               {useHandicap && (
                 <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5 text-[10px] tabular-nums flex items-center justify-between">
                   <span className="text-muted-foreground">
-                    {fmtHcp(sumA)} <span className="text-foreground/70">({teamALabel})</span> vs{' '}
-                    {fmtHcp(sumB)} <span className="text-foreground/70">({teamBLabel})</span>
+                    {fmtHcp(sumA)} <span className="text-foreground/70">({trs(teamALabel)})</span> vs{' '}
+                    {fmtHcp(sumB)} <span className="text-foreground/70">({trs(teamBLabel)})</span>
                   </span>
                   <span className="font-semibold">
                     {higherTeam
-                      ? `Δ ${fmtHcp(diffTeams)} → ${higherTeam === 'A' ? teamALabel : teamBLabel}`
+                      ? `Δ ${fmtHcp(diffTeams)} → ${trs(higherTeam === 'A' ? teamALabel : teamBLabel)}`
                        : trs('Δ 0 (parejo)')}
                   </span>
                 </div>
