@@ -31,7 +31,12 @@ export function DeleteRoundButton({ roundId, onDeleted, disabled }: DeleteRoundB
   const [confirmText, setConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
 
-  const canDelete = confirmText.trim().toUpperCase() === 'ELIMINAR';
+  // Accept the word shown in the current language (DELETE in English,
+  // ELIMINAR in Spanish) so the dialog is always satisfiable.
+  const confirmationWord = i18n.language === 'en' ? 'DELETE' : 'ELIMINAR';
+  const canDelete =
+    confirmText.trim().toUpperCase() === confirmationWord ||
+    confirmText.trim().toUpperCase() === 'ELIMINAR';
 
   const handleDelete = async () => {
     if (!roundId || !canDelete) return;
