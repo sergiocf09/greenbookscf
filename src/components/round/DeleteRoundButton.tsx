@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { devError } from '@/lib/logger';
+import i18n from '@/i18n';
+
 
 interface DeleteRoundButtonProps {
   roundId: string | null;
@@ -29,7 +31,12 @@ export function DeleteRoundButton({ roundId, onDeleted, disabled }: DeleteRoundB
   const [confirmText, setConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
 
-  const canDelete = confirmText.trim().toUpperCase() === 'ELIMINAR';
+  // Accept the word shown in the current language (DELETE in English,
+  // ELIMINAR in Spanish) so the dialog is always satisfiable.
+  const confirmationWord = i18n.language === 'en' ? 'DELETE' : 'ELIMINAR';
+  const canDelete =
+    confirmText.trim().toUpperCase() === confirmationWord ||
+    confirmText.trim().toUpperCase() === 'ELIMINAR';
 
   const handleDelete = async () => {
     if (!roundId || !canDelete) return;
@@ -79,13 +86,13 @@ export function DeleteRoundButton({ roundId, onDeleted, disabled }: DeleteRoundB
 
           <div className="space-y-2">
             <Label htmlFor="delete-round-confirm" className="text-xs">
-              {trs("Escribe")}{' '}<strong>{trs("ELIMINAR")}</strong>{' '}{trs("para confirmar")}
+              {trs("Escribe")}{' '}<strong>{trs(confirmationWord)}</strong>{' '}{trs("para confirmar")}
             </Label>
             <Input
               id="delete-round-confirm"
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
-              placeholder={trs("ELIMINAR")}
+              placeholder={trs(confirmationWord)}
               autoComplete="off"
               autoCapitalize="characters"
             />
