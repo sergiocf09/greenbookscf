@@ -35,33 +35,33 @@ const Auth = () => {
   const [isResending, setIsResending] = useState(false);
 
   const validatePassword = (pwd: string): { valid: boolean; message: string } => {
-    if (pwd.length < 8) return { valid: false, message: 'La contraseña debe tener al menos 8 caracteres' };
-    if (!/[A-Z]/.test(pwd)) return { valid: false, message: 'La contraseña debe incluir al menos una mayúscula' };
-    if (!/[a-z]/.test(pwd)) return { valid: false, message: 'La contraseña debe incluir al menos una minúscula' };
-    if (!/[0-9]/.test(pwd)) return { valid: false, message: 'La contraseña debe incluir al menos un número' };
-    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)) return { valid: false, message: 'La contraseña debe incluir al menos un signo (por ejemplo ! @ # $ %)' };
+    if (pwd.length < 8) return { valid: false, message: trs('La contraseña debe tener al menos 8 caracteres') };
+    if (!/[A-Z]/.test(pwd)) return { valid: false, message: trs('La contraseña debe incluir al menos una mayúscula') };
+    if (!/[a-z]/.test(pwd)) return { valid: false, message: trs('La contraseña debe incluir al menos una minúscula') };
+    if (!/[0-9]/.test(pwd)) return { valid: false, message: trs('La contraseña debe incluir al menos un número') };
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)) return { valid: false, message: trs('La contraseña debe incluir al menos un signo (por ejemplo ! @ # $ %)') };
     return { valid: true, message: '' };
   };
 
   const translateAuthError = (message: string): string => {
     const m = (message || '').toLowerCase();
     if (m.includes('known to be weak') || m.includes('pwned'))
-      return 'Esa contraseña es demasiado común. Elige una diferente.';
+      return trs('Esa contraseña es demasiado común. Elige una diferente.');
     if (m.includes('password should contain') || m.includes('password should be at least'))
-      return 'La contraseña necesita al menos 8 caracteres, una mayúscula, una minúscula, un número y un signo.';
+      return trs('La contraseña necesita al menos 8 caracteres, una mayúscula, una minúscula, un número y un signo.');
     if (m.includes('for security purposes') || m.includes('rate limit') || m.includes('too many') || m.includes('after'))
-      return 'Espera un minuto antes de pedir otro correo e intenta de nuevo.';
+      return trs('Espera un minuto antes de pedir otro correo e intenta de nuevo.');
     if (m.includes('token') && (m.includes('expired') || m.includes('not found') || m.includes('invalid')))
-      return 'El enlace de confirmación ya expiró o fue usado. Pide uno nuevo con "Reenviar correo de confirmación".';
+      return trs('El enlace de confirmación ya expiró o fue usado. Pide uno nuevo con "Reenviar correo de confirmación".');
     if (m.includes('already registered') || m.includes('already been registered') || m.includes('user already'))
-      return 'Este correo ya está registrado. Inicia sesión o recupera tu contraseña.';
+      return trs('Este correo ya está registrado. Inicia sesión o recupera tu contraseña.');
     if (m.includes('invalid login credentials'))
-      return 'Correo o contraseña incorrectos.';
+      return trs('Correo o contraseña incorrectos.');
     if (m.includes('email not confirmed'))
-      return 'Debes confirmar tu correo antes de iniciar sesión.';
+      return trs('Debes confirmar tu correo antes de iniciar sesión.');
     if (m.includes('invalid email') || m.includes('unable to validate email'))
-      return 'El correo no es válido.';
-    return 'No pudimos completar la operación. Intenta de nuevo.';
+      return trs('El correo no es válido.');
+    return trs('No pudimos completar la operación. Intenta de nuevo.');
   };
 
 
@@ -207,7 +207,7 @@ const Auth = () => {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Enviar Enlace'}
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : trs('Enviar Enlace')}
               </Button>
               <Button type="button" variant="ghost" className="w-full" onClick={() => setForgotMode(false)}>
                 {trs("Volver a Iniciar Sesión")}
@@ -379,11 +379,11 @@ const Auth = () => {
                     className="mt-0.5 h-3.5 w-3.5 accent-primary shrink-0"
                   />
                   <span>
-                    Acepto los{' '}
+                    {trs('Acepto los')}{' '}
                     <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline text-primary">
                       {trs("Términos de Servicio")}
                     </a>
-                    {' '}y la{' '}
+                    {' '}{trs('y la')}{' '}
                     <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline text-primary">
                       {trs("Política de Privacidad")}
                     </a>

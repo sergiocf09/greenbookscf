@@ -2,7 +2,8 @@ import { trs } from '@/i18n/tr';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { enUS, es } from 'date-fns/locale';
+import i18n from '@/i18n';
 import { supabase } from '@/integrations/supabase/client';
 import { calcHighlightsFromSnapshot } from '@/lib/shareHighlights';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
@@ -257,7 +258,9 @@ export function AppDialogs(props: AppDialogsProps) {
 
                   setRoundShareData({
                     courseName: snap.courseName || closingCourseName,
-                    date: snap.date || format(closingDate, "d 'de' MMMM yyyy", { locale: es }),
+                    date: snap.date
+                      ? format(new Date(`${snap.date}T12:00:00`), i18n.language === 'en' ? 'MMMM d, yyyy' : "d 'de' MMMM yyyy", { locale: i18n.language === 'en' ? enUS : es })
+                      : format(closingDate, i18n.language === 'en' ? 'MMMM d, yyyy' : "d 'de' MMMM yyyy", { locale: i18n.language === 'en' ? enUS : es }),
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     players: (snap.balances || []).map((b: any) => {
                       // eslint-disable-next-line @typescript-eslint/no-explicit-any

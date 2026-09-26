@@ -129,7 +129,7 @@ export const PlayerScoreInput: React.FC<PlayerScoreInputProps> = ({
             <p className="font-semibold text-sm text-foreground">{formatPlayerName(playerName)}</p>
             {handicapStrokes > 0 && (
               <p className="text-[10px] text-muted-foreground">
-                +{handicapStrokes} golpe{handicapStrokes > 1 ? 's' : ''}
+                +{handicapStrokes} {trs(handicapStrokes === 1 ? 'golpe' : 'golpes')}
               </p>
             )}
           </div>

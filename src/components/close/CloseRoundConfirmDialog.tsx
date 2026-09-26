@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { AlertTriangle } from 'lucide-react';
+import i18n from '@/i18n';
 
 interface CloseRoundConfirmDialogProps {
   open: boolean;
@@ -27,7 +28,8 @@ export const CloseRoundConfirmDialog: React.FC<CloseRoundConfirmDialogProps> = (
   isLoading = false,
 }) => {
   const [confirmText, setConfirmText] = useState('');
-  const isConfirmValid = confirmText.toUpperCase() === 'CERRAR';
+  const confirmationWord = i18n.language === 'en' ? 'CLOSE' : 'CERRAR';
+  const isConfirmValid = confirmText.toUpperCase() === confirmationWord;
 
   const handleConfirm = () => {
     if (isConfirmValid) {
@@ -65,12 +67,12 @@ export const CloseRoundConfirmDialog: React.FC<CloseRoundConfirmDialogProps> = (
             </ul>
             <div className="mt-4 pt-4 border-t">
               <p className="text-sm font-medium mb-2">
-                {trs("Para confirmar, escribe")}{' '}<span className="font-mono bg-muted px-1 rounded">{trs("CERRAR")}</span>:
+                 {trs("Para confirmar, escribe")}{' '}<span className="font-mono bg-muted px-1 rounded">{confirmationWord}</span>:
               </p>
               <Input
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
-                placeholder={trs("Escribe CERRAR")}
+                 placeholder={`${trs("Escribe")} ${confirmationWord}`}
                 className="font-mono"
                 autoComplete="off"
                 disabled={isLoading}

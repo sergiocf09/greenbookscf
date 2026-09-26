@@ -232,7 +232,7 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
       {/* ── Configuración común de los 3 matches ── */}
       <div className="space-y-2 pt-2 border-t border-primary/15">
         <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-          Configuración para los 3 {isSix ? 'partidos' : 'matches'}
+          {trs("Configuración para los 3")} {trs(isSix ? 'partidos' : 'matches')}
         </Label>
 
 
@@ -384,9 +384,7 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
           <AlertDialogHeader>
             <AlertDialogTitle>{trs("Ya hay partidos configurados")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Puedes reemplazar los {existingCount} partidos existentes por los 3
-              generados con esta configuración, o agregar únicamente los que falten sin
-              borrar nada.
+              {trs("Puedes reemplazar los")} {existingCount} {trs("partidos existentes por los 3 generados con esta configuración, o agregar únicamente los que falten sin borrar nada.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
 

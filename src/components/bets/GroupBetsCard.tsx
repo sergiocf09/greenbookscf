@@ -1452,7 +1452,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
       dobleAgua:    { label: 'Doble Agua',   emoji: '🌊', short: '2xAgua' },
       dobleOB:      { label: 'Doble OB',     emoji: '🚫', short: '2xOB' },
       par3GirMas3:  { label: 'Par3 GIR+3',  emoji: '⛳', short: 'GIR>3' },
-      dobleDigito:  { label: 'Doble Dígito',emoji: '💀', short: '10+' },
+      dobleDigito:  { label: trs('Doble Dígito'),emoji: '💀', short: '10+' },
       moreliana:    { label: 'Moreliana',    emoji: '🎭', short: 'Morel' },
       cuatriput:    { label: 'Cuatriput',    emoji: '😱', short: '4+Putt' },
       manchaGenerica: { label: 'Mancha',    emoji: '⬛', short: 'Mancha' },
@@ -1504,7 +1504,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
     const UNIT_MARKERS = ['birdie', 'eagle', 'albatross', 'holeOut', 'aquaPar', 'sandyPar'];
     const UNIT_LABELS: Record<string, { label: string; emoji: string; short: string }> = {
       birdie:    { label: 'Birdie',      emoji: '🐦', short: 'Birdie' },
-      eagle:     { label: 'Águila',      emoji: '🦅', short: 'Águila' },
+      eagle:     { label: trs('Águila'),      emoji: '🦅', short: trs('Águila') },
       albatross: { label: 'Albatros',    emoji: '🦢', short: 'Albatros' },
       holeOut:   { label: 'Hole Out',    emoji: '🎯', short: 'HoleOut' },
       aquaPar:   { label: 'Aqua Par',    emoji: '💧', short: 'AquaPar' },
@@ -1979,7 +1979,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
                 <div className="flex items-center gap-2 mb-2">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
                   <span className="text-sm font-medium text-amber-700 dark:text-amber-400">
-                    Empate en Hoyo {culebrasResult.tieHole} - Selecciona quién paga
+                     {trs("Empate en Hoyo")} {culebrasResult.tieHole} - {trs("Selecciona quién paga")}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
