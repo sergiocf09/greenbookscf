@@ -288,7 +288,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
       {show('oyeses') && (
         <BetSection
           id="oyeses"
-          title={trs("Oyeses (Closest to the Pin)")}
+          title={trs("Oyeses")}
           description={trs("Par 3 - cercanía a la bandera")}
           enabled={config.oyeses.enabled}
           onToggle={(enabled) => {
@@ -518,7 +518,7 @@ export const IndividualBets: React.FC<IndividualBetsProps> = ({
       )}
       {show('rayas') && (
         <BetSection
-          id="rayas" title={trs("Rayas")} description="Agregador: Skins + Unidades + Oyes + Medal"
+          id="rayas" title={trs("Rayas")} description={trs("Agregador: Skins + Unidades + Oyes + Medal")}
           enabled={config.rayas?.enabled ?? false} onToggle={(enabled) => onUpdateBet('rayas', { enabled })}
           isExpanded={expandedSections.includes('rayas')} onExpandChange={(open) => onToggleSection('rayas', open)} color="gold"
           helpText={trs("Contador acumulado de eventos ganados a lo largo de la ronda. Suma rayas por: Skins ganados, Oyeses ganados, Unidades ganadas y Medal ganado. El valor por raya se configura por segmento Front y Back.")}
