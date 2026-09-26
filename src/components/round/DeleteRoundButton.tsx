@@ -86,13 +86,13 @@ export function DeleteRoundButton({ roundId, onDeleted, disabled }: DeleteRoundB
 
           <div className="space-y-2">
             <Label htmlFor="delete-round-confirm" className="text-xs">
-              {trs("Escribe")}{' '}<strong>{trs("ELIMINAR")}</strong>{' '}{trs("para confirmar")}
+              {trs("Escribe")}{' '}<strong>{trs(confirmationWord)}</strong>{' '}{trs("para confirmar")}
             </Label>
             <Input
               id="delete-round-confirm"
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
-              placeholder={trs("ELIMINAR")}
+              placeholder={trs(confirmationWord)}
               autoComplete="off"
               autoCapitalize="characters"
             />
