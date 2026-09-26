@@ -1893,5 +1893,6 @@
  "Mejor Front 9": "Best Front 9",
  "Mejor Back 9": "Best Back 9",
  "Etapa fallida:": "Failed stage:",
- "Motor": "Engine"
+ "Motor": "Engine",
+ "La contraseña debe incluir al menos un signo (por ejemplo ! @ # $ %)": "Password must include at least one symbol (for example ! @ # $ %)."
 }
