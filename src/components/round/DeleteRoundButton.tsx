@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { devError } from '@/lib/logger';
+import i18n from '@/i18n';
+
 
 interface DeleteRoundButtonProps {
   roundId: string | null;
