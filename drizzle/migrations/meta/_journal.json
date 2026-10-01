@@ -15,6 +15,13 @@
       "when": 1790838722726,
       "tag": "0001_round_exited_by_profile",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790838741451,
+      "tag": "0002_keep_exits_on_reopen",
+      "breakpoints": true
     }
   ]
 }

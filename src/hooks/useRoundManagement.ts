@@ -346,8 +346,18 @@ export const useRoundManagement = ({
 
         // ── STEP 2: Determine which round to restore ──
         const explicitRestoreRoundId = sessionStorage.getItem('restore_round_id');
+        let exitedIds = new Set<string>();
+        if (explicitRestoreRoundId) {
+          // Manual restore re-enters the round: clear any previous exit.
+          await supabase.from('round_exited_by_profile').delete()
+            .eq('profile_id', profile.id).eq('round_id', explicitRestoreRoundId);
+        } else {
+          const { data: exits } = await supabase.from('round_exited_by_profile')
+            .select('round_id').eq('profile_id', profile.id);
+          exitedIds = new Set((exits ?? []).map((e: any) => e.round_id));
+        }
         const autoRestoreRoundId = !explicitRestoreRoundId
-          ? mappedPending.find(r => !localStorage.getItem(`round_closed_${r.roundId}`))?.roundId ?? null
+          ? mappedPending.find(r => !exitedIds.has(r.roundId) && !localStorage.getItem(`round_closed_${r.roundId}`))?.roundId ?? null
           : null;
         const restoreRoundId = explicitRestoreRoundId || autoRestoreRoundId;
 
