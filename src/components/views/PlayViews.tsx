@@ -105,6 +105,7 @@ interface PlayViewsProps {
   onStartNewRound: () => void;
   crossBets?: import('@/hooks/useCrossBets').CrossBet[];
   onUpdateCrossBetConfig?: (args: { crossBetId: string; betConfig: Record<string, any> }) => Promise<void>;
+  onLeaveRound?: () => void;
 }
 
 export function PlayViews(props: PlayViewsProps) {
@@ -119,7 +120,7 @@ export function PlayViews(props: PlayViewsProps) {
     setCurrentHole, isHoleConfirmed, confirmHole, updateScore,
     setBetConfig, setCurrentBetSummaries, setQuickScorePlayer,
     onOpenDialog, onSetView, onResetRoundForReclose, onStartNewRound,
-    crossBets, onUpdateCrossBetConfig,
+    crossBets, onUpdateCrossBetConfig, onLeaveRound,
   } = props;
 
   const adminInfo = useIsRoundAdmin(roundState.id);
@@ -352,8 +353,29 @@ export function PlayViews(props: PlayViewsProps) {
                 </>
               ) : (
 
-                <div className="text-center text-muted-foreground text-sm py-4 bg-muted rounded-lg mt-4">
-                  {trs("Solo el organizador puede cerrar la tarjeta")}
+                <div className="mt-4 space-y-2">
+                  <div className="text-center text-muted-foreground text-sm py-4 bg-muted rounded-lg">
+                    {trs("Solo el organizador puede cerrar la tarjeta")}
+                  </div>
+                  {onLeaveRound && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" className="w-full">{trs("Salir de esta ronda")}</Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>{trs("¿Salir de esta ronda?")}</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {trs("La ronda seguirá abierta y en manos del organizador. Tus scores se conservan y seguirá en tus rondas pendientes hasta que se cierre.")}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>{trs("Cancelar")}</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => onLeaveRound()}>{trs("Salir")}</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
                 </div>
               )}
             </>

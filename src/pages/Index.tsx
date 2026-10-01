@@ -2509,7 +2509,7 @@ const Index = () => {
                                 handleHidePendingRoundLocally(r.roundId);
                               }}
                             >
-                              {trs("Ocultar de mi vista")}
+                              {trs("No restaurar")}
                             </Button>
                           )}
                         </div>
@@ -2752,6 +2752,7 @@ const Index = () => {
             onSetView={setView}
             onResetRoundForReclose={resetRoundForReclose}
             onStartNewRound={startNewRound}
+            onLeaveRound={handleLeaveCurrentRound}
             crossBets={crossBets}
             onUpdateCrossBetConfig={updateCrossBetConfig}
           />
