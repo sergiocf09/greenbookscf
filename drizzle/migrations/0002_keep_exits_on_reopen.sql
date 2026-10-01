@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS trg_clear_round_exits_on_reopen ON public.rounds;

@@ -1222,25 +1222,35 @@ const Index = () => {
     } catch { /* noop */ }
   }, [hiddenPendingKey]);
 
-  const handleHidePendingRoundLocally = useCallback((roundId: string) => {
-    if (!hiddenPendingKey) return;
-    try {
-      const cur: string[] = JSON.parse(localStorage.getItem(hiddenPendingKey) ?? '[]');
-      if (!cur.includes(roundId)) cur.push(roundId);
-      localStorage.setItem(hiddenPendingKey, JSON.stringify(cur));
-      setHiddenPendingIds(cur);
-      toast.success(trs("Tarjeta ocultada de tu vista"), {
-        description: trs("Solo el organizador puede cerrarla oficialmente."),
-      });
-    } catch (e) {
-      devError('hide pending round failed', e);
+  // Participant/co-admin: "exit" the round — it stops auto-restoring on every
+  // device but stays listed as pending until the organizer closes it.
+  const handleHidePendingRoundLocally = useCallback(async (roundId: string) => {
+    if (!profile?.id) return;
+    const { error } = await supabase.from('round_exited_by_profile')
+      .upsert({ profile_id: profile.id, round_id: roundId }, { onConflict: 'profile_id,round_id' });
+    if (error) {
+      devError('exit round failed', error);
+      toast.error(trs("No se pudo salir de la ronda"));
+      return false;
     }
-  }, [hiddenPendingKey]);
+    if (hiddenPendingKey) localStorage.removeItem(hiddenPendingKey);
+    setHiddenPendingIds([]);
+    toast.success(trs("Saliste de la ronda"), {
+      description: trs("Seguirá en tus rondas pendientes hasta que el organizador la cierre."),
+    });
+    return true;
+  }, [profile?.id, hiddenPendingKey]);
 
-  const visiblePendingRounds = useMemo(
-    () => pendingRounds.filter(r => !hiddenPendingIds.includes(r.roundId)),
-    [pendingRounds, hiddenPendingIds]
-  );
+  const handleLeaveCurrentRound = useCallback(async () => {
+    if (!roundState.id) return;
+    const ok = await handleHidePendingRoundLocally(roundState.id);
+    if (ok) {
+      sessionStorage.setItem('skip_restore_once', '1');
+      startNewRound();
+    }
+  }, [roundState.id, handleHidePendingRoundLocally, startNewRound]);
+
+  const visiblePendingRounds = pendingRounds;
 
   // Initialize base player from profile (only if not restoring and no players)
   useEffect(() => {
@@ -2499,7 +2509,7 @@ const Index = () => {
                                 handleHidePendingRoundLocally(r.roundId);
                               }}
                             >
-                              {trs("Ocultar de mi vista")}
+                              {trs("No restaurar")}
                             </Button>
                           )}
                         </div>
@@ -2742,6 +2752,7 @@ const Index = () => {
             onSetView={setView}
             onResetRoundForReclose={resetRoundForReclose}
             onStartNewRound={startNewRound}
+            onLeaveRound={handleLeaveCurrentRound}
             crossBets={crossBets}
             onUpdateCrossBetConfig={updateCrossBetConfig}
           />

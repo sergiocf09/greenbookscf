@@ -1657,6 +1657,39 @@ export type Database = {
           },
         ]
       }
+      round_exited_by_profile: {
+        Row: {
+          exited_at: string
+          profile_id: string
+          round_id: string
+        }
+        Insert: {
+          exited_at?: string
+          profile_id: string
+          round_id: string
+        }
+        Update: {
+          exited_at?: string
+          profile_id?: string
+          round_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "round_exited_by_profile_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "round_exited_by_profile_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       round_groups: {
         Row: {
           created_at: string

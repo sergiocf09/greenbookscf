@@ -8,6 +8,20 @@
       "when": 1789758321766,
       "tag": "0000_whs_handicap_index_no_096",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790838722726,
+      "tag": "0001_round_exited_by_profile",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790838741451,
+      "tag": "0002_keep_exits_on_reopen",
+      "breakpoints": true
     }
   ]
 }
