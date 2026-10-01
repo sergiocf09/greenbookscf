@@ -9,21 +9,26 @@
   3. Si la ronda queda reabierta y el organizador no la cierra, el co-admin queda "atrapado" indefinidamente.
 
 ## Secuencia propuesta
+"Salir" significa: dejar de tener la ronda abierta/restaurada en pantalla. NO la oculta: sigue visible como pendiente hasta que el organizador la cierre (transparencia).
+
 ```text
 Co-admin / participante con ronda abierta
   -> Resultados: botón "Salir de esta ronda" (debajo de "Solo el organizador puede cerrar")
-  -> Confirmación: "La ronda seguirá abierta y en manos de <Organizador>. Tus scores capturados se conservan."
-  -> Se oculta en todos sus dispositivos, vuelve a pantalla de inicio limpia
-  -> No vuelve a aparecer en "Tarjeta pendiente" ni se auto-restaura
-  -> Cuando el organizador cierre: le llegan resultados/historial normalmente
-  -> Si el organizador lo reabre de nuevo: no se le vuelve a imponer; puede volver a entrar por invitación/link si quiere
+  -> Confirmación: "La ronda seguirá abierta y en manos de <Organizador>. Tus scores se conservan."
+  -> Vuelve a la pantalla de inicio limpia; la app ya no la restaura sola al entrar (en ningún dispositivo)
+  -> La ronda sigue en "Rondas pendientes" (menú/aviso) con etiqueta "Abierta por <Organizador>"
+     y botón "Ver / Restaurar" por si quiere volver a entrar
+  -> Si el organizador la REABRE: se le notifica ("<Organizador> reabrió la ronda en <Campo>")
+     y vuelve a aparecer en pendientes; tampoco se restaura sola
+  -> Cuando el organizador cierra: sale de pendientes y llegan resultados/historial normalmente
 ```
-- El organizador sigue con control total (cerrar, reabrir, eliminar). Sus apuestas y balances no cambian: salir no elimina al jugador de la ronda ni sus scores.
-- Para el organizador no aparece "Salir"; él sigue teniendo "Cerrar tarjeta" / "Eliminar".
+- Se elimina la opción actual "Ocultar de mi vista" (que la desaparecía por completo); se reemplaza por "Salir" con el comportamiento anterior.
+- El organizador sigue con control total (cerrar, reabrir, eliminar). Salir no lo quita de la ronda ni cambia apuestas, scores o balances.
+- Para el organizador no aparece "Salir".
 
 ## Detalles técnicos
-- Nueva tabla `round_hidden_for_profile (profile_id, round_id, hidden_at)` con GRANT + RLS (solo el propio perfil lee/inserta/borra).
-- `useRoundManagement`: al buscar rondas pendientes y al auto-restaurar, excluir las ocultas en el servidor (además del localStorage actual, que se migra al guardar).
-- `handleHidePendingRoundLocally` pasa a insertar en la tabla; nuevo botón en `PlayViews` (rama no-organizador) que oculta y llama `onStartNewRound`.
-- Si el usuario vuelve a unirse por link/código, se borra su fila de ocultos para esa ronda.
-- Textos nuevos en `phrases.en.json` ("Leave this round", etc.).
+- Nueva tabla `round_exited_by_profile (profile_id, round_id, exited_at)` con GRANT + RLS (solo el propio perfil lee/inserta/borra).
+- `useRoundManagement`: la auto-restauración ignora rondas con salida registrada; la lista de pendientes las sigue mostrando (marcadas "Saliste").
+- Al reabrir (`reset_round_for_reclose`) se borran las salidas de esa ronda y se dispara aviso a participantes (toast en tiempo real y aparece en pendientes).
+- Restaurar manualmente borra su fila de salida.
+- Nuevo botón y confirmación en `PlayViews` (rama no-organizador); textos en `phrases.en.json`.
