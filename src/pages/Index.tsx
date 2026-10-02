@@ -1226,9 +1226,12 @@ const Index = () => {
   // device but stays listed as pending until the organizer closes it.
   const handleHidePendingRoundLocally = useCallback(async (roundId: string) => {
     if (!profile?.id) return;
+    // Plain insert: upsert would need UPDATE privileges/RLS we intentionally
+    // don't grant on this table. A duplicate-key error just means the exit
+    // was already recorded, so treat it as success.
     const { error } = await supabase.from('round_exited_by_profile')
-      .upsert({ profile_id: profile.id, round_id: roundId }, { onConflict: 'profile_id,round_id' });
-    if (error) {
+      .insert({ profile_id: profile.id, round_id: roundId });
+    if (error && error.code !== '23505') {
       devError('exit round failed', error);
       toast.error(trs("No se pudo salir de la ronda"));
       return false;
