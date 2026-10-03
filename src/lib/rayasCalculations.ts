@@ -1418,9 +1418,12 @@ export const calculateRayasBets = (
       // CRITICAL: Only pass same-group players to Oyes calculation so the winner
       // determination is scoped to the group (not mixing G1 and G2 players).
       // Use the pair's groupId to filter; if no groupId is set, include all players.
+      // Use ALL round players of the group (not only Rayas participants) — this
+      // mirrors the live dashboard (BilateralDetail/BetDashboard pass allPlayers),
+      // so an Oyes won by a non-participant breaks the carry identically at close.
       const sameGroupPlayers = pairGroupId
-        ? participatingPlayers.filter(p => p.groupId === pairGroupId || !p.groupId)
-        : participatingPlayers;
+        ? players.filter(p => p.groupId === pairGroupId || !p.groupId)
+        : players;
       
       // Use getRayasDetailForPair which includes Oyes with correct per-pair override values
       // Pass resolvedConfig so G2+ overrides are respected
