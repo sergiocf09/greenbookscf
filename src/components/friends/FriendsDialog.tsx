@@ -285,6 +285,104 @@ export const FriendsDialog: React.FC<FriendsDialogProps> = ({
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Sheet crear/editar grupo */}
+        <Sheet open={showGroupSheet} onOpenChange={setShowGroupSheet}>
+          <SheetContent side="bottom" className="h-[85dvh] flex flex-col">
+            <SheetHeader className="pb-2">
+              <SheetTitle>{selectedGroup ? trs("Editar grupo") : trs("Nuevo grupo")}</SheetTitle>
+            </SheetHeader>
+
+            <div className="space-y-4 flex-1 overflow-y-auto pb-4">
+              {/* Nombre */}
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground font-medium">{trs("Nombre del grupo")}</label>
+                <input
+                  type="text"
+                  placeholder={trs("ej. Los de siempre")}
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                  maxLength={40}
+                  className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+
+              {/* Emoji */}
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground font-medium">{trs("Ícono")}</label>
+                <div className="flex gap-2 flex-wrap">
+                  {EMOJI_OPTIONS.map(em => (
+                    <button key={em} type="button"
+                      onClick={() => setEditEmoji(em)}
+                      className={cn(
+                        'text-xl p-2 rounded-lg border transition-colors',
+                        editEmoji === em
+                          ? 'bg-primary/10 border-primary'
+                          : 'bg-muted border-transparent hover:border-border'
+                      )}
+                    >
+                      {em}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Miembros */}
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground font-medium">
+                  {trs("Miembros")} ({editMemberIds.size} {trs("seleccionados")})
+                </label>
+                {friends.length === 0 ? (
+                  <p className="text-xs text-muted-foreground py-2">
+                    {trs("Primero agrega amigos para incluirlos en grupos")}
+                  </p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {friends.map(f => (
+                      <button key={f.profileId} type="button"
+                        onClick={() => toggleEditMember(f.profileId)}
+                        className={cn(
+                          'w-full flex items-center gap-3 p-2.5 rounded-lg border transition-colors text-left',
+                          editMemberIds.has(f.profileId)
+                            ? 'bg-primary/10 border-primary'
+                            : 'bg-card border-border hover:bg-muted/40'
+                        )}
+                      >
+                        <div className={cn(
+                          'h-4 w-4 rounded border flex items-center justify-center shrink-0 transition-colors',
+                          editMemberIds.has(f.profileId)
+                            ? 'bg-primary border-primary'
+                            : 'border-border'
+                        )}>
+                          {editMemberIds.has(f.profileId) && (
+                            <Check className="h-3 w-3 text-primary-foreground" />
+                          )}
+                        </div>
+                        <PlayerAvatar initials={f.initials} background={f.avatarColor} size="sm" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{f.displayName}</p>
+                          <p className="text-[10px] text-muted-foreground">HCP {f.currentHandicap}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2 border-t">
+              <Button variant="outline" className="flex-1"
+                onClick={() => setShowGroupSheet(false)} disabled={savingGroup}>
+                {trs("Cancelar")}
+              </Button>
+              <Button className="flex-1" onClick={handleSaveGroup}
+                disabled={savingGroup || !editName.trim()}>
+                {savingGroup ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                {selectedGroup ? trs("Guardar") : trs("Crear grupo")}
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
       </DialogContent>
     </Dialog>
   );
