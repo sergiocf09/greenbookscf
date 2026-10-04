@@ -1,4 +1,5 @@
 # Roadmap — English translation
+- [x] Friend groups: creation, membership, custom drag order, mobile tabs, and English UI
 - [x] Phase 1: language system + ES/EN toggle in profile menu
 - [x] Phase 2: main screens (home, round setup, scoring, bet dashboard)
 - [x] Phase 3: bet setup and bilateral detail

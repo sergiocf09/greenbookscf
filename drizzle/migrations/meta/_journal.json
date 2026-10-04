@@ -29,6 +29,13 @@
       "when": 1791140410554,
       "tag": "0003_friend_groups",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791141934846,
+      "tag": "0004_add_friend_group_sort_order",
+      "breakpoints": true
     }
   ]
 }

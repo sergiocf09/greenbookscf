@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { devError } from '@/lib/logger';
 import { toast } from 'sonner';
+import { trs } from '@/i18n/tr';
 
 export interface GroupMember {
   profileId: string;
@@ -69,7 +70,7 @@ export function usePlayerGroups() {
     try {
       const { data, error } = await supabase
         .from('friend_groups')
-        .insert({ owner_profile_id: profile.id, name: name.trim(), emoji })
+        .insert({ owner_profile_id: profile.id, name: name.trim(), emoji, sort_order: groups.length })
         .select('id')
         .single();
       if (error) throw error;
@@ -77,10 +78,10 @@ export function usePlayerGroups() {
       return data.id;
     } catch (err) {
       devError('createGroup error:', err);
-      toast.error('No se pudo crear el grupo');
+      toast.error(trs('No se pudo crear el grupo'));
       return null;
     }
-  }, [profile, fetchGroups]);
+  }, [profile, fetchGroups, groups.length]);
 
   const updateGroup = useCallback(async (groupId: string, name: string, emoji: string) => {
     try {
@@ -92,7 +93,7 @@ export function usePlayerGroups() {
       await fetchGroups();
     } catch (err) {
       devError('updateGroup error:', err);
-      toast.error('No se pudo actualizar el grupo');
+      toast.error(trs('No se pudo actualizar el grupo'));
     }
   }, [fetchGroups]);
 
@@ -104,10 +105,10 @@ export function usePlayerGroups() {
         .eq('id', groupId);
       if (error) throw error;
       setGroups(prev => prev.filter(g => g.id !== groupId));
-      toast.success('Grupo eliminado');
+      toast.success(trs('Grupo eliminado'));
     } catch (err) {
       devError('deleteGroup error:', err);
-      toast.error('No se pudo eliminar el grupo');
+      toast.error(trs('No se pudo eliminar el grupo'));
     }
   }, []);
 
@@ -123,7 +124,7 @@ export function usePlayerGroups() {
       await fetchGroups();
     } catch (err) {
       devError('addMember error:', err);
-      toast.error('No se pudo agregar el miembro');
+      toast.error(trs('No se pudo agregar el miembro'));
     }
   }, [fetchGroups]);
 
@@ -138,7 +139,7 @@ export function usePlayerGroups() {
       await fetchGroups();
     } catch (err) {
       devError('removeMember error:', err);
-      toast.error('No se pudo eliminar el miembro');
+      toast.error(trs('No se pudo eliminar el miembro'));
     }
   }, [fetchGroups]);
 
@@ -160,9 +161,35 @@ export function usePlayerGroups() {
       await fetchGroups();
     } catch (err) {
       devError('setMembers error:', err);
-      toast.error('No se pudo actualizar los miembros');
+      toast.error(trs('No se pudo actualizar los miembros'));
     }
   }, [fetchGroups]);
+
+  const reorderGroups = useCallback(async (orderedGroupIds: string[]) => {
+    const previous = groups;
+    const byId = new Map(groups.map(group => [group.id, group]));
+    const reordered = orderedGroupIds
+      .map(id => byId.get(id))
+      .filter((group): group is PlayerGroup => Boolean(group));
+    if (reordered.length !== groups.length) return false;
+
+    setGroups(reordered);
+    try {
+      const results = await Promise.all(
+        orderedGroupIds.map((id, sortOrder) =>
+          supabase.from('friend_groups').update({ sort_order: sortOrder }).eq('id', id)
+        )
+      );
+      const failed = results.find(result => result.error);
+      if (failed?.error) throw failed.error;
+      return true;
+    } catch (err) {
+      setGroups(previous);
+      devError('reorderGroups error:', err);
+      toast.error(trs('No se pudo guardar el orden de los grupos'));
+      return false;
+    }
+  }, [groups]);
 
   return {
     groups,
@@ -174,5 +201,6 @@ export function usePlayerGroups() {
     addMember,
     removeMember,
     setMembers,
+    reorderGroups,
   };
 }
