@@ -22,6 +22,13 @@
       "when": 1790838741451,
       "tag": "0002_keep_exits_on_reopen",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791140410554,
+      "tag": "0003_friend_groups",
+      "breakpoints": true
     }
   ]
 }
