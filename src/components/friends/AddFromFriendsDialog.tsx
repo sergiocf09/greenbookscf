@@ -143,21 +143,21 @@ export const AddFromFriendsDialog: React.FC<AddFromFriendsDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[85vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-md h-[85dvh] max-h-[85dvh] flex flex-col overflow-hidden">
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
             {trs("Agregar desde Amigos")}
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid grid-cols-2 w-full">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <TabsList className="grid grid-cols-2 w-full shrink-0">
             <TabsTrigger value="friends">{trs("Mis Amigos")}</TabsTrigger>
             <TabsTrigger value="search">{trs("Buscar")}</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="friends" className="flex-1 mt-4 min-h-0">
+          <TabsContent value="friends" className="flex-1 mt-4 min-h-0 overflow-y-auto overscroll-contain pr-1 pb-2">
             {/* Sección de grupos — solo si hay grupos */}
             {groups.length > 0 && (
               <div className="mb-4 space-y-2">
@@ -281,7 +281,7 @@ export const AddFromFriendsDialog: React.FC<AddFromFriendsDialogProps> = ({
                 <p className="text-xs mt-1">{trs("Busca jugadores para agregarlos")}</p>
               </div>
             ) : (
-              <ScrollArea className="h-[300px] pr-2">
+              <div className="pr-1">
                 <div className="space-y-2">
                   {friends.map((friend) => {
                     const isInRound = existingSet.has(friend.profileId);
@@ -311,11 +311,11 @@ export const AddFromFriendsDialog: React.FC<AddFromFriendsDialogProps> = ({
                     );
                   })}
                 </div>
-              </ScrollArea>
+              </div>
             )}
           </TabsContent>
 
-          <TabsContent value="search" className="flex-1 mt-4 space-y-3 min-h-0">
+          <TabsContent value="search" className="flex-1 mt-4 space-y-3 min-h-0 overflow-y-auto overscroll-contain pr-1 pb-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -378,7 +378,7 @@ export const AddFromFriendsDialog: React.FC<AddFromFriendsDialogProps> = ({
         </Tabs>
 
         {multiSelect && (
-          <div className="flex justify-between items-center pt-4 border-t">
+          <div className="flex justify-between items-center pt-4 border-t shrink-0 bg-background">
             <span className="text-sm text-muted-foreground">
               {selectedCount} {selectedCount !== 1 ? trs('seleccionados') : trs('seleccionado')}
             </span>
