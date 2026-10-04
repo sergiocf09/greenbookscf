@@ -566,6 +566,77 @@ export type Database = {
         }
         Relationships: []
       }
+      friend_group_members: {
+        Row: {
+          added_at: string
+          friend_profile_id: string
+          group_id: string
+          id: string
+        }
+        Insert: {
+          added_at?: string
+          friend_profile_id: string
+          group_id: string
+          id?: string
+        }
+        Update: {
+          added_at?: string
+          friend_profile_id?: string
+          group_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "friend_group_members_friend_profile_id_fkey"
+            columns: ["friend_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "friend_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "friend_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      friend_groups: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          name: string
+          owner_profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          name: string
+          owner_profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          name?: string
+          owner_profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "friend_groups_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       friendships: {
         Row: {
           created_at: string
@@ -2787,6 +2858,20 @@ export type Database = {
           initials: string
           profile_id: string
           rounds_played: number
+        }[]
+      }
+      get_my_friend_groups: {
+        Args: never
+        Returns: {
+          created_at: string
+          group_emoji: string
+          group_id: string
+          group_name: string
+          member_avatar_color: string
+          member_display_name: string
+          member_handicap: number
+          member_initials: string
+          member_profile_id: string
         }[]
       }
       get_my_friends: {
