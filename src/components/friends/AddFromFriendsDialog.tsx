@@ -96,7 +96,7 @@ export const AddFromFriendsDialog: React.FC<AddFromFriendsDialogProps> = ({
   };
 
   const handleConfirm = () => {
-    // Gather selected players from friends and search results
+    // Gather selected players from friends, group members and search results
     const allProfiles = [
       ...friends.map(f => ({
         profileId: f.profileId,
@@ -105,6 +105,16 @@ export const AddFromFriendsDialog: React.FC<AddFromFriendsDialogProps> = ({
         color: f.avatarColor,
         handicap: f.currentHandicap,
       })),
+      ...groups
+        .flatMap(g => g.members)
+        .filter(m => !friends.some(f => f.profileId === m.profileId))
+        .map(m => ({
+          profileId: m.profileId,
+          name: m.displayName,
+          initials: m.initials,
+          color: m.avatarColor,
+          handicap: m.handicap,
+        })),
       ...searchResults
         .filter(r => !friends.some(f => f.profileId === r.id))
         .map(r => ({
