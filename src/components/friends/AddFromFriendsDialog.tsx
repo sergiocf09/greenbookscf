@@ -6,10 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, UserPlus, Users, Loader2, Check } from 'lucide-react';
+import { Search, UserPlus, Users, Loader2, Check, ChevronRight } from 'lucide-react';
 import { useFriends, Friend, SearchResult } from '@/hooks/useFriends';
+import { usePlayerGroups } from '@/hooks/usePlayerGroups';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { Player } from '@/types/golf';
+import { cn } from '@/lib/utils';
 
 interface AddFromFriendsDialogProps {
   open: boolean;
@@ -47,7 +49,14 @@ export const AddFromFriendsDialog: React.FC<AddFromFriendsDialogProps> = ({
   const [tab, setTab] = useState<'friends' | 'search'>('friends');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  const { groups, fetchGroups } = usePlayerGroups();
+  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
+
   const existingSet = useMemo(() => new Set(existingPlayerIds), [existingPlayerIds]);
+
+  useEffect(() => {
+    if (open) fetchGroups();
+  }, [open, fetchGroups]);
 
   useEffect(() => {
     if (open) {
