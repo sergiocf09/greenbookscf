@@ -1,12 +1,12 @@
 import { trs } from '@/i18n/tr';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, UserPlus, UserMinus, Users, Loader2, Plus, Pencil, Trash2, ChevronRight, ArrowLeft, Check } from 'lucide-react';
-import { usePlayerGroups, PlayerGroup, GroupMember } from '@/hooks/usePlayerGroups';
+import { Search, UserPlus, UserMinus, Users, Loader2, Plus, Pencil, Trash2, Check, GripVertical } from 'lucide-react';
+import { usePlayerGroups, PlayerGroup } from '@/hooks/usePlayerGroups';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useFriends, Friend, SearchResult } from '@/hooks/useFriends';
@@ -50,16 +50,22 @@ export const FriendsDialog: React.FC<FriendsDialogProps> = ({
     updateGroup,
     deleteGroup,
     setMembers,
+    reorderGroups,
   } = usePlayerGroups();
 
-  // Estado de navegación de grupos
-  const [groupView, setGroupView] = useState<'list' | 'detail' | 'edit'>('list');
   const [selectedGroup, setSelectedGroup] = useState<PlayerGroup | null>(null);
   const [editName, setEditName] = useState('');
   const [editEmoji, setEditEmoji] = useState('⛳');
   const [editMemberIds, setEditMemberIds] = useState<Set<string>>(new Set());
   const [savingGroup, setSavingGroup] = useState(false);
   const [showGroupSheet, setShowGroupSheet] = useState(false);
+  const [orderedGroups, setOrderedGroups] = useState<PlayerGroup[]>([]);
+  const draggedGroupId = useRef<string | null>(null);
+  const latestOrder = useRef<PlayerGroup[]>([]);
+
+  useEffect(() => {
+    if (!draggedGroupId.current) setOrderedGroups(groups);
+  }, [groups]);
 
   useEffect(() => {
     if (open) { fetchGroups(); }
@@ -99,8 +105,35 @@ export const FriendsDialog: React.FC<FriendsDialogProps> = ({
   };
 
   const handleDeleteGroup = async (group: PlayerGroup) => {
-    if (!confirm(`¿Eliminar el grupo "${group.name}"?`)) return;
+    const prompt = trs('¿Eliminar el grupo "{{name}}"?').replace('{{name}}', group.name);
+    if (!confirm(prompt)) return;
     await deleteGroup(group.id);
+  };
+
+  const moveDraggedGroup = (clientX: number, clientY: number) => {
+    const draggedId = draggedGroupId.current;
+    if (!draggedId) return;
+    const target = document.elementFromPoint(clientX, clientY)?.closest<HTMLElement>('[data-friend-group-id]');
+    const targetId = target?.dataset.friendGroupId;
+    if (!targetId || targetId === draggedId) return;
+
+    setOrderedGroups(current => {
+      const from = current.findIndex(group => group.id === draggedId);
+      const to = current.findIndex(group => group.id === targetId);
+      if (from < 0 || to < 0) return current;
+      const next = [...current];
+      next.splice(to, 0, next.splice(from, 1)[0]);
+      latestOrder.current = next;
+      return next;
+    });
+  };
+
+  const finishDragging = (event: React.PointerEvent<HTMLButtonElement>) => {
+    try { event.currentTarget.releasePointerCapture(event.pointerId); } catch { /* already released */ }
+    const finalOrder = latestOrder.current;
+    draggedGroupId.current = null;
+    latestOrder.current = [];
+    if (finalOrder.length > 0) void reorderGroups(finalOrder.map(group => group.id));
   };
 
   const toggleEditMember = (profileId: string) => {
@@ -160,10 +193,10 @@ export const FriendsDialog: React.FC<FriendsDialogProps> = ({
         </DialogHeader>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid grid-cols-3 w-full">
-            <TabsTrigger value="friends">{trs("Amigos")} ({friends.length})</TabsTrigger>
-            <TabsTrigger value="groups">{trs("Grupos")}</TabsTrigger>
-            <TabsTrigger value="search">{trs("Buscar Jugadores")}</TabsTrigger>
+          <TabsList className="grid grid-cols-[minmax(0,1.05fr)_minmax(0,.68fr)_minmax(0,1.42fr)] w-full p-1">
+            <TabsTrigger value="friends" className="min-w-0 px-1 text-xs sm:text-sm">{trs("Amigos")} ({friends.length})</TabsTrigger>
+            <TabsTrigger value="groups" className="min-w-0 px-1 text-xs sm:text-sm">{trs("Grupos")}</TabsTrigger>
+            <TabsTrigger value="search" className="min-w-0 px-1 text-xs sm:text-sm whitespace-nowrap">{trs("Buscar Jugadores")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="friends" className="flex-1 mt-4 min-h-0">
@@ -218,10 +251,26 @@ export const FriendsDialog: React.FC<FriendsDialogProps> = ({
               ) : (
                 <ScrollArea className="h-[300px] pr-1">
                   <div className="space-y-2">
-                    {groups.map(group => (
-                      <div key={group.id}
-                        className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl"
+                    {orderedGroups.map(group => (
+                      <div key={group.id} data-friend-group-id={group.id}
+                        className="flex items-center gap-2 p-3 bg-card border border-border rounded-xl"
                       >
+                        <button
+                          type="button"
+                          aria-label={`${trs('Mover grupo')} ${group.name}`}
+                          title={trs('Mover grupo')}
+                          onPointerDown={(event) => {
+                            draggedGroupId.current = group.id;
+                            latestOrder.current = orderedGroups;
+                            event.currentTarget.setPointerCapture(event.pointerId);
+                          }}
+                          onPointerMove={(event) => moveDraggedGroup(event.clientX, event.clientY)}
+                          onPointerUp={finishDragging}
+                          onPointerCancel={finishDragging}
+                          className="flex h-8 w-7 shrink-0 touch-none items-center justify-center text-muted-foreground cursor-grab active:cursor-grabbing"
+                        >
+                          <GripVertical className="h-4 w-4" />
+                        </button>
                         <span className="text-xl shrink-0">{group.emoji}</span>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold truncate">{group.name}</p>

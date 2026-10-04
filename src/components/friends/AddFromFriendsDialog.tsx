@@ -297,7 +297,7 @@ export const AddFromFriendsDialog: React.FC<AddFromFriendsDialogProps> = ({
                         handicap={friend.currentHandicap}
                         isSelected={isSelected}
                         isDisabled={isInRound}
-                        disabledReason="Ya en la ronda"
+                        disabledReason={trs("Ya en ronda")}
                         onToggle={() => toggleSelection(friend.profileId)}
                         onQuickAdd={!multiSelect ? () => handleQuickAdd(
                           friend.profileId,
@@ -356,7 +356,7 @@ export const AddFromFriendsDialog: React.FC<AddFromFriendsDialogProps> = ({
                         handicap={result.currentHandicap}
                         isSelected={isSelected}
                         isDisabled={isInRound}
-                        disabledReason="Ya en la ronda"
+                        disabledReason={trs("Ya en ronda")}
                         onToggle={() => toggleSelection(result.id)}
                         onQuickAdd={!multiSelect ? () => handleQuickAdd(
                           result.id,
@@ -380,7 +380,7 @@ export const AddFromFriendsDialog: React.FC<AddFromFriendsDialogProps> = ({
         {multiSelect && (
           <div className="flex justify-between items-center pt-4 border-t">
             <span className="text-sm text-muted-foreground">
-              {selectedCount} seleccionado{selectedCount !== 1 ? 's' : ''}
+              {selectedCount} {selectedCount !== 1 ? trs('seleccionados') : trs('seleccionado')}
             </span>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -388,7 +388,7 @@ export const AddFromFriendsDialog: React.FC<AddFromFriendsDialogProps> = ({
               </Button>
               <Button onClick={handleConfirm} disabled={selectedCount === 0}>
                 <UserPlus className="h-4 w-4 mr-1" />
-                Agregar ({selectedCount})
+                {trs('Agregar')} ({selectedCount})
               </Button>
             </div>
           </div>
