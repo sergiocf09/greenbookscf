@@ -2655,6 +2655,10 @@ export type Database = {
           score_value: number
         }[]
       }
+      compute_profile_handicap_index: {
+        Args: { p_profile_id: string }
+        Returns: number
+      }
       convert_ghost_to_profile: {
         Args: { p_auth_uid: string; p_session_id: string }
         Returns: string
