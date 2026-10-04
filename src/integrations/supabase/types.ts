@@ -2588,6 +2588,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _adjusted_gross_score: {
+        Args: {
+          p_course_id: string
+          p_handicap: number
+          p_round_player_id: string
+        }
+        Returns: number
+      }
       _calc_handicap_index: { Args: { diffs: number[] }; Returns: number }
       _calc_pair_net_with_overrides: {
         Args: {

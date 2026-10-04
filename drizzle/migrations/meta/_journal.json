@@ -36,6 +36,13 @@
       "when": 1791141934846,
       "tag": "0004_add_friend_group_sort_order",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791149497562,
+      "tag": "0005_handicap_rankings_net_double_bogey",
+      "breakpoints": true
     }
   ]
 }
