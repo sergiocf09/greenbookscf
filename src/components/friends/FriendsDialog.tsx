@@ -5,7 +5,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, UserPlus, UserMinus, Users, Loader2 } from 'lucide-react';
+import { Search, UserPlus, UserMinus, Users, Loader2, Plus, Pencil, Trash2, ChevronRight, ArrowLeft, Check } from 'lucide-react';
+import { usePlayerGroups, PlayerGroup, GroupMember } from '@/hooks/usePlayerGroups';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useFriends, Friend, SearchResult } from '@/hooks/useFriends';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { cn } from '@/lib/utils';
@@ -37,7 +40,79 @@ export const FriendsDialog: React.FC<FriendsDialogProps> = ({
   } = useFriends();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [tab, setTab] = useState<'friends' | 'search'>('friends');
+  const [tab, setTab] = useState<'friends' | 'groups' | 'search'>('friends');
+
+  const {
+    groups,
+    loading: groupsLoading,
+    fetchGroups,
+    createGroup,
+    updateGroup,
+    deleteGroup,
+    setMembers,
+  } = usePlayerGroups();
+
+  // Estado de navegación de grupos
+  const [groupView, setGroupView] = useState<'list' | 'detail' | 'edit'>('list');
+  const [selectedGroup, setSelectedGroup] = useState<PlayerGroup | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editEmoji, setEditEmoji] = useState('⛳');
+  const [editMemberIds, setEditMemberIds] = useState<Set<string>>(new Set());
+  const [savingGroup, setSavingGroup] = useState(false);
+  const [showGroupSheet, setShowGroupSheet] = useState(false);
+
+  useEffect(() => {
+    if (open) { fetchGroups(); }
+  }, [open, fetchGroups]);
+
+  const openNewGroup = () => {
+    setEditName('');
+    setEditEmoji('⛳');
+    setEditMemberIds(new Set());
+    setSelectedGroup(null);
+    setShowGroupSheet(true);
+  };
+
+  const openEditGroup = (group: PlayerGroup) => {
+    setSelectedGroup(group);
+    setEditName(group.name);
+    setEditEmoji(group.emoji);
+    setEditMemberIds(new Set(group.members.map(m => m.profileId)));
+    setShowGroupSheet(true);
+  };
+
+  const handleSaveGroup = async () => {
+    if (!editName.trim()) return;
+    setSavingGroup(true);
+    try {
+      if (selectedGroup) {
+        await updateGroup(selectedGroup.id, editName, editEmoji);
+        await setMembers(selectedGroup.id, Array.from(editMemberIds));
+      } else {
+        const newId = await createGroup(editName, editEmoji);
+        if (newId) await setMembers(newId, Array.from(editMemberIds));
+      }
+      setShowGroupSheet(false);
+    } finally {
+      setSavingGroup(false);
+    }
+  };
+
+  const handleDeleteGroup = async (group: PlayerGroup) => {
+    if (!confirm(`¿Eliminar el grupo "${group.name}"?`)) return;
+    await deleteGroup(group.id);
+  };
+
+  const toggleEditMember = (profileId: string) => {
+    setEditMemberIds(prev => {
+      const next = new Set(prev);
+      if (next.has(profileId)) next.delete(profileId);
+      else next.add(profileId);
+      return next;
+    });
+  };
+
+  const EMOJI_OPTIONS = ['⛳', '🏌️', '🏆', '🎯', '⭐', '🔥', '💪', '🤝', '👑', '🌟'];
 
   useEffect(() => {
     if (open) {
@@ -85,8 +160,9 @@ export const FriendsDialog: React.FC<FriendsDialogProps> = ({
         </DialogHeader>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid grid-cols-2 w-full">
-            <TabsTrigger value="friends">Mis Amigos ({friends.length})</TabsTrigger>
+          <TabsList className="grid grid-cols-3 w-full">
+            <TabsTrigger value="friends">{trs("Amigos")} ({friends.length})</TabsTrigger>
+            <TabsTrigger value="groups">{trs("Grupos")}</TabsTrigger>
             <TabsTrigger value="search">{trs("Buscar Jugadores")}</TabsTrigger>
           </TabsList>
 
