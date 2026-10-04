@@ -158,6 +158,118 @@ export const AddFromFriendsDialog: React.FC<AddFromFriendsDialogProps> = ({
           </TabsList>
 
           <TabsContent value="friends" className="flex-1 mt-4 min-h-0">
+            {/* Sección de grupos — solo si hay grupos */}
+            {groups.length > 0 && (
+              <div className="mb-4 space-y-2">
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide px-1">
+                  {trs("Grupos")}
+                </p>
+                {groups.map(group => (
+                  <div key={group.id} className="border border-border rounded-xl overflow-hidden">
+                    {/* Header del grupo */}
+                    <button
+                      type="button"
+                      onClick={() => setExpandedGroupId(
+                        expandedGroupId === group.id ? null : group.id
+                      )}
+                      className="w-full flex items-center gap-3 p-3 bg-card hover:bg-muted/40 transition-colors text-left"
+                    >
+                      <span className="text-lg shrink-0">{group.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate">{group.name}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {group.members.length} {group.members.length !== 1 ? trs("jugadores") : trs("jugador")}
+                        </p>
+                      </div>
+                      {/* Botón seleccionar todos */}
+                      {group.members.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={e => {
+                            e.stopPropagation();
+                            const available = group.members
+                              .filter(m => !existingSet.has(m.profileId))
+                              .map(m => m.profileId);
+                            setSelectedIds(prev => {
+                              const next = new Set(prev);
+                              const allSelected = available.every(id => next.has(id));
+                              if (allSelected) {
+                                available.forEach(id => next.delete(id));
+                              } else {
+                                available.forEach(id => next.add(id));
+                              }
+                              return next;
+                            });
+                          }}
+                          className="text-[10px] text-primary border border-primary/30 rounded px-2 py-1 hover:bg-primary/5 transition-colors shrink-0"
+                        >
+                          {group.members.filter(m => !existingSet.has(m.profileId))
+                            .every(m => selectedIds.has(m.profileId))
+                            ? trs("Deselect") : trs("Todos")}
+                        </button>
+                      )}
+                      <ChevronRight className={cn(
+                        'h-4 w-4 text-muted-foreground transition-transform shrink-0',
+                        expandedGroupId === group.id && 'rotate-90'
+                      )} />
+                    </button>
+
+                    {/* Miembros expandidos */}
+                    {expandedGroupId === group.id && (
+                      <div className="border-t border-border divide-y divide-border">
+                        {group.members.map(member => {
+                          const isInRound = existingSet.has(member.profileId);
+                          const isSelected = selectedIds.has(member.profileId);
+                          return (
+                            <button
+                              key={member.profileId}
+                              type="button"
+                              disabled={isInRound}
+                              onClick={() => {
+                                if (isInRound) return;
+                                setSelectedIds(prev => {
+                                  const next = new Set(prev);
+                                  if (next.has(member.profileId)) next.delete(member.profileId);
+                                  else next.add(member.profileId);
+                                  return next;
+                                });
+                              }}
+                              className={cn(
+                                'w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors',
+                                isInRound ? 'opacity-50' : isSelected ? 'bg-primary/10' : 'hover:bg-muted/30'
+                              )}
+                            >
+                              <div className={cn(
+                                'h-4 w-4 rounded border flex items-center justify-center shrink-0',
+                                isSelected ? 'bg-primary border-primary' : 'border-border'
+                              )}>
+                                {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                              </div>
+                              <PlayerAvatar initials={member.initials} background={member.avatarColor} size="sm" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{member.displayName}</p>
+                                <p className="text-[10px] text-muted-foreground">HCP {member.handicap}</p>
+                              </div>
+                              {isInRound && (
+                                <span className="text-[10px] text-muted-foreground shrink-0">{trs("Ya en ronda")}</span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                <div className="flex items-center gap-2 my-3">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-[10px] text-muted-foreground px-2">{trs("o busca todos tus amigos")}</span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+              </div>
+            )}
+
+            {/* Lista de amigos existente — sin cambios */}
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
