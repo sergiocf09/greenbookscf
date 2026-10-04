@@ -193,6 +193,58 @@ export const FriendsDialog: React.FC<FriendsDialogProps> = ({
             )}
           </TabsContent>
 
+          <TabsContent value="groups" className="flex-1 mt-3 min-h-0">
+            <div className="space-y-2">
+              {/* Botón nuevo grupo */}
+              <button
+                type="button"
+                onClick={openNewGroup}
+                className="w-full flex items-center gap-2 p-3 border border-dashed border-border rounded-xl text-sm text-primary hover:bg-primary/5 transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                {trs("Nuevo grupo")}
+              </button>
+
+              {groupsLoading ? (
+                <div className="flex justify-center py-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : groups.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Users className="h-10 w-10 mx-auto mb-2 opacity-40" />
+                  <p className="text-sm">{trs("Sin grupos todavía")}</p>
+                  <p className="text-xs mt-1">{trs("Crea grupos para armar rondas más rápido")}</p>
+                </div>
+              ) : (
+                <ScrollArea className="h-[300px] pr-1">
+                  <div className="space-y-2">
+                    {groups.map(group => (
+                      <div key={group.id}
+                        className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl"
+                      >
+                        <span className="text-xl shrink-0">{group.emoji}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold truncate">{group.name}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {group.members.length} {group.members.length !== 1 ? trs("jugadores") : trs("jugador")}
+                          </p>
+                        </div>
+                        <button type="button" onClick={() => openEditGroup(group)}
+                          className="p-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button type="button" onClick={() => handleDeleteGroup(group)}
+                          className="p-1.5 text-muted-foreground hover:text-destructive transition-colors">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </div>
+          </TabsContent>
+
           <TabsContent value="search" className="flex-1 mt-4 space-y-3 min-h-0">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
