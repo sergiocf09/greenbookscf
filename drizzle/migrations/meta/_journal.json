@@ -43,6 +43,13 @@
       "when": 1791149497562,
       "tag": "0005_handicap_rankings_net_double_bogey",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791149813869,
+      "tag": "0006_auto_update_profile_handicap_on_close",
+      "breakpoints": true
     }
   ]
 }
