@@ -203,7 +203,12 @@ export const calculateAllBets = (
       // sub-variant amount override (e.g., "Presiones" disabled wins over a
       // residual "Presiones Front" amount). Otherwise pick the first match.
       const disabledOverride = matchingOverrides.find(o => o.enabled === false);
-      const override = disabledOverride ?? matchingOverrides[0];
+      // Prefer the most specific override (e.g. "Medal Front 9" over a generic
+      // "Medal" enabled marker without amount) so per-segment amounts apply.
+      const specificOverride = [...matchingOverrides]
+        .filter(o => o.amountOverride !== undefined)
+        .sort((a, b) => (b.betType ?? '').length - (a.betType ?? '').length)[0];
+      const override = disabledOverride ?? specificOverride ?? matchingOverrides[0];
 
       if (override) {
         if (override.enabled === false) return { ...summary, amount: 0 };
