@@ -31,7 +31,7 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
       } else {
         setWolfConfig(null);
       }
-      setHoleStates((states ?? []).map(s => ({
+      const mapped: WolfHoleState[] = (states ?? []).map(s => ({
         roundId: s.round_id,
         holeNumber: s.hole_number,
         wolfPlayerId: s.wolf_player_id,
@@ -40,7 +40,34 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
         result: (s.result as WolfHoleState['result']) ?? null,
         effectiveAmount: s.effective_amount ?? null,
         carryoverHoles: s.carryover_holes ?? 0,
-      })));
+      }));
+      // Carry is derived from the CURRENT results of previous holes, not the
+      // value frozen when the decision was saved (a previous hole may have
+      // been resolved/changed afterwards). Normalize and persist drift.
+      if (cfg) {
+        const cfgObj = { amountPerHole: cfg.amount_per_hole, carryover: cfg.carryover } as WolfConfig;
+        const byHole = new Map(mapped.map(s => [s.holeNumber, s]));
+        for (const s of mapped) {
+          if (s.carryoverHoles === -1) continue; // redemption marker
+          let carry = 0;
+          if (cfg.carryover) {
+            for (let h = s.holeNumber - 1; h >= 1; h--) {
+              if (byHole.get(h)?.result === 'tied') carry++;
+              else break;
+            }
+          }
+          const eff = computeEffectiveAmount(cfgObj, carry, s.wentSolo);
+          if (carry !== s.carryoverHoles || eff !== s.effectiveAmount) {
+            s.carryoverHoles = carry;
+            s.effectiveAmount = eff;
+            supabase.from('wolf_hole_state')
+              .update({ carryover_holes: carry, effective_amount: eff })
+              .eq('round_id', roundId).eq('hole_number', s.holeNumber)
+              .then(() => {});
+          }
+        }
+      }
+      setHoleStates(mapped);
     } finally {
       setLoading(false);
     }
