@@ -294,7 +294,16 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
         }
 
         // Don't auto-override; pass candidate info so the panel can offer the choice
-        const existingState = wolfHoleStates?.find(s => s.holeNumber === currentHole);
+        const storedState = wolfHoleStates?.find(s => s.holeNumber === currentHole);
+        // Show the result derived from the current scores, not a possibly stale saved result.
+        let existingState = storedState;
+        if (storedState && storedState.result !== null && course) {
+          const wolfTeam = [storedState.wolfPlayerId, ...storedState.partnerIds];
+          const rivalTeam = players.filter(p => !wolfTeam.includes(p.id)).map(p => p.id);
+          const resolved = resolveWolfHole(wolfTeam, rivalTeam, currentHole, players, scores, course, wolfConfig);
+          const liveResult = resolved.winner === 'wolf' ? 'won' : resolved.winner === 'rival' ? 'lost' : 'tied';
+          if (liveResult !== storedState.result) existingState = { ...storedState, result: liveResult };
+        }
         // Always use rotation-derived wolfId; ignore stale saved wolfPlayerId
         const effectiveWolfId = existingState?.redemptionMode !== undefined ? existingState.wolfPlayerId : regularWolfPlayerId;
 
