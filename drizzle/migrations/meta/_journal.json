@@ -64,6 +64,13 @@
       "when": 1791514236933,
       "tag": "0008_wolf_total_hole_value_and_redemption",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791527395270,
+      "tag": "0009_migration",
+      "breakpoints": true
     }
   ]
 }

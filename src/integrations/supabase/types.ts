@@ -2619,6 +2619,10 @@ export type Database = {
         }
         Returns: number
       }
+      _recompute_league_round_scores: {
+        Args: { p_leaderboard_id: string; p_round_id: string }
+        Returns: undefined
+      }
       accept_cross_bet_invitation: {
         Args: { p_invitation_id: string }
         Returns: string
@@ -3152,6 +3156,10 @@ export type Database = {
       }
       rebuild_snapshot_balances_from_ledger: { Args: never; Returns: Json }
       rebuild_snapshot_bilateral_handicaps: { Args: never; Returns: Json }
+      refresh_league_scores: {
+        Args: { p_leaderboard_id: string }
+        Returns: undefined
+      }
       reopen_leaderboard: {
         Args: { p_leaderboard_id: string }
         Returns: boolean
