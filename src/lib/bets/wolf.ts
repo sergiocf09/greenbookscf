@@ -214,11 +214,15 @@ export const computeEffectiveHoleValue = (
 
 export const computeAmountPerPair = (
   config: WolfConfig, carryoverHoles: number, wentSolo: boolean,
-  nWolfTeam: number
+  nWolfTeam: number, nRivalTeam: number
 ): number => {
-  // Each rival (non-Loba side) moves the full hole value; the Loba side splits it.
   const hv = computeEffectiveHoleValue(config, carryoverHoles, wentSolo);
-  return nWolfTeam > 0 ? hv / nWolfTeam : hv;
+  // Equal teams: the pot splits evenly across all pairs (hv / (nW × nL)).
+  // Unequal teams: each player of the larger side moves the full hole value
+  // and the smaller side splits the total (hv / minSide per pair).
+  if (nWolfTeam <= 0 || nRivalTeam <= 0) return hv;
+  if (nWolfTeam === nRivalTeam) return hv / (nWolfTeam * nRivalTeam);
+  return hv / Math.min(nWolfTeam, nRivalTeam);
 };
 
 /** H18 all-in transfers twice the loss, with partner OR solo, without carry. */
