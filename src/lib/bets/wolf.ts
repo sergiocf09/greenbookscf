@@ -220,10 +220,10 @@ export const computeAmountPerPair = (
   return nWinners > 0 && nLosers > 0 ? hv / (nWinners * nLosers) : hv;
 };
 
-/** All-in replaces the base and carry; solo still doubles the selected stake. */
+/** H18 all-in transfers twice the loss, with partner OR solo, without carry. */
 export const computeWolfStateHoleValue = (config: WolfConfig, state: WolfHoleState): number =>
   state.redemptionMode === 'all_in'
-    ? Math.abs(state.allInAmount ?? 0) * (state.wentSolo ? 2 : 1)
+    ? Math.abs(state.allInAmount ?? 0) * (state.holeNumber === 18 || state.wentSolo ? 2 : 1)
     : computeEffectiveHoleValue(config, state.carryoverHoles ?? 0, state.wentSolo);
 
 // Motor principal: genera BetSummary[] desde holeStates resueltos
@@ -262,9 +262,17 @@ export const calculateWolfBets = (
       const desc = state.wentSolo
         ? (isAllIn ? `Loba All-in Solo · H${state.holeNumber}` : `Loba Sola ×2 · H${state.holeNumber}`)
         : (isAllIn ? `Loba All-in · H${state.holeNumber}` : `La Loba · H${state.holeNumber}`);
-      validWinners.forEach(wId => validLosers.forEach(lId => {
-        summaries.push({ playerId: wId, vsPlayer: lId, betType: 'Wolf', amount: amountPerPair, segment: 'hole', holeNumber: state.holeNumber, description: desc });
-        summaries.push({ playerId: lId, vsPlayer: wId, betType: 'Wolf', amount: -amountPerPair, segment: 'hole', holeNumber: state.holeNumber, description: `vs ${desc}` });
+      const roundAllIn = isAllIn && state.holeNumber === 18 && nW > 0 && nL > 0;
+      const totalCents = Math.round(effectiveHV * 100);
+      // Split each winner's share first; distribute remaining cents across
+      // losers so partnered winners recover X each and the ledger sums to zero.
+      validWinners.forEach((wId, wi) => validLosers.forEach((lId, li) => {
+        const winnerCents = Math.floor(totalCents / nW) + (wi >= nW - totalCents % nW ? 1 : 0);
+        const amount = roundAllIn
+          ? (Math.floor(winnerCents / nL) + ((li + wi) % nL >= nL - winnerCents % nL ? 1 : 0)) / 100
+          : amountPerPair;
+        summaries.push({ playerId: wId, vsPlayer: lId, betType: 'Wolf', amount, segment: 'hole', holeNumber: state.holeNumber, description: desc });
+        summaries.push({ playerId: lId, vsPlayer: wId, betType: 'Wolf', amount: -amount, segment: 'hole', holeNumber: state.holeNumber, description: `vs ${desc}` });
       }));
     });
   return summaries;

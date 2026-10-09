@@ -31,9 +31,9 @@ describe('Wolf total hole value', () => {
   it('all-in uses loss 150 instead of base and ignores carry with partner', () => {
     const s = { ...state, redemptionMode: 'all_in' as const, allInAmount: 150, carryoverHoles: 9 };
     const bets = calculateWolfBets(players, config, [s]);
-    expect(computeWolfStateHoleValue(config, s)).toBe(150);
-    expect(balance(bets, 'p0')).toBe(75);
-    expect(balance(bets, 'p2')).toBe(-50);
+    expect(computeWolfStateHoleValue(config, s)).toBe(300);
+    expect(balance(bets, 'p0')).toBe(150);
+    expect(balance(bets, 'p2')).toBe(-100);
   });
   it('all-in solo transfers 300 for loss 150 with symmetric losing debt', () => {
     const s = { ...state, redemptionMode: 'all_in' as const, allInAmount: 150, carryoverHoles: 9, wentSolo: true, partnerIds: [] };
@@ -42,6 +42,32 @@ describe('Wolf total hole value', () => {
   });
   it('ties transfer no money', () => {
     expect(calculateWolfBets(players, config, [{ ...state, result: 'tied' }])).toEqual([]);
+  });
+  it.each([4, 5])('H18 loss 200 with partner, %i players: zero if won, -400 if lost', (count) => {
+    const s = { ...state, redemptionMode: 'all_in' as const, allInAmount: 200, carryoverHoles: 5 };
+    const won = calculateWolfBets(players.slice(0, count), config, [s]);
+    expect(computeWolfStateHoleValue(config, s)).toBe(400);
+    expect(-200 + balance(won, 'p0')).toBe(0);
+    expect(balance(won, 'p1')).toBe(200);
+    expect(won.reduce((sum, b) => sum + Math.round(b.amount * 100), 0)).toBe(0);
+    const lost = calculateWolfBets(players.slice(0, count), config, [{ ...s, result: 'lost' }]);
+    expect(-200 + balance(lost, 'p0')).toBeCloseTo(-400);
+    expect(balance(lost, 'p1')).toBeCloseTo(-200);
+    expect(lost.reduce((sum, b) => sum + Math.round(b.amount * 100), 0)).toBe(0);
+  });
+  it.each([4, 5])('H18 loss 200 solo, %i players: +200 if won, -600 if lost', (count) => {
+    const s = { ...state, redemptionMode: 'all_in' as const, allInAmount: 200, partnerIds: [], wentSolo: true };
+    const won = calculateWolfBets(players.slice(0, count), config, [s]);
+    expect(-200 + balance(won, 'p0')).toBeCloseTo(200);
+    expect(players.slice(1, count).map(p => balance(won, p.id)).sort()).toEqual(count === 4 ? [-133.33, -133.33, -133.34].sort() : [-100, -100, -100, -100]);
+    expect(won.reduce((sum, b) => sum + Math.round(b.amount * 100), 0)).toBe(0);
+    const lost = calculateWolfBets(players.slice(0, count), config, [{ ...s, result: 'lost' }]);
+    expect(-200 + balance(lost, 'p0')).toBeCloseTo(-600);
+    expect(lost.reduce((sum, b) => sum + Math.round(b.amount * 100), 0)).toBe(0);
+  });
+  it('partner doubling exception does not apply outside H18 or normal mode', () => {
+    expect(computeWolfStateHoleValue(config, { ...state, holeNumber: 17, redemptionMode: 'all_in', allInAmount: 200 })).toBe(200);
+    expect(computeWolfStateHoleValue(config, { ...state, redemptionMode: 'normal', allInAmount: 200 })).toBe(60);
   });
   it('legacy Wolf setup preserves 60, explicit holeValue zero wins', () => {
     const { holeValue: _, roundId: __, participantIds: ___, ...setup } = config;

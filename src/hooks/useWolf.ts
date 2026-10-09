@@ -120,9 +120,10 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
         else break;
       }
     }
-    const effectiveHoleValue = redemptionMode === 'all_in'
-      ? Math.abs(allInAmount ?? 0) * (wentSolo ? 2 : 1)
-      : computeEffectiveHoleValue(wolfConfig, carryoverHoles, wentSolo);
+    const effectiveHoleValue = computeWolfStateHoleValue(wolfConfig, {
+      roundId, holeNumber, wolfPlayerId, partnerIds, wentSolo,
+      redemptionMode, allInAmount, carryoverHoles, result: null, effectiveAmount: null,
+    });
     const { error } = await supabase.from('wolf_hole_state').upsert({
       round_id: roundId,
       hole_number: holeNumber,

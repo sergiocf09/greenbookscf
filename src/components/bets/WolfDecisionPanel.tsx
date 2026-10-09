@@ -105,7 +105,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
           </Button>
           <Button variant="outline" className="w-full h-auto whitespace-normal text-left justify-start p-2.5 border-destructive text-destructive" onClick={() => { setRedemptionBetMode('all_in'); setRedemptionStep('choose_partner'); }}>
             <span><span className="block text-xs font-semibold">{trs('Opción B — Apostar todo el saldo perdido')}</span>
-              <span className="block text-[11px] font-normal mt-1">{trs('Valor total con pareja:')} ${fmtMoney(loss)} · {trs('Solo ×2:')} ${fmtMoney(loss * 2)}</span></span>
+              <span className="block text-[11px] font-normal mt-1">{trs('Valor total con pareja:')} ${fmtMoney(loss * 2)} · {trs('Solo ×2:')} ${fmtMoney(loss * 2)}</span></span>
           </Button>
           <Button size="sm" variant="ghost" onClick={() => setRedemptionStep('accept')}>{trs('← Volver')}</Button>
         </div>}
