@@ -62,7 +62,7 @@ export const defaultBetConfig: BetConfig = {
   },
   // Sprint 3 new bets
   wolfSetup: {
-    enabled: false, amountPerHole: 100,
+    enabled: false, holeValue: 100,
     scoringMode: 'lowBall' as WolfScoringMode,
     useHandicap: true, timing: 'B' as WolfTiming, carryover: true,
   },
