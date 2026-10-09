@@ -62,6 +62,8 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
   const [refreshing, setRefreshing] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [eligibleOnly, setEligibleOnly] = useState(false);
+  const [grossByParticipant, setGrossByParticipant] = useState<Record<string, Record<string, number>>>({});
+  const [roundDateMap, setRoundDateMap] = useState<Record<string, string>>({});
 
   const isCreator = event?.created_by === profile?.id;
 
