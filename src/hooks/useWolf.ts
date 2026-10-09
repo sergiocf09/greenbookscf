@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { WolfConfig, WolfHoleState, Player } from '@/types/golf';
-import { getWolfPlayerId, computeEffectiveAmount, resolveWolfHole } from '@/lib/bets/wolf';
+import { getWolfPlayerId, computeEffectiveHoleValue, computeWolfStateHoleValue, resolveWolfHole } from '@/lib/bets/wolf';
 
 export const useWolf = (roundId: string | null, players: Player[]) => {
   const [wolfConfig, setWolfConfig] = useState<WolfConfig | null>(null);
@@ -19,7 +19,7 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
       if (cfg) {
         setWolfConfig({
           roundId:        cfg.round_id,
-          amountPerHole:  cfg.amount_per_hole,
+          holeValue:      cfg.hole_value ?? cfg.amount_per_hole,
           scoringMode:    cfg.scoring_mode as WolfConfig['scoringMode'],
           useHandicap:    cfg.use_handicap,
           timing:         cfg.timing as WolfConfig['timing'],
@@ -39,47 +39,47 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
         wentSolo: s.went_solo,
         result: (s.result as WolfHoleState['result']) ?? null,
         effectiveAmount: s.effective_amount ?? null,
-        carryoverHoles: s.carryover_holes ?? 0,
+        carryoverHoles: Math.max(s.carryover_holes ?? 0, 0),
+        redemptionMode: s.redemption_mode === 'normal' || s.redemption_mode === 'all_in' ? s.redemption_mode : undefined,
+        allInAmount: s.all_in_amount ?? undefined,
       }));
       // Carry is derived from the CURRENT results of previous holes, not the
       // value frozen when the decision was saved (a previous hole may have
       // been resolved/changed afterwards). Normalize and persist drift.
       if (cfg) {
-        const cfgObj = { amountPerHole: cfg.amount_per_hole, carryover: cfg.carryover } as WolfConfig;
+        const cfgObj = { holeValue: cfg.hole_value ?? cfg.amount_per_hole, carryover: cfg.carryover } as WolfConfig;
         const byHole = new Map(mapped.map(s => [s.holeNumber, s]));
         for (const s of mapped) {
-          if (s.carryoverHoles === -1) continue; // redemption marker
           let carry = 0;
-          if (cfg.carryover) {
+          if (cfg.carryover && s.redemptionMode !== 'all_in') {
             for (let h = s.holeNumber - 1; h >= 1; h--) {
               if (byHole.get(h)?.result === 'tied') carry++;
               else break;
             }
           }
-          const eff = computeEffectiveAmount(cfgObj, carry, s.wentSolo);
-          if (carry !== s.carryoverHoles || eff !== s.effectiveAmount) {
-            s.carryoverHoles = carry;
-            s.effectiveAmount = eff;
-            supabase.from('wolf_hole_state')
-              .update({ carryover_holes: carry, effective_amount: eff })
-              .eq('round_id', roundId).eq('hole_number', s.holeNumber)
-              .then(() => {});
-          }
+          s.carryoverHoles = carry;
+          const hv = computeWolfStateHoleValue(cfgObj, s);
+          const participantCount = cfg.participant_ids?.length || players.length;
+          const teamSize = 1 + s.partnerIds.length;
+          const pairs = teamSize * (participantCount - teamSize);
+          s.effectiveAmount = pairs > 0 ? hv / pairs : hv;
+          // Derived values stay local; merely viewing a round must not write it.
+
         }
       }
       setHoleStates(mapped);
     } finally {
       setLoading(false);
     }
-  }, [roundId]);
+  }, [roundId, players.length]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const saveConfig = useCallback(async (cfg: Omit<WolfConfig, 'roundId'>) => {
     if (!roundId) return;
-    await supabase.from('wolf_config').upsert({
+    const { error } = await supabase.from('wolf_config').upsert({
       round_id:        roundId,
-      amount_per_hole: cfg.amountPerHole,
+      hole_value:      cfg.holeValue,
       scoring_mode:    cfg.scoringMode,
       use_handicap:    cfg.useHandicap,
       timing:          cfg.timing,
@@ -88,10 +88,11 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
       participant_ids: cfg.participantIds ?? [],
       player_handicaps: cfg.playerHandicaps ?? [],
     } as any, { onConflict: 'round_id' });
+    if (error) throw error;
     await fetchData();
   }, [roundId, fetchData]);
 
-  const saveDecision = useCallback(async (holeNumber: number, wolfPlayerId: string, partnerIds: string[], wentSolo: boolean) => {
+  const saveDecision = useCallback(async (holeNumber: number, wolfPlayerId: string, partnerIds: string[], wentSolo: boolean, redemptionMode?: 'normal' | 'all_in', allInAmount?: number) => {
     if (!roundId || !wolfConfig) return;
     // Validate: wolfPlayerId and partnerIds must belong to participantIds
     const validIds = new Set(wolfConfig.participantIds ?? []);
@@ -112,25 +113,31 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
       }
     }
     let carryoverHoles = 0;
-    if (wolfConfig.carryover) {
+    if (wolfConfig.carryover && redemptionMode !== 'all_in') {
       for (let h = holeNumber - 1; h >= 1; h--) {
         const prev = holeStates.find(s => s.holeNumber === h);
         if (prev?.result === 'tied') carryoverHoles++;
         else break;
       }
     }
-    const effectiveAmount = computeEffectiveAmount(wolfConfig, carryoverHoles, wentSolo);
-    await supabase.from('wolf_hole_state').upsert({
+    const effectiveHoleValue = redemptionMode === 'all_in'
+      ? Math.abs(allInAmount ?? 0) * (wentSolo ? 2 : 1)
+      : computeEffectiveHoleValue(wolfConfig, carryoverHoles, wentSolo);
+    const { error } = await supabase.from('wolf_hole_state').upsert({
       round_id: roundId,
       hole_number: holeNumber,
       wolf_player_id: wolfPlayerId,
       partner_ids: partnerIds,
       went_solo: wentSolo,
       result: null,
-      effective_amount: effectiveAmount,
+      effective_hole_value: effectiveHoleValue,
+      redemption_mode: redemptionMode ?? null,
+      all_in_amount: redemptionMode === 'all_in' ? Math.abs(allInAmount ?? 0) : null,
       carryover_holes: carryoverHoles,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'round_id,hole_number' });
+
+    if (error) throw error;
 
     // Auto-resolve: if all players have confirmed scores for this hole, compute result
     if (players.length >= 4) {
@@ -184,7 +191,7 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
                 if (!profileId) continue;
                 const playerPlayer = players.find(p => p.profileId === profileId || p.id === rp.id);
                 const pid = playerPlayer?.id ?? rp.id;
-                const rpScores = holeScores!.filter(s => s.round_player_id === rp.id);
+                const rpScores = (holeScores ?? []).filter(s => s.round_player_id === rp.id);
                 scoresMap.set(pid, rpScores.map(s => ({
                   holeNumber,
                   strokes: s.strokes ?? 0,
@@ -239,7 +246,7 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
     if (!state) return;
     const wolfTeam = [state.wolfPlayerId, ...state.partnerIds];
     const participantPlayers = wolfConfig.participantIds?.length
-      ? players.filter(p => wolfConfig.participantIds!.includes(p.id))
+      ? players.filter(p => wolfConfig.participantIds?.includes(p.id))
       : players;
     const rivalTeam = participantPlayers.filter(p => !wolfTeam.includes(p.id)).map(p => p.id);
     const { data: round } = await supabase.from('rounds').select('course_id').eq('id', roundId).single();

@@ -34,7 +34,7 @@ export { getSkinsEvolution, type SkinsHoleState, type SkinsEvolution } from './s
 export { getPlayerBalance, getBilateralBalance, groupSummariesByType, detectTiesNeedingResolution, type TieResolution } from './helpers';
 
 // Sprint 3 new bets
-export { calculateWolfBets, getWolfPlayerId, computeEffectiveAmount, resolveWolfHole, isWolfCarryoverHole, buildWolfHoleDetails } from './wolf';
+export { calculateWolfBets, getWolfPlayerId, computeEffectiveHoleValue, computeAmountPerPair, resolveWolfHole, isWolfCarryoverHole, buildWolfHoleDetails } from './wolf';
 export { calculateSixesBets, buildSixesSetResults } from './sixes';
 export { calculateVegasBets, buildVegasSetResults, formVegasNumber } from './vegas';
 export { calculateNinesBets, buildNinesHoleDetails, calculateNinesPlayerSummaries, distributeNinesPoints } from './nines';

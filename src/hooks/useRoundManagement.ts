@@ -1435,7 +1435,7 @@ export const useRoundManagement = ({
           const wolfSetupForClose = normalizedBetConfig.wolfSetup;
           const wolfConfig: WolfConfig = {
             roundId: wolfCfgRow.round_id,
-            amountPerHole: wolfCfgRow.amount_per_hole,
+            holeValue: wolfCfgRow.hole_value ?? wolfCfgRow.amount_per_hole,
             scoringMode: wolfCfgRow.scoring_mode as WolfConfig['scoringMode'],
             useHandicap: wolfCfgRow.use_handicap,
             timing: wolfCfgRow.timing as WolfConfig['timing'],
@@ -1452,7 +1452,9 @@ export const useRoundManagement = ({
             wentSolo: s.went_solo,
             result: s.result ?? null,
             effectiveAmount: s.effective_amount ?? null,
-            carryoverHoles: s.carryover_holes ?? 0,
+            carryoverHoles: Math.max(s.carryover_holes ?? 0, 0),
+            redemptionMode: s.redemption_mode ?? undefined,
+            allInAmount: s.all_in_amount ?? undefined,
           }));
           const wolfPlayers = wolfConfig.participantIds.length > 0
             ? sanitizedPlayers.filter(p => wolfConfig.participantIds.includes(p.id))

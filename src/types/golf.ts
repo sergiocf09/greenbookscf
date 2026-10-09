@@ -736,7 +736,9 @@ export type WolfScoringMode = 'lowBall' | 'lowHighBall' | 'stroke';
 export type WolfTiming = 'A' | 'B' | 'C';
 
 export interface WolfConfig {
-  roundId: string; amountPerHole: number; scoringMode: WolfScoringMode;
+  roundId: string;
+  /** Valor total del hoyo en pesos. Se divide entre nWinners×nLosers pares. */
+  holeValue: number; scoringMode: WolfScoringMode;
   useHandicap: boolean; timing: WolfTiming; carryover: boolean;
   playerOrder: string[];
   participantIds: string[];
@@ -748,6 +750,8 @@ export interface WolfHoleState {
   partnerIds: string[]; wentSolo: boolean;
   result: 'won' | 'lost' | 'tied' | null;
   effectiveAmount: number | null; carryoverHoles: number;
+  redemptionMode?: 'normal' | 'all_in';
+  allInAmount?: number;
 }
 
 export interface WolfHoleDetail {
@@ -763,10 +767,12 @@ export interface WolfHoleDetail {
 }
 
 export interface WolfSetupConfig {
-  enabled: boolean; amountPerHole: number; scoringMode: WolfScoringMode;
+  enabled: boolean;
+  /** Valor total del hoyo en pesos. Se divide entre nWinners×nLosers pares. */
+  holeValue: number; scoringMode: WolfScoringMode;
   useHandicap: boolean; timing: WolfTiming; carryover: boolean;
   playerOrder?: string[]; // Custom rotation order (player IDs)
-  hole18Redemption?: boolean; // Allow biggest loser to take wolf on H18, solo, ×3
+  hole18Redemption?: boolean; // Biggest loser may accept normal/all-in, then partner/solo ×2
   playerHandicaps?: { playerId: string; handicap: number }[];
   handicapConfig?: TeamHandicapConfig;
 }

@@ -3682,7 +3682,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         effectiveBetConfig.wolfSetup?.enabled === true && (() => {
         const wConfig = wolfHook?.wolfConfig ?? {
           roundId: '',
-          amountPerHole: effectiveBetConfig.wolfSetup?.amountPerHole ?? 100,
+          holeValue: effectiveBetConfig.wolfSetup?.holeValue ?? 10,
           scoringMode: (effectiveBetConfig.wolfSetup?.scoringMode ?? 'lowBall') as import('@/types/golf').WolfConfig['scoringMode'],
           useHandicap: effectiveBetConfig.wolfSetup?.useHandicap ?? true,
           timing: (effectiveBetConfig.wolfSetup?.timing ?? 'B') as import('@/types/golf').WolfConfig['timing'],

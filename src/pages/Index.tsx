@@ -307,7 +307,7 @@ const Index = () => {
         : [...wolfParticipantIds].sort(() => Math.random() - 0.5);
 
       wolf.saveConfig({
-        amountPerHole:  betConfig.wolfSetup.amountPerHole ?? 100,
+        holeValue:      betConfig.wolfSetup.holeValue ?? wolf.wolfConfig?.holeValue ?? 10,
         scoringMode:    betConfig.wolfSetup.scoringMode ?? 'lowBall',
         useHandicap:    betConfig.wolfSetup.useHandicap ?? true,
         timing:         betConfig.wolfSetup.timing ?? 'B',
@@ -364,7 +364,7 @@ const Index = () => {
     roundState?.id,
     players.length,
     betConfig.wolfSetup?.enabled,
-    betConfig.wolfSetup?.amountPerHole,
+    betConfig.wolfSetup?.holeValue,
     betConfig.wolfSetup?.scoringMode,
     betConfig.wolfSetup?.timing,
     betConfig.wolfSetup?.carryover,

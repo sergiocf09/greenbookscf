@@ -1,4 +1,4 @@
-import { Player, PlayerScore, GolfCourse, WolfConfig, WolfHoleState, WolfHoleDetail } from '@/types/golf';
+import { Player, PlayerScore, GolfCourse, WolfConfig, WolfHoleState, WolfHoleDetail, WolfSetupConfig } from '@/types/golf';
 import { BetSummary } from './shared';
 import { calculateStrokesPerHole } from '../handicapUtils';
 
@@ -199,18 +199,32 @@ export const isWolfCarryoverHole = (
   return resolved.winner === 'tied';
 };
 
-// Monto efectivo = base × (1 + carryoverHoles) × (2 si Lone Wolf)
-export const computeEffectiveAmount = (
-  config: WolfConfig, carryoverHoles: number, wentSolo: boolean
-): number => {
-  const redemptionMultiplier = (wentSolo && carryoverHoles === -1) ? 3 : 1;
-  return config.amountPerHole * (1 + Math.max(carryoverHoles, 0)) * (wentSolo ? 2 : 1) * (redemptionMultiplier > 1 ? 1.5 : 1);
+/** Wolf-only adapter for saved setup JSON created before holeValue. */
+export const normalizeWolfSetup = (setup: WolfSetupConfig | (Omit<WolfSetupConfig, 'holeValue'> & { holeValue?: number; amountPerHole?: number })): WolfSetupConfig => {
+  const { amountPerHole, ...rest } = setup as WolfSetupConfig & { amountPerHole?: number };
+  return { ...rest, holeValue: rest.holeValue ?? amountPerHole ?? 10 };
 };
 
-// Effective amount for redemption hole (×3, solo)
-export const computeRedemptionAmount = (
-  config: WolfConfig
-): number => config.amountPerHole * 3;
+export const computeEffectiveHoleValue = (
+  config: WolfConfig, carryoverHoles: number, wentSolo: boolean
+): number => {
+  const base = config.holeValue * (1 + Math.max(carryoverHoles, 0));
+  return wentSolo ? base * 2 : base;
+};
+
+export const computeAmountPerPair = (
+  config: WolfConfig, carryoverHoles: number, wentSolo: boolean,
+  nWinners: number, nLosers: number
+): number => {
+  const hv = computeEffectiveHoleValue(config, carryoverHoles, wentSolo);
+  return nWinners > 0 && nLosers > 0 ? hv / (nWinners * nLosers) : hv;
+};
+
+/** All-in replaces the base and carry; solo still doubles the selected stake. */
+export const computeWolfStateHoleValue = (config: WolfConfig, state: WolfHoleState): number =>
+  state.redemptionMode === 'all_in'
+    ? Math.abs(state.allInAmount ?? 0) * (state.wentSolo ? 2 : 1)
+    : computeEffectiveHoleValue(config, state.carryoverHoles ?? 0, state.wentSolo);
 
 // Motor principal: genera BetSummary[] desde holeStates resueltos
 export const calculateWolfBets = (
@@ -221,14 +235,14 @@ export const calculateWolfBets = (
   const participantPlayers = getParticipantPlayers(players, config);
   const participantIdSet = new Set(participantPlayers.map(p => p.id));
   const summaries: BetSummary[] = [];
-  holeStates
+  [...holeStates]
     .sort((a, b) => a.holeNumber - b.holeNumber)
     .forEach(state => {
       const wolfTeam = [state.wolfPlayerId, ...state.partnerIds];
       const rivalTeamIds = participantPlayers.filter(p => !wolfTeam.includes(p.id)).map(p => p.id);
 
       // Re-resolve with current config if scores/course available
-      let result: 'won' | 'lost' | 'tied' | null = state.result as any;
+      let result = state.result;
       if (scores && course) {
         const resolved = resolveWolfHole(wolfTeam, rivalTeamIds, state.holeNumber, players, scores, course, config);
         result = resolved.winner === 'wolf' ? 'won' : resolved.winner === 'rival' ? 'lost' : 'tied';
@@ -236,21 +250,21 @@ export const calculateWolfBets = (
 
       if (!result || result === 'tied') return;
 
-      const isRedemption = state.wentSolo && state.carryoverHoles === -1;
-      const amount = isRedemption
-        ? config.amountPerHole * 3
-        : config.amountPerHole
-          * (1 + Math.max(state.carryoverHoles ?? 0, 0))
-          * (state.wentSolo ? 2 : 1);
-
       const winners = result === 'won' ? wolfTeam : rivalTeamIds;
       const losers  = result === 'won' ? rivalTeamIds : wolfTeam;
       const validWinners = winners.filter(id => participantIdSet.has(id));
       const validLosers = losers.filter(id => participantIdSet.has(id));
+      const isAllIn = state.redemptionMode === 'all_in';
+      const effectiveHV = computeWolfStateHoleValue(config, state);
+      const nW = validWinners.length;
+      const nL = validLosers.length;
+      const amountPerPair = nW > 0 && nL > 0 ? effectiveHV / (nW * nL) : effectiveHV;
+      const desc = state.wentSolo
+        ? (isAllIn ? `Loba All-in Solo · H${state.holeNumber}` : `Loba Sola ×2 · H${state.holeNumber}`)
+        : (isAllIn ? `Loba All-in · H${state.holeNumber}` : `La Loba · H${state.holeNumber}`);
       validWinners.forEach(wId => validLosers.forEach(lId => {
-        const desc = state.wentSolo ? `Loba Sola ×2 · H${state.holeNumber}` : `La Loba · H${state.holeNumber}`;
-        summaries.push({ playerId: wId, vsPlayer: lId, betType: 'Wolf', amount, segment: 'hole', holeNumber: state.holeNumber, description: desc });
-        summaries.push({ playerId: lId, vsPlayer: wId, betType: 'Wolf', amount: -amount, segment: 'hole', holeNumber: state.holeNumber, description: `vs ${desc}` });
+        summaries.push({ playerId: wId, vsPlayer: lId, betType: 'Wolf', amount: amountPerPair, segment: 'hole', holeNumber: state.holeNumber, description: desc });
+        summaries.push({ playerId: lId, vsPlayer: wId, betType: 'Wolf', amount: -amountPerPair, segment: 'hole', holeNumber: state.holeNumber, description: `vs ${desc}` });
       }));
     });
   return summaries;
@@ -314,14 +328,9 @@ export const buildWolfHoleDetails = (
       partnerNames: state.partnerIds.map(id => players.find(p => p.id === id)?.name ?? '?'),
       wentSolo: state.wentSolo,
       result: freshResult,
-      effectiveAmount: (() => {
-        const isRedemption = state.wentSolo && state.carryoverHoles === -1;
-        return isRedemption
-          ? config.amountPerHole * 3
-          : config.amountPerHole
-            * (1 + Math.max(state.carryoverHoles ?? 0, 0))
-            * (state.wentSolo ? 2 : 1);
-      })(),
+      effectiveAmount: wolfTeam.length > 0 && rivalTeam.length > 0
+        ? computeWolfStateHoleValue(config, state) / (wolfTeam.length * rivalTeam.length)
+        : computeWolfStateHoleValue(config, state),
       carryoverHoles: state.carryoverHoles,
       scoresByPlayer,
       teamWolfScore: resolved.teamWolfScore,

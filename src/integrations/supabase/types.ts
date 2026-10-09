@@ -2488,6 +2488,7 @@ export type Database = {
           amount_per_hole: number
           carryover: boolean
           created_at: string
+          hole_value: number | null
           id: string
           participant_ids: string[]
           player_handicaps: Json | null
@@ -2501,6 +2502,7 @@ export type Database = {
           amount_per_hole?: number
           carryover?: boolean
           created_at?: string
+          hole_value?: number | null
           id?: string
           participant_ids?: string[]
           player_handicaps?: Json | null
@@ -2514,6 +2516,7 @@ export type Database = {
           amount_per_hole?: number
           carryover?: boolean
           created_at?: string
+          hole_value?: number | null
           id?: string
           participant_ids?: string[]
           player_handicaps?: Json | null
@@ -2535,12 +2538,15 @@ export type Database = {
       }
       wolf_hole_state: {
         Row: {
+          all_in_amount: number | null
           carryover_holes: number
           created_at: string
           effective_amount: number | null
+          effective_hole_value: number | null
           hole_number: number
           id: string
           partner_ids: string[]
+          redemption_mode: string | null
           result: string | null
           round_id: string
           updated_at: string
@@ -2548,12 +2554,15 @@ export type Database = {
           wolf_player_id: string
         }
         Insert: {
+          all_in_amount?: number | null
           carryover_holes?: number
           created_at?: string
           effective_amount?: number | null
+          effective_hole_value?: number | null
           hole_number: number
           id?: string
           partner_ids?: string[]
+          redemption_mode?: string | null
           result?: string | null
           round_id: string
           updated_at?: string
@@ -2561,12 +2570,15 @@ export type Database = {
           wolf_player_id: string
         }
         Update: {
+          all_in_amount?: number | null
           carryover_holes?: number
           created_at?: string
           effective_amount?: number | null
+          effective_hole_value?: number | null
           hole_number?: number
           id?: string
           partner_ids?: string[]
+          redemption_mode?: string | null
           result?: string | null
           round_id?: string
           updated_at?: string

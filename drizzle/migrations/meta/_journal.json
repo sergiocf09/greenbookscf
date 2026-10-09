@@ -57,6 +57,13 @@
       "when": 1791220673553,
       "tag": "0007_move_paywall_to_oct_19",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791514236933,
+      "tag": "0008_wolf_total_hole_value_and_redemption",
+      "breakpoints": true
     }
   ]
 }
