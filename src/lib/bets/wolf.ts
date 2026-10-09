@@ -258,7 +258,7 @@ export const calculateWolfBets = (
   const participantPlayers = getParticipantPlayers(players, config);
   const participantIdSet = new Set(participantPlayers.map(p => p.id));
   const summaries: BetSummary[] = [];
-  [...holeStates]
+  [...withLiveCarry(players, config, holeStates, scores, course)]
     .sort((a, b) => a.holeNumber - b.holeNumber)
     .forEach(state => {
       const wolfTeam = [state.wolfPlayerId, ...state.partnerIds];
@@ -308,7 +308,7 @@ export const buildWolfHoleDetails = (
 ): WolfHoleDetail[] => {
   const participantPlayers = getParticipantPlayers(players, config);
   const overrides = buildHandicapOverrides(config);
-  return [...holeStates].sort((a, b) => a.holeNumber - b.holeNumber).map(state => {
+  return [...withLiveCarry(players, config, holeStates, scores, course)].sort((a, b) => a.holeNumber - b.holeNumber).map(state => {
     const wolfTeam  = [state.wolfPlayerId, ...state.partnerIds];
     const rivalTeam = participantPlayers.filter(p => !wolfTeam.includes(p.id));
     const isLoneWolf = wolfTeam.length === 1 && rivalTeam.length > 1;
