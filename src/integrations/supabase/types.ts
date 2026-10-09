@@ -2608,6 +2608,10 @@ export type Database = {
         }
         Returns: number
       }
+      _apply_league_jornada_points: {
+        Args: { p_date: string; p_leaderboard_id: string }
+        Returns: undefined
+      }
       _calc_handicap_index: { Args: { diffs: number[] }; Returns: number }
       _calc_pair_net_with_overrides: {
         Args: {
