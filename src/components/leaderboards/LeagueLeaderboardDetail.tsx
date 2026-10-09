@@ -366,19 +366,19 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                   </div>
                   <div className="divide-y divide-border">
                     {jornada.results.map(result => (
-                      <div key={result.participant_id} className="flex items-center gap-3 px-3 py-2">
-                        <div className={cn('w-6 text-center text-sm font-bold', positionColor(result.position))}>
+                      <div key={result.participant_id} className="flex items-center gap-2 px-3 py-1.5">
+                        <div className={cn('w-6 shrink-0 text-center text-sm font-bold', positionColor(result.position))}>
                           {result.position}
                         </div>
                         <div className="flex-1 min-w-0 text-sm truncate">{result.display_name}</div>
-                        <div className="text-right shrink-0">
-                          <div className="text-sm font-semibold">
+                        <div className="flex shrink-0 items-baseline gap-2">
+                          <span className="text-sm font-semibold tabular-nums">
                             {result.score_value > 0 ? '+' : ''}{result.score_value}
-                          </div>
+                          </span>
                           {result.points_earned !== null && (
-                            <div className="text-[10px] text-primary font-medium">
-                              {result.points_earned} pts
-                            </div>
+                            <span className="text-[11px] text-primary font-medium tabular-nums">
+                              {result.points_earned} {trs('pts')}
+                            </span>
                           )}
                         </div>
                       </div>
