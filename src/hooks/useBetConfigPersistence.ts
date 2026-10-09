@@ -1,3 +1,4 @@
+import { normalizeWolfSetup } from '@/lib/bets/wolf';
 import { trs } from '@/i18n/tr';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -541,7 +542,7 @@ export const useBetConfigPersistence = ({
         };
       }
       // Sprint 3 new bet types
-      if (dbConfig.wolfSetup) newConfig.wolfSetup = dbConfig.wolfSetup;
+      if (dbConfig.wolfSetup) newConfig.wolfSetup = normalizeWolfSetup(dbConfig.wolfSetup);
       if ('sixesBets' in dbConfig) newConfig.sixesBets = dbConfig.sixesBets;
       if ('vegasBets' in dbConfig) newConfig.vegasBets = dbConfig.vegasBets;
       if ('ninesBets' in dbConfig) newConfig.ninesBets = dbConfig.ninesBets;

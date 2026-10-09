@@ -40,7 +40,7 @@ interface ScoringViewProps {
   wolfHoleStates?: WolfHoleState[];
   currentUserId?: string;
   isOrganizer?: boolean;
-  onWolfDecision?: (holeNumber: number, partnerIds: string[], wentSolo: boolean) => Promise<void>;
+  onWolfDecision?: (holeNumber: number, partnerIds: string[], wentSolo: boolean, redemptionMode?: 'normal' | 'all_in', redemptionWolfId?: string, allInAmount?: number) => Promise<void>;
   onWolfResolve?: (holeNumber: number, result: 'won' | 'lost' | 'tied') => Promise<void>;
   onWolfRevert?: (holeNumber: number) => Promise<void>;
   onWolfRecalculate?: (holeNumber: number) => Promise<void>;
@@ -284,7 +284,7 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
           const pnl = new Map<string, number>();
           players.forEach(p => pnl.set(p.id, 0));
           wolfHoleStates.filter(s => s.holeNumber <= 17 && s.result && s.result !== 'tied').forEach(state => {
-            const amount = state.effectiveAmount ?? wolfConfig.amountPerHole;
+            const amount = state.effectiveAmount ?? wolfConfig.holeValue;
             const wolfTeam = [state.wolfPlayerId, ...state.partnerIds];
             const rivalTeam = players.filter(p => !wolfTeam.includes(p.id)).map(p => p.id);
             const winners = state.result === 'won' ? wolfTeam : rivalTeam;
@@ -304,10 +304,11 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
         // Don't auto-override; pass candidate info so the panel can offer the choice
         const existingState = wolfHoleStates?.find(s => s.holeNumber === currentHole);
         // Always use rotation-derived wolfId; ignore stale saved wolfPlayerId
-        const effectiveWolfId = regularWolfPlayerId;
+        const effectiveWolfId = existingState?.redemptionMode !== undefined ? existingState.wolfPlayerId : regularWolfPlayerId;
 
         return (
           <WolfDecisionPanel
+            key={`wolf-${currentHole}`}
             holeNumber={currentHole}
             players={displayPlayers}
             wolfPlayerId={effectiveWolfId}
@@ -315,13 +316,15 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
             wolfConfig={wolfConfig}
             isOrganizer={isOrganizer ?? false}
             currentUserId={currentUserId ?? null}
-            onDecision={async (partnerIds, wentSolo) => {
-              await onWolfDecision?.(currentHole, partnerIds, wentSolo);
+            onDecision={async (partnerIds, wentSolo, redemptionMode) => {
+              await onWolfDecision?.(currentHole, partnerIds, wentSolo, redemptionMode,
+                redemptionMode ? redemptionCandidateId ?? undefined : undefined,
+                redemptionMode === 'all_in' ? Math.abs(redemptionCandidateLoss) : undefined);
             }}
             onRevert={onWolfRevert}
             isRedemption={false}
             redemptionCandidateId={redemptionCandidateId ?? undefined}
-            redemptionCandidateLoss={redemptionCandidateLoss ?? undefined}
+            redemptionCandidateLoss={Math.abs(redemptionCandidateLoss)}
             regularWolfPlayerId={regularWolfPlayerId}
           />
         );

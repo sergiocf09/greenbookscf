@@ -90,7 +90,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
         if (cfg) {
           setHistoricalWolfConfig({
             roundId: cfg.round_id,
-            amountPerHole: cfg.amount_per_hole,
+            holeValue: cfg.hole_value ?? cfg.amount_per_hole,
             scoringMode: cfg.scoring_mode as WolfConfig['scoringMode'],
             useHandicap: cfg.use_handicap,
             timing: cfg.timing as WolfConfig['timing'],
@@ -109,7 +109,9 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
             wentSolo: s.went_solo,
             result: (s.result as WolfHoleState['result']) ?? null,
             effectiveAmount: s.effective_amount ?? null,
-            carryoverHoles: s.carryover_holes ?? 0,
+            carryoverHoles: Math.max(s.carryover_holes ?? 0, 0),
+            redemptionMode: s.redemption_mode === 'normal' || s.redemption_mode === 'all_in' ? s.redemption_mode : undefined,
+            allInAmount: s.all_in_amount ?? undefined,
           })));
         }
       } catch (err) {
