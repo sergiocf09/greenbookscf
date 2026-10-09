@@ -1979,7 +1979,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6"
+                        className="h-8 w-8 -my-1"
+                        aria-label={trs("Modificar importe de apuesta")}
                         onClick={(e) => {
                           e.stopPropagation();
                           setEditingBetType(group.key);
