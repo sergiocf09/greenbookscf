@@ -191,9 +191,20 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
   }, [standings, eligibleOnly, rules]);
 
   const selectedStanding = standings.find(s => s.participant_id === selectedParticipant);
-  const participantJornadas = jornadas
-    .map(j => ({ date: j.date, result: j.results.find(r => r.participant_id === selectedParticipant) }))
-    .filter(j => j.result);
+  const participantJornadas = useMemo(() => {
+    if (!selectedParticipant) return [];
+    const grossByRound = grossByParticipant[selectedParticipant] ?? {};
+    return jornadas
+      .map(j => {
+        const result = j.results.find(r => r.participant_id === selectedParticipant);
+        if (!result) return null;
+        const gross = Object.entries(roundDateMap)
+          .filter(([, d]) => d === j.date)
+          .reduce((acc, [rid]) => acc + (grossByRound[rid] ?? 0), 0);
+        return { date: j.date, result, gross: gross > 0 ? gross : null as number | null };
+      })
+      .filter(Boolean) as { date: string; result: JornadaResult; gross: number | null }[];
+  }, [jornadas, selectedParticipant, grossByParticipant, roundDateMap]);
 
   if (loading) {
     return (
