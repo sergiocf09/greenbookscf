@@ -71,6 +71,13 @@
       "when": 1791527395270,
       "tag": "0009_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791527700301,
+      "tag": "0010_league_tie_split_points",
+      "breakpoints": true
     }
   ]
 }
