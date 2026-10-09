@@ -62,6 +62,8 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
   const [refreshing, setRefreshing] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [eligibleOnly, setEligibleOnly] = useState(false);
+  const [grossByParticipant, setGrossByParticipant] = useState<Record<string, Record<string, number>>>({});
+  const [roundDateMap, setRoundDateMap] = useState<Record<string, string>>({});
 
   const isCreator = event?.created_by === profile?.id;
 
@@ -100,10 +102,27 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
         .eq('leaderboard_id', leaderboardId);
 
       const dateSet = new Set<string>();
+      const rDateMap: Record<string, string> = {};
       for (const lr of linkedRounds ?? []) {
         const d = (lr.rounds as any)?.date;
-        if (d) dateSet.add(d);
+        if (d) {
+          dateSet.add(d);
+          rDateMap[(lr as any).round_id] = d;
+        }
       }
+      setRoundDateMap(rDateMap);
+
+      // Gross scores per participant per round (for player detail history)
+      const { data: scoreRows } = await supabase
+        .from('leaderboard_scores')
+        .select('participant_id, round_id, gross_total')
+        .eq('leaderboard_id', leaderboardId);
+      const grossMap: Record<string, Record<string, number>> = {};
+      for (const s of (scoreRows ?? []) as any[]) {
+        if (s.gross_total == null) continue;
+        (grossMap[s.participant_id] ??= {})[s.round_id] = s.gross_total;
+      }
+      setGrossByParticipant(grossMap);
 
       const jornadasData: JornadaSummary[] = [];
       for (const date of [...dateSet].sort().reverse()) {
@@ -172,9 +191,20 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
   }, [standings, eligibleOnly, rules]);
 
   const selectedStanding = standings.find(s => s.participant_id === selectedParticipant);
-  const participantJornadas = jornadas
-    .map(j => ({ date: j.date, result: j.results.find(r => r.participant_id === selectedParticipant) }))
-    .filter(j => j.result);
+  const participantJornadas = useMemo(() => {
+    if (!selectedParticipant) return [];
+    const grossByRound = grossByParticipant[selectedParticipant] ?? {};
+    return jornadas
+      .map(j => {
+        const result = j.results.find(r => r.participant_id === selectedParticipant);
+        if (!result) return null;
+        const gross = Object.entries(roundDateMap)
+          .filter(([, d]) => d === j.date)
+          .reduce((acc, [rid]) => acc + (grossByRound[rid] ?? 0), 0);
+        return { date: j.date, result, gross: gross > 0 ? gross : null as number | null };
+      })
+      .filter(Boolean) as { date: string; result: JornadaResult; gross: number | null }[];
+  }, [jornadas, selectedParticipant, grossByParticipant, roundDateMap]);
 
   if (loading) {
     return (
@@ -340,7 +370,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                           </div>
                           {result.points_earned !== null && (
                             <div className="text-[10px] text-primary font-medium">
-                              +{result.points_earned} pts
+                              {result.points_earned} pts
                             </div>
                           )}
                         </div>
@@ -376,74 +406,108 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                 ))}
               </div>
 
-              {selectedStanding && (
-                <>
-                  {/* Resumen del jugador */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-card border border-border rounded-xl p-3">
-                      <div className="text-[11px] text-muted-foreground uppercase tracking-wide">{trs("Posición")}</div>
-                      <div className={cn('text-2xl font-bold', positionColor(selectedStanding.position))}>
-                        {selectedStanding.position}°
-                      </div>
-                    </div>
-                    <div className="bg-card border border-border rounded-xl p-3">
-                      <div className="text-[11px] text-muted-foreground uppercase tracking-wide">
-                         {rules.scoring_system === 'points' ? trs('Puntos') : trs(scoringLabel)}
-                      </div>
-                      <div className="text-2xl font-bold">
-                        {rules.scoring_system === 'points'
-                          ? selectedStanding.points_cuenta
-                          : selectedStanding.score_cuenta}
-                      </div>
-                    </div>
-                    <div className="bg-card border border-border rounded-xl p-3">
-                      <div className="text-[11px] text-muted-foreground uppercase tracking-wide">{trs("Jornadas jugadas")}</div>
-                      <div className="text-2xl font-bold">{selectedStanding.jornadas_jugadas}</div>
-                    </div>
-                    <div className="bg-card border border-border rounded-xl p-3">
-                      <div className="text-[11px] text-muted-foreground uppercase tracking-wide">{trs("Clasifica")}</div>
-                      <div className={cn('text-lg font-bold', selectedStanding.qualifies ? 'text-primary' : 'text-amber-600')}>
-                        {selectedStanding.qualifies
-                          ? trs("✓ Sí")
-                           : `${trs('Faltan')} ${rules.min_rounds_to_qualify - selectedStanding.jornadas_jugadas}`}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Historial de jornadas del jugador */}
-                  <div className="bg-card border border-border rounded-xl overflow-hidden">
-                    <div className="px-3 py-2 border-b border-border bg-muted/40 text-sm font-semibold flex items-center gap-2">
-                      <Star className="h-4 w-4 text-primary" />
-                      {trs("Historial de jornadas")}
-                    </div>
-                    {participantJornadas.length === 0 && (
-                      <div className="p-4 text-sm text-muted-foreground text-center">
-                        {trs("Sin jornadas registradas.")}
-                      </div>
-                    )}
-                    <div className="divide-y divide-border">
-                      {participantJornadas.map((j) => (
-                        <div key={j.date} className="flex items-center gap-3 px-3 py-2">
-                          <div className={cn('w-8 text-center text-sm font-bold', positionColor(j.result!.position))}>
-                            {j.result!.position}°
-                          </div>
-                          <div className="flex-1 text-sm">
-                             {format(parseISO(j.date), 'd MMM yyyy', { locale: i18n.language === 'en' ? enUS : es })}
-                          </div>
-                          <div className="text-right">
-                            <div className="text-sm font-semibold">
-                              {j.result!.score_value > 0 ? '+' : ''}{j.result!.score_value}
-                            </div>
-                            {j.result!.points_earned !== null && (
-                              <div className="text-[10px] text-primary font-medium">+{j.result!.points_earned} pts</div>
+              {selectedStanding && (() => {
+                const displayed = displayedStandings.find(d => d.participant_id === selectedStanding.participant_id) ?? selectedStanding;
+                const summaryLabel = rules.scoring_system === 'points' || rules.scoring_system === 'stableford'
+                  ? trs('pts')
+                  : trs(scoringLabel);
+                return (
+                  <>
+                    {/* Resumen compacto: posición y jornadas en un mismo renglón */}
+                    <div className="bg-card border border-border rounded-xl p-4">
+                      <div className="flex items-center gap-3">
+                        <PlayerAvatar initials={selectedStanding.initials} background={selectedStanding.avatar_color} size="lg" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold truncate">{selectedStanding.display_name}</div>
+                          <div className="flex items-center flex-wrap gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground mt-0.5">
+                            <span className={cn('font-bold text-sm', positionColor(displayed.position))}>
+                              {displayed.position}°
+                            </span>
+                            <span>{trs('de')} {displayedStandings.length}</span>
+                            <span className="text-border">·</span>
+                            <span>
+                              {selectedStanding.jornadas_jugadas}{' '}
+                              {trs(selectedStanding.jornadas_jugadas === 1 ? 'jornada' : 'jornadas')}
+                            </span>
+                            {!selectedStanding.qualifies && rules.min_rounds_to_qualify > 0 && (
+                              <>
+                                <span className="text-border">·</span>
+                                <span className="flex items-center gap-1 text-amber-600">
+                                  <Clock className="h-3 w-3" />
+                                  {trs('Faltan')} {rules.min_rounds_to_qualify - selectedStanding.jornadas_jugadas}
+                                </span>
+                              </>
                             )}
                           </div>
                         </div>
-                      ))}
+                        <div className="text-right shrink-0">
+                          <div className="text-xl font-bold leading-none">
+                            {rules.scoring_system === 'points'
+                              ? selectedStanding.points_cuenta
+                              : selectedStanding.score_cuenta}
+                          </div>
+                          <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-1">
+                            {summaryLabel}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </>
-              )}
+
+                    {/* Historial de jornadas del jugador */}
+                    <div className="bg-card border border-border rounded-xl overflow-hidden">
+                      <div className="px-3 py-2 border-b border-border bg-muted/40 text-sm font-semibold flex items-center gap-2">
+                        <Star className="h-4 w-4 text-primary" />
+                        {trs("Historial de jornadas")}
+                      </div>
+                      {participantJornadas.length === 0 && (
+                        <div className="p-4 text-sm text-muted-foreground text-center">
+                          {trs("Sin jornadas registradas.")}
+                        </div>
+                      )}
+                      {participantJornadas.length > 0 && (
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="text-[10px] uppercase tracking-wide text-muted-foreground border-b border-border">
+                              <th className="text-left font-medium px-3 py-1.5">{trs('Fecha')}</th>
+                              <th className="text-center font-medium px-1 py-1.5">{trs('Lugar')}</th>
+                              <th className="text-right font-medium px-1 py-1.5">
+                                {rules.scoring_system === 'points' ? trs('Puntos') : trs(scoringLabel)}
+                              </th>
+                              <th className="text-right font-medium px-3 py-1.5">{trs('Gross')}</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border">
+                            {participantJornadas.map((j) => (
+                              <tr key={j.date}>
+                                <td className="px-3 py-2 whitespace-nowrap">
+                                  {format(parseISO(j.date), i18n.language === 'en' ? 'MMM d, yyyy' : 'd MMM yyyy', { locale: i18n.language === 'en' ? enUS : es })}
+                                </td>
+                                <td className="text-center px-1">
+                                  <span className={cn('font-bold', positionColor(j.result.position))}>
+                                    {j.result.position}°
+                                  </span>
+                                </td>
+                                <td className="text-right px-1">
+                                  {j.result.points_earned !== null && j.result.points_earned !== undefined ? (
+                                    <span className="text-primary font-semibold">{j.result.points_earned}</span>
+                                  ) : (
+                                    <span className="font-semibold">
+                                      {j.result.score_value > 0 ? '+' : ''}{j.result.score_value}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="text-right px-3 text-muted-foreground tabular-nums">
+                                  {j.gross ?? '—'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
 
               {!selectedParticipant && (
                 <div className="text-center text-sm text-muted-foreground py-8">
