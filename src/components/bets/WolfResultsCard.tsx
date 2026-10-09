@@ -81,19 +81,8 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
 
   // Per-hole balance for a player
   const getHolePnL = (state: WolfHoleState, playerId: string): number => {
-    const amount = state.effectiveAmount ?? wolfConfig.amountPerHole;
-    const wolfTeamIds = [state.wolfPlayerId, ...state.partnerIds];
-    const participantPlayers = wolfConfig.participantIds?.length
-      ? players.filter(p => wolfConfig.participantIds!.includes(p.id))
-      : players;
-    const rivalIds = participantPlayers.filter(p => !wolfTeamIds.includes(p.id)).map(p => p.id);
-    const isWolfTeam = wolfTeamIds.includes(playerId);
-    if (!state.result || state.result === 'tied') return 0;
-    const wolfWon = state.result === 'won';
-    const myTeam = isWolfTeam ? wolfTeamIds : rivalIds;
-    const opponents = isWolfTeam ? rivalIds : wolfTeamIds;
-    const iWon = (isWolfTeam && wolfWon) || (!isWolfTeam && !wolfWon);
-    return iWon ? amount * opponents.length : -amount * opponents.length;
+    return bets.filter(b => b.holeNumber === state.holeNumber && b.playerId === playerId)
+      .reduce((total, b) => total + b.amount, 0);
   };
 
   if (validHoleStates.length === 0 && holeStates.length > 0) {
@@ -145,7 +134,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
 
     const wolfTeamIds = [state.wolfPlayerId, ...state.partnerIds];
     const participantPlayers = wolfConfig.participantIds?.length
-      ? players.filter(p => wolfConfig.participantIds!.includes(p.id))
+      ? players.filter(p => wolfConfig.participantIds?.includes(p.id))
       : players;
     const rivalIds = participantPlayers.filter(p => !wolfTeamIds.includes(p.id)).map(p => p.id);
 
@@ -167,7 +156,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
               </p>
               <div className="text-right text-[10px] text-muted-foreground shrink-0 ml-2">
                 <div>{detail.wentSolo ? `🐺 ${t('dashboard.soloX2')}` : `${t('dashboard.with')} ${detail.partnerIds.map(id => shortNames.get(id) ?? '?').join(', ')}`}</div>
-                <div className="font-medium text-foreground">${fmtMoney(detail.effectiveAmount)}/rival</div>
+                <div className="font-medium text-foreground">${fmtMoney(detail.effectiveAmount)}/{trs("ganador")}</div>
               </div>
             </div>
 
@@ -288,7 +277,7 @@ export const WolfResultsCard: React.FC<WolfResultsCardProps> = ({
     scoringLabel,
     wolfConfig.useHandicap ? t('dashboard.withHcp') : t('dashboard.withoutHcp'),
     wolfConfig.carryover ? 'Carryover' : null,
-    `$${fmtMoney(wolfConfig.amountPerHole)}${trs("/hoyo")}`,
+    `$${fmtMoney(wolfConfig.holeValue)}${trs("/hoyo (valor total)")}`,
   ].filter(Boolean).join(' · ');
 
   return (

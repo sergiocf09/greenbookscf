@@ -1,3 +1,5 @@
+import { fmtMoney } from '@/lib/formatMoney';
+import { normalizeWolfSetup } from '@/lib/bets/wolf';
 import { trs } from '@/i18n/tr';
 import React, { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -817,8 +819,17 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           onExpandChange={(open) => onToggleSection('wolf', open)}
           helpText={trs("En cada hoyo un jugador (Loba) elige un compañero o va solo (×2). Los demás son rivales. El equipo con mejor score neto gana.")}
         >
-          <AmountInput label={trs("Monto por hoyo")} value={config.wolfSetup?.amountPerHole ?? 10}
-            onChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, amountPerHole: v } as any)} />
+          <AmountInput label={trs("Valor del hoyo")} value={config.wolfSetup ? normalizeWolfSetup(config.wolfSetup).holeValue : 10}
+            onChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, holeValue: v } as any)} />
+          {config.wolfSetup && normalizeWolfSetup(config.wolfSetup).holeValue > 0 && (() => {
+            const activeIds = getParejasActivePlayerIds(config, 'wolf', players);
+            const n = activeIds.length || players.length;
+            if (n < 2) return null;
+            const hv = normalizeWolfSetup(config.wolfSetup).holeValue;
+            return <p className="mt-1 text-[10px] text-muted-foreground">
+              {trs("Ej.")} 1 vs {n - 1}: ${fmtMoney(hv / (n - 1))}/{trs("rival")} · {trs("Solo ×2")}: ${fmtMoney(hv * 2 / (n - 1))}/{trs("rival")}
+            </p>;
+          })()}
 
           <div className="flex items-center justify-between mt-2">
             <Label className="text-[10px] font-semibold text-primary">{trs("Modalidad")}</Label>
@@ -940,7 +951,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           <div className="flex items-center gap-2 mt-2">
             <Switch checked={config.wolfSetup?.hole18Redemption ?? false}
               onCheckedChange={(v) => onUpdateBet('wolfSetup', { ...config.wolfSetup, enabled: true, hole18Redemption: v } as any)} />
-            <Label className="text-xs">{trs("Recuperación Hoyo 18 (máx. perdedor, solo, ×3)")}</Label>
+            <Label className="text-xs">{trs("Recuperación Hoyo 18 (máx. perdedor elige: valor normal o apostar su saldo)")}</Label>
           </div>
 
           {/* Shuffle order button */}
