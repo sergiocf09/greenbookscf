@@ -13,7 +13,7 @@ import { devError, devLog, devWarn } from '@/lib/logger';
 import { initialsFromPlayerName, validatePlayerName, formatPlayerName } from '@/lib/playerInput';
 import { generateRoundSnapshot } from '@/lib/roundSnapshot';
 import { BetSummary, calculateAllBets, getPressureEvolution } from '@/lib/betCalculations';
-import { calculateWolfBets } from '@/lib/bets/wolf';
+import { calculateWolfBets, normalizeWolfSetup } from '@/lib/bets/wolf';
 import { calculateSixesBets } from '@/lib/bets/sixes';
 import { calculateVegasBets } from '@/lib/bets/vegas';
 import { calculateNinesBets } from '@/lib/bets/nines';
@@ -580,7 +580,7 @@ export const useRoundManagement = ({
               teamPressures: incoming.teamPressures ?? defaultBetConfig.teamPressures,
               zoologico: incoming.zoologico ?? defaultBetConfig.zoologico,
               skinsGrupal: incoming.skinsGrupal ?? defaultBetConfig.skinsGrupal,
-              wolfSetup: incoming.wolfSetup ?? (defaultBetConfig as any).wolfSetup,
+              wolfSetup: incoming.wolfSetup ? normalizeWolfSetup(incoming.wolfSetup) : defaultBetConfig.wolfSetup,
               sixesBets: incoming.sixesBets ?? (defaultBetConfig as any).sixesBets ?? [],
               vegasBets: incoming.vegasBets ?? (defaultBetConfig as any).vegasBets ?? [],
               ninesBets: incoming.ninesBets ?? (defaultBetConfig as any).ninesBets ?? [],
