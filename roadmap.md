@@ -1,4 +1,6 @@
 # Roadmap — English translation
+## League mobile detail
+- [ ] Show total points and Fecha/Lugar/Puntos/Gross/Neto within phone width; remove standings avatars.
 ## Wolf-only update
 - [x] Total hole value, divided payouts and Wolf-only persistence compatibility
 - [x] Optional H18 acceptance, normal/all-in mode and partner/solo choice
