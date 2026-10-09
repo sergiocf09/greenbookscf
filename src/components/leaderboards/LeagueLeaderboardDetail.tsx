@@ -434,6 +434,13 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
           </Button>
         </div>
       )}
+
+      <LinkRoundToLeagueDialog
+        open={linkDialogOpen}
+        onOpenChange={setLinkDialogOpen}
+        leaderboardId={leaderboardId}
+        onLinked={fetchData}
+      />
     </div>
   );
 };
