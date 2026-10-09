@@ -63,6 +63,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [eligibleOnly, setEligibleOnly] = useState(false);
   const [grossByParticipant, setGrossByParticipant] = useState<Record<string, Record<string, number>>>({});
+  const [netByParticipant, setNetByParticipant] = useState<Record<string, Record<string, number>>>({});
   const [roundDateMap, setRoundDateMap] = useState<Record<string, string>>({});
 
   const isCreator = event?.created_by === profile?.id;
@@ -115,14 +116,16 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
       // Gross scores per participant per round (for player detail history)
       const { data: scoreRows } = await supabase
         .from('leaderboard_scores')
-        .select('participant_id, round_id, gross_total')
+        .select('participant_id, round_id, gross_total, net_total')
         .eq('leaderboard_id', leaderboardId);
       const grossMap: Record<string, Record<string, number>> = {};
+      const netMap: Record<string, Record<string, number>> = {};
       for (const s of (scoreRows ?? []) as any[]) {
-        if (s.gross_total == null) continue;
-        (grossMap[s.participant_id] ??= {})[s.round_id] = s.gross_total;
+        if (s.gross_total != null) (grossMap[s.participant_id] ??= {})[s.round_id] = s.gross_total;
+        if (s.net_total != null) (netMap[s.participant_id] ??= {})[s.round_id] = s.net_total;
       }
       setGrossByParticipant(grossMap);
+      setNetByParticipant(netMap);
 
       const jornadasData: JornadaSummary[] = [];
       for (const date of [...dateSet].sort().reverse()) {
@@ -194,6 +197,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
   const participantJornadas = useMemo(() => {
     if (!selectedParticipant) return [];
     const grossByRound = grossByParticipant[selectedParticipant] ?? {};
+    const netByRound = netByParticipant[selectedParticipant] ?? {};
     return jornadas
       .map(j => {
         const result = j.results.find(r => r.participant_id === selectedParticipant);
@@ -201,10 +205,14 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
         const gross = Object.entries(roundDateMap)
           .filter(([, d]) => d === j.date)
           .reduce((acc, [rid]) => acc + (grossByRound[rid] ?? 0), 0);
-        return { date: j.date, result, gross: gross > 0 ? gross : null as number | null };
+        const netValues = Object.entries(roundDateMap)
+          .filter(([, d]) => d === j.date)
+          .flatMap(([rid]) => netByRound[rid] == null ? [] : [netByRound[rid]]);
+        const net = netValues.length ? netValues.reduce((sum, value) => sum + value, 0) : null;
+        return { date: j.date, result, gross: gross > 0 ? gross : null as number | null, net };
       })
-      .filter(Boolean) as { date: string; result: JornadaResult; gross: number | null }[];
-  }, [jornadas, selectedParticipant, grossByParticipant, roundDateMap]);
+      .filter(Boolean) as { date: string; result: JornadaResult; gross: number | null; net: number | null }[];
+  }, [jornadas, selectedParticipant, grossByParticipant, netByParticipant, roundDateMap]);
 
   if (loading) {
     return (
@@ -215,7 +223,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-screen w-full min-w-0 max-w-full overflow-hidden bg-background">
       {/* Header */}
       <div className="flex items-center gap-2 p-3 border-b border-border shrink-0">
         <Button variant="ghost" size="icon" onClick={onBack} aria-label={trs("Volver")}>
@@ -269,7 +277,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
       </div>
 
       {/* Tabs */}
-      <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v as any)} className="flex-1 flex flex-col min-h-0">
+      <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v as any)} className="flex-1 flex flex-col min-h-0 min-w-0">
         <TabsList className="grid grid-cols-3 mx-3 mt-2 shrink-0">
           <TabsTrigger value="standings">{trs("Standings")}</TabsTrigger>
           <TabsTrigger value="jornadas">{trs("Jornadas")}</TabsTrigger>
@@ -278,7 +286,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
 
         {/* TAB: STANDINGS */}
         <TabsContent value="standings" className="flex-1 min-h-0 mt-2">
-          <ScrollArea className="h-full px-3 pb-4">
+          <ScrollArea className="h-full w-full px-3 pb-4 [&>div>div]:!block">
             <div className="space-y-2">
               {rules.min_rounds_to_qualify > 0 && standings.length > 0 && (
                 <div className="flex gap-1 p-1 bg-muted rounded-lg">
@@ -309,10 +317,9 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                   <div className={cn('w-8 text-center text-lg font-bold', positionColor(row.position))}>
                     {row.position}
                   </div>
-                  <PlayerAvatar initials={row.initials} background={row.avatar_color} size="md" />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate">{row.display_name}</div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
                        <span>{row.jornadas_jugadas} {trs(row.jornadas_jugadas === 1 ? 'jornada' : 'jornadas')}</span>
                       {!row.qualifies && rules.min_rounds_to_qualify > 0 && (
                         <span className="flex items-center gap-1 text-amber-600">
@@ -342,7 +349,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
 
         {/* TAB: JORNADAS */}
         <TabsContent value="jornadas" className="flex-1 min-h-0 mt-2">
-          <ScrollArea className="h-full px-3 pb-4">
+          <ScrollArea className="h-full w-full px-3 pb-4 [&>div>div]:!block">
             <div className="space-y-4">
               {jornadas.length === 0 && (
                 <div className="text-center text-sm text-muted-foreground py-8">
@@ -385,10 +392,10 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
 
         {/* TAB: DETALLE POR JUGADOR */}
         <TabsContent value="detalle" className="flex-1 min-h-0 mt-2">
-          <ScrollArea className="h-full px-3 pb-4">
+          <ScrollArea className="h-full w-full px-3 pb-4 [&>div>div]:!block">
             <div className="space-y-4">
               {/* Selector de jugador */}
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              <div className="flex w-full min-w-0 max-w-full gap-2 overflow-x-auto pb-1">
                 {standings.map(row => (
                   <button
                     key={row.participant_id}
@@ -414,11 +421,11 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                 return (
                   <>
                     {/* Resumen compacto: posición y jornadas en un mismo renglón */}
-                    <div className="bg-card border border-border rounded-xl p-4">
-                      <div className="flex items-center gap-3">
-                        <PlayerAvatar initials={selectedStanding.initials} background={selectedStanding.avatar_color} size="lg" />
+                    <div className="bg-card border border-border rounded-lg p-3">
+                      <div className="flex items-center gap-2">
+                        <PlayerAvatar initials={selectedStanding.initials} background={selectedStanding.avatar_color} size="sm" />
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-semibold truncate">{selectedStanding.display_name}</div>
+                          <div className="text-sm font-semibold break-words">{selectedStanding.display_name}</div>
                           <div className="flex items-center flex-wrap gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground mt-0.5">
                             <span className={cn('font-bold text-sm', positionColor(displayed.position))}>
                               {displayed.position}°
@@ -443,11 +450,11 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                         <div className="text-right shrink-0">
                           <div className="text-xl font-bold leading-none">
                             {rules.scoring_system === 'points'
-                              ? selectedStanding.points_cuenta
+                               ? selectedStanding.points_acumulados
                               : selectedStanding.score_cuenta}
                           </div>
-                          <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-1">
-                            {summaryLabel}
+                          <div className="text-[10px] text-muted-foreground mt-1">
+                            {rules.scoring_system === 'points' ? <>{trs('Total')} {trs('Puntos')}</> : summaryLabel}
                           </div>
                         </div>
                       </div>
@@ -465,22 +472,31 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                         </div>
                       )}
                       {participantJornadas.length > 0 && (
-                        <table className="w-full text-sm">
+                        <table className="w-full table-fixed text-xs tabular-nums">
+                          <colgroup>
+                            <col className="w-[28%]" />
+                            <col className="w-[18%]" />
+                            <col className="w-[18%]" />
+                            <col className="w-[18%]" />
+                            <col className="w-[18%]" />
+                          </colgroup>
                           <thead>
                             <tr className="text-[10px] uppercase tracking-wide text-muted-foreground border-b border-border">
-                              <th className="text-left font-medium px-3 py-1.5">{trs('Fecha')}</th>
+                              <th className="text-left font-medium px-2 py-1.5">{trs('Fecha')}</th>
                               <th className="text-center font-medium px-1 py-1.5">{trs('Lugar')}</th>
                               <th className="text-right font-medium px-1 py-1.5">
                                 {rules.scoring_system === 'points' ? trs('Puntos') : trs(scoringLabel)}
                               </th>
-                              <th className="text-right font-medium px-3 py-1.5">{trs('Gross')}</th>
+                              <th className="text-right font-medium px-1 py-1.5">{trs('Gross')}</th>
+                              <th className="text-right font-medium px-2 py-1.5">{trs('Neto')}</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-border">
                             {participantJornadas.map((j) => (
                               <tr key={j.date}>
-                                <td className="px-3 py-2 whitespace-nowrap">
-                                  {format(parseISO(j.date), i18n.language === 'en' ? 'MMM d, yyyy' : 'd MMM yyyy', { locale: i18n.language === 'en' ? enUS : es })}
+                                <td className="px-2 py-2">
+                                  <div className="whitespace-nowrap">{format(parseISO(j.date), i18n.language === 'en' ? 'MMM d' : 'd MMM', { locale: i18n.language === 'en' ? enUS : es })}</div>
+                                  <div className="text-[10px] text-muted-foreground">{format(parseISO(j.date), 'yyyy')}</div>
                                 </td>
                                 <td className="text-center px-1">
                                   <span className={cn('font-bold', positionColor(j.result.position))}>
@@ -496,8 +512,11 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                                     </span>
                                   )}
                                 </td>
-                                <td className="text-right px-3 text-muted-foreground tabular-nums">
+                                <td className="text-right px-1 text-muted-foreground tabular-nums">
                                   {j.gross ?? '—'}
+                                </td>
+                                <td className="text-right px-2 text-muted-foreground tabular-nums">
+                                  {j.net ?? '—'}
                                 </td>
                               </tr>
                             ))}
