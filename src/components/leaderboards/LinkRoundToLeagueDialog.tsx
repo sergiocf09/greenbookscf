@@ -130,7 +130,7 @@ export const LinkRoundToLeagueDialog: React.FC<LinkRoundToLeagueDialogProps> = (
         const [{ data: playersData, error }, { data: existingParts }] = await Promise.all([
           supabase
             .from('round_players')
-            .select('id, profile_id, guest_name, guest_initials, guest_color, handicap_for_round, profiles(display_name, initials, avatar_color)')
+            .select('id, profile_id, guest_name, guest_initials, guest_color, handicap_for_round, profiles!round_players_profile_id_fkey(display_name, initials, avatar_color)')
             .eq('round_id', round.id),
           supabase
             .from('leaderboard_participants')
