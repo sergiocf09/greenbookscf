@@ -12,7 +12,7 @@ import { ZoologicoDialog } from '@/components/scoring/ZoologicoDialog';
 import { WolfDecisionPanel } from '@/components/bets/WolfDecisionPanel';
 import { SixesActiveBadge } from '@/components/bets/SixesActiveBadge';
 
-import { resolveWolfHole } from '@/lib/bets/wolf';
+import { calculateWolfBets, resolveWolfHole } from '@/lib/bets/wolf';
 import { Button } from '@/components/ui/button';
 import { Check, CheckCircle2, DollarSign, Target, AlertTriangle } from 'lucide-react';
 
@@ -282,22 +282,14 @@ export const ScoringView: React.FC<ScoringViewProps> = ({
         let redemptionCandidateLoss = 0;
         if (isRedemptionHole && wolfHoleStates) {
           const pnl = new Map<string, number>();
-          players.forEach(p => pnl.set(p.id, 0));
-          wolfHoleStates.filter(s => s.holeNumber <= 17 && s.result && s.result !== 'tied').forEach(state => {
-            const amount = state.effectiveAmount ?? wolfConfig.holeValue;
-            const wolfTeam = [state.wolfPlayerId, ...state.partnerIds];
-            const rivalTeam = players.filter(p => !wolfTeam.includes(p.id)).map(p => p.id);
-            const winners = state.result === 'won' ? wolfTeam : rivalTeam;
-            const losers = state.result === 'won' ? rivalTeam : wolfTeam;
-            winners.forEach(w => losers.forEach(l => {
-              pnl.set(w, (pnl.get(w) ?? 0) + amount);
-              pnl.set(l, (pnl.get(l) ?? 0) - amount);
-            }));
+          players.filter(p => !wolfParticipants.length || wolfParticipants.includes(p.id)).forEach(p => pnl.set(p.id, 0));
+          calculateWolfBets(players, wolfConfig, wolfHoleStates.filter(s => s.holeNumber <= 17), scores, course).forEach(bet => {
+            pnl.set(bet.playerId, (pnl.get(bet.playerId) ?? 0) + bet.amount);
           });
           const sorted = [...pnl.entries()].sort((a, b) => a[1] - b[1]);
-          if (sorted.length >= 2 && sorted[0][1] < sorted[1][1]) {
+          if (sorted.length >= 2 && sorted[0][1] < 0 && sorted[0][1] < sorted[1][1]) {
             redemptionCandidateId = sorted[0][0];
-            redemptionCandidateLoss = sorted[0][1];
+            redemptionCandidateLoss = Math.abs(sorted[0][1]);
           }
         }
 

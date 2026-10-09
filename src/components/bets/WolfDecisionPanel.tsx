@@ -40,7 +40,7 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
   const disambiguated = useMemo(() => disambiguateInitials(players), [players]);
   const participants = players.filter(p => !wolfConfig.participantIds?.length || wolfConfig.participantIds.includes(p.id));
   const offeringRecovery = !!redemptionCandidateId && redemptionMode !== 'declined' && (!holeState || editing);
-  const decidingId = offeringRecovery ? redemptionCandidateId : (holeState?.wolfPlayerId ?? regularWolfPlayerId ?? wolfPlayerId);
+  const decidingId = offeringRecovery ? redemptionCandidateId : ((!editing ? holeState?.wolfPlayerId : undefined) ?? regularWolfPlayerId ?? wolfPlayerId);
   const wolfPlayer = players.find(p => p.id === decidingId);
   if (!wolfPlayer) return null;
   const canDecide = isOrganizer || (!!currentUserId && wolfPlayer.profileId === currentUserId);

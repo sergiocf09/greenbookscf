@@ -260,7 +260,7 @@ export const calculateWolfBets = (
       const nL = validLosers.length;
       const amountPerPair = nW > 0 && nL > 0 ? effectiveHV / (nW * nL) : effectiveHV;
       const desc = state.wentSolo
-        ? (isAllIn ? `Loba All-in Solo ×2 · H${state.holeNumber}` : `Loba Sola ×2 · H${state.holeNumber}`)
+        ? (isAllIn ? `Loba All-in Solo · H${state.holeNumber}` : `Loba Sola ×2 · H${state.holeNumber}`)
         : (isAllIn ? `Loba All-in · H${state.holeNumber}` : `La Loba · H${state.holeNumber}`);
       validWinners.forEach(wId => validLosers.forEach(lId => {
         summaries.push({ playerId: wId, vsPlayer: lId, betType: 'Wolf', amount: amountPerPair, segment: 'hole', holeNumber: state.holeNumber, description: desc });
