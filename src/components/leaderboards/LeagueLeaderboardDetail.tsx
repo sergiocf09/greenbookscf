@@ -183,6 +183,17 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
             {trs('Liga')} · {trs(scoringLabel)} · {trs(event?.status === 'completed' ? 'Cerrada' : 'Activa')}
           </p>
         </div>
+        {event?.status !== 'completed' && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setLinkDialogOpen(true)}
+            aria-label={trs("Vincular ronda")}
+            title={trs("Vincular ronda a la liga")}
+          >
+            <Link2 className="h-4 w-4" />
+          </Button>
+        )}
         <Button variant="ghost" size="icon" onClick={handleShare} aria-label={trs("Compartir")}>
           <Share2 className="h-4 w-4" />
         </Button>
