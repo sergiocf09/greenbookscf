@@ -226,6 +226,29 @@ export const computeWolfStateHoleValue = (config: WolfConfig, state: WolfHoleSta
     ? Math.abs(state.allInAmount ?? 0) * (state.holeNumber === 18 || state.wentSolo ? 2 : 1)
     : computeEffectiveHoleValue(config, state.carryoverHoles ?? 0, state.wentSolo);
 
+/** Recompute carry from the LIVE result of previous holes (stored results may be stale). */
+const withLiveCarry = (
+  players: Player[], config: WolfConfig, holeStates: WolfHoleState[],
+  scores?: Map<string, PlayerScore[]>, course?: GolfCourse
+): WolfHoleState[] => {
+  if (!scores || !course) return holeStates;
+  const participantIds = getParticipantPlayers(players, config).map(p => p.id);
+  const live = new Map<number, 'won' | 'lost' | 'tied'>();
+  for (const s of holeStates) {
+    const wolfTeam = [s.wolfPlayerId, ...s.partnerIds];
+    const rivals = participantIds.filter(id => !wolfTeam.includes(id));
+    const r = resolveWolfHole(wolfTeam, rivals, s.holeNumber, players, scores, course, config);
+    live.set(s.holeNumber, r.winner === 'wolf' ? 'won' : r.winner === 'rival' ? 'lost' : 'tied');
+  }
+  return holeStates.map(s => {
+    let carry = 0;
+    if (config.carryover && s.redemptionMode !== 'all_in') {
+      for (let h = s.holeNumber - 1; h >= 1 && live.get(h) === 'tied'; h--) carry++;
+    }
+    return carry === (s.carryoverHoles ?? 0) ? s : { ...s, carryoverHoles: carry };
+  });
+};
+
 // Motor principal: genera BetSummary[] desde holeStates resueltos
 export const calculateWolfBets = (
   players: Player[], config: WolfConfig, holeStates: WolfHoleState[],
