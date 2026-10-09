@@ -286,8 +286,9 @@ export const calculateWolfBets = (
       const effectiveHV = computeWolfStateHoleValue(config, state);
       const nW = validWinners.length;
       const nL = validLosers.length;
-      const wolfSideCount = result === 'won' ? nW : nL;
-      const amountPerPair = wolfSideCount > 0 ? effectiveHV / wolfSideCount : effectiveHV;
+      const amountPerPair = isAllIn
+        ? (nW > 0 ? effectiveHV / nW : effectiveHV)
+        : computeAmountPerPair(config, state.carryoverHoles ?? 0, state.wentSolo, wolfTeam.length, rivalTeamIds.length);
       const desc = state.wentSolo
         ? (isAllIn ? `Loba All-in Solo · H${state.holeNumber}` : `Loba Sola ×2 · H${state.holeNumber}`)
         : (isAllIn ? `Loba All-in · H${state.holeNumber}` : `La Loba · H${state.holeNumber}`);
