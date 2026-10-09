@@ -35,10 +35,10 @@ describe('Wolf total hole value', () => {
     expect(balance(bets, 'p3')).toBe(-30);
     expect(bets.reduce((s, b) => s + b.amount, 0)).toBe(0);
   });
-  it('60 with 11 carries, 2 vs 2: pot 660, each winner +330 (165 per rival)', () => {
-    const s = { ...state, carryoverHoles: 11 };
+  it('60 with 11 accumulated holes (10 ties + current), 2 vs 2: pot 660, each winner +330 (165 per rival)', () => {
+    const s = { ...state, carryoverHoles: 10 };
     const bets = calculateWolfBets(players.slice(0, 4), config, [s]);
-    expect(computeAmountPerPair(config, 11, false, 2, 2)).toBe(165);
+    expect(computeAmountPerPair(config, 10, false, 2, 2)).toBe(165);
     expect(balance(bets, 'p0')).toBe(330);
     expect(balance(bets, 'p2')).toBe(-330);
     expect(bets.reduce((s, b) => s + b.amount, 0)).toBe(0);
