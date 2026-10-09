@@ -1,12 +1,12 @@
 import { trs } from '@/i18n/tr';
 import React, { useState, useMemo } from 'react';
 import { Player, WolfConfig, WolfHoleState } from '@/types/golf';
+import { computeWolfStateHoleValue } from '@/lib/bets/wolf';
 import { disambiguateInitials } from '@/lib/playerInput';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { fmtMoney } from '@/lib/formatMoney';
-import { cn } from '@/lib/utils';
 
 interface WolfDecisionPanelProps {
   holeNumber: number;
@@ -16,7 +16,7 @@ interface WolfDecisionPanelProps {
   wolfConfig: WolfConfig;
   isOrganizer: boolean;
   currentUserId: string | null;
-  onDecision: (partnerIds: string[], wentSolo: boolean) => Promise<void>;
+  onDecision: (partnerIds: string[], wentSolo: boolean, redemptionMode?: 'normal' | 'all_in') => Promise<void>;
   onRevert?: (holeNumber: number) => Promise<void>;
   isRedemption?: boolean;
   redemptionCandidateId?: string;
@@ -24,287 +24,113 @@ interface WolfDecisionPanelProps {
   regularWolfPlayerId?: string;
 }
 
-const timingLabels: Record<string, string> = {
-  A: 'Antes del driver',
-  B: 'Al pegar el driver',
-  C: 'Antes del 2° golpe',
-};
+const timingLabels: Record<string, string> = { A: 'Antes del driver', B: 'Al pegar el driver', C: 'Antes del 2° golpe' };
 
 export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
-  holeNumber,
-  players,
-  wolfPlayerId,
-  holeState,
-  wolfConfig,
-  isOrganizer,
-  currentUserId,
-  onDecision,
-  onRevert,
-  isRedemption,
-  redemptionCandidateId,
-  redemptionCandidateLoss,
-  regularWolfPlayerId,
+  holeNumber, players, wolfPlayerId, holeState, wolfConfig, isOrganizer,
+  currentUserId, onDecision, onRevert, redemptionCandidateId, redemptionCandidateLoss = 0, regularWolfPlayerId,
 }) => {
   const [selectedPartners, setSelectedPartners] = useState<string[]>([]);
   const [editing, setEditing] = useState(false);
   const [redemptionMode, setRedemptionMode] = useState<'pending' | 'accepted' | 'declined'>('pending');
+  const [redemptionStep, setRedemptionStep] = useState<'accept' | 'choose_mode' | 'choose_partner'>('accept');
+  const [redemptionBetMode, setRedemptionBetMode] = useState<'normal' | 'all_in' | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(false);
   const disambiguated = useMemo(() => disambiguateInitials(players), [players]);
-
-  const wolfPlayer = players.find(p => p.id === wolfPlayerId);
+  const participants = players.filter(p => !wolfConfig.participantIds?.length || wolfConfig.participantIds.includes(p.id));
+  const offeringRecovery = !!redemptionCandidateId && redemptionMode !== 'declined' && (!holeState || editing);
+  const decidingId = offeringRecovery ? redemptionCandidateId : (holeState?.wolfPlayerId ?? regularWolfPlayerId ?? wolfPlayerId);
+  const wolfPlayer = players.find(p => p.id === decidingId);
   if (!wolfPlayer) return null;
-
-  const canDecide =
-    isOrganizer || wolfPlayer.profileId === currentUserId;
-
-  const maxPartners = players.length >= 6 ? 2 : 1;
-
-  const togglePartner = (id: string) => {
-    setSelectedPartners(prev => {
-      if (prev.includes(id)) return prev.filter(x => x !== id);
-      if (prev.length >= maxPartners) return [...prev.slice(1), id];
-      return [...prev, id];
-    });
+  const canDecide = isOrganizer || (!!currentUserId && wolfPlayer.profileId === currentUserId);
+  const maxPartners = participants.length >= 6 ? 2 : 1;
+  const otherPlayers = participants.filter(p => p.id !== decidingId);
+  const loss = Math.abs(redemptionCandidateLoss);
+  const effectiveHV = holeState ? computeWolfStateHoleValue(wolfConfig, holeState) : wolfConfig.holeValue;
+  const teamSize = holeState ? 1 + holeState.partnerIds.length : 1;
+  const pairs = teamSize * (participants.length - teamSize);
+  const perPair = pairs > 0 ? effectiveHV / pairs : effectiveHV;
+  const mode = holeState?.redemptionMode ?? redemptionBetMode;
+  const togglePartner = (id: string) => setSelectedPartners(prev => prev.includes(id)
+    ? prev.filter(x => x !== id) : prev.length >= maxPartners ? [...prev.slice(1), id] : [...prev, id]);
+  const reset = () => {
+    setSelectedPartners([]); setRedemptionMode('pending'); setRedemptionStep('accept'); setRedemptionBetMode(null); setError(false);
   };
-
-  const otherPlayers = players.filter(p => p.id !== wolfPlayerId);
-
-  // Decide which state to show
-  const showSelectionUI = !holeState || editing;
-  const showInPlay = holeState && holeState.result === null && !editing;
-  const showResolved = holeState && holeState.result !== null;
-
-  return (
-    <div className="rounded-lg border border-border overflow-hidden mb-3">
-      {/* Header */}
-      <div className="bg-[hsl(155,100%,15%)] text-[hsl(50,95%,55%)] px-3 py-2 flex items-center gap-2">
-        <span>🐺</span>
-        <PlayerAvatar
-          initials={disambiguated.get(wolfPlayerId) || wolfPlayer.initials}
-          background={wolfPlayer.color}
-          size="sm"
-          isLoggedInUser={wolfPlayer.profileId === currentUserId}
-        />
-        <span className="font-semibold text-sm">{wolfPlayer.name.split(' ')[0]}</span>
-        <span className="text-xs opacity-80">{trs("— La Loba")}</span>
-        {isRedemption && (
-          <Badge variant="destructive" className="ml-auto text-[9px]">
-            {trs("Recuperación ×3")}
-          </Badge>
-        )}
-      </div>
-      <div className="px-3 pb-1 bg-[hsl(155,100%,15%)]">
-        <p className="text-[10px] text-[hsl(50,95%,55%)]/70">
-          {isRedemption
-            ? `$${fmtMoney(wolfConfig.amountPerHole * 3)} (×3) · ${trs("Solo obligatorio")}`
-            : `$${fmtMoney(wolfConfig.amountPerHole)} ${trs("por hoyo ·")} ${timingLabels[wolfConfig.timing] ?? wolfConfig.timing}`}
-        </p>
-      </div>
-
-      <div className="p-3 bg-card">
-        {/* STATE 1: Selection */}
-        {showSelectionUI && (
-          /* Redemption candidate offer (optional) */
-          redemptionCandidateId && redemptionMode === 'pending' && !holeState ? (
-            canDecide ? (
-              <div className="space-y-3">
-                <p className="text-xs text-muted-foreground">
-                   🔥 <span className="font-semibold">{players.find(p => p.id === redemptionCandidateId)?.name?.split(' ')[0]}</span> {trs("es el máximo perdedor")}{redemptionCandidateLoss ? ` (-$${fmtMoney(Math.abs(redemptionCandidateLoss))})` : ''} {trs("y puede tomar la Recuperación (Solo ×3).")}
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    className="flex-1 border-amber-500 bg-amber-500 text-white hover:bg-amber-600"
-                    onClick={() => {
-                      setRedemptionMode('accepted');
-                      // Override wolf to the candidate and force solo ×3
-                      onDecision([], true);
-                      setSelectedPartners([]);
-                      setEditing(false);
-                    }}
-                  >
-                    {trs("🐺 Aceptar Recuperación ×3")}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => setRedemptionMode('declined')}
-                  >
-                    {trs("Declinar")}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground italic">{trs("Esperando decisión de recuperación…")}</p>
-            )
-          ) : isRedemption ? (
-            canDecide ? (
-              <div className="space-y-3">
-                <p className="text-xs text-muted-foreground">
-                   🔥 {trs("Recuperación")}: {wolfPlayer.name.split(' ')[0]} {trs("va solo con apuesta ×3")}
-                </p>
-                <Button
-                  size="sm"
-                  className="w-full border-amber-500 bg-amber-500 text-white hover:bg-amber-600"
-                  onClick={() => {
-                    onDecision([], true);
-                    setSelectedPartners([]);
-                    setEditing(false);
-                  }}
-                >
-                  {trs("🐺 Confirmar Recuperación (Solo ×3)")}
-                </Button>
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground italic">{trs("Esperando confirmación de recuperación…")}</p>
-            )
-          ) : canDecide ? (
-            <div className="space-y-3">
-              <p className="text-xs text-muted-foreground">Elige pareja{maxPartners > 1 ? 's' : ''}:</p>
-              <div className="flex flex-wrap gap-2">
-                {otherPlayers.map(p => {
-                  const selected = selectedPartners.includes(p.id);
-                  return (
-                    <button
-                      key={p.id}
-                      onClick={() => togglePartner(p.id)}
-                      className={cn(
-                        'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors border',
-                        selected
-                          ? 'bg-primary text-primary-foreground border-primary'
-                          : 'bg-muted text-muted-foreground border-transparent hover:bg-muted/80'
-                      )}
-                    >
-                      <PlayerAvatar initials={p.initials} background={p.color} size="xs" isLoggedInUser={p.profileId === currentUserId} />
-                      {p.name.split(' ')[0]}
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  disabled={selectedPartners.length === 0}
-                  onClick={() => {
-                    onDecision(selectedPartners, false);
-                    setSelectedPartners([]);
-                    setEditing(false);
-                  }}
-                  className="flex-1"
-                >
-                  {trs("Confirmar pareja")}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="border-amber-500 text-amber-600 hover:bg-amber-50"
-                  onClick={() => {
-                    onDecision([], true);
-                    setSelectedPartners([]);
-                    setEditing(false);
-                  }}
-                >
-                  {trs("🐺 Ir Sola ×2")}
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground italic">{trs("Esperando decisión de La Loba…")}</p>
-          )
-        )}
-
-        {/* STATE 2: Decision made, hole in play */}
-        {showInPlay && holeState && (
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              {holeState.wentSolo ? (
-                <Badge className="bg-amber-500/20 text-amber-700 border-amber-500/40">
-                  {trs("🐺 Sola ×2")}
-                </Badge>
-              ) : (
-                holeState.partnerIds.map(id => {
-                  const p = players.find(pl => pl.id === id);
-                  if (!p) return null;
-                  return (
-                    <Badge key={id} variant="secondary" className="flex items-center gap-1">
-                      <PlayerAvatar initials={disambiguated.get(id) || p.initials} background={p.color} size="xs" isLoggedInUser={p.profileId === currentUserId} />
-                      {p.name.split(' ')[0]}
-                    </Badge>
-                  );
-                })
-              )}
-              {(holeState.carryoverHoles ?? 0) > 0 && (
-                <Badge className="bg-amber-500/20 text-amber-700 border-amber-500/40 text-[10px]">
-                  ↑ Carry +{holeState.carryoverHoles}
-                </Badge>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Monto efectivo: <span className="font-semibold text-foreground">${fmtMoney(holeState.effectiveAmount ?? wolfConfig.amountPerHole)}</span>{' '}{trs("por rival")}
-            </p>
-            {canDecide && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-xs h-7"
-                onClick={() => {
-                  setEditing(true);
-                  setSelectedPartners([]);
-                  setRedemptionMode('pending');
-                }}
-              >
-                {trs("Cambiar")}
-              </Button>
-            )}
-          </div>
-        )}
-
-        {/* STATE 3: Resolved */}
-        {showResolved && holeState && (
-          <div className="space-y-2">
-            <div
-              className={cn(
-                'rounded-md px-3 py-2 text-sm font-medium',
-                holeState.result === 'won' && 'bg-green-500/10 text-green-700',
-                holeState.result === 'lost' && 'bg-red-500/10 text-red-700',
-                holeState.result === 'tied' && 'bg-muted text-muted-foreground'
-              )}
-            >
-              {holeState.result === 'won' && (
-                <>{trs("✅ La Loba ganó · +$")}{fmtMoney(holeState.effectiveAmount ?? wolfConfig.amountPerHole)} {trs("por rival")}</>
-              )}
-              {holeState.result === 'lost' && (
-                <>{trs("❌ La Loba perdió · -$")}{fmtMoney(holeState.effectiveAmount ?? wolfConfig.amountPerHole)} {trs("por rival")}</>
-              )}
-              {holeState.result === 'tied' && (
-                <span className="flex items-center gap-2">
-                  ↔ Empate
-                  {wolfConfig.carryover && (
-                    <Badge className="bg-amber-500/20 text-amber-700 border-amber-500/40 text-[10px]">
-                      {trs("↑ Carry")}
-                    </Badge>
-                  )}
-                </span>
-              )}
-            </div>
-            {canDecide && onRevert && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-xs h-7"
-                onClick={async () => {
-                  await onRevert(holeNumber);
-                  setEditing(false);
-                  setSelectedPartners([]);
-                  setRedemptionMode('pending');
-                }}
-              >
-                {trs("Cambiar")}
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
+  const decide = async (solo: boolean) => {
+    setSaving(true); setError(false);
+    try {
+      await onDecision(solo ? [] : selectedPartners, solo, offeringRecovery ? redemptionBetMode ?? 'normal' : undefined);
+      setSelectedPartners([]); setEditing(false); setRedemptionMode('accepted');
+    } catch { setError(true); } finally { setSaving(false); }
+  };
+  const partnerSelection = <div className="space-y-3">
+    <p className="text-xs text-muted-foreground">{offeringRecovery && redemptionBetMode === 'all_in'
+      ? `🔥 All-in ($${fmtMoney(loss)}) · ${trs('Elige pareja o ve solo ×2:')}` : trs('Elige pareja o ve solo ×2:')}</p>
+    <div className="flex flex-wrap gap-2">{otherPlayers.map(p => <Button key={p.id} size="sm"
+      variant={selectedPartners.includes(p.id) ? 'default' : 'outline'} disabled={saving}
+      onClick={() => togglePartner(p.id)} aria-pressed={selectedPartners.includes(p.id)} className="text-xs gap-1.5">
+      <PlayerAvatar initials={disambiguated.get(p.id) ?? p.initials} background={p.color} size="xs" isLoggedInUser={p.profileId === currentUserId} />
+      {p.name.split(' ')[0]}
+    </Button>)}</div>
+    <div className="flex gap-2">
+      <Button size="sm" className="flex-1" disabled={saving || !selectedPartners.length} onClick={() => decide(false)}>{trs('Con pareja')}</Button>
+      <Button size="sm" variant="outline" disabled={saving} onClick={() => decide(true)}>{trs('🐺 Solo ×2')}</Button>
     </div>
-  );
+    {offeringRecovery && <Button size="sm" variant="ghost" disabled={saving} onClick={() => { setSelectedPartners([]); setRedemptionStep('choose_mode'); }}>{trs('← Volver')}</Button>}
+  </div>;
+  return <div className="rounded-lg border border-border overflow-hidden mb-3">
+    <div className="bg-primary text-primary-foreground px-3 py-2">
+      <div className="flex items-center gap-2"><span>🐺</span>
+        <PlayerAvatar initials={disambiguated.get(wolfPlayer.id) ?? wolfPlayer.initials} background={wolfPlayer.color} size="sm" isLoggedInUser={wolfPlayer.profileId === currentUserId} />
+        <span className="font-semibold text-sm">{wolfPlayer.name.split(' ')[0]}</span><span className="text-xs">{trs('— La Loba')}</span>
+        {(offeringRecovery || holeState?.redemptionMode) && <Badge variant="secondary" className="ml-auto text-[9px]">{trs('Recuperación')}</Badge>}
+      </div>
+      <p className="text-[10px] mt-1 opacity-80">{mode === 'all_in'
+        ? `${trs('Apuesta:')} $${fmtMoney(holeState?.allInAmount ?? loss)} (${trs('saldo perdido')})`
+        : `$${fmtMoney(wolfConfig.holeValue)} ${trs('valor del hoyo')} · ${trs(timingLabels[wolfConfig.timing] ?? wolfConfig.timing)}`}</p>
+    </div>
+    <div className="p-3 bg-card space-y-2">
+      {(!holeState || editing) && (canDecide ? offeringRecovery ? <>
+        {redemptionStep === 'accept' && <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">🔥 <strong>{wolfPlayer.name.split(' ')[0]}</strong> {trs('va perdiendo')} <strong>-${fmtMoney(loss)}</strong>. {trs('¿Toma La Loba en H18?')}</p>
+          <div className="flex gap-2"><Button size="sm" className="flex-1" onClick={() => setRedemptionStep('choose_mode')}>{trs('🐺 Sí, tomo La Loba')}</Button>
+            <Button size="sm" variant="outline" onClick={() => { setRedemptionMode('declined'); setSelectedPartners([]); }}>{trs('Declinar')}</Button></div>
+        </div>}
+        {redemptionStep === 'choose_mode' && <div className="space-y-2">
+          <p className="text-xs font-medium">{trs('¿Qué apuesta eliges?')}</p>
+          <Button variant="outline" className="w-full h-auto whitespace-normal text-left justify-start p-2.5" onClick={() => { setRedemptionBetMode('normal'); setRedemptionStep('choose_partner'); }}>
+            <span><span className="block text-xs font-semibold">{trs('Opción A — Valor normal del hoyo')}</span>
+              <span className="block text-[11px] font-normal mt-1">${fmtMoney(wolfConfig.holeValue)} {trs('(+ carryover si aplica). Puedes elegir pareja o ir solo ×2.')}</span></span>
+          </Button>
+          <Button variant="outline" className="w-full h-auto whitespace-normal text-left justify-start p-2.5 border-destructive text-destructive" onClick={() => { setRedemptionBetMode('all_in'); setRedemptionStep('choose_partner'); }}>
+            <span><span className="block text-xs font-semibold">{trs('Opción B — Apostar todo el saldo perdido')}</span>
+              <span className="block text-[11px] font-normal mt-1">{trs('Valor total con pareja:')} ${fmtMoney(loss)} · {trs('Solo ×2:')} ${fmtMoney(loss * 2)}</span></span>
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setRedemptionStep('accept')}>{trs('← Volver')}</Button>
+        </div>}
+        {redemptionStep === 'choose_partner' && partnerSelection}
+      </> : partnerSelection : <p className="text-xs text-muted-foreground italic">{trs(offeringRecovery ? 'Esperando decisión de recuperación…' : 'Esperando decisión de La Loba…')}</p>)}
+      {holeState && !editing && <>
+        <div className="flex flex-wrap gap-2">
+          {holeState.redemptionMode === 'all_in' ? <Badge variant="destructive">🔥 All-in · {trs(holeState.wentSolo ? 'Solo ×2' : 'Con pareja')}</Badge>
+            : holeState.wentSolo ? <Badge variant="secondary">{trs('🐺 Sola ×2')}</Badge> : holeState.partnerIds.map(id => <Badge key={id} variant="secondary">{players.find(p => p.id === id)?.name.split(' ')[0]}</Badge>)}
+          {holeState.redemptionMode !== 'all_in' && holeState.carryoverHoles > 0 && <Badge variant="secondary">↑ Carry +{holeState.carryoverHoles}</Badge>}
+        </div>
+        {holeState.result === null ? <p className="text-xs text-muted-foreground">{trs('Valor efectivo del hoyo:')} <strong className="text-foreground">${fmtMoney(effectiveHV)}</strong> · ${fmtMoney(perPair)}/{trs('ganador')}</p>
+          : <div className={`rounded-md px-3 py-2 text-sm font-medium ${holeState.result === 'lost' ? 'bg-destructive/10 text-destructive' : 'bg-muted text-foreground'}`}>
+            {holeState.result === 'tied' ? trs('↔ Empate') : <>{trs(holeState.redemptionMode === 'all_in'
+              ? holeState.result === 'won' ? '✅ Recuperación ganada' : '❌ Recuperación perdida'
+              : holeState.result === 'won' ? '✅ La Loba ganó' : '❌ La Loba perdió')} · {holeState.result === 'won' ? '+' : '-'}${fmtMoney(perPair)}/{trs('ganador')}</>}
+          </div>}
+        {canDecide && <Button size="sm" variant="outline" disabled={saving} onClick={async () => {
+          if (holeState.result === null) { reset(); setEditing(true); return; }
+          if (!onRevert) return;
+          setSaving(true); setError(false);
+          try { await onRevert(holeNumber); reset(); setEditing(false); } catch { setError(true); } finally { setSaving(false); }
+        }}>{trs('Cambiar')}</Button>}
+      </>}
+      {error && <p role="alert" className="text-xs text-destructive">{trs('No se pudo guardar la decisión. Intenta de nuevo.')}</p>}
+    </div>
+  </div>;
 };
