@@ -1966,5 +1966,8 @@
   "Ya está en esta liga": "Already in this league",
   "Selecciona jugadores y asigna handicap para la liga": "Select players and assign handicap for the league",
   "En preparación": "In setup",
-  "· Organizador": "· Organizer"
+  "· Organizador": "· Organizer",
+  "Actuales (todos)": "Current (all)",
+  "Solo elegibles": "Eligible only",
+  "Aún nadie cumple el mínimo de jornadas para ser elegible.": "No one meets the minimum rounds to be eligible yet."
 }
