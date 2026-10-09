@@ -13,8 +13,9 @@ import { enUS, es } from 'date-fns/locale';
 import i18n from '@/i18n';
 import {
   ArrowLeft, Trophy, Calendar, Users, Hash, Loader2,
-  Star, CheckCircle, Clock, Share2, RefreshCw,
+  Star, CheckCircle, Clock, Share2, RefreshCw, Link2,
 } from 'lucide-react';
+import { LinkRoundToLeagueDialog } from '@/components/leaderboards/LinkRoundToLeagueDialog';
 import { toast } from 'sonner';
 import type { LeagueRulesJson } from '@/components/leaderboards/CreateLeagueDialog';
 
@@ -59,6 +60,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
   const [selectedTab, setSelectedTab] = useState<'standings' | 'jornadas' | 'detalle'>('standings');
   const [selectedParticipant, setSelectedParticipant] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
 
   const isCreator = event?.created_by === profile?.id;
 
@@ -181,6 +183,17 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
             {trs('Liga')} · {trs(scoringLabel)} · {trs(event?.status === 'completed' ? 'Cerrada' : 'Activa')}
           </p>
         </div>
+        {event?.status !== 'completed' && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setLinkDialogOpen(true)}
+            aria-label={trs("Vincular ronda")}
+            title={trs("Vincular ronda a la liga")}
+          >
+            <Link2 className="h-4 w-4" />
+          </Button>
+        )}
         <Button variant="ghost" size="icon" onClick={handleShare} aria-label={trs("Compartir")}>
           <Share2 className="h-4 w-4" />
         </Button>
@@ -421,6 +434,13 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
           </Button>
         </div>
       )}
+
+      <LinkRoundToLeagueDialog
+        open={linkDialogOpen}
+        onOpenChange={setLinkDialogOpen}
+        leaderboardId={leaderboardId}
+        onLinked={fetchData}
+      />
     </div>
   );
 };
