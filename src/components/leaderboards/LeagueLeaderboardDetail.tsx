@@ -489,7 +489,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                                 </td>
                                 <td className="text-right px-1">
                                   {j.result.points_earned !== null && j.result.points_earned !== undefined ? (
-                                    <span className="text-primary font-semibold">+{j.result.points_earned}</span>
+                                    <span className="text-primary font-semibold">{j.result.points_earned}</span>
                                   ) : (
                                     <span className="font-semibold">
                                       {j.result.score_value > 0 ? '+' : ''}{j.result.score_value}
