@@ -102,10 +102,27 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
         .eq('leaderboard_id', leaderboardId);
 
       const dateSet = new Set<string>();
+      const rDateMap: Record<string, string> = {};
       for (const lr of linkedRounds ?? []) {
         const d = (lr.rounds as any)?.date;
-        if (d) dateSet.add(d);
+        if (d) {
+          dateSet.add(d);
+          rDateMap[(lr as any).round_id] = d;
+        }
       }
+      setRoundDateMap(rDateMap);
+
+      // Gross scores per participant per round (for player detail history)
+      const { data: scoreRows } = await supabase
+        .from('leaderboard_scores')
+        .select('participant_id, round_id, gross_total')
+        .eq('leaderboard_id', leaderboardId);
+      const grossMap: Record<string, Record<string, number>> = {};
+      for (const s of (scoreRows ?? []) as any[]) {
+        if (s.gross_total == null) continue;
+        (grossMap[s.participant_id] ??= {})[s.round_id] = s.gross_total;
+      }
+      setGrossByParticipant(grossMap);
 
       const jornadasData: JornadaSummary[] = [];
       for (const date of [...dateSet].sort().reverse()) {
