@@ -370,7 +370,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                           </div>
                           {result.points_earned !== null && (
                             <div className="text-[10px] text-primary font-medium">
-                              +{result.points_earned} pts
+                              {result.points_earned} pts
                             </div>
                           )}
                         </div>
