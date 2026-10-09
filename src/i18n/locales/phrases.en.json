@@ -1955,5 +1955,16 @@
   "No se pudo actualizar los miembros": "Could not update members",
   "¿Eliminar el grupo \"{{name}}\"?": "Delete the group \"{{name}}\"?",
   "Mover grupo": "Move group",
-  "No se pudo guardar el orden de los grupos": "Could not save group order"
+  "No se pudo guardar el orden de los grupos": "Could not save group order",
+  "Vincular Ronda a la Liga": "Link Round to League",
+  "Vincular ronda a la liga": "Link round to league",
+  "Ronda vinculada a la liga": "Round linked to league",
+  "Selecciona una de tus rondas": "Select one of your rounds",
+  "No tienes rondas disponibles para vincular": "You have no rounds available to link",
+  "Error cargando rondas: ": "Error loading rounds: ",
+  "Error cargando jugadores: ": "Error loading players: ",
+  "Ya está en esta liga": "Already in this league",
+  "Selecciona jugadores y asigna handicap para la liga": "Select players and assign handicap for the league",
+  "En preparación": "In setup",
+  "· Organizador": "· Organizer"
 }
