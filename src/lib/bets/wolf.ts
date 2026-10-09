@@ -214,11 +214,15 @@ export const computeEffectiveHoleValue = (
 
 export const computeAmountPerPair = (
   config: WolfConfig, carryoverHoles: number, wentSolo: boolean,
-  nWolfTeam: number
+  nWolfTeam: number, nRivalTeam: number
 ): number => {
-  // Each rival (non-Loba side) moves the full hole value; the Loba side splits it.
   const hv = computeEffectiveHoleValue(config, carryoverHoles, wentSolo);
-  return nWolfTeam > 0 ? hv / nWolfTeam : hv;
+  // Equal teams: the pot splits evenly across all pairs (hv / (nW × nL)).
+  // Unequal teams: each player of the larger side moves the full hole value
+  // and the smaller side splits the total (hv / minSide per pair).
+  if (nWolfTeam <= 0 || nRivalTeam <= 0) return hv;
+  if (nWolfTeam === nRivalTeam) return hv / (nWolfTeam * nRivalTeam);
+  return hv / Math.min(nWolfTeam, nRivalTeam);
 };
 
 /** H18 all-in transfers twice the loss, with partner OR solo, without carry. */
@@ -282,8 +286,9 @@ export const calculateWolfBets = (
       const effectiveHV = computeWolfStateHoleValue(config, state);
       const nW = validWinners.length;
       const nL = validLosers.length;
-      const wolfSideCount = result === 'won' ? nW : nL;
-      const amountPerPair = wolfSideCount > 0 ? effectiveHV / wolfSideCount : effectiveHV;
+      const amountPerPair = isAllIn
+        ? (nW > 0 ? effectiveHV / nW : effectiveHV)
+        : computeAmountPerPair(config, state.carryoverHoles ?? 0, state.wentSolo, wolfTeam.length, rivalTeamIds.length);
       const desc = state.wentSolo
         ? (isAllIn ? `Loba All-in Solo · H${state.holeNumber}` : `Loba Sola ×2 · H${state.holeNumber}`)
         : (isAllIn ? `Loba All-in · H${state.holeNumber}` : `La Loba · H${state.holeNumber}`);
@@ -361,13 +366,15 @@ export const buildWolfHoleDetails = (
       partnerNames: state.partnerIds.map(id => players.find(p => p.id === id)?.name ?? '?'),
       wentSolo: state.wentSolo,
       result: freshResult,
-      // Monto por jugador del lado Loba: los rivales mueven el valor completo
-      // del hoyo cada uno y el lado Loba reparte el total entre sus integrantes.
+      // Monto neto por jugador del lado Loba.
+      // Equipos iguales: el pozo se reparte parejo (hv / n por jugador).
+      // Equipos desiguales: cada jugador del lado mayor mueve el valor
+      // completo del hoyo y el lado menor reparte el total.
       // All-in H18: el total en juego ya es el déficit duplicado y se reparte
       // solo entre los integrantes del lado Loba.
       effectiveAmount: state.redemptionMode === 'all_in'
         ? computeWolfStateHoleValue(config, state) / Math.max(wolfTeam.length, 1)
-        : (computeWolfStateHoleValue(config, state) * Math.max(rivalTeam.length, 1)) / Math.max(wolfTeam.length, 1),
+        : computeAmountPerPair(config, state.carryoverHoles ?? 0, state.wentSolo, wolfTeam.length, rivalTeam.length) * Math.max(rivalTeam.length, 1),
       carryoverHoles: state.carryoverHoles,
       scoresByPlayer,
       teamWolfScore: resolved.teamWolfScore,
