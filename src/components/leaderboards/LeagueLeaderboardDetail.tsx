@@ -1,5 +1,5 @@
 import { trs } from '@/i18n/tr';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -61,6 +61,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
   const [selectedParticipant, setSelectedParticipant] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [eligibleOnly, setEligibleOnly] = useState(false);
 
   const isCreator = event?.created_by === profile?.id;
 
@@ -91,7 +92,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
 
       if (eventRes.error) throw eventRes.error;
       setEvent(eventRes.data);
-      setStandings(((standingsRes as any).data as StandingRow[]) ?? []);
+      setStandings((((standingsRes as any).data as any[]) ?? []).map(r => ({ ...r, position: r.position_rank })));
 
       const { data: linkedRounds } = await supabase
         .from('leaderboard_rounds')
@@ -111,7 +112,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
           p_jornada_date: date,
         });
         if (jornadaResults && (jornadaResults as any[]).length > 0) {
-          jornadasData.push({ date, results: jornadaResults as JornadaResult[] });
+          jornadasData.push({ date, results: (jornadaResults as any[]).map(r => ({ ...r, position: r.position_rank })) as JornadaResult[] });
         }
       }
       setJornadas(jornadasData);
@@ -156,6 +157,19 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
     if (pos === 3) return 'text-amber-600';
     return 'text-muted-foreground';
   };
+
+  const displayedStandings = useMemo(() => {
+    const higherIsBetter = rules.scoring_system === 'points' || rules.scoring_system === 'stableford' || rules.score_basis === 'stableford';
+    const val = (r: StandingRow) => Number(rules.scoring_system === 'points' ? r.points_cuenta : r.score_cuenta) || 0;
+    const rows = (eligibleOnly ? standings.filter(r => r.qualifies) : [...standings])
+      .sort((a, b) => higherIsBetter ? val(b) - val(a) : val(a) - val(b));
+    let lastVal: number | null = null; let lastPos = 0;
+    return rows.map((r, i) => {
+      const v = val(r);
+      if (lastVal === null || v !== lastVal) { lastPos = i + 1; lastVal = v; }
+      return { ...r, position: lastPos };
+    });
+  }, [standings, eligibleOnly, rules]);
 
   const selectedStanding = standings.find(s => s.participant_id === selectedParticipant);
   const participantJornadas = jornadas
@@ -236,12 +250,27 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
         <TabsContent value="standings" className="flex-1 min-h-0 mt-2">
           <ScrollArea className="h-full px-3 pb-4">
             <div className="space-y-2">
+              {rules.min_rounds_to_qualify > 0 && standings.length > 0 && (
+                <div className="flex gap-1 p-1 bg-muted rounded-lg">
+                  <button onClick={() => setEligibleOnly(false)} className={cn('flex-1 text-xs py-1.5 rounded-md font-medium', !eligibleOnly ? 'bg-background shadow-sm' : 'text-muted-foreground')}>
+                    {trs("Actuales (todos)")}
+                  </button>
+                  <button onClick={() => setEligibleOnly(true)} className={cn('flex-1 text-xs py-1.5 rounded-md font-medium', eligibleOnly ? 'bg-background shadow-sm' : 'text-muted-foreground')}>
+                    {trs("Solo elegibles")}
+                  </button>
+                </div>
+              )}
+              {eligibleOnly && displayedStandings.length === 0 && standings.length > 0 && (
+                <div className="text-center text-sm text-muted-foreground py-8">
+                  {trs("Aún nadie cumple el mínimo de jornadas para ser elegible.")}
+                </div>
+              )}
               {standings.length === 0 && (
                 <div className="text-center text-sm text-muted-foreground py-8">
                   {trs("Sin jornadas registradas aún. Vincula rondas para ver los standings.")}
                 </div>
               )}
-              {standings.map(row => (
+              {displayedStandings.map(row => (
                 <button
                   key={row.participant_id}
                   onClick={() => { setSelectedParticipant(row.participant_id); setSelectedTab('detalle'); }}
