@@ -214,10 +214,11 @@ export const computeEffectiveHoleValue = (
 
 export const computeAmountPerPair = (
   config: WolfConfig, carryoverHoles: number, wentSolo: boolean,
-  nWinners: number, nLosers: number
+  nWolfTeam: number
 ): number => {
+  // Each rival (non-Loba side) moves the full hole value; the Loba side splits it.
   const hv = computeEffectiveHoleValue(config, carryoverHoles, wentSolo);
-  return nWinners > 0 && nLosers > 0 ? hv / (nWinners * nLosers) : hv;
+  return nWolfTeam > 0 ? hv / nWolfTeam : hv;
 };
 
 /** H18 all-in transfers twice the loss, with partner OR solo, without carry. */
@@ -281,7 +282,8 @@ export const calculateWolfBets = (
       const effectiveHV = computeWolfStateHoleValue(config, state);
       const nW = validWinners.length;
       const nL = validLosers.length;
-      const amountPerPair = nW > 0 && nL > 0 ? effectiveHV / (nW * nL) : effectiveHV;
+      const wolfSideCount = result === 'won' ? nW : nL;
+      const amountPerPair = wolfSideCount > 0 ? effectiveHV / wolfSideCount : effectiveHV;
       const desc = state.wentSolo
         ? (isAllIn ? `Loba All-in Solo · H${state.holeNumber}` : `Loba Sola ×2 · H${state.holeNumber}`)
         : (isAllIn ? `Loba All-in · H${state.holeNumber}` : `La Loba · H${state.holeNumber}`);
@@ -359,9 +361,9 @@ export const buildWolfHoleDetails = (
       partnerNames: state.partnerIds.map(id => players.find(p => p.id === id)?.name ?? '?'),
       wentSolo: state.wentSolo,
       result: freshResult,
-      effectiveAmount: wolfTeam.length > 0 && rivalTeam.length > 0
+      effectiveAmount: state.redemptionMode === 'all_in' && wolfTeam.length > 0 && rivalTeam.length > 0
         ? computeWolfStateHoleValue(config, state) / (wolfTeam.length * rivalTeam.length)
-        : computeWolfStateHoleValue(config, state),
+        : computeWolfStateHoleValue(config, state) / Math.max(wolfTeam.length, 1),
       carryoverHoles: state.carryoverHoles,
       scoresByPlayer,
       teamWolfScore: resolved.teamWolfScore,
