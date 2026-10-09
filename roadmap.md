@@ -2,6 +2,7 @@
 ## League mobile detail
 - [x] Show total points and Fecha/Lugar/Puntos/Gross/Neto within phone width; remove standings avatars (verified at 367px).
 - [x] Jornadas tab: net score and points on a single row per player (verified at 367px, list still scrolls to the last row).
+- [x] Detalle tab: jornada history numbers centered under their column titles (verified at 367px).
 ## Wolf-only update
 - [x] Total hole value, divided payouts and Wolf-only persistence compatibility
 - [x] Optional H18 acceptance, normal/all-in mode and partner/solo choice

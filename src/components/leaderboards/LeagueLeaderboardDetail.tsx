@@ -484,11 +484,11 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                             <tr className="text-[10px] uppercase tracking-wide text-muted-foreground border-b border-border">
                               <th className="text-left font-medium px-2 py-1.5">{trs('Fecha')}</th>
                               <th className="text-center font-medium px-1 py-1.5">{trs('Lugar')}</th>
-                              <th className="text-right font-medium px-1 py-1.5">
+                              <th className="text-center font-medium px-1 py-1.5">
                                 {rules.scoring_system === 'points' ? trs('Puntos') : trs(scoringLabel)}
                               </th>
-                              <th className="text-right font-medium px-1 py-1.5">{trs('Gross')}</th>
-                              <th className="text-right font-medium px-2 py-1.5">{trs('Neto')}</th>
+                              <th className="text-center font-medium px-1 py-1.5">{trs('Gross')}</th>
+                              <th className="text-center font-medium px-2 py-1.5">{trs('Neto')}</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-border">
@@ -503,7 +503,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                                     {j.result.position}°
                                   </span>
                                 </td>
-                                <td className="text-right px-1">
+                                <td className="text-center px-1">
                                   {j.result.points_earned !== null && j.result.points_earned !== undefined ? (
                                     <span className="text-primary font-semibold">{j.result.points_earned}</span>
                                   ) : (
@@ -512,10 +512,10 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
                                     </span>
                                   )}
                                 </td>
-                                <td className="text-right px-1 text-muted-foreground tabular-nums">
+                                <td className="text-center px-1 text-muted-foreground tabular-nums">
                                   {j.gross ?? '—'}
                                 </td>
-                                <td className="text-right px-2 text-muted-foreground tabular-nums">
+                                <td className="text-center px-2 text-muted-foreground tabular-nums">
                                   {j.net ?? '—'}
                                 </td>
                               </tr>
