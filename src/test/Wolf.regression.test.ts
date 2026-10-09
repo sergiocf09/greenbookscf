@@ -10,7 +10,7 @@ const balance = (bets: ReturnType<typeof calculateWolfBets>, id: string) => bets
 describe('Wolf total hole value', () => {
   it('60, 2 vs 3: each rival pays 60, each winner +90', () => {
     const bets = calculateWolfBets(players, config, [state]);
-    expect(computeAmountPerPair(config, 0, false, 2)).toBe(30);
+    expect(computeAmountPerPair(config, 0, false, 2, 3)).toBe(30);
     expect(balance(bets, 'p0')).toBe(90);
     expect(balance(bets, 'p2')).toBe(-60);
     expect(bets.filter(b => b.amount > 0).reduce((s, b) => s + b.amount, 0)).toBe(180);
@@ -19,12 +19,29 @@ describe('Wolf total hole value', () => {
   it('60, 1 vs 4 solo: each rival pays 120, Loba +480', () => {
     const bets = calculateWolfBets(players, config, [{ ...state, partnerIds: [], wentSolo: true }]);
     expect(computeEffectiveHoleValue(config, 0, true)).toBe(120);
-    expect(computeAmountPerPair(config, 0, true, 1)).toBe(120);
+    expect(computeAmountPerPair(config, 0, true, 1, 4)).toBe(120);
     expect(balance(bets, 'p0')).toBe(480);
     expect(balance(bets, 'p2')).toBe(-120);
   });
-  it('60, 1 vs 3 normal has pair 20 and wolf total 60', () => {
-    expect(computeAmountPerPair(config, 0, false, 1)).toBe(60);
+  it('60, 1 vs 3 normal has pair 60 and wolf total 180', () => {
+    expect(computeAmountPerPair(config, 0, false, 1, 3)).toBe(60);
+  });
+  it('60, 2 vs 2 equal teams: pot splits evenly, each player ±30', () => {
+    const bets = calculateWolfBets(players.slice(0, 4), config, [state]);
+    expect(computeAmountPerPair(config, 0, false, 2, 2)).toBe(15);
+    expect(balance(bets, 'p0')).toBe(30);
+    expect(balance(bets, 'p1')).toBe(30);
+    expect(balance(bets, 'p2')).toBe(-30);
+    expect(balance(bets, 'p3')).toBe(-30);
+    expect(bets.reduce((s, b) => s + b.amount, 0)).toBe(0);
+  });
+  it('60 with 11 carries, 2 vs 2: pot 660, each winner +330 (165 per rival)', () => {
+    const s = { ...state, carryoverHoles: 11 };
+    const bets = calculateWolfBets(players.slice(0, 4), config, [s]);
+    expect(computeAmountPerPair(config, 11, false, 2, 2)).toBe(165);
+    expect(balance(bets, 'p0')).toBe(330);
+    expect(balance(bets, 'p2')).toBe(-330);
+    expect(bets.reduce((s, b) => s + b.amount, 0)).toBe(0);
   });
   it('normal recovery keeps carry and solo only doubles', () => {
     expect(computeWolfStateHoleValue(config, { ...state, redemptionMode: 'normal', carryoverHoles: 2, wentSolo: true })).toBe(360);
