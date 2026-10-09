@@ -366,13 +366,15 @@ export const buildWolfHoleDetails = (
       partnerNames: state.partnerIds.map(id => players.find(p => p.id === id)?.name ?? '?'),
       wentSolo: state.wentSolo,
       result: freshResult,
-      // Monto por jugador del lado Loba: los rivales mueven el valor completo
-      // del hoyo cada uno y el lado Loba reparte el total entre sus integrantes.
+      // Monto neto por jugador del lado Loba.
+      // Equipos iguales: el pozo se reparte parejo (hv / n por jugador).
+      // Equipos desiguales: cada jugador del lado mayor mueve el valor
+      // completo del hoyo y el lado menor reparte el total.
       // All-in H18: el total en juego ya es el déficit duplicado y se reparte
       // solo entre los integrantes del lado Loba.
       effectiveAmount: state.redemptionMode === 'all_in'
         ? computeWolfStateHoleValue(config, state) / Math.max(wolfTeam.length, 1)
-        : (computeWolfStateHoleValue(config, state) * Math.max(rivalTeam.length, 1)) / Math.max(wolfTeam.length, 1),
+        : computeAmountPerPair(config, state.carryoverHoles ?? 0, state.wentSolo, wolfTeam.length, rivalTeam.length) * Math.max(rivalTeam.length, 1),
       carryoverHoles: state.carryoverHoles,
       scoresByPlayer,
       teamWolfScore: resolved.teamWolfScore,
