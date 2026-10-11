@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { WolfConfig, WolfHoleState, Player } from '@/types/golf';
-import { getWolfPlayerId, computeEffectiveHoleValue, computeWolfStateHoleValue, resolveWolfHole } from '@/lib/bets/wolf';
+import { getWolfPlayerId, computeAmountPerPair, computeEffectiveHoleValue, computeWolfStateHoleValue, resolveWolfHole } from '@/lib/bets/wolf';
 
 export const useWolf = (roundId: string | null, players: Player[]) => {
   const [wolfConfig, setWolfConfig] = useState<WolfConfig | null>(null);
@@ -61,8 +61,11 @@ export const useWolf = (roundId: string | null, players: Player[]) => {
           const hv = computeWolfStateHoleValue(cfgObj, s);
           const participantCount = cfg.participant_ids?.length || players.length;
           const teamSize = 1 + s.partnerIds.length;
-          const pairs = teamSize * (participantCount - teamSize);
-          s.effectiveAmount = pairs > 0 ? hv / pairs : hv;
+          const rivalCount = participantCount - teamSize;
+          // Neto por jugador del lado Loba, igual que buildWolfHoleDetails.
+          s.effectiveAmount = s.redemptionMode === 'all_in'
+            ? hv / Math.max(teamSize, 1)
+            : computeAmountPerPair(cfgObj, s.carryoverHoles ?? 0, s.wentSolo, teamSize, rivalCount) * Math.max(rivalCount, 1);
           // Derived values stay local; merely viewing a round must not write it.
 
         }

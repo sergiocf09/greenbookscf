@@ -1,7 +1,7 @@
 import { trs } from '@/i18n/tr';
 import React, { useState, useMemo } from 'react';
 import { Player, WolfConfig, WolfHoleState } from '@/types/golf';
-import { computeWolfStateHoleValue } from '@/lib/bets/wolf';
+import { computeAmountPerPair, computeWolfStateHoleValue } from '@/lib/bets/wolf';
 import { disambiguateInitials } from '@/lib/playerInput';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { Button } from '@/components/ui/button';
@@ -49,8 +49,12 @@ export const WolfDecisionPanel: React.FC<WolfDecisionPanelProps> = ({
   const loss = Math.abs(redemptionCandidateLoss);
   const effectiveHV = holeState ? computeWolfStateHoleValue(wolfConfig, holeState) : wolfConfig.holeValue;
   const teamSize = holeState ? 1 + holeState.partnerIds.length : 1;
-  const pairs = teamSize * (participants.length - teamSize);
-  const perPair = pairs > 0 ? effectiveHV / pairs : effectiveHV;
+  const rivalCount = participants.length - teamSize;
+  // Neto por jugador del lado Loba, igual que buildWolfHoleDetails:
+  // all-in se reparte solo en el lado Loba; si no, monto por pareja × rivales.
+  const perPair = holeState?.redemptionMode === 'all_in'
+    ? effectiveHV / Math.max(teamSize, 1)
+    : computeAmountPerPair(wolfConfig, holeState?.carryoverHoles ?? 0, holeState?.wentSolo ?? false, teamSize, rivalCount) * Math.max(rivalCount, 1);
   const mode = holeState?.redemptionMode ?? redemptionBetMode;
   const togglePartner = (id: string) => setSelectedPartners(prev => prev.includes(id)
     ? prev.filter(x => x !== id) : prev.length >= maxPartners ? [...prev.slice(1), id] : [...prev, id]);
