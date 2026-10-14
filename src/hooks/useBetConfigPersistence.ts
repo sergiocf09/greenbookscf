@@ -95,6 +95,7 @@ interface RoundBetConfig {
     segmentMode?: 'total' | 'segments';
     frontAmount?: number;
     backAmount?: number;
+    handicapMode?: 'individual' | 'bilateral';
   };
   puttsGeneral?: {
     enabled: boolean;
@@ -446,6 +447,7 @@ export const useBetConfigPersistence = ({
           segmentMode: dbConfig.medalGeneral.segmentMode ?? prev.medalGeneral.segmentMode,
           frontAmount: dbConfig.medalGeneral.frontAmount ?? prev.medalGeneral.frontAmount,
           backAmount: dbConfig.medalGeneral.backAmount ?? prev.medalGeneral.backAmount,
+          handicapMode: dbConfig.medalGeneral.handicapMode ?? prev.medalGeneral.handicapMode,
         };
       }
 
@@ -621,6 +623,7 @@ export const useBetConfigPersistence = ({
           segmentMode: config.medalGeneral.segmentMode,
           frontAmount: config.medalGeneral.frontAmount,
           backAmount: config.medalGeneral.backAmount,
+          handicapMode: config.medalGeneral.handicapMode,
         },
         puttsGeneral: config.puttsGeneral,
         girGeneral: config.girGeneral,
