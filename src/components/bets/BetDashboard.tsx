@@ -1397,7 +1397,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         playerWithGroup,
         rivalWithGroup,
         confirmedScores,
-        betConfig,
+        effectiveBetConfig,
         course,
         startingHole
       );
