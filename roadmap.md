@@ -1,4 +1,6 @@
 # Roadmap — English translation
+## Bilateral amount persistence
+- [ ] Prevent concurrent round updates from discarding personalized bilateral amounts; verify saving and reloading.
 ## League mobile detail
 - [x] Show total points and Fecha/Lugar/Puntos/Gross/Neto within phone width; remove standings avatars (verified at 367px).
 - [x] Jornadas tab: net score and points on a single row per player (verified at 367px, list still scrolls to the last row).

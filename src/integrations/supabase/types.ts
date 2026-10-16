@@ -3130,6 +3130,14 @@ export type Database = {
         Returns: undefined
       }
       mark_auto_close_pending: { Args: never; Returns: number }
+      merge_bet_config_changes: {
+        Args: { p_base: Json; p_local: Json; p_remote: Json }
+        Returns: Json
+      }
+      merge_round_bet_config: {
+        Args: { p_base_config: Json; p_bet_config: Json; p_round_id: string }
+        Returns: Json
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
