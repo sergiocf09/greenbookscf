@@ -19,6 +19,7 @@ import {
   ZoologicoBetConfig,
 } from '@/types/golf';
 import { devError, devLog, devWarn } from '@/lib/logger';
+import { rebaseBetConfig } from '@/lib/betConfigMerge';
 
 interface UseBetConfigPersistenceProps {
   roundId: string | null;
@@ -319,6 +320,9 @@ export const useBetConfigPersistence = ({
   const isApplyingRemoteRef = useRef(false);
   // Snapshot of last saved config for diffing in audit log
   const prevSavedConfigRef = useRef<any>(null);
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const activeRoundRef = useRef(roundId);
+  activeRoundRef.current = roundId;
 
   // Load bet config from database
   const loadBetConfig = useCallback(async () => {
@@ -359,7 +363,8 @@ export const useBetConfigPersistence = ({
   }, [roundId, setBetConfig]);
 
   // Shared logic to merge DB config into local state
-  const applyDbConfigToState = useCallback((dbConfig: RoundBetConfig) => {
+  const applyDbConfigToState = useCallback((dbConfig: RoundBetConfig, preserveLocal = false) => {
+    const baseline = prevSavedConfigRef.current;
     setBetConfig(prev => {
       const newConfig = { ...prev };
 
@@ -568,12 +573,12 @@ export const useBetConfigPersistence = ({
         newConfig.roundHoles = (dbConfig as any).roundHoles;
       }
 
-      return newConfig;
+      return preserveLocal && baseline ? rebaseBetConfig(baseline, prev, newConfig) : newConfig;
     });
   }, [setBetConfig]);
 
   // Save bet config to database with concurrency protection
-  const saveBetConfig = useCallback(async (config: BetConfig) => {
+  const performSave = useCallback(async (config: BetConfig, baseline: unknown) => {
     if (!roundId) return;
 
     try {
@@ -679,29 +684,12 @@ export const useBetConfigPersistence = ({
         roundHoles: config.roundHoles,
       } as RoundBetConfig & { roundHoles?: 9 | 18 };
 
-      // Concurrency awareness: the round row can be touched by other players or by
-      // unrelated updates (auto-close flags, status, etc.). Previously a newer
-      // remote updated_at discarded the local edit silently, which made per-pair
-      // amount changes (e.g. Medal 100/200/200) snap back to the previous values.
-      // Now we simply re-sync our timestamp and let the user's edit win.
-      if (lastKnownUpdatedAtRef.current) {
-        const { data: current, error: checkErr } = await supabase
-          .from('rounds')
-          .select('updated_at')
-          .eq('id', roundId)
-          .single();
-
-        if (!checkErr && current?.updated_at && current.updated_at !== lastKnownUpdatedAtRef.current) {
-          devWarn('bet_config changed remotely; applying local edit on top.');
-          lastKnownUpdatedAtRef.current = current.updated_at;
-        }
-      }
-
       savingRef.current = true;
-      // Use RPC so ANY participant (not just organizer) can persist bet_config
-      const { data: updatedAt, error } = await supabase
-        .rpc('update_round_bet_config', {
+      // Atomically merge only this edit, preserving other phones' rival amounts.
+      const { data, error } = await supabase
+        .rpc('merge_round_bet_config', {
           p_round_id: roundId,
+          p_base_config: JSON.parse(JSON.stringify(baseline ?? {})),
           p_bet_config: JSON.parse(JSON.stringify(configToSave)),
         });
 
@@ -712,7 +700,8 @@ export const useBetConfigPersistence = ({
         return;
       }
 
-      const updated = { updated_at: updatedAt as string | null };
+      if (activeRoundRef.current !== roundId) return;
+      const updated = data as { updated_at?: string; bet_config?: RoundBetConfig } | null;
 
       // Register our own save timestamp so we can suppress its Realtime echo
       if (updated?.updated_at) {
@@ -726,7 +715,12 @@ export const useBetConfigPersistence = ({
       }
       devLog('Bet config saved to database');
       const description = diffBetConfigs(prevSavedConfigRef.current, configToSave);
-      prevSavedConfigRef.current = JSON.parse(JSON.stringify(configToSave));
+      if (updated?.bet_config) {
+        const remoteConfig = updated.bet_config;
+        isApplyingRemoteRef.current = true;
+        setBetConfig(prev => rebaseBetConfig(config, prev, { ...prev, ...remoteConfig }));
+        prevSavedConfigRef.current = remoteConfig;
+      }
       if (logEvent && description !== 'Sin cambios detectables') {
         logEvent('bet_config_changed', { description });
       }
@@ -735,17 +729,28 @@ export const useBetConfigPersistence = ({
       savingRef.current = false;
       devError('Error in saveBetConfig:', err);
     }
-  }, [roundId, loadBetConfig, logEvent]);
+  }, [roundId, logEvent, setBetConfig]);
+
+  const saveBetConfig = useCallback((config: BetConfig, baseline = prevSavedConfigRef.current) => {
+    const targetRound = roundId;
+    const task = saveQueueRef.current.then(async () => {
+      if (activeRoundRef.current === targetRound) await performSave(config, baseline);
+    });
+    saveQueueRef.current = task.catch(() => {});
+    return task;
+  }, [roundId, performSave]);
 
 
   // Debounced save on config change
   const debouncedSave = useCallback((config: BetConfig) => {
+    const baseline = prevSavedConfigRef.current;
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
 
     saveTimeoutRef.current = setTimeout(() => {
-      saveBetConfig(config);
+      saveTimeoutRef.current = null;
+      void saveBetConfig(config, baseline);
     }, 500);
   }, [saveBetConfig]);
 
@@ -782,6 +787,8 @@ export const useBetConfigPersistence = ({
         (payload) => {
           const newRecord = payload.new as any;
           if (!newRecord?.bet_config) return;
+          // The RPC response acknowledges our write even if its echo arrives first.
+          if (savingRef.current) return;
 
           const incomingUpdatedAt = newRecord.updated_at as string | undefined;
 
@@ -802,7 +809,8 @@ export const useBetConfigPersistence = ({
           // Apply the remote config — suppress auto-save re-trigger
           isApplyingRemoteRef.current = true;
           const dbConfig = newRecord.bet_config as RoundBetConfig;
-          applyDbConfigToState(dbConfig);
+          applyDbConfigToState(dbConfig, true);
+          prevSavedConfigRef.current = dbConfig;
         }
       )
       .subscribe();

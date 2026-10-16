@@ -78,6 +78,13 @@
       "when": 1791527700301,
       "tag": "0010_league_tie_split_points",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792185626675,
+      "tag": "0011_merge_round_bilateral_config_edits",
+      "breakpoints": true
     }
   ]
 }
