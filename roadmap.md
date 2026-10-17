@@ -24,3 +24,6 @@
 - [x] Stage B: bet setup
 - [x] Stage C: help and onboarding complete; history, stats, rankings, leaderboards, and auth translated
 - [x] Stage D: share images, terms, privacy
+
+## Activity panel indicators
+- [x] Large total-rounds and overall-average badges above the monthly charts, matched size (verified desktop and 367px phone width).
