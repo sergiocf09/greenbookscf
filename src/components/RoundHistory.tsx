@@ -100,6 +100,20 @@ interface RoundHistoryProps {
   onCloneFullRound?: (roundData: FullCloneRoundData) => void;
 }
 
+/**
+ * Indicador destacado del panel de actividad: número grande y etiqueta corta.
+ * Se usa igual para el total de rondas y para el promedio de score, de modo
+ * que ambos se lean como una pareja del mismo tamaño.
+ */
+const ActivityStat: React.FC<{ value: number | string; label: string }> = ({ value, label }) => (
+  <div className="flex shrink-0 items-center gap-2 rounded-xl border border-border bg-muted/60 px-3 py-1.5">
+    <span className="text-3xl font-bold leading-none tabular-nums text-foreground">{value}</span>
+    <span className="text-[10px] font-medium uppercase leading-tight tracking-wide text-muted-foreground">
+      {label}
+    </span>
+  </div>
+);
+
 export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound, onCloneRound, onCloneFullRound }) => {
   const navigate = useNavigate();
   const { profile } = useAuth();
@@ -171,6 +185,9 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
     const totalScoreAll = sorted.reduce((s, [, v]) => s + v.totalScore, 0);
     const totalScoredRounds = sorted.reduce((s, [, v]) => s + v.scoredRounds, 0);
     const globalAvg = totalScoredRounds > 0 ? Math.round(totalScoreAll / totalScoredRounds) : 0;
+    // Total de rondas con score del período mostrado: coincide con la suma de
+    // las barras mensuales de "Rondas por mes".
+    const totalRoundsAll = sorted.reduce((s, [, v]) => s + v.rondas, 0);
 
     // Campos distintos por período
     const now = new Date();
@@ -199,7 +216,7 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
       12: summarizeFields(cutoff12m),
     };
 
-    return { points, globalAvg, fieldsByPeriod };
+    return { points, globalAvg, totalRoundsAll, fieldsByPeriod };
   }, [rounds, dateLocale]);
 
   const fetchRounds = async () => {
@@ -797,7 +814,13 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
 
                     {/* Gráfica 1: Rondas por mes */}
                     <div>
-                      <p className="text-xs text-muted-foreground mb-2">{trs("Rondas por mes")}</p>
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <p className="text-xs text-muted-foreground">{trs("Rondas por mes")}</p>
+                        <ActivityStat
+                          value={activityData.totalRoundsAll}
+                          label={trs("Rondas jugadas")}
+                        />
+                      </div>
                       <ResponsiveContainer width="100%" height={150}>
                         <BarChart data={activityData.points} margin={{ top: 4, right: 8, left: -24, bottom: 0 }} barSize={20}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
@@ -836,11 +859,12 @@ export const RoundHistory: React.FC<RoundHistoryProps> = ({ onClose, onViewRound
 
                     {/* Gráfica 2: Score promedio por mes */}
                     <div>
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center justify-between gap-2 mb-2">
                         <p className="text-xs text-muted-foreground">{trs("Score promedio por mes")}</p>
-                        <span className="text-[11px] text-muted-foreground">
-                          {trs('Prom. global:')} <span className="font-semibold text-foreground">{activityData.globalAvg}</span>
-                        </span>
+                        <ActivityStat
+                          value={activityData.globalAvg}
+                          label={trs("Prom. global")}
+                        />
                       </div>
                       <ResponsiveContainer width="100%" height={150}>
                         <LineChart data={activityData.points} margin={{ top: 6, right: 8, left: -24, bottom: 0 }}>
