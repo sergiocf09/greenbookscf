@@ -101,14 +101,15 @@ interface RoundHistoryProps {
 }
 
 /**
- * Indicador destacado del panel de actividad: número grande y etiqueta corta.
- * Se usa igual para el total de rondas y para el promedio de score, de modo
- * que ambos se lean como una pareja del mismo tamaño.
+ * Indicador destacado del panel de actividad: número grande y etiqueta en dos
+ * renglones con letra pequeña. El ancho del bloque es fijo, de modo que el
+ * total de rondas y el promedio global se lean como una pareja de exactamente
+ * la misma longitud.
  */
 const ActivityStat: React.FC<{ value: number | string; label: string }> = ({ value, label }) => (
-  <div className="flex shrink-0 items-center gap-2 rounded-xl border border-border bg-muted/60 px-3 py-1.5">
+  <div className="flex w-[128px] shrink-0 items-center justify-end gap-2 rounded-xl border border-border bg-muted/60 px-3 py-1.5">
     <span className="text-3xl font-bold leading-none tabular-nums text-foreground">{value}</span>
-    <span className="text-[10px] font-medium uppercase leading-tight tracking-wide text-muted-foreground">
+    <span className="w-[48px] text-[9px] font-medium uppercase leading-[12px] tracking-wide text-muted-foreground">
       {label}
     </span>
   </div>
