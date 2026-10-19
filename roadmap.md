@@ -1,4 +1,7 @@
 # Roadmap — English translation
+## Historical balances video revision
+- [x] Produce vertical green-branded revision using Rodrigo's real results, fictional names throughout, upbeat instrumental music and retained chimes (v3 complete, 74s: all scenes incl. vs-one-rival and per-day/sliding).
+- [x] Provide a companion export with chimes only for adding music in Instagram without losing click sounds (v3_solo-efectos; audio verified different from main, visuals identical).
 ## Bilateral amount persistence
 - [x] Prevent concurrent round updates from discarding personalized bilateral amounts; merge tests pass and Sergio's live save/reload verified with original amounts restored.
 ## League mobile detail
