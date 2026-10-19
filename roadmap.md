@@ -1,4 +1,6 @@
 # Roadmap — English translation
+## Results and bets reel
+- [ ] Create a vertical reel showing bilateral amount editing, individual Front/Back pressures and foursome hole details, H18 balances, WhatsApp share image and verified end-of-round email behavior; preserve fictional names and accurate figures.
 ## Historical balances video revision
 - [x] Produce vertical green-branded revision using Rodrigo's real results, fictional names throughout, upbeat instrumental music and retained chimes (v3 complete, 74s: all scenes incl. vs-one-rival and per-day/sliding).
 - [x] Provide a companion export with chimes only for adding music in Instagram without losing click sounds (v3_solo-efectos; audio verified different from main, visuals identical).
