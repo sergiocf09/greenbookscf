@@ -1,5 +1,6 @@
 # Roadmap — English translation
 ## Results and bets reel
+- [ ] Record a new reel from real screens in Sergio's account, with readable pauses and zoom in/out. Latest recording attempt timed out without an MP4: real setup/H17/H18/balance stills captured, but bilateral edit, assigned Foursome details, pressure hole breakdown, share view and editing/export remain incomplete. No emails/messages sent; agent reports deleting the fictional test round via UI. Do not substitute animated UI recreations.
 - [x] Export the revised vertical results/bets reel with bilateral edits, pressure/foursome details, H18 footage, final balances, share and email previews (v3, 61s, 1080×1920; music/chimes and chimes-only). No emails or messages sent; prior recording reports test-round deletion. Final balances use masked original header; previews are reconstructed with fictional names and matching totals. Frames/transitions checked, but continuous playback, listening and phone legibility remain unverified; deliver as a review draft.
 - [x] Re-export the same reel at 0.75× for slower reading (81.3s, 1080×1920; music/chimes and chimes-only). Frames at 6/24/48/72s and the stretched audio track checked; continuous phone playback and listening still unverified.
 ## Historical balances video revision
