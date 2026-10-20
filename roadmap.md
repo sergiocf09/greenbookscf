@@ -1,6 +1,7 @@
 # Roadmap — English translation
 ## Results and bets reel
 - [x] Export the revised vertical results/bets reel with bilateral edits, pressure/foursome details, H18 footage, final balances, share and email previews (v3, 61s, 1080×1920; music/chimes and chimes-only). No emails or messages sent; prior recording reports test-round deletion. Final balances use masked original header; previews are reconstructed with fictional names and matching totals. Frames/transitions checked, but continuous playback, listening and phone legibility remain unverified; deliver as a review draft.
+- [x] Re-export the same reel at 0.75× for slower reading (81.3s, 1080×1920; music/chimes and chimes-only). Frames at 6/24/48/72s and the stretched audio track checked; continuous phone playback and listening still unverified.
 ## Historical balances video revision
 - [x] Produce vertical green-branded revision using Rodrigo's real results, fictional names throughout, upbeat instrumental music and retained chimes (v3 complete, 74s: all scenes incl. vs-one-rival and per-day/sliding).
 - [x] Provide a companion export with chimes only for adding music in Instagram without losing click sounds (v3_solo-efectos; audio verified different from main, visuals identical).
