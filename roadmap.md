@@ -1,4 +1,6 @@
 # Roadmap — English translation
+## San Gil course correction
+- [ ] Compare supplied San Gil card, correct course holes/yardages, confirm tee ratings, and verify safe refresh instructions for Rodrigo's active October 23 round without changing closed history.
 ## Results and bets reel
 - [ ] Complete missing real-screen scenes: bilateral edit/save, assigned Foursome details, pressure hole breakdown and share view. Specialized recording attempts did not capture these; v5 is only a 101s draft from recovered screenshots, with zoom/chimes. Captions briefly overlap during crossfades and close-up crops right-side amounts; motion playback remains unverified. No new round or emails/messages in latest run. Do not label this complete or substitute recreated UI.
 - [x] Export the revised vertical results/bets reel with bilateral edits, pressure/foursome details, H18 footage, final balances, share and email previews (v3, 61s, 1080×1920; music/chimes and chimes-only). No emails or messages sent; prior recording reports test-round deletion. Final balances use masked original header; previews are reconstructed with fictional names and matching totals. Frames/transitions checked, but continuous playback, listening and phone legibility remain unverified; deliver as a review draft.
