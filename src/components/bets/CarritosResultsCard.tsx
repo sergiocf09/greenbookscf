@@ -240,7 +240,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
       ? 'LowBall'
       : results.scoringType === 'highBall'
         ? 'HighBall'
-        : 'Suma';
+        : 'LowBall + HighBall';
   
   // Payment: Each loser pays 50% of their share to EACH winner
   // Total loss is split between 2 losers, then each loser splits their half between 2 winners
@@ -422,13 +422,13 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                           detail={detail}
                         />
                         <div className="pt-1 border-t border-border/50">
-                          {(results.scoringType === 'lowBall' || results.scoringType === 'all') && (
+                          {(results.scoringType === 'lowBall' || results.scoringType === 'combined' || results.scoringType === 'all') && (
                             <p className="flex justify-between"><span>{trs("Bola Baja")}</span><span className="tabular-nums">{getWinnerText(detail.lowBallWinner)}</span></p>
                           )}
-                          {(results.scoringType === 'highBall' || results.scoringType === 'all') && (
+                          {(results.scoringType === 'highBall' || results.scoringType === 'combined' || results.scoringType === 'all') && (
                             <p className="flex justify-between"><span>{trs("Bola Alta")}</span><span className="tabular-nums">{getWinnerText(detail.highBallWinner)}</span></p>
                           )}
-                          {(results.scoringType === 'combined' || results.scoringType === 'all') && (
+                          {results.scoringType === 'all' && (
                             <p className="flex justify-between"><span>{trs("Suma")}</span><span className="tabular-nums">{getWinnerText(detail.combinedWinner)}</span></p>
                           )}
                           <p className="flex justify-between font-medium"><span>{trs("Puntos")}</span><span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span></p>
@@ -499,13 +499,13 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                           detail={detail}
                         />
                         <div className="pt-1 border-t border-border/50">
-                          {(results.scoringType === 'lowBall' || results.scoringType === 'all') && (
+                          {(results.scoringType === 'lowBall' || results.scoringType === 'combined' || results.scoringType === 'all') && (
                             <p className="flex justify-between"><span>{trs("Bola Baja")}</span><span className="tabular-nums">{getWinnerText(detail.lowBallWinner)}</span></p>
                           )}
-                          {(results.scoringType === 'highBall' || results.scoringType === 'all') && (
+                          {(results.scoringType === 'highBall' || results.scoringType === 'combined' || results.scoringType === 'all') && (
                             <p className="flex justify-between"><span>{trs("Bola Alta")}</span><span className="tabular-nums">{getWinnerText(detail.highBallWinner)}</span></p>
                           )}
-                          {(results.scoringType === 'combined' || results.scoringType === 'all') && (
+                          {results.scoringType === 'all' && (
                             <p className="flex justify-between"><span>{trs("Suma")}</span><span className="tabular-nums">{getWinnerText(detail.combinedWinner)}</span></p>
                           )}
                           <p className="flex justify-between font-medium"><span>{trs("Puntos")}</span><span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span></p>
