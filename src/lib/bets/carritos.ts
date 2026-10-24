@@ -112,9 +112,11 @@ export const calculateCarritosBets = (
       return score.strokes - sr;
     };
 
-    const includeLowBall = cfg.scoringType === 'lowBall' || cfg.scoringType === 'all';
-    const includeHighBall = cfg.scoringType === 'highBall' || cfg.scoringType === 'all';
-    const includeCombined = cfg.scoringType === 'combined' || cfg.scoringType === 'all';
+    // 'combined' = "Bola Baja + Bola Alta": low vs low and high vs high (2 points).
+    // 'all' adds the team sum as a third point.
+    const includeLowBall = cfg.scoringType === 'lowBall' || cfg.scoringType === 'combined' || cfg.scoringType === 'all';
+    const includeHighBall = cfg.scoringType === 'highBall' || cfg.scoringType === 'combined' || cfg.scoringType === 'all';
+    const includeCombined = cfg.scoringType === 'all';
 
     const getHolePoints = (holeNum: number): { pA: number; pB: number } | null => {
       const a1 = getNet(teamA[0], holeNum), a2 = getNet(teamA[1], holeNum);

@@ -636,9 +636,11 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         return { gross: score.strokes, hcp: displayHcp, net: score.strokes - hcp };
       };
 
-      const includeLowBall = scoringType === 'lowBall' || scoringType === 'all';
-      const includeHighBall = scoringType === 'highBall' || scoringType === 'all';
-      const includeCombined = scoringType === 'combined' || scoringType === 'all';
+      // 'combined' = "Bola Baja + Bola Alta": low vs low and high vs high (2 points).
+      // 'all' adds the team sum as a third point.
+      const includeLowBall = scoringType === 'lowBall' || scoringType === 'combined' || scoringType === 'all';
+      const includeHighBall = scoringType === 'highBall' || scoringType === 'combined' || scoringType === 'all';
+      const includeCombined = scoringType === 'all';
 
       const getHolePoints = (holeNum: number): {
         pointsA: number;
