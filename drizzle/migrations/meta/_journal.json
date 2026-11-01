@@ -92,6 +92,13 @@
       "when": 1792379150363,
       "tag": "0012_paywall_date_2026_11_07",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793575876742,
+      "tag": "0013_fix_profiles_update_recursion",
+      "breakpoints": true
     }
   ]
 }
