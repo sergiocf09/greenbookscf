@@ -1726,11 +1726,30 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   // Players to display in Tabla General based on mode
   // 'group' mode: Only players from the selected group
   // 'all' mode: Players from selected group + cross-group rivals of each player (for expanded view)
+  // Founder flag resolved from profiles so the star shows regardless of how players were loaded
+  const [founderProfileIds, setFounderProfileIds] = useState<Set<string>>(new Set());
+  const founderLookupKey = useMemo(
+    () => Array.from(new Set(players.map(p => p.profileId).filter(Boolean) as string[])).sort().join(','),
+    [players]
+  );
+  useEffect(() => {
+    if (!founderLookupKey) return;
+    let cancelled = false;
+    (async () => {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data } = await supabase.from('profiles').select('id').eq('is_founder', true).in('id', founderLookupKey.split(','));
+      if (!cancelled && data) setFounderProfileIds(new Set(data.map((r: { id: string }) => r.id)));
+    })();
+    return () => { cancelled = true; };
+  }, [founderLookupKey]);
+
   const tablaGeneralPlayers = useMemo(() => {
     // Both modes show only the selected group's players in the main list
     // The difference is in the expanded view (handled separately)
-    return getPlayersForGroup(displayGroupIndex, players, playerGroups);
-  }, [displayGroupIndex, players, playerGroups]);
+    return getPlayersForGroup(displayGroupIndex, players, playerGroups).map(p =>
+      p.isFounder || !p.profileId || !founderProfileIds.has(p.profileId) ? p : { ...p, isFounder: true }
+    );
+  }, [displayGroupIndex, players, playerGroups, founderProfileIds]);
 
   // Summaries restricted to bets where BOTH players belong to the currently selected group.
   // This is what "Solo Grupo" should use for the main totals/sum.
