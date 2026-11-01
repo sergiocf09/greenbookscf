@@ -69,7 +69,8 @@ export const ProfileDialog: React.FC<ProfileDialogProps> = ({ open, onOpenChange
     if (user) {
       setNewEmail(user.email || '');
     }
-  }, [profile, user, section]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id, user?.id, section]);
 
   const reAuthenticate = async (): Promise<boolean> => {
     if (!user?.email) return false;
