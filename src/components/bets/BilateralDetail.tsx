@@ -12,6 +12,7 @@ import { getCrossGroupPairBalance, isCrossGroupPairInMap } from '@/lib/crossGrou
 import { calculateConejaBets } from '@/lib/conejaCalculations';
 import { calculateBloquesForPair, getBloquesPairKey, type BloqueResult } from '@/lib/bets/bloques';
 import { BloquesStrip } from './BloquesStrip';
+import { BloquesLastBlockPress } from './BloquesLastBlockPress';
 import { detectScoreBasedMarkers, mergeMarkers } from '@/lib/scoreDetection';
 import { getMedalGeneralBilateralResult, getStablefordBilateralResult } from './GroupBetsCard';
 import { RayasSegmentPopover } from './RayasSegmentPopover';
@@ -420,12 +421,11 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
     updateBetOverride(overrideLabel, { enabled });
   };
 
-  // Bump last-block multiplier for Bloques (1 → 2 → 3 → 4 → 5 → 1).
-  const bumpBloquesLastBlockMultiplier = () => {
-    if (!onBetConfigChange) return;
+  // Optional final-block pressure is saved independently for this unordered pair.
+  const setBloquesLastBlockPress = (pressed: boolean) => {
+    if (!onBetConfigChange || isHistorical) return;
     const pairKey = getBloquesPairKey(player.id, rival.id);
-    const current = effectiveBetConfig.bloques?.lastBlockMultipliers?.[pairKey] ?? 1;
-    const next = current >= 5 ? 1 : current + 1;
+    const next = pressed ? 2 : 1;
     const baseBloques = betConfig.bloques ?? effectiveBetConfig.bloques;
     onBetConfigChange({
       ...betConfig,
@@ -997,7 +997,8 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
           effectiveBetConfig.bloques.holesPerBlock,
           effectiveAmt,
           effectiveCarry,
-          lastBlockMult
+          lastBlockMult,
+          effectiveBetConfig.roundHoles ?? 18
         );
 
         const wonByPlayer: number[] = [];
