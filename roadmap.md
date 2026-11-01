@@ -1,4 +1,6 @@
 # Roadmap — English translation
+## Bloques last-block press
+- [ ] Review existing last-block selection and make optional ×2 pressure clear per bilateral; verify calculation and UI.
 ## San Gil course correction
 - [x] Corrected ten San Gil stroke indices and all tee yardages against supplied card; pars and supplied tee ratings already match. Repaired only two derived scores in Rodrigo's active October 23 round; 40 captures retained, zero allocation mismatches, no snapshot created. Two regression tests pass. All players must reload the same round to discard old local course data; refreshed phone display not exercised. Closed rounds untouched. Yellow card 5810 vs screenshot 5830 discrepancy disclosed.
 ## Results and bets reel
