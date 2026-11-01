@@ -4,6 +4,12 @@ import { mergeBetConfigChanges } from '@/lib/betConfigMerge';
 const override = (rival: string, amount: number) => ({ playerAId: 'sergio', playerBId: rival, betType: 'Medal Front 9', enabled: true, amountOverride: amount });
 
 describe('bilateral amount persistence', () => {
+  it('preserves final-block presses for different rivals across phones', () => {
+    const base = { bloques: { lastBlockMultipliers: {} } };
+    const local = { bloques: { lastBlockMultipliers: { a__b: 2 } } };
+    const remote = { bloques: { lastBlockMultipliers: { a__c: 2 } } };
+    expect(mergeBetConfigChanges(base, local, remote)).toEqual({ bloques: { lastBlockMultipliers: { a__b: 2, a__c: 2 } } });
+  });
   it('preserves separate rival edits from concurrent phones', () => {
     const base = { betOverrides: [override('a', 50), override('b', 50)] };
     const local = { betOverrides: [override('a', 100), override('b', 50)] };
