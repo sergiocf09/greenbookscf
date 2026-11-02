@@ -3067,8 +3067,26 @@ const Index = () => {
         invitations={crossInvitations}
         isAccepting={isAcceptingCross}
         isDeclining={isDecliningCross}
-        onAccept={async (id) => { await acceptCrossInvitation(id); refetchCrossBets(); }}
-        onDecline={declineCrossInvitation}
+        onAccept={async (id) => {
+          const en = document.documentElement.lang?.startsWith('en') || localStorage.getItem('i18nextLng')?.startsWith('en');
+          try {
+            await acceptCrossInvitation(id);
+            refetchCrossBets();
+            toast.success(en ? 'Card crossing accepted' : 'Cruce de tarjeta aceptado');
+          } catch (err: any) {
+            const msg = String(err?.message || '');
+            toast.error(
+              msg.includes('subscription_required') ? (en ? 'A Pro plan is required for both players' : 'Se requiere plan Pro para ambos jugadores')
+              : msg.includes('invitation_not_pending') ? (en ? 'This invitation is no longer pending' : 'Esta invitación ya no está pendiente')
+              : (en ? 'Could not accept the crossing. Try again.' : 'No se pudo aceptar el cruce. Intenta de nuevo.')
+            );
+          }
+        }}
+        onDecline={async (id) => {
+          const en = document.documentElement.lang?.startsWith('en') || localStorage.getItem('i18nextLng')?.startsWith('en');
+          try { await declineCrossInvitation(id); }
+          catch { toast.error(en ? 'Could not decline the invitation' : 'No se pudo rechazar la invitación'); }
+        }}
       />
 
       {crossBetTarget && (
