@@ -6,7 +6,8 @@ import { trs } from '@/i18n/tr';
  * 
  * CRITICAL: Historical totals are read from round_snapshots.balances, the same
  * immutable source used by the historical detail view. It does NOT rely on
- * recalculated ledger entries, vsBalances from live tables, or player_vs_player.
+ * recalculated round ledger entries, vsBalances from live tables, or player_vs_player.
+ * Cross-card settlements are added separately through get_my_cross_bet_history.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
