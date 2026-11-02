@@ -302,6 +302,7 @@ export const useRoundManagement = ({
             profiles!round_players_profile_id_fkey(id, display_name, initials, avatar_color, current_handicap)
           `)
           .eq('profile_id', profile.id)
+          .eq('is_cross_only', false)
           .order('joined_at', { ascending: false });
 
         if (rpError || !roundPlayers?.length) {
@@ -409,7 +410,8 @@ export const useRoundManagement = ({
             supabase
               .from('round_players')
               .select('id, profile_id, handicap_for_round, group_id, guest_name, guest_initials, guest_color, tee_color, is_admin')
-              .eq('round_id', activeRound.id) as any
+              .eq('round_id', activeRound.id)
+              .eq('is_cross_only', false) as any
           );
 
           if (!allRoundPlayers?.length) {

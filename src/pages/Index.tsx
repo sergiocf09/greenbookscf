@@ -683,6 +683,7 @@ const Index = () => {
           .from('round_players')
           .select('id, round_id')
           .eq('profile_id', profile.id)
+          .eq('is_cross_only', false)
           .in('round_id', roundIds);
 
         if (cancelled) return;
@@ -2854,7 +2855,8 @@ const Index = () => {
                     const { data: removedRps, error: removedErr } = await supabase
                       .from('round_players')
                       .select('profile_id, guest_name')
-                      .eq('round_id', roundId);
+                      .eq('round_id', roundId)
+                      .eq('is_cross_only', false);
                     if (removedErr) throw removedErr;
 
                     const removedProfileIds = Array.from(

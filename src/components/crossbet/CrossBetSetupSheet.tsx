@@ -28,14 +28,22 @@ const BetToggleRow: React.FC<BetToggleRowProps> = ({ label, enabled, amount, onT
   </div>
 );
 
-export interface CrossBetConfig {
-  medal?: { enabled: boolean; amount: number };
-  putts?: { enabled: boolean; amount: number };
-  matchPlay?: { enabled: boolean; amount: number };
-  units?: { enabled: boolean; amount: number };
-  manchas?: { enabled: boolean; amount: number };
-  bloques?: { enabled: boolean; amount: number };
-}
+export type CrossBetConfig = Record<string, { enabled: boolean; amount: number }>;
+
+const CROSS_BETS: { key: string; label: string; amount: number }[] = [
+  { key: 'medal', label: 'Medal', amount: 100 },
+  { key: 'pressures', label: 'Presiones', amount: 50 },
+  { key: 'matchPlay', label: 'Match Play', amount: 100 },
+  { key: 'putts', label: 'Putts', amount: 50 },
+  { key: 'skins', label: 'Skins', amount: 50 },
+  { key: 'caros', label: 'Caros', amount: 50 },
+  { key: 'oyeses', label: 'Oyeses', amount: 50 },
+  { key: 'rayas', label: 'Rayas', amount: 50 },
+  { key: 'units', label: 'Unidades', amount: 50 },
+  { key: 'manchas', label: 'Manchas', amount: 50 },
+  { key: 'culebras', label: 'Culebras', amount: 50 },
+  { key: 'bloques', label: 'Bloques', amount: 100 },
+];
 
 interface CrossBetSetupSheetProps {
   open: boolean;
@@ -57,16 +65,10 @@ export const CrossBetSetupSheet: React.FC<CrossBetSetupSheetProps> = ({
   targetCourseName, targetHolesPlayed, slidingStrokes,
   isSending, sendError, onSend,
 }) => {
-  const [config, setConfig] = useState<CrossBetConfig>({
-    medal:     { enabled: true,  amount: 100 },
-    putts:     { enabled: false, amount: 50  },
-    matchPlay: { enabled: false, amount: 100 },
-    units:     { enabled: false, amount: 50  },
-    manchas:   { enabled: false, amount: 50  },
-    bloques:   { enabled: false, amount: 100 },
-  });
+  const [config, setConfig] = useState<CrossBetConfig>(() =>
+    Object.fromEntries(CROSS_BETS.map(b => [b.key, { enabled: b.key === 'medal', amount: b.amount }])));
 
-  const update = (key: keyof CrossBetConfig, patch: Partial<{ enabled: boolean; amount: number }>) =>
+  const update = (key: string, patch: Partial<{ enabled: boolean; amount: number }>) =>
     setConfig(prev => ({ ...prev, [key]: { ...prev[key]!, ...patch } }));
 
   const handleSend = async () => { await onSend(config); onClose(); };
@@ -108,21 +110,13 @@ export const CrossBetSetupSheet: React.FC<CrossBetSetupSheetProps> = ({
         </div>
 
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">{trs("Apuestas del cruce")}</p>
-        <BetToggleRow label="Medal"      enabled={!!config.medal?.enabled}     amount={config.medal?.amount}
-          onToggle={v => update('medal', { enabled: v })}     onAmountChange={v => update('medal', { amount: v })} />
-        <BetToggleRow label="Putts"      enabled={!!config.putts?.enabled}     amount={config.putts?.amount}
-          onToggle={v => update('putts', { enabled: v })}     onAmountChange={v => update('putts', { amount: v })} />
-        <BetToggleRow label="Match Play" enabled={!!config.matchPlay?.enabled} amount={config.matchPlay?.amount}
-          onToggle={v => update('matchPlay', { enabled: v })} onAmountChange={v => update('matchPlay', { amount: v })} />
-        <BetToggleRow label="Unidades"   enabled={!!config.units?.enabled}     amount={config.units?.amount}
-          onToggle={v => update('units', { enabled: v })}     onAmountChange={v => update('units', { amount: v })} />
-        <BetToggleRow label="Manchas"    enabled={!!config.manchas?.enabled}   amount={config.manchas?.amount}
-          onToggle={v => update('manchas', { enabled: v })}   onAmountChange={v => update('manchas', { amount: v })} />
-        <BetToggleRow label={trs("Bloques")}    enabled={!!config.bloques?.enabled}   amount={config.bloques?.amount}
-          onToggle={v => update('bloques', { enabled: v })}   onAmountChange={v => update('bloques', { amount: v })} />
+        {CROSS_BETS.map(b => (
+          <BetToggleRow key={b.key} label={trs(b.label)} enabled={!!config[b.key]?.enabled} amount={config[b.key]?.amount}
+            onToggle={v => update(b.key, { enabled: v })} onAmountChange={v => update(b.key, { amount: v })} />
+        ))}
 
         <p className="text-[10px] text-muted-foreground mt-4 mb-4">
-          {trs("El rival recibirá una invitación. Las apuestas aplican al sliding bilateral que ya tienen entre ustedes.")}
+          {trs("El rival recibirá una invitación. Estas apuestas son solo entre ustedes dos y no dependen de lo configurado en cada ronda.")}
         </p>
 
         {sendError && (

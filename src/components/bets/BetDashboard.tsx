@@ -3872,10 +3872,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 const entry = cfg[b.key];
                 if (entry?.enabled !== undefined) return !!entry.enabled;
                 if (entry?.included !== undefined) return !!entry.included;
-                return b.roundEnabled;
+                return false;
               };
               const amountOf = (b: typeof INDIVIDUAL_BETS[number]) =>
-                Number(cfg[b.key]?.amount ?? b.roundAmount ?? 50);
+                Number(cfg[b.key]?.amount ?? 50);
               const save = async (key: string, patch: Record<string, any>) => {
                 if (!onUpdateCrossBetConfig) return;
                 const b = INDIVIDUAL_BETS.find(x => x.key === key)!;

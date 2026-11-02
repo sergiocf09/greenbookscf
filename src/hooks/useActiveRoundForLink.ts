@@ -32,7 +32,8 @@ export function useActiveRoundForLink() {
       const { data: myRps, error: myErr } = await supabase
         .from('round_players')
         .select('round_id')
-        .eq('profile_id', profile.id);
+        .eq('profile_id', profile.id)
+        .eq('is_cross_only', false);
       if (myErr) throw myErr;
 
       const candidateRoundIds = Array.from(
@@ -74,7 +75,8 @@ export function useActiveRoundForLink() {
           .order('group_number'),
         supabase.from('round_players')
           .select('id, profile_id, group_id, handicap_for_round, guest_name, guest_initials, guest_color')
-          .eq('round_id', activeRoundId),
+          .eq('round_id', activeRoundId)
+          .eq('is_cross_only', false),
       ]);
 
       if (groupsRes.error) throw groupsRes.error;
