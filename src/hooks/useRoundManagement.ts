@@ -1884,13 +1884,23 @@ export const useRoundManagement = ({
           for (const cb of cbs as any[]) {
             const pick = (pid: string) => ((sc ?? []) as any[])
               .filter(r => r.cross_bet_id === cb.cross_bet_id && r.profile_id === pid)
-              .map(r => ({ holeNumber: r.hole_number, strokes: r.strokes, net: r.net_score ?? r.strokes, putts: r.putts }));
-            const lines = computeCrossBet(cb.bet_config ?? {}, pick(cb.initiator_profile_id), pick(cb.target_profile_id));
+              .map(r => ({ holeNumber: r.hole_number, strokes: r.strokes, net: r.net_score ?? r.strokes, putts: r.putts, oyesProximity: r.oyes_proximity, oyesProximitySangron: r.oyes_proximity_sangron, markers: r.markers ?? [] }));
+            const { data: hc } = await supabase.from('profiles').select('id, current_handicap').in('id', [cb.initiator_profile_id, cb.target_profile_id]);
+            const hcp = (id: string) => Number((hc ?? []).find((p: any) => p.id === id)?.current_handicap ?? 0);
+            const lines = computeCrossBet(cb.bet_config ?? {},
+              { profileId: cb.initiator_profile_id, name: cb.initiator_name, handicap: hcp(cb.initiator_profile_id), scores: pick(cb.initiator_profile_id) },
+              { profileId: cb.target_profile_id, name: cb.target_name, handicap: hcp(cb.target_profile_id), scores: pick(cb.target_profile_id) },
+              course, roundState.startingHole);
             for (const l of lines) {
               if (!l.amount) continue;
-              const betType = l.key === 'medal' ? `medal_${l.segment}`
-                : l.key === 'skins' ? ((l.holeNumber ?? 0) <= 9 ? 'skins_front' : 'skins_back')
-                : 'medal_total';
+              const seg = l.segment === 'back' ? 'back' : l.segment === 'front' ? 'front' : 'total';
+              const byKey: Record<string, string> = {
+                medal: `medal_${seg}`, pressures: seg === 'back' ? 'pressure_back' : 'pressure_front',
+                skins: seg === 'back' || (l.holeNumber ?? 0) > 9 ? 'skins_back' : 'skins_front',
+                caros: 'caros', units: 'units', manchas: 'manchas', culebras: 'culebras',
+                rayas: seg === 'back' ? 'rayas_back' : seg === 'front' ? 'rayas_front' : 'rayas_medal_total',
+              };
+              const betType = byKey[l.key] ?? 'medal_total';
               ledgerRecords.push({
                 from_profile_id: l.amount > 0 ? cb.target_profile_id : cb.initiator_profile_id,
                 to_profile_id: l.amount > 0 ? cb.initiator_profile_id : cb.target_profile_id,
