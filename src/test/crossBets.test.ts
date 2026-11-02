@@ -27,4 +27,9 @@ describe('cross bets use the regular engine', () => {
   it('default strokes follow the handicap difference', () => {
     expect(resolveStrokes({}, 'A', 5, 'B', 12)).toEqual({ giverProfileId: 'A', count: 7 });
   });
+  it('medal uses separate front/back/total amounts; 0 skips a segment', () => {
+    const lines = computeCrossBet({ medal: { enabled: true, front: 0, back: 50, total: 200 }, strokes: { giverProfileId: null, count: 0 } },
+      side('A', Array(18).fill(4)), side('B', Array(18).fill(5)), course);
+    expect(crossNet(lines)).toBe(250);
+  });
 });
