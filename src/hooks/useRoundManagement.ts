@@ -1875,15 +1875,16 @@ export const useRoundManagement = ({
         }
       });
 
-      // Card-crossing bets (cruce de tarjeta): settle against the friend's own round.
+      // Card-crossing bets (cruce de tarjeta): settled in their OWN ledger record via
+      // settle_cross_bet — never mixed into finalize_round_bets (the crossed friend is
+      // not a participant of this round). Idempotent: each settlement replaces the previous.
+      const crossSettlements: { id: string; lines: any[] }[] = [];
       try {
         const { data: cbs } = await supabase.rpc('get_cross_bets_for_round', { p_round_id: roundState.id });
         if (cbs && cbs.length) {
           const { data: sc } = await (supabase.rpc as any)('get_cross_bet_scores', { p_round_id: roundState.id });
           const { computeCrossBet } = await import('@/lib/bets/crossBets');
           for (const cb of cbs as any[]) {
-            // Only the round where the crossing was created records it (avoid double counting in the friend's mirrored round).
-            if (cb.origin_round_id && cb.origin_round_id !== roundState.id) continue;
             const pick = (pid: string) => ((sc ?? []) as any[])
               .filter(r => r.cross_bet_id === cb.cross_bet_id && r.profile_id === pid)
               .map(r => ({ holeNumber: r.hole_number, strokes: r.strokes, net: r.net_score ?? r.strokes, putts: r.putts, oyesProximity: r.oyes_proximity, oyesProximitySangron: r.oyes_proximity_sangron, markers: r.markers ?? [] }));
@@ -1893,6 +1894,7 @@ export const useRoundManagement = ({
               { profileId: cb.initiator_profile_id, name: cb.initiator_name, handicap: hcp(cb.initiator_profile_id), scores: pick(cb.initiator_profile_id) },
               { profileId: cb.target_profile_id, name: cb.target_name, handicap: hcp(cb.target_profile_id), scores: pick(cb.target_profile_id) },
               course, roundState.startingHole);
+            const out: any[] = [];
             for (const l of lines) {
               if (!l.amount) continue;
               const seg = l.segment === 'back' ? 'back' : l.segment === 'front' ? 'front' : 'total';
@@ -1902,17 +1904,17 @@ export const useRoundManagement = ({
                 caros: 'caros', units: 'units', manchas: 'manchas', culebras: 'culebras',
                 rayas: seg === 'back' ? 'rayas_back' : seg === 'front' ? 'rayas_front' : 'rayas_medal_total',
               };
-              const betType = byKey[l.key] ?? 'medal_total';
-              ledgerRecords.push({
+              out.push({
                 from_profile_id: l.amount > 0 ? cb.target_profile_id : cb.initiator_profile_id,
                 to_profile_id: l.amount > 0 ? cb.initiator_profile_id : cb.target_profile_id,
                 amount: Math.abs(l.amount),
-                bet_type: betType,
+                bet_type: byKey[l.key] ?? 'medal_total',
                 segment: l.segment,
                 hole_number: l.holeNumber ?? null,
-                description: `Cruce · ${l.label}`,
+                label: l.label,
               });
             }
+            crossSettlements.push({ id: cb.cross_bet_id, lines: out });
           }
         }
       } catch (e) { devWarn('cross bet settlement skipped', e); }
@@ -1930,6 +1932,15 @@ export const useRoundManagement = ({
         await fail('finalizeRoundBets', e, report.attemptId);
         toast.error(trs("Error al finalizar apuestas"));
         return false;
+      }
+
+      // Settle crossings separately (non-fatal: the round closes regardless).
+      for (const cs of crossSettlements) {
+        const { error: cbErr } = await (supabase.rpc as any)('settle_cross_bet', { p_cross_bet_id: cs.id, p_lines: cs.lines });
+        if (cbErr) {
+          devWarn('settle_cross_bet failed', cbErr);
+          toast.warning(trs("La ronda se cerró, pero el cruce quedó pendiente de liquidar"));
+        }
       }
 
       // Generate and save the round snapshot for historical view.
