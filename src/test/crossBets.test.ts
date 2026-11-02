@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { computeCrossBet, crossNet, resolveStrokes } from '@/lib/bets/crossBets';
+import { buildCrossVirtualRound, computeCrossBet, crossNet, resolveStrokes } from '@/lib/bets/crossBets';
+import { calculateAllBets, groupSummariesByType } from '@/lib/betCalculations';
 import type { GolfCourse } from '@/types/golf';
 
 const course: GolfCourse = {
@@ -31,5 +32,15 @@ describe('cross bets use the regular engine', () => {
     const lines = computeCrossBet({ medal: { enabled: true, front: 0, back: 50, total: 200 }, strokes: { giverProfileId: null, count: 0 } },
       side('A', Array(18).fill(4)), side('B', Array(18).fill(5)), course);
     expect(crossNet(lines)).toBe(250);
+  });
+  it('crossing avatar detail total equals the crossing balance', () => {
+    const cfg = { medal: { enabled: true, front: 50, back: 100, total: 200 }, skins: { enabled: true, front: 20, back: 20 }, strokes: { giverProfileId: 'A', count: 3 } };
+    const a = side('A', [4, 5, 3, 4, 4, 6, 4, 4, 5, 4, 4, 3, 5, 4, 4, 4, 5, 4]);
+    const b = side('B', [5, 5, 4, 4, 5, 5, 4, 5, 5, 4, 5, 4, 4, 5, 4, 4, 5, 5]);
+    const v = buildCrossVirtualRound(cfg, a, b);
+    const grouped = groupSummariesByType('A', 'B', calculateAllBets(v.players, v.scores, v.config, course, 1, v.common));
+    const total = Object.values(grouped).reduce((s, g) => s + g.total, 0);
+    expect(total).toBe(crossNet(computeCrossBet(cfg, a, b, course)));
+    expect(total).not.toBe(0);
   });
 });
