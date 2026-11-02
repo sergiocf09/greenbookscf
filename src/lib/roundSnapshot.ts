@@ -3,8 +3,9 @@
  *
  * Single Source of Truth Contract (noRecalcContract):
  *   - Once closed, round_snapshots.snapshot_json is the ONLY source for historical
- *     views and accumulated balances. Historical UI must NEVER recalculate from
- *     hole_scores, round_handicaps, ledger_transactions or any other relational table.
+ *     intra-round views and balances. Historical UI must NEVER recalculate round bets.
+ *     Cross-card settlements are separate records, added through the own-history RPC;
+ *     they never alter this snapshot or its participant/round counts.
  *
  * Integrity guarantees enforced at generation time:
  *   1. Symmetry:  matrix[A][B] == -matrix[B][A] for every pair.

@@ -1202,6 +1202,7 @@ export type Database = {
           amount: number
           bet_type: Database["public"]["Enums"]["bet_type"]
           created_at: string
+          cross_bet_id: string | null
           description: string | null
           from_profile_id: string
           hole_number: number | null
@@ -1214,6 +1215,7 @@ export type Database = {
           amount: number
           bet_type: Database["public"]["Enums"]["bet_type"]
           created_at?: string
+          cross_bet_id?: string | null
           description?: string | null
           from_profile_id: string
           hole_number?: number | null
@@ -1226,6 +1228,7 @@ export type Database = {
           amount?: number
           bet_type?: Database["public"]["Enums"]["bet_type"]
           created_at?: string
+          cross_bet_id?: string | null
           description?: string | null
           from_profile_id?: string
           hole_number?: number | null
@@ -2935,6 +2938,24 @@ export type Database = {
           initials: string
           profile_id: string
           rounds_played: number
+        }[]
+      }
+      get_my_cross_bet_history: {
+        Args: never
+        Returns: {
+          course_name: string
+          cross_bet_id: string
+          date: string
+          hole_number: number
+          is_final: boolean
+          label: string
+          line_id: string
+          net_amount: number
+          origin_round_id: string
+          own_round_id: string
+          rival_name: string
+          rival_profile_id: string
+          segment: string
         }[]
       }
       get_my_friend_groups: {

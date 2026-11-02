@@ -6,7 +6,8 @@ import { trs } from '@/i18n/tr';
  * 
  * CRITICAL: Historical totals are read from round_snapshots.balances, the same
  * immutable source used by the historical detail view. It does NOT rely on
- * recalculated ledger entries, vsBalances from live tables, or player_vs_player.
+ * recalculated round ledger entries, vsBalances from live tables, or player_vs_player.
+ * Cross-card settlements are added separately through get_my_cross_bet_history.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -54,6 +55,7 @@ import { PreAppBalanceSheet } from '@/components/balances/PreAppBalanceSheet';
 import { History } from 'lucide-react';
 import { isValidSnapshot, RoundSnapshot } from '@/lib/roundSnapshot';
 import { formatPlayerName } from '@/lib/playerInput';
+import { fetchCrossHistory, crossHistoryTotal, type CrossHistoryLine } from '@/lib/crossBetHistory';
 
 interface RivalBalance {
   id: string;
@@ -238,6 +240,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
 
   // Cache all snapshots to reuse in detail view
   const [allSnapshots, setAllSnapshots] = useState<RoundSnapshot[]>([]);
+  const [crossHistory, setCrossHistory] = useState<CrossHistoryLine[]>([]);
 
   const { summaryByRival, addEntry: addPreApp, deleteEntry: deletePreApp, updateEntry: updatePreApp } = usePreAppBalances();
   const preAppMap = summaryByRival();
@@ -275,6 +278,9 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
           .eq('rounds.status', 'completed');
 
         if (error) throw error;
+
+        const crossingLines = await fetchCrossHistory();
+        setCrossHistory(crossingLines);
 
         const snapshots: RoundSnapshot[] = [];
         // rivalKey -> { netAmount, roundsPlayed, lastDate, rivalInfo }
@@ -335,6 +341,19 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
         }
 
         setAllSnapshots(snapshots);
+
+        // Separate settled crossing records: no extra round or synthetic participant.
+        for (const line of crossingLines) {
+          const key = `profile:${line.rival_profile_id}`;
+          const existing = rivalMap.get(key);
+          if (existing) {
+            existing.netAmount += line.net_amount;
+            if (!existing.lastDate || line.date > existing.lastDate) existing.lastDate = line.date;
+          } else {
+            rivalMap.set(key, { netAmount: line.net_amount, roundsPlayed: 0, lastDate: line.date,
+              rivalName: line.rival_name, rivalProfileId: line.rival_profile_id, isGuest: false });
+          }
+        }
 
         // Resolve profile display info for registered rivals
         const profileIds = [...rivalMap.entries()]
@@ -505,6 +524,12 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
         });
       }
 
+      for (const line of crossHistory.filter(line => line.rival_profile_id === rival.profileId)) {
+        const id = line.own_round_id ?? line.origin_round_id;
+        const existing = sharedRoundsList.find(row => row.roundId === id);
+        if (existing) existing.netAmount += line.net_amount;
+        else sharedRoundsList.push({ roundId: id, date: line.date, courseName: `${i18n.language === 'en' ? 'Crossing' : 'Cruce'} · ${line.course_name}`, netAmount: line.net_amount });
+      }
       sharedRoundsList.sort((a, b) => parseLocalDate(b.date).getTime() - parseLocalDate(a.date).getTime());
       
       setSharedRounds(sharedRoundsList);
@@ -604,7 +629,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
         score = userScores.reduce((sum: number, s: any) => sum + (s.strokes || 0), 0);
       }
 
-      const netAmount = getSnapshotTotalBalance(snap, userPlayer.id);
+      const netAmount = getSnapshotTotalBalance(snap, userPlayer.id) + crossHistoryTotal(crossHistory, snap.roundId);
 
       rows.push({
         roundId: snap.roundId,
@@ -616,11 +641,19 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     }
     rows.sort((a, b) => parseLocalDate(b.date).getTime() - parseLocalDate(a.date).getTime());
     return rows;
-  }, [allSnapshots, profile]);
+  }, [allSnapshots, profile, crossHistory]);
 
   const evolutionData = useMemo(() => {
     // Ordenar rondas de más antigua a más reciente
-    const sorted = [...myRounds].sort(
+    const detached = new Map<string, MyRoundRow>();
+    for (const line of crossHistory) {
+      if (myRounds.some(row => row.roundId === line.own_round_id)) continue;
+      const key = line.own_round_id ?? line.origin_round_id;
+      const previous = detached.get(key);
+      if (previous) previous.netAmount += line.net_amount;
+      else detached.set(key, { roundId: key, date: line.date, courseName: line.course_name, score: 0, netAmount: line.net_amount });
+    }
+    const sorted = [...myRounds, ...detached.values()].sort(
       (a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime()
     );
 
@@ -660,6 +693,11 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
           found = true;
         }
         if (found) netByRound.set(snap.roundId, sum);
+      }
+      for (const line of crossHistory) {
+        if (line.rival_profile_id !== evolutionRivalFilter) continue;
+        const key = line.own_round_id ?? line.origin_round_id;
+        netByRound.set(key, (netByRound.get(key) ?? 0) + line.net_amount);
       }
       filtered = byTime
         .filter(r => netByRound.has(r.roundId))
@@ -702,7 +740,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     }));
 
     return { cumulativePoints, cumulativeTicks, monthlyPoints };
-  }, [myRounds, evolutionFilter, evolutionRivalFilter, allSnapshots, profile, dateLocale]);
+  }, [myRounds, evolutionFilter, evolutionRivalFilter, allSnapshots, profile, dateLocale, crossHistory]);
 
   const betCategoryData = useMemo((): BetCategoryData[] => {
     if (!profile) return [];
@@ -832,9 +870,17 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
     }
 
 
+    for (const line of crossHistory) {
+      if (cutoff && parseLocalDate(line.date) < cutoff) continue;
+      if (betsRivalFilter !== 'all' && line.rival_profile_id !== betsRivalFilter) continue;
+      const category = BET_CATEGORY_MAP[line.label] ?? line.label;
+      addToCategory(category, line.net_amount, false,
+        { id: line.rival_profile_id, name: line.rival_name, profileId: line.rival_profile_id },
+        INCIDENT_CATEGORIES.has(category) ? (line.net_amount > 0 ? 'won' : 'lost') : null);
+    }
     return Array.from(categoryMap.values())
       .sort((a, b) => b.totalAmount - a.totalAmount);
-  }, [allSnapshots, profile, betsTimeFilter, betsRivalFilter]);
+  }, [allSnapshots, profile, betsTimeFilter, betsRivalFilter, crossHistory]);
 
   /** Lista de rivales disponibles para filtrar (de allSnapshots) */
   const betsRivalOptions = useMemo(() => {
@@ -847,11 +893,12 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
         if (p.profileId) map.set(p.profileId, p.name ?? p.profileId);
       }
     }
+    for (const line of crossHistory) map.set(line.rival_profile_id, line.rival_name);
     const rivals = Array.from(map.entries())
       .map(([v, label]) => ({ value: v, label }))
       .sort((a, b) => a.label.localeCompare(b.label, 'es'));
     return [{ value: 'all', label: 'Todos los rivales' }, ...rivals];
-  }, [allSnapshots, profile]);
+  }, [allSnapshots, profile, crossHistory]);
 
   if (!canAccessHistory) {
     return (
