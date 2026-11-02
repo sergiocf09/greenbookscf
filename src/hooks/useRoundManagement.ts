@@ -1882,6 +1882,8 @@ export const useRoundManagement = ({
           const { data: sc } = await (supabase.rpc as any)('get_cross_bet_scores', { p_round_id: roundState.id });
           const { computeCrossBet } = await import('@/lib/bets/crossBets');
           for (const cb of cbs as any[]) {
+            // Only the round where the crossing was created records it (avoid double counting in the friend's mirrored round).
+            if (cb.origin_round_id && cb.origin_round_id !== roundState.id) continue;
             const pick = (pid: string) => ((sc ?? []) as any[])
               .filter(r => r.cross_bet_id === cb.cross_bet_id && r.profile_id === pid)
               .map(r => ({ holeNumber: r.hole_number, strokes: r.strokes, net: r.net_score ?? r.strokes, putts: r.putts, oyesProximity: r.oyes_proximity, oyesProximitySangron: r.oyes_proximity_sangron, markers: r.markers ?? [] }));
