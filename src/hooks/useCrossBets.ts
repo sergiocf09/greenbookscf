@@ -35,6 +35,17 @@ export interface CrossBet {
   targetHandicap?: number;
 }
 
+export interface CancelledCrossBet {
+  invitationId: string;
+  initiatorProfileId: string;
+  initiatorName: string;
+  targetProfileId: string;
+  targetName: string;
+  cancelledByName: string | null;
+  wasAccepted: boolean;
+  cancelledAt: string | null;
+}
+
 export function useCrossBets(roundId: string | null) {
   const { profile } = useAuth();
   const queryClient = useQueryClient();
@@ -99,6 +110,26 @@ export function useCrossBets(roundId: string | null) {
     },
   });
 
+  const cancelledQuery = useQuery({
+    queryKey: ['cross-bets-cancelled', roundId],
+    enabled: !!roundId,
+    refetchInterval: 60_000,
+    queryFn: async (): Promise<CancelledCrossBet[]> => {
+      const { data, error } = await (supabase.rpc as any)('get_cancelled_cross_bets_for_round', { p_round_id: roundId });
+      if (error) { devError('useCrossBets cancelled:', error); return []; }
+      return (data ?? []).map((r: any) => ({
+        invitationId: r.invitation_id,
+        initiatorProfileId: r.initiator_profile_id,
+        initiatorName: r.initiator_name,
+        targetProfileId: r.target_profile_id,
+        targetName: r.target_name,
+        cancelledByName: r.cancelled_by_name ?? null,
+        wasAccepted: !!r.was_accepted,
+        cancelledAt: r.cancelled_at,
+      }));
+    },
+  });
+
   const crossScoresQuery = useQuery({
     queryKey: ['cross-bet-scores', roundId],
     enabled: !!roundId && (crossBetsQuery.data?.length ?? 0) > 0,
@@ -130,6 +161,7 @@ export function useCrossBets(roundId: string | null) {
     queryClient.invalidateQueries({ queryKey: ['cross-invitations-pending', profile?.id] });
     if (roundId) queryClient.invalidateQueries({ queryKey: ['cross-bets-round', roundId] });
     if (roundId) queryClient.invalidateQueries({ queryKey: ['cross-invitations-sent', roundId] });
+    if (roundId) queryClient.invalidateQueries({ queryKey: ['cross-bets-cancelled', roundId] });
   };
 
   const sendInvitation = useMutation({
@@ -198,6 +230,7 @@ export function useCrossBets(roundId: string | null) {
       targetHandicap: hcpQuery.data?.[cb.targetProfileId] ?? 0,
     })),
     sentPendingInvitations: sentPendingQuery.data ?? [],
+    cancelledCrossBets: cancelledQuery.data ?? [],
     isLoadingCrossBets: crossBetsQuery.isLoading,
     refetchCrossBets: crossBetsQuery.refetch,
     sendInvitation: sendInvitation.mutateAsync,
