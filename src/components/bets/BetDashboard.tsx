@@ -2036,17 +2036,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         try { await onUpdateCrossBetConfig({ crossBetId: cb.crossBetId, betConfig: next }); }
                         catch (e) { console.error('cross strokes', e); toast.error(trs("No se pudo guardar el cambio del cruce")); }
                       };
-                      const raw = computeCrossBet(cfg, iSide, tSide, course, startingHole);
-                      const mine = isInitiator ? 1 : -1;
-                      const lines = raw.map(l => ({ ...l, amount: l.amount * mine }));
-                      const net = crossNet(lines);
-                      const enabledKeys = INDIVIDUAL_BETS.filter(isIncluded).map(b => b.key);
-                      const fmt = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}$${Math.abs(n).toLocaleString()}`;
-                      const grouped = new Map<string, number>();
-                      lines.forEach(l => {
-                        const k = l.segment === 'hole' ? l.label.replace(/\s*H?\d+$/, '') : l.label;
-                        grouped.set(k, (grouped.get(k) ?? 0) + l.amount);
-                      });
                       return (
                         <>
                         <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-border bg-background px-2 py-1.5">
