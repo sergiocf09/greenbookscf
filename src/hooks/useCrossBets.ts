@@ -86,6 +86,19 @@ export function useCrossBets(roundId: string | null) {
     },
   });
 
+  const sentPendingQuery = useQuery({
+    queryKey: ['cross-invitations-sent', roundId, profile?.id],
+    enabled: !!roundId && !!profile?.id,
+    refetchInterval: 30_000,
+    queryFn: async (): Promise<{ invitationId: string; targetName: string }[]> => {
+      const { data, error } = await supabase.from('cross_bet_invitations')
+        .select('id, target:profiles!cross_bet_invitations_target_profile_id_fkey(display_name)')
+        .eq('round_id', roundId!).eq('initiator_profile_id', profile!.id).eq('status', 'pending');
+      if (error) { devError('useCrossBets sent:', error); return []; }
+      return (data ?? []).map((r: any) => ({ invitationId: r.id, targetName: r.target?.display_name ?? '' }));
+    },
+  });
+
   const crossScoresQuery = useQuery({
     queryKey: ['cross-bet-scores', roundId],
     enabled: !!roundId && (crossBetsQuery.data?.length ?? 0) > 0,
@@ -116,6 +129,7 @@ export function useCrossBets(roundId: string | null) {
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['cross-invitations-pending', profile?.id] });
     if (roundId) queryClient.invalidateQueries({ queryKey: ['cross-bets-round', roundId] });
+    if (roundId) queryClient.invalidateQueries({ queryKey: ['cross-invitations-sent', roundId] });
   };
 
   const sendInvitation = useMutation({
@@ -183,6 +197,7 @@ export function useCrossBets(roundId: string | null) {
       initiatorHandicap: hcpQuery.data?.[cb.initiatorProfileId] ?? 0,
       targetHandicap: hcpQuery.data?.[cb.targetProfileId] ?? 0,
     })),
+    sentPendingInvitations: sentPendingQuery.data ?? [],
     isLoadingCrossBets: crossBetsQuery.isLoading,
     refetchCrossBets: crossBetsQuery.refetch,
     sendInvitation: sendInvitation.mutateAsync,
