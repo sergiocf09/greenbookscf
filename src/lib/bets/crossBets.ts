@@ -44,18 +44,29 @@ export function resolveStrokes(cfg: Record<string, any>, aId: string, aHcp: numb
 
 const on = (cfg: Record<string, any>, k: string) => !!(cfg[k]?.enabled ?? cfg[k]?.included);
 const amt = (cfg: Record<string, any>, k: string) => Math.max(0, Number(cfg[k]?.amount ?? 50));
+/** Bets that allow independent Front/Back/Total amounts, same as in a normal round. */
+export const CROSS_SEGMENTS: Record<string, ('front' | 'back' | 'total')[]> = {
+  medal: ['front', 'back', 'total'],
+  pressures: ['front', 'back', 'total'],
+  putts: ['front', 'back', 'total'],
+  skins: ['front', 'back'],
+  rayas: ['front', 'back', 'total'],
+};
+const seg = (cfg: Record<string, any>, k: string, s: string) =>
+  Math.max(0, Number(cfg[k]?.[s] ?? cfg[k]?.amount ?? 50));
 
 export function buildCrossBetConfig(cfg: Record<string, any>, bilateral: BetConfig['bilateralHandicaps']): BetConfig {
   const c: any = JSON.parse(JSON.stringify(defaultBetConfig));
   const a = (k: string) => amt(cfg, k);
-  if (on(cfg, 'medal')) c.medal = { ...c.medal, enabled: true, frontAmount: a('medal'), backAmount: a('medal'), totalAmount: a('medal') };
-  if (on(cfg, 'pressures')) c.pressures = { ...c.pressures, enabled: true, frontAmount: a('pressures'), backAmount: a('pressures'), totalAmount: a('pressures') };
+  const f = (k: string) => seg(cfg, k, 'front'), b = (k: string) => seg(cfg, k, 'back'), t = (k: string) => seg(cfg, k, 'total');
+  if (on(cfg, 'medal')) c.medal = { ...c.medal, enabled: true, frontAmount: f('medal'), backAmount: b('medal'), totalAmount: t('medal') };
+  if (on(cfg, 'pressures')) c.pressures = { ...c.pressures, enabled: true, frontAmount: f('pressures'), backAmount: b('pressures'), totalAmount: t('pressures') };
   if (on(cfg, 'matchPlay')) c.matchPlay = { ...c.matchPlay, enabled: true, amount: a('matchPlay') };
-  if (on(cfg, 'putts')) c.putts = { ...c.putts, enabled: true, frontAmount: a('putts'), backAmount: a('putts'), totalAmount: a('putts') };
-  if (on(cfg, 'skins')) c.skins = { ...c.skins, enabled: true, frontValue: a('skins'), backValue: a('skins') };
+  if (on(cfg, 'putts')) c.putts = { ...c.putts, enabled: true, frontAmount: f('putts'), backAmount: b('putts'), totalAmount: t('putts') };
+  if (on(cfg, 'skins')) c.skins = { ...c.skins, enabled: true, frontValue: f('skins'), backValue: b('skins') };
   if (on(cfg, 'caros')) c.caros = { ...c.caros, enabled: true, amount: a('caros') };
   if (on(cfg, 'oyeses')) c.oyeses = { ...c.oyeses, enabled: true, amount: a('oyeses') };
-  if (on(cfg, 'rayas')) c.rayas = { ...c.rayas, enabled: true, frontValue: a('rayas'), backValue: a('rayas'), medalTotalValue: a('rayas') };
+  if (on(cfg, 'rayas')) c.rayas = { ...c.rayas, enabled: true, frontValue: f('rayas'), backValue: b('rayas'), medalTotalValue: t('rayas') };
   if (on(cfg, 'units')) c.units = { ...c.units, enabled: true, valuePerPoint: a('units') };
   if (on(cfg, 'manchas')) c.manchas = { ...c.manchas, enabled: true, valuePerPoint: a('manchas') };
   if (on(cfg, 'culebras')) c.culebras = { ...c.culebras, enabled: true, valuePerOccurrence: a('culebras') };
