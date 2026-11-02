@@ -1,4 +1,6 @@
 # Roadmap — English translation
+## Cross-card historical accounting review
+- [ ] Trace first/second close, verify Sergio–Rodrigo ledger and identify why historical results omit the crossing; provide the smallest safe solution without duplicating rounds.
 ## Bloques last-block press
 - [x] Replaced existing ×1–×5 cycle with optional final-block ×2 switch in both bilateral views; kept pair-keyed atomic persistence and corrected nine-hole detail range. Twelve calculation, switch and merge checks pass. Signed-in current round has no Bloques enabled; save/reload in a real Bloques round remains unverified. No live round settings modified.
 ## San Gil course correction
