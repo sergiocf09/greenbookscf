@@ -113,6 +113,13 @@
       "when": 1793633492209,
       "tag": "0015_live_friends_exclude_cross_only",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793636470464,
+      "tag": "0016_cross_bet_scores",
+      "breakpoints": true
     }
   ]
 }
