@@ -169,6 +169,13 @@
       "when": 1793656410752,
       "tag": "0023_cross_settlement_history_and_authority",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793656765288,
+      "tag": "0024_keep_cross_ledger_out_of_round_finalization_guard",
+      "breakpoints": true
     }
   ]
 }
