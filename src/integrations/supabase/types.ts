@@ -3186,6 +3186,10 @@ export type Database = {
         Args: { p_leaderboard_id: string }
         Returns: undefined
       }
+      remove_round_cross_bet: {
+        Args: { p_cross_bet_id: string }
+        Returns: undefined
+      }
       reopen_leaderboard: {
         Args: { p_leaderboard_id: string }
         Returns: boolean
