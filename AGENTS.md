@@ -4,3 +4,4 @@ Friend-group display order is persisted in `friend_groups.sort_order`; all group
 - League player history reads gross and net totals from leaderboard_scores; constrain ScrollArea content and use fixed table columns so horizontal player selectors cannot widen the page.
 - Bloques final-block pressure uses the existing pair-keyed multiplier and one shared switch in both bilateral detail views, so calculation and atomic round persistence stay consistent.
 - Cross bets render as a synthetic `cross:<id>` rival avatar whose BilateralDetail is fed by `buildCrossVirtualRound`; never add the crossed friend to round players or the balance map, so crossings stay isolated and counted once.
+- Snapshot saves recover transport failures by reading back the exact attempt's timestamp and version; never accept an older snapshot or repeat financial writes to recover a lost response.

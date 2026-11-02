@@ -12,6 +12,7 @@ import { restoreMarkerStateFromRows } from '@/lib/markerPersistence';
 import { devError, devLog, devWarn } from '@/lib/logger';
 import { initialsFromPlayerName, validatePlayerName, formatPlayerName } from '@/lib/playerInput';
 import { generateRoundSnapshot } from '@/lib/roundSnapshot';
+import { saveSnapshotWithRecovery } from '@/lib/snapshotSaveRecovery';
 import { BetSummary, calculateAllBets, getPressureEvolution } from '@/lib/betCalculations';
 import { calculateWolfBets, normalizeWolfSetup } from '@/lib/bets/wolf';
 import { calculateSixesBets } from '@/lib/bets/sixes';
@@ -2071,22 +2072,30 @@ export const useRoundManagement = ({
       }
 
       try {
-        const { error: snapshotError } = await supabase
+        const snapshotClosedAt = new Date().toISOString();
+        await saveSnapshotWithRecovery(() => supabase
           .from('round_snapshots')
           .upsert(
             {
               round_id: roundState.id,
               snapshot_json: snapshot as any,
               snapshot_version: 1,
-              closed_at: new Date().toISOString(),
+              closed_at: snapshotClosedAt,
             },
             {
               onConflict: 'round_id',
               ignoreDuplicates: false,
             }
-          );
-
-        if (snapshotError) throw snapshotError;
+          ), async () => {
+            // Read only metadata: a large response may have been lost after commit.
+            // Matching this attempt's timestamp prevents accepting a stale snapshot.
+            const { data, error } = await supabase.from('round_snapshots')
+              .select('closed_at, snapshot_version')
+              .eq('round_id', roundState.id)
+              .maybeSingle();
+            return !error && data?.snapshot_version === 1
+              && new Date(data.closed_at).getTime() === new Date(snapshotClosedAt).getTime();
+          });
         pushStageOk(report, 'saveSnapshot');
       } catch (e) {
         // Snapshot SHOULD be reliable; fail to make it diagnosable and to avoid partial "closed" states.
