@@ -303,7 +303,7 @@ export const useRoundManagement = ({
           `)
           .eq('profile_id', profile.id)
           .eq('is_cross_only', false)
-          .order('joined_at, { ascending: false });
+          .order('joined_at', { ascending: false });
 
         if (rpError || !roundPlayers?.length) {
           setIsRestoring(false);
