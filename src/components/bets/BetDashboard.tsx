@@ -164,6 +164,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 }) => {
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [openCross, setOpenCross] = useState<Record<string, boolean>>({});
+  // Optimistic cross-bet config so toggles react instantly while the save round-trips.
+  const [crossPending, setCrossPending] = useState<Record<string, { next: Record<string, any>; base: string }>>({});
+  const [openCrossScores, setOpenCrossScores] = useState<Record<string, boolean>>({});
   const [confirmRemoveCross, setConfirmRemoveCross] = useState<{ id: string; name: string } | null>(null);
   const crossQueryClient = useQueryClient();
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
@@ -1915,7 +1918,19 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               const partner = isInitiator
                 ? { name: cb.targetName, initials: cb.targetInitials, color: cb.targetColor }
                 : { name: cb.initiatorName, initials: cb.initiatorInitials, color: cb.initiatorColor };
-              const cfg = (cb.betConfig || {}) as Record<string, any>;
+              const serverCfgKey = JSON.stringify(cb.betConfig ?? {});
+              const pend = crossPending[cb.crossBetId];
+              // Use optimistic value only until the server copy changes (our save or partner's edit).
+              const cfg = ((pend && pend.base === serverCfgKey) ? pend.next : (cb.betConfig ?? {})) as Record<string, any>;
+              const commit = async (next: Record<string, any>, label: string) => {
+                setCrossPending(s => ({ ...s, [cb.crossBetId]: { next, base: serverCfgKey } }));
+                try { await onUpdateCrossBetConfig!({ crossBetId: cb.crossBetId, betConfig: next }); }
+                catch (e) {
+                  console.error(label, e);
+                  setCrossPending(s => { const c = { ...s }; delete c[cb.crossBetId]; return c; });
+                  toast.error(trs("No se pudo guardar el cambio del cruce"));
+                }
+              };
               const isIncluded = (b: typeof INDIVIDUAL_BETS[number]) => {
                 const entry = cfg[b.key];
                 if (entry?.enabled !== undefined) return !!entry.enabled;
@@ -1930,8 +1945,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 const prev = cfg[key] || {};
                 const next = { ...cfg, [key]: { enabled: isIncluded(b), amount: amountOf(b), ...prev, ...patch, included: undefined } };
                 delete next[key].included;
-                try { await onUpdateCrossBetConfig({ crossBetId: cb.crossBetId, betConfig: next }); }
-                catch (e) { console.error('cross bet update', e); toast.error(trs("No se pudo guardar el cambio del cruce")); }
+                await commit(next, 'cross bet update');
               };
               return (
                 <div key={cb.crossBetId} className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
@@ -2032,8 +2046,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       const setStrokes = async (v: number) => {
                         if (!onUpdateCrossBetConfig) return;
                         const next = { ...cfg, strokes: { giverProfileId: v === 0 ? null : v > 0 ? iSide.profileId : tSide.profileId, count: Math.abs(v) } };
-                        try { await onUpdateCrossBetConfig({ crossBetId: cb.crossBetId, betConfig: next }); }
-                        catch (e) { console.error('cross strokes', e); toast.error(trs("No se pudo guardar el cambio del cruce")); }
+                        await commit(next, 'cross strokes');
                       };
                       return (
                         <>
@@ -2068,7 +2081,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           const nines = [holes.slice(0, 9), holes.slice(9, 18)].filter(n => n.length);
                           return (
                             <div className="mt-2 rounded-lg border border-border bg-background p-1.5 space-y-1.5">
-                              <p className="text-xs font-medium px-0.5">{trs("Scores del cruce")}</p>
+                              <button
+                                type="button"
+                                className="w-full flex items-center justify-between px-0.5 text-xs font-medium"
+                                onClick={() => setOpenCrossScores(s => ({ ...s, [cb.crossBetId]: !s[cb.crossBetId] }))}
+                                aria-expanded={!!openCrossScores[cb.crossBetId]}
+                              >
+                                <span>{trs("Scores del cruce")}</span>
+                                {openCrossScores[cb.crossBetId] ? <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />}
+                              </button>
+                              {openCrossScores[cb.crossBetId] && (<>
                               {nines.map((nine, ni) => (
                                 <div key={ni} className="overflow-x-auto">
                                   <table className="w-full table-fixed text-[10px] text-center tabular-nums">
@@ -2106,6 +2128,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                   </table>
                                 </div>
                               ))}
+                              </>)}
                               <p className="text-[10px] text-muted-foreground px-0.5">
                                 {rows.map(({ side, byHole }) => `${first(side.name)}: ${sum(byHole, holes) ?? '—'}`).join(' · ')}
                                 {receiverId ? ` · • ${trs("golpe recibido")}` : ''}
