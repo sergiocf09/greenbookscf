@@ -162,6 +162,13 @@
       "when": 1793654141048,
       "tag": "0022_settle_cross_bet",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793656410752,
+      "tag": "0023_cross_settlement_history_and_authority",
+      "breakpoints": true
     }
   ]
 }
