@@ -2043,8 +2043,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       const setStrokes = async (v: number) => {
                         if (!onUpdateCrossBetConfig) return;
                         const next = { ...cfg, strokes: { giverProfileId: v === 0 ? null : v > 0 ? iSide.profileId : tSide.profileId, count: Math.abs(v) } };
-                        try { await onUpdateCrossBetConfig({ crossBetId: cb.crossBetId, betConfig: next }); }
-                        catch (e) { console.error('cross strokes', e); toast.error(trs("No se pudo guardar el cambio del cruce")); }
+                        await commit(next, 'cross strokes');
                       };
                       return (
                         <>
@@ -2079,7 +2078,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           const nines = [holes.slice(0, 9), holes.slice(9, 18)].filter(n => n.length);
                           return (
                             <div className="mt-2 rounded-lg border border-border bg-background p-1.5 space-y-1.5">
-                              <p className="text-xs font-medium px-0.5">{trs("Scores del cruce")}</p>
+                              <button
+                                type="button"
+                                className="w-full flex items-center justify-between px-0.5 text-xs font-medium"
+                                onClick={() => setOpenCrossScores(s => ({ ...s, [cb.crossBetId]: !s[cb.crossBetId] }))}
+                                aria-expanded={!!openCrossScores[cb.crossBetId]}
+                              >
+                                <span>{trs("Scores del cruce")}</span>
+                                {openCrossScores[cb.crossBetId] ? <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />}
+                              </button>
+                              {openCrossScores[cb.crossBetId] && (<>
                               {nines.map((nine, ni) => (
                                 <div key={ni} className="overflow-x-auto">
                                   <table className="w-full table-fixed text-[10px] text-center tabular-nums">
@@ -2117,6 +2125,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                                   </table>
                                 </div>
                               ))}
+                              </>)}
                               <p className="text-[10px] text-muted-foreground px-0.5">
                                 {rows.map(({ side, byHole }) => `${first(side.name)}: ${sum(byHole, holes) ?? '—'}`).join(' · ')}
                                 {receiverId ? ` · • ${trs("golpe recibido")}` : ''}
