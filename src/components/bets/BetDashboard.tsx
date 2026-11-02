@@ -3897,55 +3897,100 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                 catch (e) { console.error('cross bet update', e); toast.error(trs("No se pudo guardar el cambio del cruce")); }
               };
               return (
-                <div key={cb.crossBetId} className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-3">
+                <div key={cb.crossBetId} className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
                   <div className="flex items-center gap-2">
                     <PlayerAvatar initials={partner.initials} background={partner.color} size="sm" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{partner.name}</p>
                       <p className="text-[10px] text-muted-foreground">{isInitiator ? trs("Tú invitaste") : trs("Te invitó")}</p>
                     </div>
+                    {onUpdateCrossBetConfig && (
+                      <button
+                        type="button"
+                        className="text-[11px] text-destructive underline-offset-2 hover:underline shrink-0"
+                        onClick={async () => {
+                          const { error } = await (supabase.rpc as any)('remove_round_cross_bet', { p_cross_bet_id: cb.crossBetId });
+                          if (error) { console.error('remove cross', error); toast.error(trs("No se pudo quitar el cruce")); return; }
+                          toast.success(trs("Cruce eliminado"));
+                          crossQueryClient.invalidateQueries({ queryKey: ['cross-bets-round'] });
+                          crossQueryClient.invalidateQueries({ queryKey: ['cross-bet-scores'] });
+                        }}
+                      >
+                        {trs("Quitar cruce")}
+                      </button>
+                    )}
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                      {trs("Activa o quita las apuestas de este cruce")}
-                    </p>
+                    <button
+                      type="button"
+                      className="w-full flex items-center justify-between rounded-md px-1 py-1 text-[11px] uppercase tracking-wide text-muted-foreground"
+                      onClick={() => setOpenCross(s => ({ ...s, [cb.crossBetId]: !s[cb.crossBetId] }))}
+                    >
+                      <span>
+                        {trs("Apuestas del cruce")} · {INDIVIDUAL_BETS.filter(isIncluded).map(b => trs(b.label)).join(', ') || trs("ninguna")}
+                      </span>
+                      {openCross[cb.crossBetId] ? <ChevronUp className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
+                    </button>
+                    {openCross[cb.crossBetId] && (<>
                     {INDIVIDUAL_BETS.map(b => {
                       const included = isIncluded(b);
+                      const segs = CROSS_SEGMENTS[b.key];
+                      const segVal = (s: string) => Number(cfg[b.key]?.[s] ?? amountOf(b));
                       return (
-                        <div key={b.key} className="flex items-center justify-between gap-2 px-2 py-1 rounded-md">
-                          <label className="flex items-center gap-2 text-sm cursor-pointer flex-1">
-                            <input
-                              type="checkbox"
-                              className="accent-primary h-4 w-4"
-                              checked={included}
-                              disabled={!onUpdateCrossBetConfig}
-                              onChange={(e) => { void save(b.key, { enabled: e.target.checked }); }}
-                            />
-                            <span className={cn('font-medium', !included && 'text-muted-foreground line-through')}>
-                              {trs(b.label)}
-                            </span>
-                          </label>
-                          {included && (
-                            <input
-                              type="number"
-                              inputMode="numeric"
-                              min={0}
-                              defaultValue={amountOf(b)}
-                              disabled={!onUpdateCrossBetConfig}
-                              onBlur={(e) => {
-                                const v = Math.max(0, Number(e.target.value) || 0);
-                                if (v !== amountOf(b)) void save(b.key, { amount: v, enabled: true });
-                              }}
-                              className="w-20 h-7 rounded-md border border-input bg-background px-2 text-right text-xs"
-                              aria-label={`${trs(b.label)} $`}
-                            />
+                        <div key={b.key} className="px-2 py-1 rounded-md">
+                          <div className="flex items-center justify-between gap-2">
+                            <label className="flex items-center gap-2 text-sm cursor-pointer flex-1">
+                              <input
+                                type="checkbox"
+                                className="accent-primary h-4 w-4"
+                                checked={included}
+                                disabled={!onUpdateCrossBetConfig}
+                                onChange={(e) => { void save(b.key, { enabled: e.target.checked }); }}
+                              />
+                              <span className={cn('font-medium', !included && 'text-muted-foreground line-through')}>
+                                {trs(b.label)}
+                              </span>
+                            </label>
+                            {included && !segs && (
+                              <input
+                                type="number" inputMode="numeric" min={0}
+                                defaultValue={amountOf(b)}
+                                disabled={!onUpdateCrossBetConfig}
+                                onBlur={(e) => {
+                                  const v = Math.max(0, Number(e.target.value) || 0);
+                                  if (v !== amountOf(b)) void save(b.key, { amount: v, enabled: true });
+                                }}
+                                className="w-20 h-7 rounded-md border border-input bg-background px-2 text-right text-xs"
+                                aria-label={`${trs(b.label)} $`}
+                              />
+                            )}
+                          </div>
+                          {included && segs && (
+                            <div className="mt-1 ml-6 grid gap-1" style={{ gridTemplateColumns: `repeat(${segs.length}, minmax(0,1fr))` }}>
+                              {segs.map(s => (
+                                <label key={s} className="flex flex-col text-[10px] text-muted-foreground">
+                                  {s === 'front' ? 'Front' : s === 'back' ? 'Back' : 'Total'}
+                                  <input
+                                    type="number" inputMode="numeric" min={0}
+                                    defaultValue={segVal(s)}
+                                    disabled={!onUpdateCrossBetConfig}
+                                    onBlur={(e) => {
+                                      const v = Math.max(0, Number(e.target.value) || 0);
+                                      if (v !== segVal(s)) void save(b.key, { [s]: v, enabled: true });
+                                    }}
+                                    className="h-7 rounded-md border border-input bg-background px-2 text-right text-xs text-foreground"
+                                  />
+                                </label>
+                              ))}
+                            </div>
                           )}
                         </div>
                       );
                     })}
                     <p className="text-[10px] text-muted-foreground pt-1">
-                      {trs("Estas apuestas son solo entre ustedes dos y no dependen de lo configurado en cada ronda.")}
+                      {trs("Pon 0 en un segmento para no apostarlo. Estas apuestas son solo entre ustedes dos.")}
                     </p>
+                    </>)}
                     {(() => {
                       const iSide = { profileId: cb.initiatorProfileId, name: cb.initiatorName, handicap: cb.initiatorHandicap ?? 0, scores: cb.initiatorScores ?? [] };
                       const tSide = { profileId: cb.targetProfileId, name: cb.targetName, handicap: cb.targetHandicap ?? 0, scores: cb.targetScores ?? [] };
