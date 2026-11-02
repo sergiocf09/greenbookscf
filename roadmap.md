@@ -1,5 +1,6 @@
 # Roadmap — English translation
 ## Cross-card historical accounting review
+- [ ] Implement separate historical cross reads across totals/rivals/categories/daily evolution, historical round summary, organizer settlement authorization, and verify existing crossings.
 - [x] Verified Sergio's completed round: Sergio–Rodrigo crossing recorded +$50 at first close; Rodrigo has 18 confirmed holes but remains open. Historical screens read snapshots only and omit separate cross ledger rows. Recommend a separate cross-ledger read/summary in history, not altering round snapshots or duplicating cards. Also identified organizer-not-cross-player settlement failure for Saucedo's crossing; implementation is outside this diagnostic request.
 ## Bloques last-block press
 - [x] Replaced existing ×1–×5 cycle with optional final-block ×2 switch in both bilateral views; kept pair-keyed atomic persistence and corrected nine-hole detail range. Twelve calculation, switch and merge checks pass. Signed-in current round has no Bloques enabled; save/reload in a real Bloques round remains unverified. No live round settings modified.
