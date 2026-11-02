@@ -2766,7 +2766,10 @@ export type Database = {
         Returns: {
           cross_bet_id: string
           hole_number: number
+          markers: Json
           net_score: number
+          oyes_proximity: number
+          oyes_proximity_sangron: number
           profile_id: string
           putts: number
           strokes: number

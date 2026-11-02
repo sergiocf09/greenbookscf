@@ -120,6 +120,13 @@
       "when": 1793636470464,
       "tag": "0016_cross_bet_scores",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793637420754,
+      "tag": "0017_cross_bet_scores_full",
+      "breakpoints": true
     }
   ]
 }
