@@ -1,4 +1,4 @@
-import { computeCrossBet, crossNet, CROSS_CALCULABLE } from '@/lib/bets/crossBets';
+import { computeCrossBet, crossNet, resolveStrokes, suggestedStrokes } from '@/lib/bets/crossBets';
 import { trs } from '@/i18n/tr';
 import { toast } from 'sonner';
 // Complete Bet Dashboard - reorganized with bet type rows and bet override capability
@@ -3937,39 +3937,63 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       {trs("Estas apuestas son solo entre ustedes dos y no dependen de lo configurado en cada ronda.")}
                     </p>
                     {(() => {
-                      const raw = computeCrossBet(cfg, cb.initiatorScores ?? [], cb.targetScores ?? []);
+                      const iSide = { profileId: cb.initiatorProfileId, name: cb.initiatorName, handicap: cb.initiatorHandicap ?? 0, scores: cb.initiatorScores ?? [] };
+                      const tSide = { profileId: cb.targetProfileId, name: cb.targetName, handicap: cb.targetHandicap ?? 0, scores: cb.targetScores ?? [] };
+                      const st = resolveStrokes(cfg, iSide.profileId, iSide.handicap, tSide.profileId, tSide.handicap);
+                      const sug = suggestedStrokes(iSide.profileId, iSide.handicap, tSide.profileId, tSide.handicap);
+                      const first = (n: string) => n.split(' ')[0];
+                      const signedVal = st.giverProfileId === tSide.profileId ? -st.count : st.count; // >0: initiator gives
+                      const setStrokes = async (v: number) => {
+                        if (!onUpdateCrossBetConfig) return;
+                        const next = { ...cfg, strokes: { giverProfileId: v === 0 ? null : v > 0 ? iSide.profileId : tSide.profileId, count: Math.abs(v) } };
+                        try { await onUpdateCrossBetConfig({ crossBetId: cb.crossBetId, betConfig: next }); }
+                        catch (e) { console.error('cross strokes', e); toast.error(trs("No se pudo guardar el cambio del cruce")); }
+                      };
+                      const raw = computeCrossBet(cfg, iSide, tSide, course, startingHole);
                       const mine = isInitiator ? 1 : -1;
                       const lines = raw.map(l => ({ ...l, amount: l.amount * mine }));
                       const net = crossNet(lines);
                       const enabledKeys = INDIVIDUAL_BETS.filter(isIncluded).map(b => b.key);
-                      const pending = enabledKeys.filter(k => !(CROSS_CALCULABLE as readonly string[]).includes(k));
-                      if (!enabledKeys.length) return null;
                       const fmt = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}$${Math.abs(n).toLocaleString()}`;
+                      const grouped = new Map<string, number>();
+                      lines.forEach(l => {
+                        const k = l.segment === 'hole' ? l.label.replace(/\s*H?\d+$/, '') : l.label;
+                        grouped.set(k, (grouped.get(k) ?? 0) + l.amount);
+                      });
                       return (
+                        <>
+                        <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-border bg-background px-2 py-1.5">
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium">{trs("Golpes entre ustedes")}</p>
+                            <p className="text-[10px] text-muted-foreground truncate">
+                              {st.count === 0 ? trs("Sin ventaja (scratch)") : `${first(st.giverProfileId === iSide.profileId ? iSide.name : tSide.name)} ${trs("da")} ${st.count} ${trs("a")} ${first(st.giverProfileId === iSide.profileId ? tSide.name : iSide.name)}`}
+                              {' · '}{trs("Sugerido")}: {sug.count}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button type="button" className="h-7 w-7 rounded-md border border-input text-sm" disabled={!onUpdateCrossBetConfig} onClick={() => void setStrokes(signedVal - 1)} aria-label="-">−</button>
+                            <span className="w-6 text-center text-sm font-semibold">{st.count}</span>
+                            <button type="button" className="h-7 w-7 rounded-md border border-input text-sm" disabled={!onUpdateCrossBetConfig} onClick={() => void setStrokes(signedVal + 1)} aria-label="+">+</button>
+                          </div>
+                        </div>
+                        {enabledKeys.length > 0 && (
                         <div className="mt-2 rounded-lg border border-border bg-background p-2 space-y-1">
                           <div className="flex items-center justify-between text-sm font-semibold">
-                            <span>{trs("Tu balance vs")} {partner.name.split(' ')[0]}</span>
+                            <span>{trs("Tu balance vs")} {first(partner.name)}</span>
                             <span className={cn(net > 0 ? 'text-primary' : net < 0 ? 'text-destructive' : 'text-muted-foreground')}>{fmt(net)}</span>
                           </div>
-                          {lines.filter(l => l.segment !== 'hole').map(l => (
-                            <div key={l.label} className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">{l.label}{!l.final && ` (${trs("en curso")})`}</span>
-                              <span>{fmt(l.amount)}</span>
+                          {Array.from(grouped.entries()).map(([label, v]) => (
+                            <div key={label} className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">{label}</span>
+                              <span>{fmt(v)}</span>
                             </div>
                           ))}
-                          {lines.some(l => l.segment === 'hole') && (
-                            <div className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">Skins ({lines.filter(l => l.segment === 'hole').length})</span>
-                              <span>{fmt(crossNet(lines.filter(l => l.segment === 'hole')))}</span>
-                            </div>
-                          )}
                           {!(cb.targetScores?.length) && (
-                            <p className="text-[10px] text-muted-foreground">{trs("Aún no hay hoyos capturados de")} {partner.name.split(' ')[0]}</p>
-                          )}
-                          {pending.length > 0 && (
-                            <p className="text-[10px] text-muted-foreground">{trs("Sin cálculo automático en cruce:")} {pending.map(k => trs(INDIVIDUAL_BETS.find(b => b.key === k)!.label)).join(', ')}</p>
+                            <p className="text-[10px] text-muted-foreground">{trs("Aún no hay hoyos capturados de")} {first(partner.name)}</p>
                           )}
                         </div>
+                        )}
+                        </>
                       );
                     })()}
                   </div>

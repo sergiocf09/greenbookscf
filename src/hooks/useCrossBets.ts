@@ -31,6 +31,8 @@ export interface CrossBet {
   betConfig: Record<string, any>;
   initiatorScores?: CrossHoleScore[];
   targetScores?: CrossHoleScore[];
+  initiatorHandicap?: number;
+  targetHandicap?: number;
 }
 
 export function useCrossBets(roundId: string | null) {
@@ -94,9 +96,20 @@ export function useCrossBets(roundId: string | null) {
       const out: Record<string, Record<string, CrossHoleScore[]>> = {};
       for (const r of (data ?? []) as any[]) {
         const byCb = (out[r.cross_bet_id] ??= {});
-        (byCb[r.profile_id] ??= []).push({ holeNumber: r.hole_number, strokes: r.strokes, net: r.net_score ?? r.strokes, putts: r.putts });
+        (byCb[r.profile_id] ??= []).push({ holeNumber: r.hole_number, strokes: r.strokes, net: r.net_score ?? r.strokes, putts: r.putts, oyesProximity: r.oyes_proximity, oyesProximitySangron: r.oyes_proximity_sangron, markers: r.markers ?? [] });
       }
       return out;
+    },
+  });
+
+  const profileIds = Array.from(new Set((crossBetsQuery.data ?? []).flatMap(cb => [cb.initiatorProfileId, cb.targetProfileId]))).sort();
+  const hcpQuery = useQuery({
+    queryKey: ['cross-bet-hcps', profileIds.join(',')],
+    enabled: profileIds.length > 0,
+    staleTime: 300_000,
+    queryFn: async (): Promise<Record<string, number>> => {
+      const { data } = await supabase.from('profiles').select('id, current_handicap').in('id', profileIds);
+      return Object.fromEntries((data ?? []).map((p: any) => [p.id, Number(p.current_handicap ?? 0)]));
     },
   });
 
@@ -167,6 +180,8 @@ export function useCrossBets(roundId: string | null) {
       ...cb,
       initiatorScores: crossScoresQuery.data?.[cb.crossBetId]?.[cb.initiatorProfileId] ?? [],
       targetScores: crossScoresQuery.data?.[cb.crossBetId]?.[cb.targetProfileId] ?? [],
+      initiatorHandicap: hcpQuery.data?.[cb.initiatorProfileId] ?? 0,
+      targetHandicap: hcpQuery.data?.[cb.targetProfileId] ?? 0,
     })),
     isLoadingCrossBets: crossBetsQuery.isLoading,
     refetchCrossBets: crossBetsQuery.refetch,

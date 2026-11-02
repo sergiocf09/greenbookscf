@@ -1,22 +1,30 @@
 import { describe, it, expect } from 'vitest';
-import { computeCrossBet, crossNet } from '@/lib/bets/crossBets';
+import { computeCrossBet, crossNet, resolveStrokes } from '@/lib/bets/crossBets';
+import type { GolfCourse } from '@/types/golf';
 
-const card = (nets: number[], putts = 2) => nets.map((n, i) => ({ holeNumber: i + 1, strokes: n, net: n, putts }));
+const course: GolfCourse = {
+  id: 'c', name: 'C', location: '',
+  holes: Array.from({ length: 18 }, (_, i) => ({ number: i + 1, par: 4, handicapIndex: i + 1 })),
+};
+const card = (nets: number[]) => nets.map((n, i) => ({ holeNumber: i + 1, strokes: n, net: n, putts: 2 }));
+const side = (id: string, nets: number[], handicap = 0) => ({ profileId: id, name: id, handicap, scores: card(nets) });
 
-describe('cross bets', () => {
-  it('medal: lower net wins each segment amount', () => {
-    const a = card(Array(18).fill(4));
-    const b = card([...Array(9).fill(5), ...Array(9).fill(4)]);
-    const lines = computeCrossBet({ medal: { enabled: true, amount: 100 } }, a, b);
-    expect(lines.map(l => l.amount)).toEqual([100, 0, 100]);
+describe('cross bets use the regular engine', () => {
+  it('medal scratch: lower gross wins front and total', () => {
+    const lines = computeCrossBet({ medal: { enabled: true, amount: 100 }, strokes: { giverProfileId: null, count: 0 } },
+      side('A', Array(18).fill(4)), side('B', [...Array(9).fill(5), ...Array(9).fill(4)]), course);
     expect(crossNet(lines)).toBe(200);
   });
-  it('disabled bets produce nothing', () => {
-    expect(computeCrossBet({ medal: { enabled: false, amount: 100 } }, card([4]), card([5]))).toEqual([]);
-  });
-  it('skins: each hole won pays the amount, ties pay nothing', () => {
-    const lines = computeCrossBet({ skins: { enabled: true, amount: 20 } }, card([3, 4, 5]), card([4, 4, 4]));
+  it('strokes given flip the medal result', () => {
+    // B shoots one more per front hole but receives 9 strokes on holes SI 1-9 -> front tie
+    const lines = computeCrossBet({ medal: { enabled: true, amount: 100 }, strokes: { giverProfileId: 'A', count: 9 } },
+      side('A', Array(18).fill(4)), side('B', [...Array(9).fill(5), ...Array(9).fill(4)]), course);
     expect(crossNet(lines)).toBe(0);
-    expect(lines).toHaveLength(2);
+  });
+  it('disabled bets produce nothing', () => {
+    expect(computeCrossBet({ medal: { enabled: false } }, side('A', [4]), side('B', [5]), course)).toEqual([]);
+  });
+  it('default strokes follow the handicap difference', () => {
+    expect(resolveStrokes({}, 'A', 5, 'B', 12)).toEqual({ giverProfileId: 'A', count: 7 });
   });
 });
