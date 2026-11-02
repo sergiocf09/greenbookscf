@@ -105,6 +105,7 @@ interface PlayViewsProps {
   onStartNewRound: () => void;
   crossBets?: import('@/hooks/useCrossBets').CrossBet[];
   crossPendingSent?: { invitationId: string; targetName: string }[];
+  cancelledCrossBets?: import('@/hooks/useCrossBets').CancelledCrossBet[];
   onUpdateCrossBetConfig?: (args: { crossBetId: string; betConfig: Record<string, any> }) => Promise<void>;
   onLeaveRound?: () => void;
 }
@@ -121,7 +122,7 @@ export function PlayViews(props: PlayViewsProps) {
     setCurrentHole, isHoleConfirmed, confirmHole, updateScore,
     setBetConfig, setCurrentBetSummaries, setQuickScorePlayer,
     onOpenDialog, onSetView, onResetRoundForReclose, onStartNewRound,
-    crossBets, crossPendingSent, onUpdateCrossBetConfig, onLeaveRound,
+    crossBets, crossPendingSent, cancelledCrossBets, onUpdateCrossBetConfig, onLeaveRound,
   } = props;
 
   const adminInfo = useIsRoundAdmin(roundState.id);
@@ -331,6 +332,7 @@ export function PlayViews(props: PlayViewsProps) {
               ninesHook={nines}
               crossBets={crossBets}
               crossPendingSent={crossPendingSent}
+              cancelledCrossBets={cancelledCrossBets}
               onUpdateCrossBetConfig={onUpdateCrossBetConfig}
             />
           </ErrorBoundary>

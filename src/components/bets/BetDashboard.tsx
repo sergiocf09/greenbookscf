@@ -1,3 +1,4 @@
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { buildCrossVirtualRound, computeCrossBet, crossNet, resolveStrokes, suggestedStrokes, CROSS_SEGMENTS } from '@/lib/bets/crossBets';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -129,6 +130,7 @@ interface BetDashboardProps {
   vegasHook?: ReturnType<typeof useVegas>;
   ninesHook?: ReturnType<typeof useNines>;
   crossBets?: import('@/hooks/useCrossBets').CrossBet[];
+  cancelledCrossBets?: import('@/hooks/useCrossBets').CancelledCrossBet[];
   crossPendingSent?: { invitationId: string; targetName: string }[];
   onUpdateCrossBetConfig?: (args: { crossBetId: string; betConfig: Record<string, any> }) => Promise<void>;
 }
@@ -157,10 +159,12 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   ninesHook,
   crossBets = [],
   crossPendingSent = [],
+  cancelledCrossBets = [],
   onUpdateCrossBetConfig,
 }) => {
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [openCross, setOpenCross] = useState<Record<string, boolean>>({});
+  const [confirmRemoveCross, setConfirmRemoveCross] = useState<{ id: string; name: string } | null>(null);
   const crossQueryClient = useQueryClient();
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
   const [expandedLeaderboard, setExpandedLeaderboard] = useState<string | null>(null);
@@ -1881,6 +1885,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   const crossMe = crossAllP.find(p => p.id === basePlayerId || p.profileId === basePlayerId);
   const crossMyIds = new Set([basePlayerId, crossMe?.profileId, crossMe?.id].filter(Boolean) as string[]);
   const myCrossBets = crossBets.filter(cb => crossMyIds.has(cb.initiatorProfileId) || crossMyIds.has(cb.targetProfileId));
+  const myCancelledCross = cancelledCrossBets.filter(c => crossMyIds.has(c.initiatorProfileId) || crossMyIds.has(c.targetProfileId));
   const crossSides = (cb: (typeof crossBets)[number]) => {
     const iSide = { profileId: cb.initiatorProfileId, name: cb.initiatorName, handicap: cb.initiatorHandicap ?? 0, scores: cb.initiatorScores ?? [] };
     const tSide = { profileId: cb.targetProfileId, name: cb.targetName, handicap: cb.targetHandicap ?? 0, scores: cb.targetScores ?? [] };
@@ -1940,13 +1945,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       <button
                         type="button"
                         className="text-[11px] text-destructive underline-offset-2 hover:underline shrink-0"
-                        onClick={async () => {
-                          const { error } = await (supabase.rpc as any)('remove_round_cross_bet', { p_cross_bet_id: cb.crossBetId });
-                          if (error) { console.error('remove cross', error); toast.error(trs("No se pudo quitar el cruce")); return; }
-                          toast.success(trs("Cruce eliminado"));
-                          crossQueryClient.invalidateQueries({ queryKey: ['cross-bets-round'] });
-                          crossQueryClient.invalidateQueries({ queryKey: ['cross-bet-scores'] });
-                        }}
+                        onClick={() => setConfirmRemoveCross({ id: cb.crossBetId, name: partner.name })}
                       >
                         {trs("Quitar cruce")}
                       </button>
@@ -4096,7 +4095,37 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         );
       })()}
 
-      {(myCrossBets.length > 0 || crossPendingSent.length > 0) && (
+      <AlertDialog open={!!confirmRemoveCross} onOpenChange={(o) => { if (!o) setConfirmRemoveCross(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{trs("¿Eliminar el cruce?")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {trs("Se quitarán todas las apuestas del cruce con")} {confirmRemoveCross?.name}. {trs("Quedará una nota de cancelación visible para ambos jugadores.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{trs("Cancelar")}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                const id = confirmRemoveCross?.id; setConfirmRemoveCross(null);
+                if (!id) return;
+                const { error } = await (supabase.rpc as any)('remove_round_cross_bet', { p_cross_bet_id: id });
+                if (error) { console.error('remove cross', error); toast.error(trs("No se pudo quitar el cruce")); return; }
+                toast.success(trs("Cruce eliminado"));
+                if (selectedRival === `cross:${id}`) setSelectedRival(null);
+                crossQueryClient.invalidateQueries({ queryKey: ['cross-bets-round'] });
+                crossQueryClient.invalidateQueries({ queryKey: ['cross-bet-scores'] });
+                crossQueryClient.invalidateQueries({ queryKey: ['cross-bets-cancelled'] });
+              }}
+            >
+              {trs("Eliminar cruce")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {(myCrossBets.length > 0 || crossPendingSent.length > 0 || myCancelledCross.length > 0) && (
         <div className="mt-4 space-y-2">
           <div className="flex items-center gap-2 px-1">
             <Swords className="h-4 w-4 text-primary" />
@@ -4108,6 +4137,19 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               <span>{trs("Esperando respuesta")}</span>
             </div>
           ))}
+          {myCancelledCross.map(c => {
+            const partnerName = crossMyIds.has(c.initiatorProfileId) ? c.targetName : c.initiatorName;
+            const when = c.cancelledAt ? new Date(c.cancelledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+            return (
+              <div key={c.invitationId} className="rounded-lg border border-dashed border-destructive/40 px-3 py-2 text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">{partnerName}</span>
+                {' · '}
+                {c.wasAccepted ? trs("Cruce aceptado y luego cancelado") : trs("Invitación de cruce cancelada")}
+                {c.cancelledByName ? ` ${trs("por")} ${c.cancelledByName}` : ''}
+                {when ? ` · ${when}` : ''}
+              </div>
+            );
+          })}
           {myCrossBets.map(cb => {
             const { partner } = crossSides(cb);
             const net = roundToNearest5(crossBalance(cb));

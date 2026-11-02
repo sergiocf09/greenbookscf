@@ -148,6 +148,13 @@
       "when": 1793642450724,
       "tag": "0020_cross_bet_resend_after_cancel",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793652878811,
+      "tag": "0021_cross_bet_cancel_history",
+      "breakpoints": true
     }
   ]
 }

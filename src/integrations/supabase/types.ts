@@ -273,6 +273,7 @@ export type Database = {
       cross_bet_invitations: {
         Row: {
           bet_config_proposal: Json
+          cancelled_by_profile_id: string | null
           created_at: string
           id: string
           initiator_profile_id: string
@@ -280,9 +281,11 @@ export type Database = {
           round_id: string
           status: string
           target_profile_id: string
+          was_accepted: boolean
         }
         Insert: {
           bet_config_proposal?: Json
+          cancelled_by_profile_id?: string | null
           created_at?: string
           id?: string
           initiator_profile_id: string
@@ -290,9 +293,11 @@ export type Database = {
           round_id: string
           status?: string
           target_profile_id: string
+          was_accepted?: boolean
         }
         Update: {
           bet_config_proposal?: Json
+          cancelled_by_profile_id?: string | null
           created_at?: string
           id?: string
           initiator_profile_id?: string
@@ -300,8 +305,16 @@ export type Database = {
           round_id?: string
           status?: string
           target_profile_id?: string
+          was_accepted?: boolean
         }
         Relationships: [
+          {
+            foreignKeyName: "cross_bet_invitations_cancelled_by_profile_id_fkey"
+            columns: ["cancelled_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cross_bet_invitations_initiator_profile_id_fkey"
             columns: ["initiator_profile_id"]
@@ -2759,6 +2772,20 @@ export type Database = {
         Returns: {
           attested_rounds: number
           total_rounds: number
+        }[]
+      }
+      get_cancelled_cross_bets_for_round: {
+        Args: { p_round_id: string }
+        Returns: {
+          cancelled_at: string
+          cancelled_by_name: string
+          cancelled_by_profile_id: string
+          initiator_name: string
+          initiator_profile_id: string
+          invitation_id: string
+          target_name: string
+          target_profile_id: string
+          was_accepted: boolean
         }[]
       }
       get_cross_bet_scores: {
