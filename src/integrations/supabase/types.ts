@@ -2761,6 +2761,17 @@ export type Database = {
           total_rounds: number
         }[]
       }
+      get_cross_bet_scores: {
+        Args: { p_round_id: string }
+        Returns: {
+          cross_bet_id: string
+          hole_number: number
+          net_score: number
+          profile_id: string
+          putts: number
+          strokes: number
+        }[]
+      }
       get_cross_bets_for_round: {
         Args: { p_round_id: string }
         Returns: {

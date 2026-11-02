@@ -1875,6 +1875,36 @@ export const useRoundManagement = ({
         }
       });
 
+      // Card-crossing bets (cruce de tarjeta): settle against the friend's own round.
+      try {
+        const { data: cbs } = await supabase.rpc('get_cross_bets_for_round', { p_round_id: roundState.id });
+        if (cbs && cbs.length) {
+          const { data: sc } = await (supabase.rpc as any)('get_cross_bet_scores', { p_round_id: roundState.id });
+          const { computeCrossBet } = await import('@/lib/bets/crossBets');
+          for (const cb of cbs as any[]) {
+            const pick = (pid: string) => ((sc ?? []) as any[])
+              .filter(r => r.cross_bet_id === cb.cross_bet_id && r.profile_id === pid)
+              .map(r => ({ holeNumber: r.hole_number, strokes: r.strokes, net: r.net_score ?? r.strokes, putts: r.putts }));
+            const lines = computeCrossBet(cb.bet_config ?? {}, pick(cb.initiator_profile_id), pick(cb.target_profile_id));
+            for (const l of lines) {
+              if (!l.amount) continue;
+              const betType = l.key === 'medal' ? `medal_${l.segment}`
+                : l.key === 'skins' ? ((l.holeNumber ?? 0) <= 9 ? 'skins_front' : 'skins_back')
+                : 'medal_total';
+              ledgerRecords.push({
+                from_profile_id: l.amount > 0 ? cb.target_profile_id : cb.initiator_profile_id,
+                to_profile_id: l.amount > 0 ? cb.initiator_profile_id : cb.target_profile_id,
+                amount: Math.abs(l.amount),
+                bet_type: betType,
+                segment: l.segment,
+                hole_number: l.holeNumber ?? null,
+                description: `Cruce · ${l.label}`,
+              });
+            }
+          }
+        }
+      } catch (e) { devWarn('cross bet settlement skipped', e); }
+
       try {
         if (ledgerRecords.length > 0) {
           const { error: ledgerError } = await supabase.rpc('finalize_round_bets', {

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { devError } from '@/lib/logger';
+import type { CrossHoleScore } from '@/lib/bets/crossBets';
 
 export interface CrossBetInvitation {
   invitationId: string;
@@ -28,6 +29,8 @@ export interface CrossBet {
   targetColor: string;
   targetRoundPlayerId: string | null;
   betConfig: Record<string, any>;
+  initiatorScores?: CrossHoleScore[];
+  targetScores?: CrossHoleScore[];
 }
 
 export function useCrossBets(roundId: string | null) {
@@ -78,6 +81,22 @@ export function useCrossBets(roundId: string | null) {
         targetRoundPlayerId: r.target_round_player_id,
         betConfig: r.bet_config ?? {},
       }));
+    },
+  });
+
+  const crossScoresQuery = useQuery({
+    queryKey: ['cross-bet-scores', roundId],
+    enabled: !!roundId && (crossBetsQuery.data?.length ?? 0) > 0,
+    refetchInterval: 30_000,
+    queryFn: async (): Promise<Record<string, Record<string, CrossHoleScore[]>>> => {
+      const { data, error } = await (supabase.rpc as any)('get_cross_bet_scores', { p_round_id: roundId });
+      if (error) { devError('useCrossBets scores:', error); return {}; }
+      const out: Record<string, Record<string, CrossHoleScore[]>> = {};
+      for (const r of (data ?? []) as any[]) {
+        const byCb = (out[r.cross_bet_id] ??= {});
+        (byCb[r.profile_id] ??= []).push({ holeNumber: r.hole_number, strokes: r.strokes, net: r.net_score ?? r.strokes, putts: r.putts });
+      }
+      return out;
     },
   });
 
@@ -144,7 +163,11 @@ export function useCrossBets(roundId: string | null) {
     pendingInvitations: pendingQuery.data ?? [],
     pendingCount: (pendingQuery.data ?? []).length,
     isLoadingPending: pendingQuery.isLoading,
-    crossBets: crossBetsQuery.data ?? [],
+    crossBets: (crossBetsQuery.data ?? []).map(cb => ({
+      ...cb,
+      initiatorScores: crossScoresQuery.data?.[cb.crossBetId]?.[cb.initiatorProfileId] ?? [],
+      targetScores: crossScoresQuery.data?.[cb.crossBetId]?.[cb.targetProfileId] ?? [],
+    })),
     isLoadingCrossBets: crossBetsQuery.isLoading,
     refetchCrossBets: crossBetsQuery.refetch,
     sendInvitation: sendInvitation.mutateAsync,
