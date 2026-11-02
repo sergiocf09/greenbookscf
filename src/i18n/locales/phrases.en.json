@@ -148,7 +148,7 @@
   "Apuestas a incluir en este cruce": "Bets to include in this match",
   "Apuestas con discrepancia UI vs Motor:": "Bets with UI vs Engine discrepancy:",
   "Apuestas de Cruce": "Cross Match Bets",
-  "Apuestas del cruce": "Match bets",
+  "Apuestas del cruce": "Crossing bets",
   "Apuestas donde todos participan en un pool. Definen su hándicap propio (excepto Coneja).": "Bets where everyone participates in a pool. They define their own handicap (except Rabbit).",
   "Apuestas jugador vs jugador. Usan la Matriz de Hándicaps Bilaterales.": "Player vs. player bets. They use the Head-to-Head Handicap Matrix.",
   "Apuestas pareja vs pareja. Definen su hándicap propio en esta pantalla.": "Pair vs. pair bets. They define their own handicap on this screen.",
@@ -1455,7 +1455,6 @@
   "Quitar cruce": "Remove crossing",
   "Cruce eliminado": "Crossing removed",
   "No se pudo quitar el cruce": "Could not remove the crossing",
-  "Apuestas del cruce": "Crossing bets",
   "ninguna": "none",
   "Pon 0 en un segmento para no apostarlo. Estas apuestas son solo entre ustedes dos.": "Set 0 on a segment to skip it. These bets are only between you two.",
   "Teams Cup": "Teams Cup",
@@ -1982,5 +1981,6 @@
   "Lugar": "Place",
   "Activa o quita las apuestas de este cruce": "Turn bets on or off for this match",
   "Estas apuestas son solo entre ustedes dos y no dependen de lo configurado en cada ronda.": "These bets are only between the two of you and don't depend on each round's setup.",
-  "No se pudo guardar el cambio del cruce": "Could not save the match change"
+  "No se pudo guardar el cambio del cruce": "Could not save the match change",
+  "CRUCE": "CROSS"
 }
