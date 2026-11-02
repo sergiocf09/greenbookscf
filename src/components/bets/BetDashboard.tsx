@@ -165,7 +165,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
   const [openCross, setOpenCross] = useState<Record<string, boolean>>({});
   // Optimistic cross-bet config so toggles react instantly while the save round-trips.
-  const [crossPending, setCrossPending] = useState<Record<string, Record<string, any>>>({});
+  const [crossPending, setCrossPending] = useState<Record<string, { next: Record<string, any>; base: string }>>({});
   const [openCrossScores, setOpenCrossScores] = useState<Record<string, boolean>>({});
   const [confirmRemoveCross, setConfirmRemoveCross] = useState<{ id: string; name: string } | null>(null);
   const crossQueryClient = useQueryClient();
@@ -1918,9 +1918,12 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               const partner = isInitiator
                 ? { name: cb.targetName, initials: cb.targetInitials, color: cb.targetColor }
                 : { name: cb.initiatorName, initials: cb.initiatorInitials, color: cb.initiatorColor };
-              const cfg = (crossPending[cb.crossBetId] ?? cb.betConfig ?? {}) as Record<string, any>;
+              const serverCfgKey = JSON.stringify(cb.betConfig ?? {});
+              const pend = crossPending[cb.crossBetId];
+              // Use optimistic value only until the server copy changes (our save or partner's edit).
+              const cfg = ((pend && pend.base === serverCfgKey) ? pend.next : (cb.betConfig ?? {})) as Record<string, any>;
               const commit = async (next: Record<string, any>, label: string) => {
-                setCrossPending(s => ({ ...s, [cb.crossBetId]: next }));
+                setCrossPending(s => ({ ...s, [cb.crossBetId]: { next, base: serverCfgKey } }));
                 try { await onUpdateCrossBetConfig!({ crossBetId: cb.crossBetId, betConfig: next }); }
                 catch (e) {
                   console.error(label, e);
