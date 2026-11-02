@@ -3869,7 +3869,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               <Swords className="h-4 w-4 text-primary" />
               <span className="text-sm font-semibold">{trs("Apuestas de Cruce")}</span>
             </div>
-            {crossBets.map(cb => {
+            {crossBetsMine.map(cb => {
               const isInitiator = cb.initiatorProfileId === basePlayerId;
               const partner = isInitiator
                 ? { name: cb.targetName, initials: cb.targetInitials, color: cb.targetColor }
