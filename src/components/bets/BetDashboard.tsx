@@ -3844,7 +3844,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         );
       })()}
 
-      {crossBets.length > 0 && (() => {
+      {(() => {
+        const allP = [...players, ...(playerGroups ?? []).flatMap(g => g.players)];
+        const me = allP.find(p => p.id === basePlayerId || p.profileId === basePlayerId);
+        const myIds = new Set([basePlayerId, me?.profileId, me?.id].filter(Boolean) as string[]);
+        const myCrossBets = crossBets.filter(cb => myIds.has(cb.initiatorProfileId) || myIds.has(cb.targetProfileId));
+        if (myCrossBets.length === 0) return null;
+        const crossBetsMine = myCrossBets;
         const resolved = resolveConfigForGroup(betConfig, playerGroups[displayGroupIndex - 1]?.id);
         const getAmt = (cfg: any): number | undefined =>
           cfg?.totalAmount ?? cfg?.amount ?? cfg?.frontAmount ?? cfg?.value ?? undefined;
@@ -3863,7 +3869,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               <Swords className="h-4 w-4 text-primary" />
               <span className="text-sm font-semibold">{trs("Apuestas de Cruce")}</span>
             </div>
-            {crossBets.map(cb => {
+            {crossBetsMine.map(cb => {
               const isInitiator = cb.initiatorProfileId === basePlayerId;
               const partner = isInitiator
                 ? { name: cb.targetName, initials: cb.targetInitials, color: cb.targetColor }
