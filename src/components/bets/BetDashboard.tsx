@@ -1,4 +1,6 @@
-import { computeCrossBet, crossNet, resolveStrokes, suggestedStrokes } from '@/lib/bets/crossBets';
+import { computeCrossBet, crossNet, resolveStrokes, suggestedStrokes, CROSS_SEGMENTS } from '@/lib/bets/crossBets';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { trs } from '@/i18n/tr';
 import { toast } from 'sonner';
 // Complete Bet Dashboard - reorganized with bet type rows and bet override capability
@@ -156,6 +158,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   onUpdateCrossBetConfig,
 }) => {
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
+  const [openCross, setOpenCross] = useState<Record<string, boolean>>({});
+  const crossQueryClient = useQueryClient();
   const [expandedTypes, setExpandedTypes] = useState<string[]>([]);
   const [expandedLeaderboard, setExpandedLeaderboard] = useState<string | null>(null);
   const [balanceBasePlayerId, setBalanceBasePlayerId] = useState<string | null>(null);
