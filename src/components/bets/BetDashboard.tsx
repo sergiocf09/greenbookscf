@@ -2051,6 +2051,68 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                             <button type="button" className="h-7 w-7 rounded-md border border-input text-sm" disabled={!onUpdateCrossBetConfig} onClick={() => void setStrokes(signedVal + 1)} aria-label="+">+</button>
                           </div>
                         </div>
+                        {(() => {
+                          const holes = [...course.holes].sort((a, b) => a.number - b.number);
+                          if (!holes.length) return null;
+                          const receiverId = st.count > 0 ? (st.giverProfileId === iSide.profileId ? tSide.profileId : iSide.profileId) : null;
+                          // Strokes placed by stroke index; >18 wraps a second stroke.
+                          const strokesOn = (si: number) => st.count <= 0 ? 0 : Math.floor(st.count / 18) + (si <= st.count % 18 ? 1 : 0);
+                          const rows = [iSide, tSide].map(s => {
+                            const byHole = new Map<number, number | null>((s.scores as any[]).map((x: any) => [x.holeNumber, x.strokes ?? null]));
+                            return { side: s, byHole };
+                          });
+                          const sum = (m: Map<number, number | null>, hs: typeof holes) => {
+                            const v = hs.map(h => m.get(h.number)).filter((x): x is number => typeof x === 'number');
+                            return v.length ? v.reduce((a, b) => a + b, 0) : null;
+                          };
+                          const nines = [holes.slice(0, 9), holes.slice(9, 18)].filter(n => n.length);
+                          return (
+                            <div className="mt-2 rounded-lg border border-border bg-background p-1.5 space-y-1.5">
+                              <p className="text-xs font-medium px-0.5">{trs("Scores del cruce")}</p>
+                              {nines.map((nine, ni) => (
+                                <div key={ni} className="overflow-x-auto">
+                                  <table className="w-full table-fixed text-[10px] text-center tabular-nums">
+                                    <thead>
+                                      <tr className="text-muted-foreground">
+                                        <th className="w-12 text-left font-normal">{trs("Hoyo")}</th>
+                                        {nine.map(h => <th key={h.number} className="font-normal">{h.number}</th>)}
+                                        <th className="w-7 font-semibold">{ni === 0 ? 'F' : 'B'}</th>
+                                      </tr>
+                                      <tr className="text-muted-foreground">
+                                        <th className="text-left font-normal">Par</th>
+                                        {nine.map(h => <th key={h.number} className="font-normal">{h.par}</th>)}
+                                        <th className="font-normal">{nine.reduce((a, h) => a + h.par, 0)}</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {rows.map(({ side, byHole }) => (
+                                        <tr key={side.profileId} className="border-t border-border">
+                                          <td className="text-left truncate font-medium">{first(side.name)}</td>
+                                          {nine.map(h => {
+                                            const v = byHole.get(h.number);
+                                            const dots = side.profileId === receiverId ? strokesOn(h.handicapIndex) : 0;
+                                            const diff = typeof v === 'number' ? v - h.par : null;
+                                            return (
+                                              <td key={h.number} className={`relative py-0.5 ${diff !== null && diff < 0 ? 'text-primary font-semibold' : ''}`}>
+                                                {v ?? '·'}
+                                                {dots > 0 && <span className="absolute top-0 right-0 text-[7px] leading-none text-accent-foreground">{'•'.repeat(dots)}</span>}
+                                              </td>
+                                            );
+                                          })}
+                                          <td className="font-semibold">{sum(byHole, nine) ?? '—'}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              ))}
+                              <p className="text-[10px] text-muted-foreground px-0.5">
+                                {rows.map(({ side, byHole }) => `${first(side.name)}: ${sum(byHole, holes) ?? '—'}`).join(' · ')}
+                                {receiverId ? ` · • ${trs("golpe recibido")}` : ''}
+                              </p>
+                            </div>
+                          );
+                        })()}
                         </>
                       );
                     })()}
