@@ -10,6 +10,7 @@ import { RoundShareImage } from '@/components/share/RoundShareImage';
 import { calcHighlightsFromSnapshot } from '@/lib/shareHighlights';
 import { supabase } from '@/integrations/supabase/client';
 import { HistoricalScorecard } from './HistoricalScorecard';
+import { CrossHistorySummary } from './bets/CrossHistorySummary';
 import { BetDashboard } from './bets/BetDashboard';
 import { GolfCourse, Player, PlayerScore, BetConfig, MarkerState, defaultMarkerState, PlayerGroup, WolfConfig, WolfHoleState } from '@/types/golf';
 import { defaultBetConfig } from './setup/BetSetup';
@@ -570,6 +571,7 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
               } as any : undefined}
             />
           )}
+          <CrossHistorySummary roundId={roundId} roundNet={snapshot?.balances.find(b => snapshot.players.find(p => p.id === b.playerId)?.profileId === currentUserProfileId)?.totalNet ?? 0} />
         </TabsContent>
 
         <TabsContent value="leaderboards" className="mt-4 space-y-3">
