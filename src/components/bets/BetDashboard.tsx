@@ -2063,8 +2063,6 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                             <button type="button" className="h-7 w-7 rounded-md border border-input text-sm" disabled={!onUpdateCrossBetConfig} onClick={() => void setStrokes(signedVal + 1)} aria-label="+">+</button>
                           </div>
                         </div>
-                        </div>
-                        )}
                         </>
                       );
                     })()}
