@@ -104,14 +104,7 @@ const keyOf = (betType: string): string => {
 
 export interface CrossSide { profileId: string; name: string; handicap: number; scores: CrossHoleScore[] }
 
-export function computeCrossBet(
-  cfg: Record<string, any>,
-  a: CrossSide,
-  b: CrossSide,
-  course: GolfCourse,
-  startingHole: 1 | 10 = 1,
-): CrossLine[] {
-  if (!CROSS_BET_KEYS.some(k => on(cfg, k))) return [];
+export function buildCrossVirtualRound(cfg: Record<string, any>, a: CrossSide, b: CrossSide) {
   const pa: Player = { id: a.profileId, profileId: a.profileId, name: a.name, initials: '', color: '', handicap: a.handicap, groupId: 'cross' };
   const pb: Player = { id: b.profileId, profileId: b.profileId, name: b.name, initials: '', color: '', handicap: b.handicap, groupId: 'cross' };
   const st = resolveStrokes(cfg, a.profileId, a.handicap, b.profileId, b.handicap);
@@ -131,6 +124,17 @@ export function computeCrossBet(
     }));
   const scores = new Map<string, PlayerScore[]>([[pa.id, toPS(pa.id, a.scores)], [pb.id, toPS(pb.id, b.scores)]]);
   const config = buildCrossBetConfig(cfg, bilateral);
+  return { players: [pa, pb] as Player[], scores, config, common };
+}
+
+export function computeCrossBet(
+  cfg: Record<string, any>,
+  a: CrossSide,
+  b: CrossSide,
+  course: GolfCourse,
+  startingHole: 1 | 10 = 1,
+): CrossLine[] {
+  const { players: [pa, pb], scores, config, common } = buildCrossVirtualRound(cfg, a, b);
   const summaries = calculateAllBets([pa, pb], scores, config, course, startingHole, common);
   return summaries
     .filter(s => s.playerId === pa.id && s.vsPlayer === pb.id && s.amount !== 0)
