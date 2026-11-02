@@ -129,6 +129,7 @@ interface BetDashboardProps {
   vegasHook?: ReturnType<typeof useVegas>;
   ninesHook?: ReturnType<typeof useNines>;
   crossBets?: import('@/hooks/useCrossBets').CrossBet[];
+  crossPendingSent?: { invitationId: string; targetName: string }[];
   onUpdateCrossBetConfig?: (args: { crossBetId: string; betConfig: Record<string, any> }) => Promise<void>;
 }
 
@@ -155,6 +156,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   vegasHook,
   ninesHook,
   crossBets = [],
+  crossPendingSent = [],
   onUpdateCrossBetConfig,
 }) => {
   const [selectedRival, setSelectedRival] = useState<string | null>(null);
@@ -3853,7 +3855,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         const me = allP.find(p => p.id === basePlayerId || p.profileId === basePlayerId);
         const myIds = new Set([basePlayerId, me?.profileId, me?.id].filter(Boolean) as string[]);
         const myCrossBets = crossBets.filter(cb => myIds.has(cb.initiatorProfileId) || myIds.has(cb.targetProfileId));
-        if (myCrossBets.length === 0) return null;
+        if (myCrossBets.length === 0 && crossPendingSent.length === 0) return null;
         const crossBetsMine = myCrossBets;
         const resolved = resolveConfigForGroup(betConfig, playerGroups[displayGroupIndex - 1]?.id);
         const getAmt = (cfg: any): number | undefined =>
@@ -3873,6 +3875,12 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               <Swords className="h-4 w-4 text-primary" />
               <span className="text-sm font-semibold">{trs("Apuestas de Cruce")}</span>
             </div>
+            {crossPendingSent.map(inv => (
+              <div key={inv.invitationId} className="rounded-lg border border-dashed border-border px-3 py-2 text-xs text-muted-foreground flex items-center justify-between">
+                <span className="font-medium text-foreground truncate">{inv.targetName}</span>
+                <span>{trs("Esperando respuesta")}</span>
+              </div>
+            ))}
             {crossBetsMine.map(cb => {
               const isInitiator = cb.initiatorProfileId === basePlayerId;
               const partner = isInitiator
