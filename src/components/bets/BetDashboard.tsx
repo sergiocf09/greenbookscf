@@ -1,4 +1,5 @@
 import { trs } from '@/i18n/tr';
+import { toast } from 'sonner';
 // Complete Bet Dashboard - reorganized with bet type rows and bet override capability
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { fmtMoney, roundToNearest5, roundGroupToNearest5Map } from '@/lib/formatMoney';
@@ -3846,16 +3847,15 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         const resolved = resolveConfigForGroup(betConfig, playerGroups[displayGroupIndex - 1]?.id);
         const getAmt = (cfg: any): number | undefined =>
           cfg?.totalAmount ?? cfg?.amount ?? cfg?.frontAmount ?? cfg?.value ?? undefined;
-        const INDIVIDUAL_BETS: { key: string; label: string; amount?: number; enabled: boolean }[] = [
-          { key: 'medal',     label: 'Medal',      amount: getAmt(resolved.medal),     enabled: !!resolved.medal?.enabled },
-          { key: 'matchPlay', label: 'Match Play', amount: getAmt(resolved.matchPlay), enabled: !!resolved.matchPlay?.enabled },
-          { key: 'putts',     label: 'Putts',      amount: getAmt(resolved.putts),     enabled: !!resolved.putts?.enabled },
-          { key: 'manchas',   label: 'Manchas',    amount: getAmt(resolved.manchas),   enabled: !!resolved.manchas?.enabled },
-          { key: 'bloques',   label: 'Bloques',    amount: getAmt(resolved.bloques),   enabled: !!resolved.bloques?.enabled },
-          { key: 'units',     label: 'Unidades',   amount: getAmt(resolved.units),     enabled: !!resolved.units?.enabled },
-          { key: 'skins',     label: 'Skins',      amount: getAmt(resolved.skins),     enabled: !!resolved.skins?.enabled },
-        ];
-        const enabledBets = INDIVIDUAL_BETS.filter(b => b.enabled);
+        // All individual bets are offered for every cross, independent of each round's setup.
+        const INDIVIDUAL_BETS: { key: string; label: string; roundAmount?: number; roundEnabled: boolean }[] = [
+          'medal', 'pressures', 'matchPlay', 'putts', 'skins', 'caros', 'oyeses', 'rayas', 'units', 'manchas', 'culebras', 'bloques',
+        ].map(key => ({
+          key,
+          label: ({ medal: 'Medal', pressures: 'Presiones', matchPlay: 'Match Play', putts: 'Putts', skins: 'Skins', caros: 'Caros', oyeses: 'Oyeses', rayas: 'Rayas', units: 'Unidades', manchas: 'Manchas', culebras: 'Culebras', bloques: 'Bloques' } as Record<string, string>)[key],
+          roundAmount: getAmt((resolved as any)[key]),
+          roundEnabled: !!(resolved as any)[key]?.enabled,
+        }));
         return (
           <div className="mt-4 space-y-2">
             <div className="flex items-center gap-2 px-1">
@@ -3867,18 +3867,23 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               const partner = isInitiator
                 ? { name: cb.targetName, initials: cb.targetInitials, color: cb.targetColor }
                 : { name: cb.initiatorName, initials: cb.initiatorInitials, color: cb.initiatorColor };
-              const isIncluded = (key: string) => {
-                const flag = (cb.betConfig as any)?.[key]?.included;
-                return flag === undefined ? true : !!flag;
+              const cfg = (cb.betConfig || {}) as Record<string, any>;
+              const isIncluded = (b: typeof INDIVIDUAL_BETS[number]) => {
+                const entry = cfg[b.key];
+                if (entry?.enabled !== undefined) return !!entry.enabled;
+                if (entry?.included !== undefined) return !!entry.included;
+                return b.roundEnabled;
               };
-              const toggleIncluded = async (key: string, next: boolean) => {
+              const amountOf = (b: typeof INDIVIDUAL_BETS[number]) =>
+                Number(cfg[b.key]?.amount ?? b.roundAmount ?? 50);
+              const save = async (key: string, patch: Record<string, any>) => {
                 if (!onUpdateCrossBetConfig) return;
-                const newConfig = {
-                  ...(cb.betConfig || {}),
-                  [key]: { ...((cb.betConfig as any)?.[key] || {}), included: next },
-                };
-                try { await onUpdateCrossBetConfig({ crossBetId: cb.crossBetId, betConfig: newConfig }); }
-                catch (e) { console.error('toggleIncluded', e); }
+                const b = INDIVIDUAL_BETS.find(x => x.key === key)!;
+                const prev = cfg[key] || {};
+                const next = { ...cfg, [key]: { enabled: isIncluded(b), amount: amountOf(b), ...prev, ...patch, included: undefined } };
+                delete next[key].included;
+                try { await onUpdateCrossBetConfig({ crossBetId: cb.crossBetId, betConfig: next }); }
+                catch (e) { console.error('cross bet update', e); toast.error(trs("No se pudo guardar el cambio del cruce")); }
               };
               return (
                 <div key={cb.crossBetId} className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-3">
@@ -3889,48 +3894,48 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                       <p className="text-[10px] text-muted-foreground">{isInitiator ? trs("Tú invitaste") : trs("Te invitó")}</p>
                     </div>
                   </div>
-
-                  {enabledBets.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-3">
-                      <p className="text-xs text-muted-foreground">
-                        {trs("Aún no hay apuestas individuales configuradas en la ronda. Ve a")}{' '}<strong>{trs("Apuestas → Individuales")}</strong>{' '}{trs("para activarlas y luego aparecerán aquí para incluirlas en este cruce.")}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-1.5">
-                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                        {trs("Apuestas a incluir en este cruce")}
-                      </p>
-                      {enabledBets.map(b => {
-                        const included = isIncluded(b.key);
-                        return (
-                          <label
-                            key={b.key}
-                            className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-background/60 cursor-pointer"
-                          >
-                            <span className="flex items-center gap-2 text-sm">
-                              <input
-                                type="checkbox"
-                                className="accent-primary h-4 w-4"
-                                checked={included}
-                                disabled={!onUpdateCrossBetConfig}
-                                onChange={(e) => { void toggleIncluded(b.key, e.target.checked); }}
-                              />
-                              <span className={cn('font-medium', !included && 'text-muted-foreground line-through')}>
-                                {trs(String(b.label))}
-                              </span>
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                      {trs("Activa o quita las apuestas de este cruce")}
+                    </p>
+                    {INDIVIDUAL_BETS.map(b => {
+                      const included = isIncluded(b);
+                      return (
+                        <div key={b.key} className="flex items-center justify-between gap-2 px-2 py-1 rounded-md">
+                          <label className="flex items-center gap-2 text-sm cursor-pointer flex-1">
+                            <input
+                              type="checkbox"
+                              className="accent-primary h-4 w-4"
+                              checked={included}
+                              disabled={!onUpdateCrossBetConfig}
+                              onChange={(e) => { void save(b.key, { enabled: e.target.checked }); }}
+                            />
+                            <span className={cn('font-medium', !included && 'text-muted-foreground line-through')}>
+                              {trs(b.label)}
                             </span>
-                            {b.amount !== undefined && b.amount > 0 && (
-                              <span className="text-[11px] text-muted-foreground">${fmtMoney(b.amount)}</span>
-                            )}
                           </label>
-                        );
-                      })}
-                      <p className="text-[10px] text-muted-foreground pt-1">
-                        {trs("Los montos se heredan de tu configuración de Apuestas Individuales. Los strokes de este cruce usan el sliding bilateral entre ambos perfiles y pueden ajustarse desde la vista bilateral del rival.")}
-                      </p>
-                    </div>
-                  )}
+                          {included && (
+                            <input
+                              type="number"
+                              inputMode="numeric"
+                              min={0}
+                              defaultValue={amountOf(b)}
+                              disabled={!onUpdateCrossBetConfig}
+                              onBlur={(e) => {
+                                const v = Math.max(0, Number(e.target.value) || 0);
+                                if (v !== amountOf(b)) void save(b.key, { amount: v, enabled: true });
+                              }}
+                              className="w-20 h-7 rounded-md border border-input bg-background px-2 text-right text-xs"
+                              aria-label={`${trs(b.label)} $`}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                    <p className="text-[10px] text-muted-foreground pt-1">
+                      {trs("Estas apuestas son solo entre ustedes dos y no dependen de lo configurado en cada ronda.")}
+                    </p>
+                  </div>
                 </div>
               );
             })}

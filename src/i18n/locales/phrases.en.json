@@ -1972,5 +1972,8 @@
   "Actuales (todos)": "Current (all)",
   "Solo elegibles": "Eligible only",
   "Aún nadie cumple el mínimo de jornadas para ser elegible.": "No one meets the minimum rounds to be eligible yet.",
-  "Lugar": "Place"
+  "Lugar": "Place",
+  "Activa o quita las apuestas de este cruce": "Turn bets on or off for this match",
+  "Estas apuestas son solo entre ustedes dos y no dependen de lo configurado en cada ronda.": "These bets are only between the two of you and don't depend on each round's setup.",
+  "No se pudo guardar el cambio del cruce": "Could not save the match change"
 }
