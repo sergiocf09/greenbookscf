@@ -1982,5 +1982,12 @@
   "Activa o quita las apuestas de este cruce": "Turn bets on or off for this match",
   "Estas apuestas son solo entre ustedes dos y no dependen de lo configurado en cada ronda.": "These bets are only between the two of you and don't depend on each round's setup.",
   "No se pudo guardar el cambio del cruce": "Could not save the match change",
-  "CRUCE": "CROSS"
+  "CRUCE": "CROSS",
+  "¿Eliminar el cruce?": "Remove this crossing?",
+  "Se quitarán todas las apuestas del cruce con": "All crossing bets will be removed with",
+  "Quedará una nota de cancelación visible para ambos jugadores.": "A cancellation note will stay visible to both players.",
+  "Eliminar cruce": "Remove crossing",
+  "Cruce aceptado y luego cancelado": "Crossing accepted, then cancelled",
+  "Invitación de cruce cancelada": "Crossing invitation cancelled",
+  "por": "by"
 }
