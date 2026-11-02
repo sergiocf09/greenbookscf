@@ -3,3 +3,4 @@ Friend-group display order is persisted in `friend_groups.sort_order`; all group
 - Handicap ranking RPCs compute differentials with `_adjusted_gross_score` (Net Double Bogey, same stroke allocation as `calculateStrokesPerHole`); keep both in sync so rankings match the in-app Handicap Index.
 - League player history reads gross and net totals from leaderboard_scores; constrain ScrollArea content and use fixed table columns so horizontal player selectors cannot widen the page.
 - Bloques final-block pressure uses the existing pair-keyed multiplier and one shared switch in both bilateral detail views, so calculation and atomic round persistence stay consistent.
+- Cross bets render as a synthetic `cross:<id>` rival avatar whose BilateralDetail is fed by `buildCrossVirtualRound`; never add the crossed friend to round players or the balance map, so crossings stay isolated and counted once.

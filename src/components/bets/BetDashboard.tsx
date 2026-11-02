@@ -1,4 +1,4 @@
-import { computeCrossBet, crossNet, resolveStrokes, suggestedStrokes, CROSS_SEGMENTS } from '@/lib/bets/crossBets';
+import { buildCrossVirtualRound, computeCrossBet, crossNet, resolveStrokes, suggestedStrokes, CROSS_SEGMENTS } from '@/lib/bets/crossBets';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { trs } from '@/i18n/tr';
@@ -1876,6 +1876,190 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     );
   }
 
+  // ── Crossing helpers (crossing partner is shown as an extra rival avatar) ──
+  const crossAllP = [...players, ...(playerGroups ?? []).flatMap(g => g.players)];
+  const crossMe = crossAllP.find(p => p.id === basePlayerId || p.profileId === basePlayerId);
+  const crossMyIds = new Set([basePlayerId, crossMe?.profileId, crossMe?.id].filter(Boolean) as string[]);
+  const myCrossBets = crossBets.filter(cb => crossMyIds.has(cb.initiatorProfileId) || crossMyIds.has(cb.targetProfileId));
+  const crossSides = (cb: (typeof crossBets)[number]) => {
+    const iSide = { profileId: cb.initiatorProfileId, name: cb.initiatorName, handicap: cb.initiatorHandicap ?? 0, scores: cb.initiatorScores ?? [] };
+    const tSide = { profileId: cb.targetProfileId, name: cb.targetName, handicap: cb.targetHandicap ?? 0, scores: cb.targetScores ?? [] };
+    const isInit = crossMyIds.has(cb.initiatorProfileId);
+    return isInit
+      ? { me: iSide, other: tSide, partner: { name: cb.targetName, initials: cb.targetInitials, color: cb.targetColor } }
+      : { me: tSide, other: iSide, partner: { name: cb.initiatorName, initials: cb.initiatorInitials, color: cb.initiatorColor } };
+  };
+  const crossBalance = (cb: (typeof crossBets)[number]) => {
+    const { me, other } = crossSides(cb);
+    return crossNet(computeCrossBet((cb.betConfig || {}) as Record<string, any>, me, other, course, startingHole));
+  };
+  const resolved = resolveConfigForGroup(betConfig, playerGroups[displayGroupIndex - 1]?.id);
+  const getAmt = (cfg: any): number | undefined =>
+    cfg?.totalAmount ?? cfg?.amount ?? cfg?.frontAmount ?? cfg?.value ?? undefined;
+  // All individual bets are offered for every cross, independent of each round's setup.
+  const INDIVIDUAL_BETS: { key: string; label: string; roundAmount?: number; roundEnabled: boolean }[] = [
+    'medal', 'pressures', 'matchPlay', 'putts', 'skins', 'caros', 'oyeses', 'rayas', 'units', 'manchas', 'culebras', 'bloques',
+  ].map(key => ({
+    key,
+    label: ({ medal: 'Medal', pressures: 'Presiones', matchPlay: 'Match Play', putts: 'Putts', skins: 'Skins', caros: 'Caros', oyeses: 'Oyeses', rayas: 'Rayas', units: 'Unidades', manchas: 'Manchas', culebras: 'Culebras', bloques: 'Bloques' } as Record<string, string>)[key],
+    roundAmount: getAmt((resolved as any)[key]),
+    roundEnabled: !!(resolved as any)[key]?.enabled,
+  }));
+  const renderCrossConfig = (cb: (typeof crossBets)[number]) => {
+              const isInitiator = crossMyIds.has(cb.initiatorProfileId);
+              const partner = isInitiator
+                ? { name: cb.targetName, initials: cb.targetInitials, color: cb.targetColor }
+                : { name: cb.initiatorName, initials: cb.initiatorInitials, color: cb.initiatorColor };
+              const cfg = (cb.betConfig || {}) as Record<string, any>;
+              const isIncluded = (b: typeof INDIVIDUAL_BETS[number]) => {
+                const entry = cfg[b.key];
+                if (entry?.enabled !== undefined) return !!entry.enabled;
+                if (entry?.included !== undefined) return !!entry.included;
+                return false;
+              };
+              const amountOf = (b: typeof INDIVIDUAL_BETS[number]) =>
+                Number(cfg[b.key]?.amount ?? 50);
+              const save = async (key: string, patch: Record<string, any>) => {
+                if (!onUpdateCrossBetConfig) return;
+                const b = INDIVIDUAL_BETS.find(x => x.key === key)!;
+                const prev = cfg[key] || {};
+                const next = { ...cfg, [key]: { enabled: isIncluded(b), amount: amountOf(b), ...prev, ...patch, included: undefined } };
+                delete next[key].included;
+                try { await onUpdateCrossBetConfig({ crossBetId: cb.crossBetId, betConfig: next }); }
+                catch (e) { console.error('cross bet update', e); toast.error(trs("No se pudo guardar el cambio del cruce")); }
+              };
+              return (
+                <div key={cb.crossBetId} className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <PlayerAvatar initials={partner.initials} background={partner.color} size="sm" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{partner.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{isInitiator ? trs("Tú invitaste") : trs("Te invitó")}</p>
+                    </div>
+                    {onUpdateCrossBetConfig && (
+                      <button
+                        type="button"
+                        className="text-[11px] text-destructive underline-offset-2 hover:underline shrink-0"
+                        onClick={async () => {
+                          const { error } = await (supabase.rpc as any)('remove_round_cross_bet', { p_cross_bet_id: cb.crossBetId });
+                          if (error) { console.error('remove cross', error); toast.error(trs("No se pudo quitar el cruce")); return; }
+                          toast.success(trs("Cruce eliminado"));
+                          crossQueryClient.invalidateQueries({ queryKey: ['cross-bets-round'] });
+                          crossQueryClient.invalidateQueries({ queryKey: ['cross-bet-scores'] });
+                        }}
+                      >
+                        {trs("Quitar cruce")}
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <button
+                      type="button"
+                      className="w-full flex items-center justify-between rounded-md px-1 py-1 text-[11px] uppercase tracking-wide text-muted-foreground"
+                      onClick={() => setOpenCross(s => ({ ...s, [cb.crossBetId]: !s[cb.crossBetId] }))}
+                    >
+                      <span>
+                        {trs("Apuestas del cruce")} · {INDIVIDUAL_BETS.filter(isIncluded).map(b => trs(b.label)).join(', ') || trs("ninguna")}
+                      </span>
+                      {openCross[cb.crossBetId] ? <ChevronUp className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
+                    </button>
+                    {openCross[cb.crossBetId] && (<>
+                    {INDIVIDUAL_BETS.map(b => {
+                      const included = isIncluded(b);
+                      const segs = CROSS_SEGMENTS[b.key];
+                      const segVal = (s: string) => Number(cfg[b.key]?.[s] ?? amountOf(b));
+                      return (
+                        <div key={b.key} className="px-2 py-1 rounded-md">
+                          <div className="flex items-center justify-between gap-2">
+                            <label className="flex items-center gap-2 text-sm cursor-pointer flex-1">
+                              <input
+                                type="checkbox"
+                                className="accent-primary h-4 w-4"
+                                checked={included}
+                                disabled={!onUpdateCrossBetConfig}
+                                onChange={(e) => { void save(b.key, { enabled: e.target.checked }); }}
+                              />
+                              <span className={cn('font-medium', !included && 'text-muted-foreground line-through')}>
+                                {trs(b.label)}
+                              </span>
+                            </label>
+                            {included && !segs && (
+                              <input
+                                type="number" inputMode="numeric" min={0}
+                                defaultValue={amountOf(b)}
+                                disabled={!onUpdateCrossBetConfig}
+                                onBlur={(e) => {
+                                  const v = Math.max(0, Number(e.target.value) || 0);
+                                  if (v !== amountOf(b)) void save(b.key, { amount: v, enabled: true });
+                                }}
+                                className="w-20 h-7 rounded-md border border-input bg-background px-2 text-right text-xs"
+                                aria-label={`${trs(b.label)} $`}
+                              />
+                            )}
+                          </div>
+                          {included && segs && (
+                            <div className="mt-1 ml-6 grid gap-1" style={{ gridTemplateColumns: `repeat(${segs.length}, minmax(0,1fr))` }}>
+                              {segs.map(s => (
+                                <label key={s} className="flex flex-col text-[10px] text-muted-foreground">
+                                  {s === 'front' ? 'Front' : s === 'back' ? 'Back' : 'Total'}
+                                  <input
+                                    type="number" inputMode="numeric" min={0}
+                                    defaultValue={segVal(s)}
+                                    disabled={!onUpdateCrossBetConfig}
+                                    onBlur={(e) => {
+                                      const v = Math.max(0, Number(e.target.value) || 0);
+                                      if (v !== segVal(s)) void save(b.key, { [s]: v, enabled: true });
+                                    }}
+                                    className="h-7 rounded-md border border-input bg-background px-2 text-right text-xs text-foreground"
+                                  />
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    <p className="text-[10px] text-muted-foreground pt-1">
+                      {trs("Pon 0 en un segmento para no apostarlo. Estas apuestas son solo entre ustedes dos.")}
+                    </p>
+                    </>)}
+                    {(() => {
+                      const iSide = { profileId: cb.initiatorProfileId, name: cb.initiatorName, handicap: cb.initiatorHandicap ?? 0, scores: cb.initiatorScores ?? [] };
+                      const tSide = { profileId: cb.targetProfileId, name: cb.targetName, handicap: cb.targetHandicap ?? 0, scores: cb.targetScores ?? [] };
+                      const st = resolveStrokes(cfg, iSide.profileId, iSide.handicap, tSide.profileId, tSide.handicap);
+                      const sug = suggestedStrokes(iSide.profileId, iSide.handicap, tSide.profileId, tSide.handicap);
+                      const first = (n: string) => n.split(' ')[0];
+                      const signedVal = st.giverProfileId === tSide.profileId ? -st.count : st.count; // >0: initiator gives
+                      const setStrokes = async (v: number) => {
+                        if (!onUpdateCrossBetConfig) return;
+                        const next = { ...cfg, strokes: { giverProfileId: v === 0 ? null : v > 0 ? iSide.profileId : tSide.profileId, count: Math.abs(v) } };
+                        try { await onUpdateCrossBetConfig({ crossBetId: cb.crossBetId, betConfig: next }); }
+                        catch (e) { console.error('cross strokes', e); toast.error(trs("No se pudo guardar el cambio del cruce")); }
+                      };
+                      return (
+                        <>
+                        <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-border bg-background px-2 py-1.5">
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium">{trs("Golpes entre ustedes")}</p>
+                            <p className="text-[10px] text-muted-foreground truncate">
+                              {st.count === 0 ? trs("Sin ventaja (scratch)") : `${first(st.giverProfileId === iSide.profileId ? iSide.name : tSide.name)} ${trs("da")} ${st.count} ${trs("a")} ${first(st.giverProfileId === iSide.profileId ? tSide.name : iSide.name)}`}
+                              {' · '}{trs("Sugerido")}: {sug.count}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button type="button" className="h-7 w-7 rounded-md border border-input text-sm" disabled={!onUpdateCrossBetConfig} onClick={() => void setStrokes(signedVal - 1)} aria-label="-">−</button>
+                            <span className="w-6 text-center text-sm font-semibold">{st.count}</span>
+                            <button type="button" className="h-7 w-7 rounded-md border border-input text-sm" disabled={!onUpdateCrossBetConfig} onClick={() => void setStrokes(signedVal + 1)} aria-label="+">+</button>
+                          </div>
+                        </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+              );
+  };
+
   return (
     <div className="space-y-4 overflow-x-hidden max-w-full min-w-0">
       
@@ -2336,6 +2520,25 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   );
                 })}
                 
+                {myCrossBets.map(cb => {
+                  const { partner } = crossSides(cb);
+                  const id = `cross:${cb.crossBetId}`;
+                  const isSel = selectedRival === id;
+                  const bal = roundToNearest5(crossBalance(cb));
+                  return (
+                    <button key={id} type="button" onClick={() => setSelectedRival(isSel ? null : id)} className="relative flex flex-col items-center gap-1.5 transition-all">
+                      <span className="absolute -top-2 left-1/2 -translate-x-1/2 z-10 rounded-full bg-accent text-accent-foreground px-1.5 text-[9px] font-bold leading-4 tracking-wide">{trs("CRUCE")}</span>
+                      <div className={cn('w-20 h-8 rounded-lg flex items-center justify-center font-bold text-sm transition-all border-2 border-dashed',
+                        isSel ? 'bg-primary text-primary-foreground border-primary shadow-lg' : 'bg-background border-accent text-foreground')}>
+                        {partner.initials}
+                      </div>
+                      <div className={cn('text-sm font-bold flex items-center gap-0.5', bal > 0 ? 'text-green-600' : bal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                        {bal !== 0 && (bal > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />)}
+                        {amountsHidden && !isSel ? '••••' : `$${fmtMoney(Math.abs(bal))}`}
+                      </div>
+                    </button>
+                  );
+                })}
                 {/* Add cross-group player button */}
                 {availableCrossGroupPlayers.length > 0 && (
                   <Dialog open={showCrossGroupPicker} onOpenChange={setShowCrossGroupPicker}>
@@ -2488,6 +2691,49 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         );
       })}
 
+      {(() => {
+        const cb = myCrossBets.find(c => selectedRival === `cross:${c.crossBetId}`);
+        if (!cb) return null;
+        const { me, other, partner } = crossSides(cb);
+        const v = buildCrossVirtualRound((cb.betConfig || {}) as Record<string, any>, me, other);
+        const [pa, pb] = v.players;
+        const meP = { ...pa, initials: basePlayer?.initials ?? '', color: basePlayer?.color ?? '', name: basePlayer?.name ?? pa.name };
+        const otherP = { ...pb, initials: partner.initials, color: partner.color, name: partner.name };
+        const vPlayers = [meP, otherP];
+        const summaries = calculateAllBets(vPlayers, v.scores, v.config, course, startingHole, v.common);
+        const grouped = groupSummariesByType(meP.id, otherP.id, summaries);
+        const total = Object.values(grouped).reduce((s, g) => s + g.total, 0);
+        return (
+          <div className="space-y-2">
+            {renderCrossConfig(cb)}
+            <BilateralDetail
+              players={vPlayers}
+              groupPlayers={vPlayers}
+              allPlayers={vPlayers}
+              player={meP}
+              rival={otherP}
+              groupedSummaries={grouped}
+              totalBalance={total}
+              expandedTypes={expandedTypes}
+              onToggleExpand={toggleExpanded}
+              bilateralHandicap={v.config.bilateralHandicaps?.[0]}
+              onUpdateBilateralHandicap={() => {}}
+              betConfig={v.config}
+              effectiveBetConfig={v.config}
+              confirmedScores={v.scores}
+              course={course}
+              allScores={v.scores}
+              basePlayerId={meP.id}
+              confirmedHoles={v.common}
+              startingHole={startingHole}
+              isHistorical={isHistorical}
+            />
+            {!(other.scores.length) && (
+              <p className="text-[11px] text-muted-foreground px-1">{trs("Aún no hay hoyos capturados de")} {partner.name.split(' ')[0]}</p>
+            )}
+          </div>
+        );
+      })()}
       {/* All Carritos Results — only render if carritos is enabled */}
       {effectiveBetConfig.carritos.enabled && (() => {
         const hasCarritosTeams = (effectiveBetConfig.carritosTeams?.length ?? 0) > 0;
@@ -3850,222 +4096,38 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         );
       })()}
 
-      {(() => {
-        const allP = [...players, ...(playerGroups ?? []).flatMap(g => g.players)];
-        const me = allP.find(p => p.id === basePlayerId || p.profileId === basePlayerId);
-        const myIds = new Set([basePlayerId, me?.profileId, me?.id].filter(Boolean) as string[]);
-        const myCrossBets = crossBets.filter(cb => myIds.has(cb.initiatorProfileId) || myIds.has(cb.targetProfileId));
-        if (myCrossBets.length === 0 && crossPendingSent.length === 0) return null;
-        const crossBetsMine = myCrossBets;
-        const resolved = resolveConfigForGroup(betConfig, playerGroups[displayGroupIndex - 1]?.id);
-        const getAmt = (cfg: any): number | undefined =>
-          cfg?.totalAmount ?? cfg?.amount ?? cfg?.frontAmount ?? cfg?.value ?? undefined;
-        // All individual bets are offered for every cross, independent of each round's setup.
-        const INDIVIDUAL_BETS: { key: string; label: string; roundAmount?: number; roundEnabled: boolean }[] = [
-          'medal', 'pressures', 'matchPlay', 'putts', 'skins', 'caros', 'oyeses', 'rayas', 'units', 'manchas', 'culebras', 'bloques',
-        ].map(key => ({
-          key,
-          label: ({ medal: 'Medal', pressures: 'Presiones', matchPlay: 'Match Play', putts: 'Putts', skins: 'Skins', caros: 'Caros', oyeses: 'Oyeses', rayas: 'Rayas', units: 'Unidades', manchas: 'Manchas', culebras: 'Culebras', bloques: 'Bloques' } as Record<string, string>)[key],
-          roundAmount: getAmt((resolved as any)[key]),
-          roundEnabled: !!(resolved as any)[key]?.enabled,
-        }));
-        return (
-          <div className="mt-4 space-y-2">
-            <div className="flex items-center gap-2 px-1">
-              <Swords className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold">{trs("Apuestas de Cruce")}</span>
-            </div>
-            {crossPendingSent.map(inv => (
-              <div key={inv.invitationId} className="rounded-lg border border-dashed border-border px-3 py-2 text-xs text-muted-foreground flex items-center justify-between">
-                <span className="font-medium text-foreground truncate">{inv.targetName}</span>
-                <span>{trs("Esperando respuesta")}</span>
-              </div>
-            ))}
-            {crossBetsMine.map(cb => {
-              const isInitiator = cb.initiatorProfileId === basePlayerId;
-              const partner = isInitiator
-                ? { name: cb.targetName, initials: cb.targetInitials, color: cb.targetColor }
-                : { name: cb.initiatorName, initials: cb.initiatorInitials, color: cb.initiatorColor };
-              const cfg = (cb.betConfig || {}) as Record<string, any>;
-              const isIncluded = (b: typeof INDIVIDUAL_BETS[number]) => {
-                const entry = cfg[b.key];
-                if (entry?.enabled !== undefined) return !!entry.enabled;
-                if (entry?.included !== undefined) return !!entry.included;
-                return false;
-              };
-              const amountOf = (b: typeof INDIVIDUAL_BETS[number]) =>
-                Number(cfg[b.key]?.amount ?? 50);
-              const save = async (key: string, patch: Record<string, any>) => {
-                if (!onUpdateCrossBetConfig) return;
-                const b = INDIVIDUAL_BETS.find(x => x.key === key)!;
-                const prev = cfg[key] || {};
-                const next = { ...cfg, [key]: { enabled: isIncluded(b), amount: amountOf(b), ...prev, ...patch, included: undefined } };
-                delete next[key].included;
-                try { await onUpdateCrossBetConfig({ crossBetId: cb.crossBetId, betConfig: next }); }
-                catch (e) { console.error('cross bet update', e); toast.error(trs("No se pudo guardar el cambio del cruce")); }
-              };
-              return (
-                <div key={cb.crossBetId} className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <PlayerAvatar initials={partner.initials} background={partner.color} size="sm" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{partner.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{isInitiator ? trs("Tú invitaste") : trs("Te invitó")}</p>
-                    </div>
-                    {onUpdateCrossBetConfig && (
-                      <button
-                        type="button"
-                        className="text-[11px] text-destructive underline-offset-2 hover:underline shrink-0"
-                        onClick={async () => {
-                          const { error } = await (supabase.rpc as any)('remove_round_cross_bet', { p_cross_bet_id: cb.crossBetId });
-                          if (error) { console.error('remove cross', error); toast.error(trs("No se pudo quitar el cruce")); return; }
-                          toast.success(trs("Cruce eliminado"));
-                          crossQueryClient.invalidateQueries({ queryKey: ['cross-bets-round'] });
-                          crossQueryClient.invalidateQueries({ queryKey: ['cross-bet-scores'] });
-                        }}
-                      >
-                        {trs("Quitar cruce")}
-                      </button>
-                    )}
-                  </div>
-                  <div className="space-y-1">
-                    <button
-                      type="button"
-                      className="w-full flex items-center justify-between rounded-md px-1 py-1 text-[11px] uppercase tracking-wide text-muted-foreground"
-                      onClick={() => setOpenCross(s => ({ ...s, [cb.crossBetId]: !s[cb.crossBetId] }))}
-                    >
-                      <span>
-                        {trs("Apuestas del cruce")} · {INDIVIDUAL_BETS.filter(isIncluded).map(b => trs(b.label)).join(', ') || trs("ninguna")}
-                      </span>
-                      {openCross[cb.crossBetId] ? <ChevronUp className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
-                    </button>
-                    {openCross[cb.crossBetId] && (<>
-                    {INDIVIDUAL_BETS.map(b => {
-                      const included = isIncluded(b);
-                      const segs = CROSS_SEGMENTS[b.key];
-                      const segVal = (s: string) => Number(cfg[b.key]?.[s] ?? amountOf(b));
-                      return (
-                        <div key={b.key} className="px-2 py-1 rounded-md">
-                          <div className="flex items-center justify-between gap-2">
-                            <label className="flex items-center gap-2 text-sm cursor-pointer flex-1">
-                              <input
-                                type="checkbox"
-                                className="accent-primary h-4 w-4"
-                                checked={included}
-                                disabled={!onUpdateCrossBetConfig}
-                                onChange={(e) => { void save(b.key, { enabled: e.target.checked }); }}
-                              />
-                              <span className={cn('font-medium', !included && 'text-muted-foreground line-through')}>
-                                {trs(b.label)}
-                              </span>
-                            </label>
-                            {included && !segs && (
-                              <input
-                                type="number" inputMode="numeric" min={0}
-                                defaultValue={amountOf(b)}
-                                disabled={!onUpdateCrossBetConfig}
-                                onBlur={(e) => {
-                                  const v = Math.max(0, Number(e.target.value) || 0);
-                                  if (v !== amountOf(b)) void save(b.key, { amount: v, enabled: true });
-                                }}
-                                className="w-20 h-7 rounded-md border border-input bg-background px-2 text-right text-xs"
-                                aria-label={`${trs(b.label)} $`}
-                              />
-                            )}
-                          </div>
-                          {included && segs && (
-                            <div className="mt-1 ml-6 grid gap-1" style={{ gridTemplateColumns: `repeat(${segs.length}, minmax(0,1fr))` }}>
-                              {segs.map(s => (
-                                <label key={s} className="flex flex-col text-[10px] text-muted-foreground">
-                                  {s === 'front' ? 'Front' : s === 'back' ? 'Back' : 'Total'}
-                                  <input
-                                    type="number" inputMode="numeric" min={0}
-                                    defaultValue={segVal(s)}
-                                    disabled={!onUpdateCrossBetConfig}
-                                    onBlur={(e) => {
-                                      const v = Math.max(0, Number(e.target.value) || 0);
-                                      if (v !== segVal(s)) void save(b.key, { [s]: v, enabled: true });
-                                    }}
-                                    className="h-7 rounded-md border border-input bg-background px-2 text-right text-xs text-foreground"
-                                  />
-                                </label>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                    <p className="text-[10px] text-muted-foreground pt-1">
-                      {trs("Pon 0 en un segmento para no apostarlo. Estas apuestas son solo entre ustedes dos.")}
-                    </p>
-                    </>)}
-                    {(() => {
-                      const iSide = { profileId: cb.initiatorProfileId, name: cb.initiatorName, handicap: cb.initiatorHandicap ?? 0, scores: cb.initiatorScores ?? [] };
-                      const tSide = { profileId: cb.targetProfileId, name: cb.targetName, handicap: cb.targetHandicap ?? 0, scores: cb.targetScores ?? [] };
-                      const st = resolveStrokes(cfg, iSide.profileId, iSide.handicap, tSide.profileId, tSide.handicap);
-                      const sug = suggestedStrokes(iSide.profileId, iSide.handicap, tSide.profileId, tSide.handicap);
-                      const first = (n: string) => n.split(' ')[0];
-                      const signedVal = st.giverProfileId === tSide.profileId ? -st.count : st.count; // >0: initiator gives
-                      const setStrokes = async (v: number) => {
-                        if (!onUpdateCrossBetConfig) return;
-                        const next = { ...cfg, strokes: { giverProfileId: v === 0 ? null : v > 0 ? iSide.profileId : tSide.profileId, count: Math.abs(v) } };
-                        try { await onUpdateCrossBetConfig({ crossBetId: cb.crossBetId, betConfig: next }); }
-                        catch (e) { console.error('cross strokes', e); toast.error(trs("No se pudo guardar el cambio del cruce")); }
-                      };
-                      const raw = computeCrossBet(cfg, iSide, tSide, course, startingHole);
-                      const mine = isInitiator ? 1 : -1;
-                      const lines = raw.map(l => ({ ...l, amount: l.amount * mine }));
-                      const net = crossNet(lines);
-                      const enabledKeys = INDIVIDUAL_BETS.filter(isIncluded).map(b => b.key);
-                      const fmt = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}$${Math.abs(n).toLocaleString()}`;
-                      const grouped = new Map<string, number>();
-                      lines.forEach(l => {
-                        const k = l.segment === 'hole' ? l.label.replace(/\s*H?\d+$/, '') : l.label;
-                        grouped.set(k, (grouped.get(k) ?? 0) + l.amount);
-                      });
-                      return (
-                        <>
-                        <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-border bg-background px-2 py-1.5">
-                          <div className="min-w-0">
-                            <p className="text-xs font-medium">{trs("Golpes entre ustedes")}</p>
-                            <p className="text-[10px] text-muted-foreground truncate">
-                              {st.count === 0 ? trs("Sin ventaja (scratch)") : `${first(st.giverProfileId === iSide.profileId ? iSide.name : tSide.name)} ${trs("da")} ${st.count} ${trs("a")} ${first(st.giverProfileId === iSide.profileId ? tSide.name : iSide.name)}`}
-                              {' · '}{trs("Sugerido")}: {sug.count}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button type="button" className="h-7 w-7 rounded-md border border-input text-sm" disabled={!onUpdateCrossBetConfig} onClick={() => void setStrokes(signedVal - 1)} aria-label="-">−</button>
-                            <span className="w-6 text-center text-sm font-semibold">{st.count}</span>
-                            <button type="button" className="h-7 w-7 rounded-md border border-input text-sm" disabled={!onUpdateCrossBetConfig} onClick={() => void setStrokes(signedVal + 1)} aria-label="+">+</button>
-                          </div>
-                        </div>
-                        {enabledKeys.length > 0 && (
-                        <div className="mt-2 rounded-lg border border-border bg-background p-2 space-y-1">
-                          <div className="flex items-center justify-between text-sm font-semibold">
-                            <span>{trs("Tu balance vs")} {first(partner.name)}</span>
-                            <span className={cn(net > 0 ? 'text-primary' : net < 0 ? 'text-destructive' : 'text-muted-foreground')}>{fmt(net)}</span>
-                          </div>
-                          {Array.from(grouped.entries()).map(([label, v]) => (
-                            <div key={label} className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">{label}</span>
-                              <span>{fmt(v)}</span>
-                            </div>
-                          ))}
-                          {!(cb.targetScores?.length) && (
-                            <p className="text-[10px] text-muted-foreground">{trs("Aún no hay hoyos capturados de")} {first(partner.name)}</p>
-                          )}
-                        </div>
-                        )}
-                        </>
-                      );
-                    })()}
-                  </div>
-                </div>
-              );
-            })}
+      {(myCrossBets.length > 0 || crossPendingSent.length > 0) && (
+        <div className="mt-4 space-y-2">
+          <div className="flex items-center gap-2 px-1">
+            <Swords className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold">{trs("Apuestas de Cruce")}</span>
           </div>
-        );
-      })()}
+          {crossPendingSent.map(inv => (
+            <div key={inv.invitationId} className="rounded-lg border border-dashed border-border px-3 py-2 text-xs text-muted-foreground flex items-center justify-between">
+              <span className="font-medium text-foreground truncate">{inv.targetName}</span>
+              <span>{trs("Esperando respuesta")}</span>
+            </div>
+          ))}
+          {myCrossBets.map(cb => {
+            const { partner } = crossSides(cb);
+            const net = roundToNearest5(crossBalance(cb));
+            return (
+              <button
+                key={cb.crossBetId}
+                type="button"
+                className="w-full rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 flex items-center gap-2 text-left"
+                onClick={() => { setSelectedRival(`cross:${cb.crossBetId}`); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              >
+                <PlayerAvatar initials={partner.initials} background={partner.color} size="sm" />
+                <span className="flex-1 min-w-0 text-sm font-medium truncate">{partner.name}</span>
+                <span className={cn('text-sm font-bold', net > 0 ? 'text-green-600' : net < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                  {amountsHidden ? '••••' : `${net > 0 ? '+' : net < 0 ? '−' : ''}$${fmtMoney(Math.abs(net))}`}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
