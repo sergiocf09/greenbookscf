@@ -1876,50 +1876,6 @@ export const useRoundManagement = ({
         }
       });
 
-      // Card-crossing bets (cruce de tarjeta): settled in their OWN ledger record via
-      // settle_cross_bet — never mixed into finalize_round_bets (the crossed friend is
-      // not a participant of this round). Idempotent: each settlement replaces the previous.
-      const crossSettlements: { id: string; lines: any[] }[] = [];
-      try {
-        const { data: cbs } = await supabase.rpc('get_cross_bets_for_round', { p_round_id: roundState.id });
-        if (cbs && cbs.length) {
-          const { data: sc } = await (supabase.rpc as any)('get_cross_bet_scores', { p_round_id: roundState.id });
-          const { computeCrossBet } = await import('@/lib/bets/crossBets');
-          for (const cb of cbs as any[]) {
-            const pick = (pid: string) => ((sc ?? []) as any[])
-              .filter(r => r.cross_bet_id === cb.cross_bet_id && r.profile_id === pid)
-              .map(r => ({ holeNumber: r.hole_number, strokes: r.strokes, net: r.net_score ?? r.strokes, putts: r.putts, oyesProximity: r.oyes_proximity, oyesProximitySangron: r.oyes_proximity_sangron, markers: r.markers ?? [] }));
-            const { data: hc } = await supabase.from('profiles').select('id, current_handicap').in('id', [cb.initiator_profile_id, cb.target_profile_id]);
-            const hcp = (id: string) => Number((hc ?? []).find((p: any) => p.id === id)?.current_handicap ?? 0);
-            const lines = computeCrossBet(cb.bet_config ?? {},
-              { profileId: cb.initiator_profile_id, name: cb.initiator_name, handicap: hcp(cb.initiator_profile_id), scores: pick(cb.initiator_profile_id) },
-              { profileId: cb.target_profile_id, name: cb.target_name, handicap: hcp(cb.target_profile_id), scores: pick(cb.target_profile_id) },
-              course, roundState.startingHole);
-            const out: any[] = [];
-            for (const l of lines) {
-              if (!l.amount) continue;
-              const seg = l.segment === 'back' ? 'back' : l.segment === 'front' ? 'front' : 'total';
-              const byKey: Record<string, string> = {
-                medal: `medal_${seg}`, pressures: seg === 'back' ? 'pressure_back' : 'pressure_front',
-                skins: seg === 'back' || (l.holeNumber ?? 0) > 9 ? 'skins_back' : 'skins_front',
-                caros: 'caros', units: 'units', manchas: 'manchas', culebras: 'culebras',
-                rayas: seg === 'back' ? 'rayas_back' : seg === 'front' ? 'rayas_front' : 'rayas_medal_total',
-              };
-              out.push({
-                from_profile_id: l.amount > 0 ? cb.target_profile_id : cb.initiator_profile_id,
-                to_profile_id: l.amount > 0 ? cb.initiator_profile_id : cb.target_profile_id,
-                amount: Math.abs(l.amount),
-                bet_type: byKey[l.key] ?? 'medal_total',
-                segment: l.segment,
-                hole_number: l.holeNumber ?? null,
-                label: l.label,
-              });
-            }
-            crossSettlements.push({ id: cb.cross_bet_id, lines: out });
-          }
-        }
-      } catch (e) { devWarn('cross bet settlement skipped', e); }
-
       try {
         if (ledgerRecords.length > 0) {
           const { error: ledgerError } = await supabase.rpc('finalize_round_bets', {
@@ -1935,13 +1891,13 @@ export const useRoundManagement = ({
         return false;
       }
 
-      // Settle crossings separately (non-fatal: the round closes regardless).
-      for (const cs of crossSettlements) {
-        const { error: cbErr } = await (supabase.rpc as any)('settle_cross_bet', { p_cross_bet_id: cs.id, p_lines: cs.lines });
-        if (cbErr) {
-          devWarn('settle_cross_bet failed', cbErr);
-          toast.warning(trs("La ronda se cerró, pero el cruce quedó pendiente de liquidar"));
-        }
+      // Crossings have their own idempotent ledger, using the origin course on both closes.
+      try {
+        const { settleRoundCrossBets } = await import('@/lib/settleRoundCrossBets');
+        await settleRoundCrossBets(roundState.id);
+      } catch (error) {
+        devWarn('Crossing settlement pending', error);
+        toast.warning(trs("La ronda se cerró, pero el cruce quedó pendiente de liquidar"));
       }
 
       // Generate and save the round snapshot for historical view.
