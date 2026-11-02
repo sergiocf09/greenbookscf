@@ -2784,6 +2784,7 @@ export type Database = {
           initiator_initials: string
           initiator_name: string
           initiator_profile_id: string
+          origin_round_id: string
           target_color: string
           target_initials: string
           target_name: string

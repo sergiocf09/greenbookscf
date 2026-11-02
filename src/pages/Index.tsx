@@ -267,6 +267,7 @@ const Index = () => {
     acceptInvitation: acceptCrossInvitation,
     declineInvitation: declineCrossInvitation,
     crossBets,
+    sentPendingInvitations: crossPendingSent,
     refetchCrossBets,
     sendInvitation,
     isSending,
@@ -2758,6 +2759,7 @@ const Index = () => {
             onStartNewRound={startNewRound}
             onLeaveRound={handleLeaveCurrentRound}
             crossBets={crossBets}
+            crossPendingSent={crossPendingSent}
             onUpdateCrossBetConfig={updateCrossBetConfig}
           />
         )}

@@ -51,7 +51,7 @@ export const CrossBetInvitationsSheet: React.FC<CrossBetInvitationsSheetProps> =
             <SheetTitle className="text-base">{trs("Invitaciones de Cruce")}</SheetTitle>
           </div>
           <p className="text-xs text-muted-foreground">
-            {trs("Alguien quiere cruzar tarjeta contigo. Al aceptar quedas registrado en su ronda.")}
+            {trs("Alguien quiere cruzar tarjeta contigo. Al aceptar, el cruce aparecerá en tu propia ronda.")}
           </p>
         </SheetHeader>
         {invitations.length === 0 ? (
@@ -85,7 +85,7 @@ export const CrossBetInvitationsSheet: React.FC<CrossBetInvitationsSheetProps> =
                       className="flex-1 gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10"
                       disabled={busy} onClick={() => handle(onDecline, inv.invitationId)}>
                       {busy && isDeclining ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
-                      Declinar
+                      {trs('Declinar')}
                     </Button>
                     <Button size="sm" className="flex-1 gap-1.5"
                       disabled={busy} onClick={() => handle(onAccept, inv.invitationId)}>

@@ -134,6 +134,13 @@
       "when": 1793638691658,
       "tag": "0018_remove_round_cross_bet",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793639933913,
+      "tag": "0019_cross_bets_mirror_target_round",
+      "breakpoints": true
     }
   ]
 }
