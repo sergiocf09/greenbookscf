@@ -5,7 +5,8 @@
  */
 import { Player, PlayerScore, BetConfig, GolfCourse } from '@/types/golf';
 import { calculateStrokesPerHole, getSegmentHoleRanges } from '../handicapUtils';
-import { BetSummary } from './shared';
+import { BetSummary, groupPlayersByGroup } from './shared';
+import { resolveConfigForGroup } from '../groupBetOverrides';
 import { getMedalSlidingAbsoluteWinner } from './medalGeneralSliding';
 
 type Segment = 'front' | 'back' | 'total';
@@ -94,6 +95,17 @@ export const calculateMedalGeneralBets = (
   course: GolfCourse,
   startingHole: 1 | 10 = 1
 ): BetSummary[] => {
+  const groups = groupPlayersByGroup(players);
+  const scope = config.medalGeneral?.scope ?? 'global';
+  if (groups.length > 1 && scope !== 'global') {
+    const groupResults = groups.flatMap(group => calculateMedalGeneralBets(
+      group, scores, resolveConfigForGroup(config, group[0]?.groupId), course, startingHole
+    ));
+    if (scope === 'group') return groupResults;
+    return [...groupResults, ...calculateMedalGeneralBets(players, scores, {
+      ...config, medalGeneral: { ...config.medalGeneral, scope: 'global' },
+    }, course, startingHole)];
+  }
   if (!config.medalGeneral?.enabled || players.length < 2) return [];
 
   // Respect participantIds: when defined, only listed players join the pool.

@@ -1383,6 +1383,9 @@ export const useRoundManagement = ({
               bilateralHandicaps: [crossGroupBilateral],
               betOverrides: pairOverrides,
               groupBetOverrides: {},
+              // Pool results already come from the main engine; never settle
+              // Medal General a second time as an isolated cross-group pair.
+              medalGeneral: { ...betConfigWithHandicaps.medalGeneral, enabled: false },
               manchas: { ...betConfigWithHandicaps.manchas, enabled: false },
               culebras: { ...betConfigWithHandicaps.culebras, enabled: false },
               pinguinos: { ...betConfigWithHandicaps.pinguinos, enabled: false },
