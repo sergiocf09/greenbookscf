@@ -1,6 +1,8 @@
 // Oyeses (Closest to the Pin) Calculations
 import { Player, PlayerScore, BetConfig, GolfCourse, OyesModality } from '@/types/golf';
 import { BetSummary, sortHolesByPlayOrder } from './bets/shared';
+import { groupPlayersByGroup } from './bets/shared';
+import { resolveConfigForGroup } from './groupBetOverrides';
 
 /**
  * Oyeses result per player per hole for display
@@ -439,6 +441,12 @@ export const calculateOyesesBets = (
   course: GolfCourse,
   startingHole: 1 | 10 = 1
 ): BetSummary[] => {
+  const groups = groupPlayersByGroup(players);
+  if (groups.length > 1) {
+    return groups.flatMap(group => calculateOyesesBets(
+      group, scores, resolveConfigForGroup(config, group[0]?.groupId), course, startingHole
+    ));
+  }
   if (!config.oyeses.enabled) return [];
   
   const summaries: BetSummary[] = [];

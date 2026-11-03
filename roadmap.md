@@ -1,4 +1,6 @@
 # Roadmap — English translation
+## November 3 close discrepancy
+- [ ] Isolate Oyes and honor Medal General scope in the shared engine; verify live/close parity on the reported seven-player round without closing it.
 ## Cross-card historical accounting review
 - [x] Implemented separate historical cross reads across totals/rivals/categories/daily evolution and round summary; authorized only crossing players or linked round organizers, locked/replaced by crossing ID, excluded crossing rows from ordinary finalization guard. Repaired existing Sergio/Rodrigo (+50) and Saucedo/Rodrigo (+1050) settlements; repeated settlement preserved counts/totals. Signed-in UI shows +475 round +50 crossing = +525; mobile summary verified; 16 tests pass. Actual future second-round close not executed to avoid closing Rodrigo's live round.
 - [x] Verified Sergio's completed round: Sergio–Rodrigo crossing recorded +$50 at first close; Rodrigo has 18 confirmed holes but remains open. Historical screens read snapshots only and omit separate cross ledger rows. Recommend a separate cross-ledger read/summary in history, not altering round snapshots or duplicating cards. Also identified organizer-not-cross-player settlement failure for Saucedo's crossing; implementation is outside this diagnostic request.
