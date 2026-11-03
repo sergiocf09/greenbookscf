@@ -875,6 +875,7 @@ interface AuditEntry {
   valueLabel: string;
   netAmount: number;
   isWinner: boolean;
+  details?: string[];
 }
 
 interface AuditSection {
@@ -923,6 +924,9 @@ const AuditEntriesList: React.FC<{
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium truncate">{formatPlayerNameTwoWords(entry.name)}</p>
                 <p className="text-[10px] text-muted-foreground">{entry.valueLabel}</p>
+                {entry.details?.map((d, i) => (
+                  <p key={i} className="text-[10px] text-muted-foreground tabular-nums">{d}</p>
+                ))}
               </div>
             </div>
             <span className={cn(
@@ -1825,10 +1829,16 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         const rows = pool.map(p => {
           const comparisons = pool
             .filter(r => r.id !== p.id)
-            .map(r => getMedalPairNets(p, r, scores, betConfig, course, holeFilter, startingHole))
+            .map(r => {
+              const c = getMedalPairNets(p, r, scores, betConfig, course, holeFilter, startingHole);
+              return c ? { ...c, rival: r } : null;
+            })
             .filter((x): x is NonNullable<typeof x> => !!x);
           const beaten = comparisons.filter(c => c.playerNet < c.rivalNet).length;
-          return { player: p, beaten, total: comparisons.length };
+          const gross = (scores.get(p.id) || [])
+            .filter(s => s.confirmed && s.strokes > 0 && holeFilter(s.holeNumber))
+            .reduce((sum, s) => sum + s.strokes, 0);
+          return { player: p, beaten, total: comparisons.length, comparisons, gross };
         }).filter(r => r.total > 0);
         if (rows.length < 2) return [];
         return rows.map(r => {
@@ -1841,7 +1851,12 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
             initials: r.player.initials,
             color: r.player.color,
             value: r.beaten,
-            valueLabel: `Vence ${r.beaten}/${r.total} (sliding)`,
+            valueLabel: `${trs("Gross")} ${r.gross} · ${trs("Vence")} ${r.beaten}/${r.total}`,
+            details: r.comparisons.map(c => {
+              const mark = c.playerNet < c.rivalNet ? '✓' : c.playerNet > c.rivalNet ? '✗' : '=';
+              const strokes = c.playerReceived > 0 ? ` (+${c.playerReceived})` : c.rivalReceived > 0 ? ` (${trs("da")} ${c.rivalReceived})` : '';
+              return `${mark} vs ${c.rival.initials}${strokes}: ${trs("neto")} ${c.playerNet}–${c.rivalNet}`;
+            }),
             netAmount,
             isWinner,
           };
