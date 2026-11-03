@@ -33,7 +33,8 @@ describe('group pool accounting', () => {
   });
   it('shared engine returns the same pool transfers whether called with all players or one group at a time', () => {
     const poolRows = (ps: Player[]) => calculateAllBets(ps, scores, config, course).filter(r => ['Oyes', 'Medal General'].includes(r.betType));
-    expect(poolRows(players)).toEqual([...poolRows(players.slice(0, 3)), ...poolRows(players.slice(3))].sort((a, b) => 0));
+    const canonical = (rows: ReturnType<typeof poolRows>) => rows.map(r => JSON.stringify(r)).sort();
+    expect(canonical(poolRows(players))).toEqual(canonical([...poolRows(players.slice(0, 3)), ...poolRows(players.slice(3))]));
   });
   it('global scope competes against everybody once, while both scope adds the independent group pools', () => {
     const global = calculateMedalGeneralBets(players, scores, { ...config, medalGeneral: { ...config.medalGeneral, scope: 'global' } }, course);
