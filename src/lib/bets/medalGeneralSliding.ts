@@ -29,7 +29,7 @@ export const getMedalPairNets = (
   course: GolfCourse,
   holeFilter: (h: number) => boolean,
   startingHole: 1 | 10 = 1
-): { playerNet: number; rivalNet: number; holes: number } | null => {
+): { playerNet: number; rivalNet: number; holes: number; playerGross: number; rivalGross: number; playerReceived: number; rivalReceived: number } | null => {
   const playerScores = (scores.get(player.id) || []).filter(
     (s) => s.confirmed && s.strokes > 0 && holeFilter(s.holeNumber)
   );
@@ -77,14 +77,24 @@ export const getMedalPairNets = (
 
   let playerNet = 0;
   let rivalNet = 0;
+  let playerGross = 0;
+  let rivalGross = 0;
+  let playerReceived = 0;
+  let rivalReceived = 0;
   sharedHoles.forEach((hole) => {
     const p = playerScores.find((s) => s.holeNumber === hole)!;
     const r = rivalByHole.get(hole)!;
-    playerNet += p.strokes - (playerStrokes[hole - 1] || 0);
-    rivalNet += r.strokes - (rivalStrokes[hole - 1] || 0);
+    const ps = playerStrokes[hole - 1] || 0;
+    const rs = rivalStrokes[hole - 1] || 0;
+    playerGross += p.strokes;
+    rivalGross += r.strokes;
+    playerReceived += ps;
+    rivalReceived += rs;
+    playerNet += p.strokes - ps;
+    rivalNet += r.strokes - rs;
   });
 
-  return { playerNet, rivalNet, holes: sharedHoles.length };
+  return { playerNet, rivalNet, holes: sharedHoles.length, playerGross, rivalGross, playerReceived, rivalReceived };
 };
 
 export interface MedalSlidingComparison {
