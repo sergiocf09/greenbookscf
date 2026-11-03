@@ -7,3 +7,4 @@ Friend-group display order is persisted in `friend_groups.sort_order`; all group
 - Snapshot saves recover transport failures by reading back the exact attempt's timestamp and version; never accept an older snapshot or repeat financial writes to recover a lost response.
 - Historical round snapshots remain immutable for intra-round bets; add cross-card settlement records separately from the authenticated own-history RPC, deduplicate by ledger ID, and never increase played-round counts for a crossing.
 - Oyes pools and carry are isolated by player group; Medal General respects group/global/both scope in the shared engine and is never recalculated in synthetic cross-group pairs, so live and closing totals agree.
+- All group player removals share a verified persistence callback; update local players, score maps and ID aliases only after a returned deleted row, so failed or denied removals cannot masquerade as success.
