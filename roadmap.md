@@ -1,6 +1,6 @@
 # Roadmap — English translation
 ## Second-group player removal
-- [ ] Persist individual removals in secondary groups, retain players on failed saves, and verify targeted regression tests. Do not automatically delete existing captured cards.
+- [x] Persist individual removals in secondary groups; both group paths now verify a returned deleted row before hiding players, retaining them on failed saves. Seven removal/group-pool tests pass; build OK. Existing Jorge/Luis/Felipe cards (18 scores each) were not deleted; live destructive save/reload remains unverified to preserve their captures.
 ## November 3 close discrepancy
 - [x] Isolated Oyes pools/carry by group, honored Medal General group/global/both scope, and disabled duplicate Medal General in close-time synthetic pairs. Nine focused tests pass; authenticated read-only check of the seven-player/two-group round reproduces 24 old cross-group Oyes rows and 18 old Medal rows, now zero, with matching combined/per-group pool results. Signed-in results show Sergio winning each Medal segment within his group. Build OK. Actual closure intentionally not executed; unrelated existing Rayas suite has ten failures and was not modified.
 ## Cross-card historical accounting review
