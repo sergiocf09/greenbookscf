@@ -22,6 +22,7 @@ import { useBetConfigPersistence } from '@/hooks/useBetConfigPersistence';
 import { useRoundHandicaps } from '@/hooks/useRoundHandicaps';
 import { calculateStrokesPerHole } from '@/lib/handicapUtils';
 import { supabase } from '@/integrations/supabase/client';
+import { removePersistedRoundPlayer } from '@/lib/removeRoundPlayer';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -1118,12 +1119,39 @@ const Index = () => {
 
   const handleGroupPlayersChange = useCallback(
     async (groupId: string, newPlayers: Player[]) => {
-      // Update local state immediately for snappy UI
-      setPlayerGroups((prev) => prev.map((g) => (g.id === groupId ? { ...g, players: newPlayers } : g)));
-
       const currentGroup = playerGroups.find((g) => g.id === groupId);
       const existingPlayers = currentGroup?.players ?? [];
       const existingIds = new Set<string>(existingPlayers.map((p) => p.id));
+      const removedPlayers = existingPlayers.filter(p => !newPlayers.some(next => next.id === p.id));
+      for (const player of removedPlayers) {
+        if (player.profileId === roundState.organizerProfileId) {
+          toast.error(trs("El organizador de la ronda no puede ser eliminado"));
+          return;
+        }
+        if (roundState.id) {
+          const rpId = roundPlayerIds.get(player.id) ?? (player.profileId ? roundPlayerIds.get(player.profileId) : undefined);
+          if (!rpId) {
+            toast.error(trs("Error al eliminar jugador"));
+            return;
+          }
+          try {
+            await removePersistedRoundPlayer(roundState.id, rpId);
+          } catch (error) {
+            devError('Error removing secondary-group player:', error);
+            toast.error(trs("Error al eliminar jugador"));
+            return;
+          }
+          setRoundPlayerIds(prev => new Map([...prev].filter(([, value]) => value !== rpId)));
+        }
+        setPlayerGroups(prev => prev.map(g => ({ ...g, players: g.players.filter(p => p.id !== player.id) })));
+        setScores(prev => {
+          const next = new Map(prev);
+          next.delete(player.id);
+          if (player.profileId) next.delete(player.profileId);
+          return next;
+        });
+      }
+      setPlayerGroups(prev => prev.map(g => g.id === groupId ? { ...g, players: newPlayers } : g));
 
       // Persist handicap/teeColor changes for EXISTING players (same logic as handlePlayersChange for Grupo 1)
       if (roundState.id) {
@@ -1186,7 +1214,7 @@ const Index = () => {
         await addPlayerToRound(p, groupId);
       }
     },
-    [addPlayerToRound, playerGroups, setPlayerGroups, roundState.id, roundPlayerIds]
+    [addPlayerToRound, playerGroups, setPlayerGroups, roundState.id, roundState.organizerProfileId, roundPlayerIds, setRoundPlayerIds, setScores]
   );
 
   const handleRestorePendingRound = useCallback((roundId: string) => {
@@ -1410,43 +1438,30 @@ const Index = () => {
     const playerToRemove = players.find(p => p.id === playerId);
     if (playerToRemove && roundState.organizerProfileId && playerToRemove.profileId === roundState.organizerProfileId) {
       toast.error(trs("El organizador de la ronda no puede ser eliminado"));
-      return;
+      return false;
     }
     
     const rpId = roundPlayerIds.get(playerId);
+    if (roundState.id && !rpId) {
+      toast.error(trs("Error al eliminar jugador"));
+      return false;
+    }
     
     // If we have a round and round_player entry, delete from DB
     if (roundState.id && rpId) {
       try {
-        const { error } = await supabase
-          .from('round_players')
-          .delete()
-          .eq('id', rpId);
-        
-        if (error) {
-          devError('Error removing player from database:', error);
-          toast.error(trs("Error al eliminar jugador (solo el organizador puede hacerlo)"));
-          return;
-        }
-        
-        // Also remove any related handicaps
-        await supabase
-          .from('round_handicaps')
-          .delete()
-          .or(`player_a_id.eq.${rpId},player_b_id.eq.${rpId}`);
+        await removePersistedRoundPlayer(roundState.id, rpId);
         
         // Remove from roundPlayerIds mapping
         setRoundPlayerIds(prev => {
-          const next = new Map(prev);
-          next.delete(playerId);
-          return next;
+          return new Map([...prev].filter(([, value]) => value !== rpId));
         });
         
         toast.success(trs("Jugador eliminado"));
       } catch (err) {
         devError('Error in handleRemovePlayer:', err);
         toast.error(trs("Error al eliminar jugador"));
-        return;
+        return false;
       }
     }
     
@@ -1459,6 +1474,7 @@ const Index = () => {
       next.delete(playerId);
       return next;
     });
+    return true;
   }, [roundState.id, roundState.organizerProfileId, roundPlayerIds, setRoundPlayerIds, setPlayers, setScores, players]);
 
   // Handle players change - initialize scores for new players when round is active
@@ -1473,7 +1489,8 @@ const Index = () => {
 
     // Handle removals first (persist to DB)
     for (const player of removedPlayers) {
-      await handleRemovePlayer(player.id);
+      const removed = await handleRemovePlayer(player.id);
+      if (!removed) return;
     }
 
     // Detect handicap and tee color changes and persist to database
