@@ -32,4 +32,11 @@ describe('Medal General sliding', () => {
     const noWinner = { ...cfg('bilateral'), bilateralHandicaps: bilateralHandicaps.map((b) => b.playerAId === 'G' && b.playerBId === 'R' ? pair('G','R',0) : b) };
     expect(calculateMedalGeneralBets(players, scores, noWinner, course)).toEqual([]);
   });
+
+  it('players without scores yet (other group) do not block the winner', () => {
+    const withIdle = [...players, { id: 'X', name: 'X', handicap: 0, groupId: 'g2' }];
+    const s = calculateMedalGeneralBets(withIdle, scores, cfg('bilateral'), course);
+    const winnerRows = s.filter((x) => x.amount > 0);
+    expect(winnerRows.map((x) => x.vsPlayer).sort()).toEqual(['C', 'G', 'L']);
+  });
 });
