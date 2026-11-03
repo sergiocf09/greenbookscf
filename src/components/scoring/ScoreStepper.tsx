@@ -12,6 +12,11 @@ interface ScoreStepperProps {
   rightSlot?: React.ReactNode;
 }
 
+/**
+ * Optimistic stepper: the number updates on the same frame as the tap, while the
+ * (heavier) parent update — bet recalculation, persistence — runs as a
+ * low-priority transition so it never blocks visual feedback.
+ */
 export const ScoreStepper: React.FC<ScoreStepperProps> = ({
   label,
   value,
@@ -20,7 +25,22 @@ export const ScoreStepper: React.FC<ScoreStepperProps> = ({
   className,
   rightSlot,
 }) => {
-  const displayValue = value === 0 ? (min === 0 ? 0 : '-') : value;
+  const [local, setLocal] = React.useState(value);
+  const localRef = React.useRef(value);
+
+  React.useEffect(() => {
+    localRef.current = value;
+    setLocal(value);
+  }, [value]);
+
+  const commit = (next: number) => {
+    if (next === localRef.current) return;
+    localRef.current = next;
+    setLocal(next);
+    React.startTransition(() => onChange(next));
+  };
+
+  const displayValue = local === 0 ? (min === 0 ? 0 : '-') : local;
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
@@ -28,13 +48,14 @@ export const ScoreStepper: React.FC<ScoreStepperProps> = ({
 
       <div className="flex items-center gap-1">
         <Button
+          type="button"
           variant="outline"
           size="icon"
-          className="h-6 w-6 rounded-full"
-          onClick={() => onChange(Math.max(min, value - 1))}
-          disabled={value <= min}
+          className="h-8 w-8 rounded-full touch-manipulation select-none active:scale-90 active:bg-muted transition-transform"
+          onClick={() => commit(Math.max(min, localRef.current - 1))}
+          disabled={local <= min}
         >
-          <Minus className="h-3 w-3" />
+          <Minus className="h-3.5 w-3.5" />
         </Button>
 
         <div className="w-8 text-center flex items-center justify-center gap-1">
@@ -43,12 +64,13 @@ export const ScoreStepper: React.FC<ScoreStepperProps> = ({
         </div>
 
         <Button
+          type="button"
           variant="outline"
           size="icon"
-          className="h-6 w-6 rounded-full"
-          onClick={() => onChange(value + 1)}
+          className="h-8 w-8 rounded-full touch-manipulation select-none active:scale-90 active:bg-muted transition-transform"
+          onClick={() => commit(localRef.current + 1)}
         >
-          <Plus className="h-3 w-3" />
+          <Plus className="h-3.5 w-3.5" />
         </Button>
       </div>
     </div>
