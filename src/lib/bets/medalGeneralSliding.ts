@@ -139,6 +139,11 @@ export const getMedalSlidingAbsoluteWinner = (
   holeFilter: (h: number) => boolean,
   startingHole: 1 | 10 = 1
 ): { winner: Player; rivals: Player[]; comparisons: MedalSlidingComparison[] } | null => {
+  // Only players with confirmed scores in this segment compete (same as USGA
+  // mode): players who haven't started (e.g. another group) must not block.
+  pool = pool.filter((p) =>
+    (scores.get(p.id) || []).some((s) => s.confirmed && s.strokes > 0 && holeFilter(s.holeNumber))
+  );
   if (pool.length < 2) return null;
 
   for (const candidate of pool) {
