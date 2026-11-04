@@ -1,3 +1,4 @@
+import { findMissingCloseHoles } from '@/lib/findMissingCloseHoles';
 import { trs } from '@/i18n/tr';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
