@@ -1,3 +1,4 @@
+import { findMissingCloseHoles } from '@/lib/findMissingCloseHoles';
 import { trs } from '@/i18n/tr';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -1137,6 +1138,22 @@ export const useRoundManagement = ({
         return new Set(Array.from({ length: end - start + 1 }, (_, i) => start + i));
       })();
 
+      // Block close when any player lacks confirmed real scores (no silent par fill).
+      {
+        const missing = findMissingCloseHoles(sanitizedPlayers, scores as any, activeHoleNumbersForClose);
+        if (missing.length > 0) {
+          const detail = missing
+            .map((m) => `${m.name}: ${m.holes.length === activeHoleNumbersForClose.size ? trs('sin captura') : `H${m.holes.join(', H')}`}`)
+            .join(' · ');
+          await fail('preValidation', new Error(`Missing scores: ${detail}`), report.attemptId);
+          toast.error(trs('Faltan scores por capturar'), {
+            description: `${detail}. ${trs('Captúralos, quita al jugador o cierra como incompleta.')}`,
+            duration: 12000,
+          });
+          return false;
+        }
+      }
+
       // IMPORTANT: Do NOT mark the round as completed until ALL persistence succeeds.
       // Otherwise we can end up with a "completed" round without ledger/snapshot/sliding.
       try {
@@ -1168,7 +1185,8 @@ export const useRoundManagement = ({
             net_score: score.netScore,
             oyes_proximity: score.oyesProximity,
             oyes_proximity_sangron: (score as any).oyesProximitySangron ?? null,
-            confirmed: activeHoleNumbersForClose.has(score.holeNumber),
+            // Never promote placeholder (default par) scores to confirmed on close.
+            confirmed: activeHoleNumbersForClose.has(score.holeNumber) && !!score.confirmed,
           });
         });
       }
