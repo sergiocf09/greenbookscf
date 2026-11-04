@@ -1992,5 +1992,8 @@
   "por": "by",
   "Vence": "Beats",
   "da": "gives",
-  "neto": "net"
+  "neto": "net",
+  "Faltan scores por capturar": "Scores still missing",
+  "sin captura": "no scores",
+  "Captúralos, quita al jugador o cierra como incompleta.": "Enter them, remove the player, or close as incomplete."
 }
