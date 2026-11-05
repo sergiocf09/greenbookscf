@@ -120,6 +120,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
       if (eventRes.error) throw eventRes.error;
       if (partRes.error) throw partRes.error;
       setEvent(eventRes.data);
+      const mdStbTable = resolveLeaderboardStablefordPoints(eventRes.data?.rules_json);
 
       const partData = partRes.data || [];
       const profileIds = partData.filter(p => p.profile_id).map(p => p.profile_id!);
@@ -255,7 +256,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
           const strokesReceived = fullStrokes + (idx < remainder ? 1 : 0);
           const netStrokes = hs.strokes - strokesReceived;
           const diff = netStrokes - par;
-          const stb = stablefordPointsForDiff(diff, resolveLeaderboardStablefordPoints(event?.rules_json));
+          const stb = stablefordPointsForDiff(diff, mdStbTable);
 
           const entry = acc[dayNum][partId];
           if (!entry) continue;
