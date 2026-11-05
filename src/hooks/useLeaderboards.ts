@@ -205,7 +205,7 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
 
   const fetchDetail = useCallback(async () => {
     if (!leaderboardId) return;
-    setLoading(true);
+    setLoading(prev => prev);
     try {
       const [eventRes, partRes, linkedRes] = await Promise.all([
         supabase.from('leaderboard_events').select('*').eq('id', leaderboardId).single(),
@@ -266,11 +266,21 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
       }
 
       if (roundIds.length > 0) {
-        const [rpRes, roundsRes] = await Promise.all([
-          supabase.from('round_players').select('id, profile_id, round_id, handicap_for_round, guest_name').in('round_id', roundIds),
+        // Server-side RPC so every viewer sees all linked rounds' players/scores,
+        // not only those of rounds they participate in (RLS on hole_scores).
+        const [liveRes, roundsRes] = await Promise.all([
+          (supabase.rpc as any)('get_leaderboard_live_scores', { p_leaderboard_id: leaderboardId }),
           supabase.from('rounds').select('id, course_id').in('id', roundIds),
         ]);
-        const rpData = rpRes.data;
+        const liveRows: any[] = liveRes.data || [];
+        const rpSeen = new Map<string, any>();
+        for (const r of liveRows) {
+          if (!rpSeen.has(r.round_player_id)) rpSeen.set(r.round_player_id, {
+            id: r.round_player_id, profile_id: r.profile_id, round_id: r.round_id,
+            handicap_for_round: r.handicap_for_round, guest_name: r.guest_name,
+          });
+        }
+        const rpData = Array.from(rpSeen.values());
         const roundsData = roundsRes.data;
         
         const courseIds = [...new Set((roundsData || []).map(r => r.course_id))];
@@ -319,11 +329,9 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
         }
 
         if (rpIds.length > 0) {
-          const { data: holeScores } = await supabase
-            .from('hole_scores')
-            .select('round_player_id, hole_number, strokes, confirmed')
-            .in('round_player_id', rpIds)
-            .eq('confirmed', true);
+          const holeScores = liveRows
+            .filter(r => r.hole_number != null && rpToParticipant.has(r.round_player_id))
+            .map(r => ({ round_player_id: r.round_player_id, hole_number: r.hole_number, strokes: r.strokes }));
 
           for (const hs of (holeScores || [])) {
             const participantId = rpToParticipant.get(hs.round_player_id);
@@ -376,6 +384,8 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
 
   useEffect(() => {
     fetchDetail();
+    const t = setInterval(() => { if (document.visibilityState === 'visible') fetchDetail(); }, 30000);
+    return () => clearInterval(t);
   }, [fetchDetail]);
 
   const addParticipant = useCallback(async (params: {
