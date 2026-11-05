@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatPlayerName } from '@/lib/playerInput';
-import { computeRoundModeTotals, type HoleInfo, type ScoringMode } from '@/lib/leaderboardAggregation';
+import { computeRoundModeTotals, resolveLeaderboardStablefordPoints, type HoleInfo, type ScoringMode } from '@/lib/leaderboardAggregation';
 
 export interface HistoricalCompetitionStanding {
   participantId: string;
@@ -147,6 +147,7 @@ export function useHistoricalCompetitions(
             const scores = rpId ? (scoresByRp.get(rpId) || []) : [];
             const totals = computeRoundModeTotals(
               scores, holes, Number(part.handicap_for_leaderboard) || 0,
+              resolveLeaderboardStablefordPoints(lb.rules_json),
             );
             const prof = part.profile_id ? profileMap[part.profile_id] : null;
             return {

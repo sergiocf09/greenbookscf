@@ -1,3 +1,5 @@
+import { StablefordPointsEditor } from '@/components/leaderboards/StablefordPointsEditor';
+import { LEADERBOARD_DEFAULT_STABLEFORD_POINTS, type LeaderboardStablefordPoints } from '@/lib/leaderboardAggregation';
 import { trs } from '@/i18n/tr';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -44,6 +46,7 @@ const Leaderboards = () => {
   const [formDescription, setFormDescription] = useState('');
   const [formDate, setFormDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [formModes, setFormModes] = useState<string[]>(['gross', 'net']);
+  const [formStbPoints, setFormStbPoints] = useState<LeaderboardStablefordPoints>({ ...LEADERBOARD_DEFAULT_STABLEFORD_POINTS });
 
   const activeEvents = events.filter(e => e.status === 'active');
   const completedEvents = events.filter(e => e.status === 'completed');
@@ -62,6 +65,7 @@ const Leaderboards = () => {
       description: formDescription.trim() || undefined,
       scoring_modes: formModes,
       start_date: formDate,
+      rules_json: formModes.includes('stableford') ? { stableford_points: formStbPoints } : {},
     });
     setCreating(false);
     if (result) {
@@ -69,6 +73,7 @@ const Leaderboards = () => {
       setFormName('');
       setFormDescription('');
       setFormModes(['gross', 'net']);
+    setFormStbPoints({ ...LEADERBOARD_DEFAULT_STABLEFORD_POINTS });
       navigate(`/leaderboards/${result.id}`);
     }
   };
@@ -218,6 +223,9 @@ const Leaderboards = () => {
                         </label>
                       ))}
                     </div>
+                    {formModes.includes('stableford') && (
+                      <div className="mt-2"><StablefordPointsEditor value={formStbPoints} onChange={setFormStbPoints} /></div>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" className="flex-1" onClick={() => setCreateType(null)}>

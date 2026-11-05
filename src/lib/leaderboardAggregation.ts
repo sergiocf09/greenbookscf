@@ -134,6 +134,7 @@ export function computeRoundModeTotals(
   scores: { hole_number: number; strokes: number | null }[],
   holes: HoleInfo[],
   handicap: number,
+  stablefordPoints: LeaderboardStablefordPoints = LEADERBOARD_DEFAULT_STABLEFORD_POINTS,
 ): RoundModeTotals {
   const totals: RoundModeTotals = {
     grossTotal: 0, netTotal: 0, grossVsPar: 0, netVsPar: 0,
@@ -151,12 +152,7 @@ export function computeRoundModeTotals(
     const strokesReceived = fullStrokes + (idx >= 0 && idx < remainder ? 1 : 0);
     const netStrokes = s.strokes - strokesReceived;
     const diff = netStrokes - par;
-    let stb = 0;
-    if (diff <= -3) stb = 5;
-    else if (diff === -2) stb = 4;
-    else if (diff === -1) stb = 3;
-    else if (diff === 0) stb = 2;
-    else if (diff === 1) stb = 1;
+    const stb = stablefordPointsForDiff(diff, stablefordPoints);
 
     totals.grossTotal += s.strokes;
     totals.netTotal += netStrokes;
@@ -166,4 +162,37 @@ export function computeRoundModeTotals(
     totals.holesPlayed += 1;
   }
   return totals;
+}
+
+/** Stableford point table configurable per leaderboard (rules_json.stableford_points). */
+export interface LeaderboardStablefordPoints {
+  albatross: number; eagle: number; birdie: number; par: number;
+  bogey: number; doubleBogey: number; tripleBogey: number; quadrupleOrWorse: number;
+}
+
+/** Historic leaderboard table (kept as default so existing leaderboards don't change). */
+export const LEADERBOARD_DEFAULT_STABLEFORD_POINTS: LeaderboardStablefordPoints = {
+  albatross: 5, eagle: 4, birdie: 3, par: 2, bogey: 1, doubleBogey: 0, tripleBogey: 0, quadrupleOrWorse: 0,
+};
+
+export function resolveLeaderboardStablefordPoints(rules: unknown): LeaderboardStablefordPoints {
+  const raw = (rules && typeof rules === 'object' ? (rules as any).stableford_points : null) || {};
+  const out = { ...LEADERBOARD_DEFAULT_STABLEFORD_POINTS };
+  for (const k of Object.keys(out) as (keyof LeaderboardStablefordPoints)[]) {
+    const v = Number(raw[k]);
+    if (raw[k] !== undefined && raw[k] !== null && Number.isFinite(v)) out[k] = v;
+  }
+  return out;
+}
+
+/** Points for a net score relative to par (diff = net - par). */
+export function stablefordPointsForDiff(diff: number, pts: LeaderboardStablefordPoints = LEADERBOARD_DEFAULT_STABLEFORD_POINTS): number {
+  if (diff <= -3) return pts.albatross;
+  if (diff === -2) return pts.eagle;
+  if (diff === -1) return pts.birdie;
+  if (diff === 0) return pts.par;
+  if (diff === 1) return pts.bogey;
+  if (diff === 2) return pts.doubleBogey;
+  if (diff === 3) return pts.tripleBogey;
+  return pts.quadrupleOrWorse;
 }
