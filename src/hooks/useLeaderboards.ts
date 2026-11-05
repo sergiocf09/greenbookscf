@@ -58,6 +58,8 @@ export interface StandingsEntry {
   netTotal: number;
   holesPlayed: number;
   roundsPlayed: number;
+  /** Handicap the player has in the linked round (for transparency when edited). */
+  roundHandicap?: number;
 }
 
 export function useLeaderboards() {
@@ -324,6 +326,7 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
             rpToParticipant.set(rp.id, participantId);
             rpToRound.set(rp.id, rp.round_id);
             const partEntry = standingsMap.get(participantId);
+            if (partEntry && rp.handicap_for_round != null) partEntry.roundHandicap = Math.round(Number(rp.handicap_for_round));
             rpToHandicap.set(rp.id, partEntry?.participant.handicap_for_leaderboard ?? rp.handicap_for_round);
           }
         }
