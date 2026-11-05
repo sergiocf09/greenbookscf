@@ -249,6 +249,7 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
       const { data: linkedRounds } = linkedRes;
       const roundIds = (linkedRounds || []).map(lr => lr.round_id);
 
+      const stbTable = resolveLeaderboardStablefordPoints(eventData.rules_json);
       const standingsMap = new Map<string, StandingsEntry>();
       for (const part of enrichedParticipants) {
         standingsMap.set(part.id, {
@@ -347,12 +348,7 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
             const netVsPar = netStrokes - par;
 
             const diff = netStrokes - par;
-            let stbPoints = 0;
-            if (diff <= -3) stbPoints = 5;
-            else if (diff === -2) stbPoints = 4;
-            else if (diff === -1) stbPoints = 3;
-            else if (diff === 0) stbPoints = 2;
-            else if (diff === 1) stbPoints = 1;
+            const stbPoints = stablefordPointsForDiff(diff, stbTable);
 
             entry.grossTotal += hs.strokes;
             entry.grossVsPar += grossVsPar;

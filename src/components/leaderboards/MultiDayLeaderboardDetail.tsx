@@ -253,12 +253,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
           const strokesReceived = fullStrokes + (idx < remainder ? 1 : 0);
           const netStrokes = hs.strokes - strokesReceived;
           const diff = netStrokes - par;
-          let stb = 0;
-          if (diff <= -3) stb = 5;
-          else if (diff === -2) stb = 4;
-          else if (diff === -1) stb = 3;
-          else if (diff === 0) stb = 2;
-          else if (diff === 1) stb = 1;
+          const stb = stablefordPointsForDiff(diff, resolveLeaderboardStablefordPoints(event?.rules_json));
 
           const entry = acc[dayNum][partId];
           if (!entry) continue;
