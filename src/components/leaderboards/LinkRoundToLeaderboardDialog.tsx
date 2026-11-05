@@ -18,6 +18,7 @@ import { getAllPlayersFromAllGroups } from '@/components/GroupSelector';
 import { Loader2, Search, Trophy, ChevronRight, ArrowLeft, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { calculateCourseHandicap } from '@/lib/usgaHandicap';
 
 interface LinkRoundToLeaderboardDialogProps {
   open: boolean;
@@ -129,9 +130,30 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
             .map(p => p.id),
         ),
       );
-      setHandicaps(new Map(allPlayers.map(p => [p.id, p.handicap])));
+      setHandicaps(new Map(allPlayers.map(p => [p.id, Math.round(Number(p.handicap) || 0)])));
+      // Default to the WHS Course Handicap (integer) per player's tee, as in setup.
+      if (roundId) {
+        (async () => {
+          const { data: round } = await supabase.from('rounds').select('course_id, tee_color').eq('id', roundId).single();
+          if (!round) return;
+          const [{ data: tees }, { data: holes }] = await Promise.all([
+            supabase.from('course_tees').select('tee_color, course_rating, slope_rating').eq('course_id', (round as any).course_id),
+            supabase.from('course_holes').select('par').eq('course_id', (round as any).course_id),
+          ]);
+          const par = (holes || []).reduce((s: number, h: any) => s + (h.par || 0), 0) || 72;
+          const norm = (c?: string | null) => (c || '').trim().toLowerCase();
+          setHandicaps(new Map(allPlayers.map(p => {
+            const idx = Number(p.handicap) || 0;
+            const tee = (tees || []).find((t: any) => norm(t.tee_color) === norm(p.teeColor || (round as any).tee_color));
+            const ch = Number.isInteger(idx) || !tee
+              ? Math.round(idx)
+              : calculateCourseHandicap(idx, Number(tee.slope_rating), Number(tee.course_rating), par);
+            return [p.id, ch];
+          })));
+        })();
+      }
     }
-  }, [open, allPlayers, existingKeys, preselectedLeaderboardId]);
+  }, [open, allPlayers, existingKeys, preselectedLeaderboardId, roundId]);
 
   const handleSelectLeaderboard = useCallback((leaderboardId: string) => {
     setSelectedLeaderboardId(leaderboardId);
@@ -484,10 +506,11 @@ export const LinkRoundToLeaderboardDialog: React.FC<LinkRoundToLeaderboardDialog
                               <Input
                                 type="number"
                                 value={hcp}
-                                onChange={e => updateHandicap(player.id, parseFloat(e.target.value) || 0)}
+                                onChange={e => updateHandicap(player.id, Math.round(parseFloat(e.target.value) || 0))}
                                 className="w-16 h-7 text-center text-sm"
                                 disabled={!isSelected}
-                                step="0.1"
+                                step="1"
+                                inputMode="numeric"
                               />
                             </div>
                           </div>
