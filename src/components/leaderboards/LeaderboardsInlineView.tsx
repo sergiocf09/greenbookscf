@@ -1,3 +1,5 @@
+import { StablefordPointsEditor } from '@/components/leaderboards/StablefordPointsEditor';
+import { LEADERBOARD_DEFAULT_STABLEFORD_POINTS, type LeaderboardStablefordPoints } from '@/lib/leaderboardAggregation';
 import { trs } from '@/i18n/tr';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -46,6 +48,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
   const [formDescription, setFormDescription] = useState('');
   const [formDate, setFormDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [formModes, setFormModes] = useState<string[]>(['gross', 'net']);
+  const [formStbPoints, setFormStbPoints] = useState<LeaderboardStablefordPoints>({ ...LEADERBOARD_DEFAULT_STABLEFORD_POINTS });
 
   // Multi-day state
   const todayStr = format(new Date(), 'yyyy-MM-dd');
@@ -65,6 +68,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
     setFormName('');
     setFormDescription('');
     setFormModes(['gross', 'net']);
+    setFormStbPoints({ ...LEADERBOARD_DEFAULT_STABLEFORD_POINTS });
     setMdDays([{ date: todayStr, label: '' }, { date: todayStr, label: '' }]);
     setMdAggregation('sum');
     setMdBestN(2);
@@ -100,7 +104,8 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
         })),
         aggregation: mdAggregation,
         best_n: mdAggregation === 'best_n' ? Math.min(mdBestN, sortedDays.length) : undefined,
-      };
+        ...(formModes.includes('stableford') ? { stableford_points: formStbPoints } : {}),
+      } as MultiDayRulesJson;
       result = await createEvent({
         name: formName.trim(),
         description: formDescription.trim() || undefined,
@@ -117,6 +122,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
         scoring_modes: formModes,
         start_date: formDate,
         competition_type: 'standard',
+        rules_json: formModes.includes('stableford') ? { stableford_points: formStbPoints } : {},
       });
     }
     setCreating(false);
@@ -291,6 +297,9 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                       </label>
                     ))}
                   </div>
+                  {formModes.includes('stableford') && (
+                    <div className="mt-2"><StablefordPointsEditor value={formStbPoints} onChange={setFormStbPoints} /></div>
+                  )}
                 </div>
                 <Button variant="outline" onClick={() => setCreateType(null)} className="w-full">
                   {trs("← Atrás")}
@@ -409,6 +418,9 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                       </label>
                     ))}
                   </div>
+                  {formModes.includes('stableford') && (
+                    <div className="mt-2"><StablefordPointsEditor value={formStbPoints} onChange={setFormStbPoints} /></div>
+                  )}
                 </div>
 
                 <Button variant="outline" onClick={() => setCreateType(null)} className="w-full">
