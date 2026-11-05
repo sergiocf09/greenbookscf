@@ -21,6 +21,8 @@ import { formatPlayerName, disambiguateInitials } from '@/lib/playerInput';
 import type { MultiDayRulesJson } from '@/types/leaderboard';
 import {
   computeAccumulatedStandings,
+  resolveLeaderboardStablefordPoints,
+  stablefordPointsForDiff,
   type DayStanding,
 } from '@/lib/leaderboardAggregation';
 import { format } from 'date-fns';

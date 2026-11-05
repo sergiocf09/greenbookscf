@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { formatPlayerName } from '@/lib/playerInput';
+import { resolveLeaderboardStablefordPoints } from '@/lib/leaderboardAggregation';
 
 export interface LeaderboardEvent {
   id: string;
