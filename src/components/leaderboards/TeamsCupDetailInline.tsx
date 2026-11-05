@@ -474,7 +474,7 @@ export const TeamsCupDetailInline: React.FC<Props> = ({ leaderboardId, onBack })
           [{
             leaderboard_id: leaderboardId,
             profile_id: profile.id,
-            handicap_for_leaderboard: indexHcp,            // decimal index
+            handicap_for_leaderboard: Math.round(indexHcp), // integer course handicap
             match_handicap: Math.round(indexHcp),           // integer column
             tee_color: 'white',
             cup_team_id: null,

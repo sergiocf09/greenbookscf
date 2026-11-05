@@ -160,7 +160,7 @@ export const LinkRoundToLeagueDialog: React.FC<LinkRoundToLeagueDialogProps> = (
             name,
             initials: prof?.initials ?? (rp as any).guest_initials ?? '?',
             color: prof?.avatar_color ?? (rp as any).guest_color ?? '#888',
-            handicap: (rp as any).handicap_for_round ?? 0,
+            handicap: Math.round(Number((rp as any).handicap_for_round) || 0),
           };
           const k = playerKey(row);
           if (seen.has(k)) continue;
@@ -232,7 +232,7 @@ export const LinkRoundToLeagueDialog: React.FC<LinkRoundToLeagueDialogProps> = (
 
       for (const player of roundPlayers) {
         if (!selectedKeys.has(player.key)) continue;
-        const hcp = handicaps.get(player.key) ?? player.handicap;
+        const hcp = Math.round(handicaps.get(player.key) ?? player.handicap);
 
         if (player.profileId) {
           if (existingProfileIds.has(player.profileId)) continue;
@@ -413,11 +413,12 @@ export const LinkRoundToLeagueDialog: React.FC<LinkRoundToLeagueDialogProps> = (
                             type="number"
                             value={hcp}
                             onChange={e =>
-                              updateHandicap(player.key, parseFloat(e.target.value) || 0)
+                              updateHandicap(player.key, Math.round(parseFloat(e.target.value) || 0))
                             }
                             className="w-16 h-7 text-center text-sm"
                             disabled={!isSelected}
-                            step="0.1"
+                            step="1"
+                            inputMode="numeric"
                           />
                         </div>
                       </div>

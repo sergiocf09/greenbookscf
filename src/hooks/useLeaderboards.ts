@@ -396,8 +396,8 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
           guest_name: params.guest_name || null,
           guest_initials: params.guest_initials || null,
           guest_color: params.guest_color || null,
-          handicap_for_leaderboard: params.handicap_for_leaderboard,
-          match_handicap: params.handicap_for_leaderboard,
+          handicap_for_leaderboard: Math.round(params.handicap_for_leaderboard),
+          match_handicap: Math.round(params.handicap_for_leaderboard),
           source_round_id: params.source_round_id || null,
         });
       if (error) throw error;
@@ -411,7 +411,7 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
     try {
       const { error } = await supabase
         .from('leaderboard_participants')
-        .update({ handicap_for_leaderboard: handicap })
+        .update({ handicap_for_leaderboard: Math.round(handicap) })
         .eq('id', participantId);
       if (error) throw error;
       await fetchDetail();
