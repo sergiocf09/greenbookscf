@@ -223,6 +223,9 @@ const Leaderboards = () => {
                         </label>
                       ))}
                     </div>
+                    {formModes.includes('stableford') && (
+                      <div className="mt-2"><StablefordPointsEditor value={formStbPoints} onChange={setFormStbPoints} /></div>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" className="flex-1" onClick={() => setCreateType(null)}>

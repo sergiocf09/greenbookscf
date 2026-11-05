@@ -8,6 +8,8 @@ export interface MultiDayRulesJson {
   days: MultiDayDay[];
   aggregation: 'sum' | 'best_n';
   best_n?: number;
+  /** Optional custom Stableford table (net vs par). */
+  stableford_points?: import('@/lib/leaderboardAggregation').LeaderboardStablefordPoints;
 }
 
 /* ── Teams Cup (Ryder-style) multi-day / multi-session config ── */
