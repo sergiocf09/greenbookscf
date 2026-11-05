@@ -43,7 +43,18 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
   isRoundLinked,
 }) => {
   const { profile } = useAuth();
-  const { event, participants, standings, loading, fetchDetail, isCreator, closeLeaderboard, reopenLeaderboard } = useLeaderboardDetail(leaderboardId);
+  const { event, participants, standings, loading, fetchDetail, isCreator, closeLeaderboard, reopenLeaderboard, updateParticipantHandicap } = useLeaderboardDetail(leaderboardId);
+  const [editHcp, setEditHcp] = useState(false);
+  const [hcpDrafts, setHcpDrafts] = useState<Record<string, string>>({});
+  const saveHcp = async (participantId: string, current: number) => {
+    const raw = hcpDrafts[participantId];
+    if (raw === undefined) return;
+    const n = Number(raw);
+    setHcpDrafts(d => { const c = { ...d }; delete c[participantId]; return c; });
+    if (raw.trim() === '' || !Number.isFinite(n) || Math.round(n) === current) return;
+    await updateParticipantHandicap(participantId, Math.max(-10, Math.min(54, Math.round(n))));
+    toast.success(trs("Hándicap actualizado"));
+  };
 
   const [sortMode, setSortMode] = useState<SortMode>('net');
   // Sync sortMode to first available scoring mode once event loads
@@ -297,7 +308,19 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
                 <tr className="text-xs border-b">
                   <th className="h-8 w-8 text-center px-1 py-1 font-medium text-muted-foreground">#</th>
                   <th className="h-8 px-1 py-1 text-left font-medium text-muted-foreground">{trs("Jugador")}</th>
-                  <th className="h-8 text-center w-10 px-1 py-1 font-medium text-muted-foreground">{trs("Hcp")}</th>
+                  <th className="h-8 text-center w-12 px-1 py-1 font-medium text-muted-foreground">
+                    {isCreator ? (
+                      <button
+                        type="button"
+                        onClick={() => setEditHcp(v => !v)}
+                        className={cn('inline-flex items-center gap-0.5 rounded px-1', editHcp && 'bg-primary text-primary-foreground')}
+                        aria-label={trs("Editar hándicaps")}
+                      >
+                        {editHcp ? <CheckCircle className="h-3 w-3" /> : <Pencil className="h-3 w-3" />}
+                        {trs("Hcp")}
+                      </button>
+                    ) : trs("Hcp")}
+                  </th>
                   <th className="h-8 text-center w-10 px-1 py-1 font-medium text-muted-foreground">{trs("Hoyos")}</th>
                   <th className="h-8 text-center w-14 px-1 py-1 font-medium text-muted-foreground">
                     {sortMode === 'stableford' ? trs("Pts") : trs("Score")}
@@ -332,7 +355,26 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
                         </div>
                       </td>
                       <td className="text-center text-xs text-foreground font-bold px-1 py-1.5">
-                        {entry.participant.handicap_for_leaderboard}
+                        {editHcp && isCreator ? (
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            className="w-10 h-7 rounded border border-primary bg-background text-center text-xs font-bold"
+                            value={hcpDrafts[entry.participant.id] ?? String(entry.participant.handicap_for_leaderboard)}
+                            onChange={e => setHcpDrafts(d => ({ ...d, [entry.participant.id]: e.target.value }))}
+                            onBlur={() => saveHcp(entry.participant.id, entry.participant.handicap_for_leaderboard)}
+                            onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                          />
+                        ) : (
+                          <div className="leading-tight">
+                            {Math.round(entry.participant.handicap_for_leaderboard)}
+                            {entry.roundHandicap != null && entry.roundHandicap !== Math.round(entry.participant.handicap_for_leaderboard) && (
+                              <div className="text-[9px] font-normal text-muted-foreground" title={trs("Hándicap en la ronda")}>
+                                {trs("ronda")} {entry.roundHandicap}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td className="text-center text-xs text-foreground font-bold px-1 py-1.5">
                         {hasPlayed ? entry.holesPlayed : '-'}
