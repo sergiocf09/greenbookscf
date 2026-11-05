@@ -440,6 +440,7 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
             description: event.description,
             start_date: event.start_date,
             scoring_modes: event.scoring_modes || ['gross', 'net'],
+            rules_json: event.rules_json || {},
           }}
           onSaved={fetchDetail}
         />

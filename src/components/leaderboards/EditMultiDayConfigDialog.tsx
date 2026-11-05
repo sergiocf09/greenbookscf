@@ -1,3 +1,5 @@
+import { StablefordPointsEditor } from '@/components/leaderboards/StablefordPointsEditor';
+import { resolveLeaderboardStablefordPoints, type LeaderboardStablefordPoints } from '@/lib/leaderboardAggregation';
 import { trs } from '@/i18n/tr';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -41,6 +43,7 @@ export const EditMultiDayConfigDialog: React.FC<Props> = ({ open, onOpenChange, 
   const [bestN, setBestN] = useState<number>(initialRules.best_n || 2);
   const [linkedDates, setLinkedDates] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
+  const [stbPoints, setStbPoints] = useState<LeaderboardStablefordPoints>(resolveLeaderboardStablefordPoints(event.rules_json));
 
   useEffect(() => {
     if (!open) return;
@@ -51,6 +54,7 @@ export const EditMultiDayConfigDialog: React.FC<Props> = ({ open, onOpenChange, 
     setDays((r.days || []).map(d => ({ date: d.date, label: d.label || '' })));
     setAggregation(r.aggregation || 'sum');
     setBestN(r.best_n || 2);
+    setStbPoints(resolveLeaderboardStablefordPoints(event.rules_json));
 
     // Fetch linked rounds' dates so we warn about deleting their day
     (async () => {
@@ -105,6 +109,7 @@ export const EditMultiDayConfigDialog: React.FC<Props> = ({ open, onOpenChange, 
         })),
         aggregation,
         best_n: aggregation === 'best_n' ? Math.min(bestN, sortedDays.length) : undefined,
+        stableford_points: stbPoints,
       };
       const { error } = await supabase
         .from('leaderboard_events')
@@ -228,6 +233,9 @@ export const EditMultiDayConfigDialog: React.FC<Props> = ({ open, onOpenChange, 
                 </label>
               ))}
             </div>
+            {modes.includes('stableford') && (
+              <div className="mt-2"><StablefordPointsEditor value={stbPoints} onChange={setStbPoints} /></div>
+            )}
           </div>
         </div>
         <DialogFooter className="gap-2">

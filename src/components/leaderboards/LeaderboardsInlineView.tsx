@@ -638,6 +638,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
             description: editTarget.description,
             start_date: editTarget.start_date,
             scoring_modes: editTarget.scoring_modes || ['gross', 'net'],
+            rules_json: editTarget.rules_json || {},
           }}
           onSaved={() => { setEditTarget(null); fetchEvents(); }}
         />

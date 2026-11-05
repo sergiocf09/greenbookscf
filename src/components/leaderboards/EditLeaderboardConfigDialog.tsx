@@ -1,3 +1,5 @@
+import { StablefordPointsEditor } from '@/components/leaderboards/StablefordPointsEditor';
+import { resolveLeaderboardStablefordPoints, type LeaderboardStablefordPoints } from '@/lib/leaderboardAggregation';
 import { trs } from '@/i18n/tr';
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -18,6 +20,7 @@ interface Props {
     description?: string | null;
     start_date: string;
     scoring_modes: string[];
+    rules_json?: Record<string, any> | null;
   };
   onSaved?: () => void;
 }
@@ -34,6 +37,7 @@ export const EditLeaderboardConfigDialog: React.FC<Props> = ({ open, onOpenChang
   const [startDate, setStartDate] = useState(event.start_date);
   const [modes, setModes] = useState<string[]>(event.scoring_modes || ['gross', 'net']);
   const [saving, setSaving] = useState(false);
+  const [stbPoints, setStbPoints] = useState<LeaderboardStablefordPoints>(resolveLeaderboardStablefordPoints(event.rules_json));
 
   useEffect(() => {
     if (open) {
@@ -41,6 +45,7 @@ export const EditLeaderboardConfigDialog: React.FC<Props> = ({ open, onOpenChang
       setDescription(event.description || '');
       setStartDate(event.start_date);
       setModes(event.scoring_modes || ['gross', 'net']);
+      setStbPoints(resolveLeaderboardStablefordPoints(event.rules_json));
     }
   }, [open, event]);
 
@@ -58,6 +63,7 @@ export const EditLeaderboardConfigDialog: React.FC<Props> = ({ open, onOpenChang
           description: description.trim() || null,
           start_date: startDate,
           scoring_modes: modes,
+          rules_json: { ...(event.rules_json || {}), stableford_points: stbPoints },
         })
         .eq('id', event.id);
       if (error) throw error;
@@ -101,6 +107,9 @@ export const EditLeaderboardConfigDialog: React.FC<Props> = ({ open, onOpenChang
                 </label>
               ))}
             </div>
+            {modes.includes('stableford') && (
+              <div className="mt-2"><StablefordPointsEditor value={stbPoints} onChange={setStbPoints} /></div>
+            )}
           </div>
         </div>
         <DialogFooter className="gap-2">
