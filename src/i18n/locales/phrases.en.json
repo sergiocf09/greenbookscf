@@ -1995,5 +1995,9 @@
   "neto": "net",
   "Faltan scores por capturar": "Scores still missing",
   "sin captura": "no scores",
-  "Captúralos, quita al jugador o cierra como incompleta.": "Enter them, remove the player, or close as incomplete."
+  "Captúralos, quita al jugador o cierra como incompleta.": "Enter them, remove the player, or close as incomplete.",
+  "Puntos Stableford (score neto vs par)": "Stableford points (net score vs par)",
+  "Restablecer": "Reset",
+  "Albatros": "Albatross",
+  "Doble Bogey": "Double Bogey"
 }
