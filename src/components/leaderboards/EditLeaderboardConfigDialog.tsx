@@ -63,7 +63,7 @@ export const EditLeaderboardConfigDialog: React.FC<Props> = ({ open, onOpenChang
           description: description.trim() || null,
           start_date: startDate,
           scoring_modes: modes,
-          rules_json: { ...(event.rules_json || {}), stableford_points: stbPoints },
+          rules_json: { ...(event.rules_json || {}), stableford_points: { ...stbPoints } } as any,
         })
         .eq('id', event.id);
       if (error) throw error;
