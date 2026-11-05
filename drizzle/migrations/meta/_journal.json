@@ -176,6 +176,13 @@
       "when": 1793656765288,
       "tag": "0024_keep_cross_ledger_out_of_round_finalization_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1793842872352,
+      "tag": "0025_leaderboard_live_scores_rpc",
+      "breakpoints": true
     }
   ]
 }

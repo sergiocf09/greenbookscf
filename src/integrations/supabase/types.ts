@@ -2872,6 +2872,18 @@ export type Database = {
           recorded_at: string
         }[]
       }
+      get_leaderboard_live_scores: {
+        Args: { p_leaderboard_id: string }
+        Returns: {
+          guest_name: string
+          handicap_for_round: number
+          hole_number: number
+          profile_id: string
+          round_id: string
+          round_player_id: string
+          strokes: number
+        }[]
+      }
       get_league_accumulated_standings: {
         Args: { p_leaderboard_id: string }
         Returns: {
