@@ -384,6 +384,8 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
 
   useEffect(() => {
     fetchDetail();
+    const t = setInterval(() => { if (document.visibilityState === 'visible') fetchDetail(); }, 30000);
+    return () => clearInterval(t);
   }, [fetchDetail]);
 
   const addParticipant = useCallback(async (params: {
