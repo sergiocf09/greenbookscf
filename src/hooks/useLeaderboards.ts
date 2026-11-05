@@ -205,7 +205,7 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
 
   const fetchDetail = useCallback(async () => {
     if (!leaderboardId) return;
-    setLoading(true);
+    setLoading(prev => prev);
     try {
       const [eventRes, partRes, linkedRes] = await Promise.all([
         supabase.from('leaderboard_events').select('*').eq('id', leaderboardId).single(),
