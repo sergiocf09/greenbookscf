@@ -183,6 +183,13 @@
       "when": 1793842872352,
       "tag": "0025_leaderboard_live_scores_rpc",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793977767807,
+      "tag": "0026_paywall_date_2027_01_06",
+      "breakpoints": true
     }
   ]
 }
