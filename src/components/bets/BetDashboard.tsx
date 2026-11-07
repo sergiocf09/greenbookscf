@@ -650,12 +650,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           totalAmount,
         });
         const isNine = (betConfig.roundHoles ?? 18) === 9;
+        // Same half-point dot as Carritos: only on the hole where the half stroke broke a tie,
+        // for the half-stroke player (display only; nets stay unchanged).
+        const halfHcp = (d: CarritosStrokesHoleDetail, pid: string, hcp: number) =>
+          d.halfAppliedTeam && pid === r.halfPlayerId && hcp === 0 ? 0.5 : hcp;
         const toDetail = (d: CarritosStrokesHoleDetail | null) => d ? {
           holeNumber: d.holeNumber,
-          grossA1: d.grossA1, hcpA1: d.hcpA1, netA1: d.netA1,
-          grossA2: d.grossA2, hcpA2: d.hcpA2, netA2: d.netA2,
-          grossB1: d.grossB1, hcpB1: d.hcpB1, netB1: d.netB1,
-          grossB2: d.grossB2, hcpB2: d.hcpB2, netB2: d.netB2,
+          grossA1: d.grossA1, hcpA1: halfHcp(d, resolvedTeamA[0], d.hcpA1), netA1: d.netA1,
+          grossA2: d.grossA2, hcpA2: halfHcp(d, resolvedTeamA[1], d.hcpA2), netA2: d.netA2,
+          grossB1: d.grossB1, hcpB1: halfHcp(d, resolvedTeamB[0], d.hcpB1), netB1: d.netB1,
+          grossB2: d.grossB2, hcpB2: halfHcp(d, resolvedTeamB[1], d.hcpB2), netB2: d.netB2,
           pointsA: 0,
           pointsB: 0,
           teamScoreA: d.teamScoreA,
@@ -1082,7 +1086,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     const carritosSummaries: BetSummary[] = [];
     if (betConfig.carritos.enabled) allCarritosResults.forEach((result, idx) => {
       const carritosId = result.id || `carritos-${idx}`;
-      if ((betConfig.disabledTeamBetIds || []).includes(carritosId)) return;
+      // The dashboard toggle stores legacy primary Carritos as `carritos-primary-<idx>`;
+      // honour both ids so a disabled bet never reaches the snapshot ledger.
+      const disabledIds = betConfig.disabledTeamBetIds || [];
+      if (disabledIds.includes(carritosId) || (!result.id && disabledIds.includes(`carritos-primary-${idx}`))) return;
 
       const [a1, a2] = result.teamA;
       const [b1, b2] = result.teamB;
@@ -2965,6 +2972,13 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             </Card>
           );
         }
+        // Card titles numbered per bet type, as in setup: "Carritos 1…" / "Medal por Parejas 1…".
+        const typeCounters = { points: 0, strokes: 0 };
+        const cardTitles = allCarritosResults.map((r) => {
+          const m = r.method === 'strokes' ? 'strokes' : 'points';
+          typeCounters[m] += 1;
+          return `${m === 'strokes' ? trs("Medal por Parejas") : 'Carritos'} ${typeCounters[m]}`;
+        });
         return allCarritosResults.map((result, idx) => {
           const carritosId = result.id || `carritos-primary-${idx}`;
           const disabled = isTeamBetDisabled(carritosId);
@@ -2983,7 +2997,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
               results={result} 
               players={players}
               basePlayerId={basePlayer?.id}
-              title={`Carritos ${idx + 1}`}
+              title={cardTitles[idx]}
               roundHoles={(betConfig.roundHoles ?? 18) as 9 | 18}
               isDisabled={disabled}
               teamHandicaps={carritosTeamCfg?.teamHandicaps ?? effectiveBetConfig.carritos.teamHandicaps}
