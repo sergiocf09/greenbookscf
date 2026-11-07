@@ -23,7 +23,8 @@ vi.mock('@/integrations/supabase/client', () => {
 import { BetDashboard } from '@/components/bets/BetDashboard';
 import { defaultBetConfig } from '@/components/setup/bets/defaultBetConfig';
 import { generateRoundSnapshot } from '@/lib/roundSnapshot';
-import { defaultMarkerState, type BetConfig, type BetSummary, type GolfCourse, type Player, type PlayerScore } from '@/types/golf';
+import { defaultMarkerState, type BetConfig, type GolfCourse, type Player, type PlayerScore } from '@/types/golf';
+import type { BetSummary } from '@/lib/bets/shared';
 
 const course: GolfCourse = {
   id: 'c', name: 'Test', location: '',
