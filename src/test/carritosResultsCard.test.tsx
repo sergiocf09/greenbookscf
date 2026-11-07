@@ -118,10 +118,11 @@ describe('CarritosResultsCard — points (Carritos) unchanged', () => {
 
   it('renders identically whether or not stroke-only fields are present when method is points', () => {
     const { container: plain } = render(<CarritosResultsCard results={pointsResults()} players={players} basePlayerId="a" />);
-    const plainHtml = plain.innerHTML;
+    const normalize = (html: string) => html.replace(/radix-:[a-z0-9]+:/g, 'radix-id');
+    const plainHtml = normalize(plain.innerHTML);
     cleanup();
     const withExtras = { ...pointsResults(), method: 'points' as const, scoreAFront: 36, scoreBFront: 38, scoreATotal: 70, scoreBTotal: 72 };
     const { container: extra } = render(<CarritosResultsCard results={withExtras} players={players} basePlayerId="a" />);
-    expect(extra.innerHTML).toBe(plainHtml);
+    expect(normalize(extra.innerHTML)).toBe(plainHtml);
   });
 });
