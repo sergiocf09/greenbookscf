@@ -149,6 +149,10 @@ export interface TeamHandicapConfig {
   slidingHalfPointMode?: 'roundDown' | 'halfPoint'; // only when mode === 'slidingEquipo'
 }
 
+// Carritos scoring method. Absent = 'points' (classic Carritos, points per hole).
+// 'strokes' = "Medal por Parejas": accumulated team net strokes per segment.
+export type CarritosScoringMethod = 'points' | 'strokes';
+
 // Carritos team bet config
 export interface CarritosTeamBet {
   id: string;
@@ -158,6 +162,7 @@ export interface CarritosTeamBet {
   backAmount: number;
   totalAmount: number;
   scoringType: 'lowBall' | 'highBall' | 'combined' | 'all';
+  scoringMethod?: CarritosScoringMethod; // undefined = 'points'
   teamHandicaps?: Record<string, number>;
   handicapConfig?: TeamHandicapConfig;
   enabled: boolean;
@@ -646,6 +651,7 @@ export interface CarritosBetConfig {
   totalAmount: number;
   useTeamHandicaps: boolean;
   scoringType: 'lowBall' | 'highBall' | 'combined' | 'all';
+  scoringMethod?: CarritosScoringMethod; // undefined = 'points'
   teamHandicaps?: Record<string, number>; // playerId -> handicap for carritos
   handicapConfig?: TeamHandicapConfig;
 }
