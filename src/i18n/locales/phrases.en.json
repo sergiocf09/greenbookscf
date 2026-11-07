@@ -1999,5 +1999,14 @@
   "Puntos Stableford (score neto vs par)": "Stableford points (net score vs par)",
   "Restablecer": "Reset",
   "Albatros": "Albatross",
-  "Doble Bogey": "Double Bogey"
+  "Doble Bogey": "Double Bogey",
+  "Carritos / Medal por Parejas": "Team Carts / Team Medal",
+  "Parejas 2 vs 2: puntos por hoyo o golpes acumulados": "2 vs 2 pairs: points per hole or accumulated strokes",
+  "Parejas 2 vs 2 con dos variantes. Carritos: se ganan puntos por hoyo (Bola Baja, Bola Alta, Combinado o Todos). Medal por Parejas: se acumulan los golpes netos de la pareja en Front 9, Back 9 y Total 18 (Total = Front + Back) y gana el menor total; el empate no se paga. El medio golpe solo desempata un hoyo empatado cuando el score del jugador es el que cuenta, y vale un golpe completo.": "2 vs 2 pairs with two variants. Team Carts: points are won per hole (Low Ball, High Ball, Combined or All). Team Medal: the pair's net strokes are accumulated over Front 9, Back 9 and Total 18 (Total = Front + Back) and the lowest total wins; ties are not paid. The half stroke only breaks a tied hole when that player's score is the one that counts, and it is worth a full stroke.",
+  "Tipo de apuesta": "Bet type",
+  "Carritos · puntos por hoyo": "Team Carts · points per hole",
+  "Medal por Parejas · golpes acumulados": "Team Medal · accumulated strokes",
+  "Medal por Parejas": "Team Medal",
+  "Agregar Medal por Parejas": "Add Team Medal",
+  "MEDAL POR PAREJAS: en la sección Carritos cada apuesta tiene un \"Tipo de apuesta\". Carritos gana puntos por hoyo; Medal por Parejas acumula los golpes netos de la pareja (Bola Baja, Bola Alta o Bola Baja + Bola Alta) en Front 9, Back 9 y Total 18 (Total = Front + Back) y gana el menor total; el empate no se paga. El medio golpe solo desempata un hoyo empatado cuando cuenta el score de ese jugador, y vale un golpe completo. Puedes tener un Carritos y un Medal por Parejas con los mismos 4 jugadores.": "TEAM MEDAL: in the Team Carts section each bet has a \"Bet type\". Team Carts wins points per hole; Team Medal accumulates the pair's net strokes (Low Ball, High Ball or Low Ball + High Ball) over Front 9, Back 9 and Total 18 (Total = Front + Back) and the lowest total wins; ties are not paid. The half stroke only breaks a tied hole when that player's score counts, and it is worth a full stroke. You can have a Team Carts and a Team Medal bet with the same 4 players."
 }
