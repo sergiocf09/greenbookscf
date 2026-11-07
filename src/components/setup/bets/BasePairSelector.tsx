@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Users, Wand2, Shuffle, ChevronLeft } from 'lucide-react';
 import { AmountInput } from './AmountInput';
-import { TeamHandicapMode } from '@/types/golf';
+import { CarritosScoringMethod, TeamHandicapMode } from '@/types/golf';
 import {
   Select,
   SelectContent,
@@ -75,6 +75,8 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
   const [scoringType, setScoringType] = useState<BasePairDefaults['scoringType']>(
     isFoursomes ? 'lowBall' : 'all'
   );
+  const [scoringMethod, setScoringMethod] = useState<CarritosScoringMethod>('points');
+  const isStrokes = !isFoursomes && scoringMethod === 'strokes';
   const [handicapMode, setHandicapMode] = useState<TeamHandicapMode>('individual');
   const [frontAmount, setFrontAmount] = useState(100);
   const [backAmount, setBackAmount] = useState(100);
@@ -132,6 +134,14 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
       frontAmount,
       backAmount,
       totalAmount,
+      ...(!isFoursomes
+        ? {
+            scoringMethod,
+            ...(scoringMethod === 'strokes' && scoringType === 'all'
+              ? { scoringType: 'lowBall' as const }
+              : {}),
+          }
+        : {}),
       ...(isFoursomes
         ? {
             continua: scoringType === 'matchOnly' ? continua : false,
@@ -236,10 +246,33 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
         </Label>
 
 
+        {!isFoursomes && (
+          <div className="flex items-center justify-between gap-2">
+            <Label className="text-[10px] font-semibold text-primary">{trs("Tipo de apuesta")}</Label>
+            <Select
+              value={scoringMethod}
+              onValueChange={(v) => {
+                const next = v as CarritosScoringMethod;
+                setScoringMethod(next);
+                // Medal por Parejas has no "Todos"; returning to points keeps the modality.
+                if (next === 'strokes' && scoringType === 'all') setScoringType('lowBall');
+              }}
+            >
+              <SelectTrigger className="h-7 w-52 text-[11px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="points">{trs("Carritos · puntos por hoyo")}</SelectItem>
+                <SelectItem value="strokes">{trs("Medal por Parejas · golpes acumulados")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         <div className="flex items-center justify-between">
           <Label className="text-[10px] font-semibold text-primary">{trs("Modalidad Juego")}</Label>
           <Select
-            value={scoringType}
+            value={isStrokes && scoringType === 'all' ? 'lowBall' : scoringType}
             onValueChange={(v) => setScoringType(v as BasePairDefaults['scoringType'])}
           >
             <SelectTrigger className="h-7 w-40 text-[11px]">
@@ -251,9 +284,9 @@ export const BasePairSelector: React.FC<BasePairSelectorProps> = ({
               <SelectItem value="combined">{trs("Bola Baja + Bola Alta")}</SelectItem>
               {isFoursomes ? (
                 <SelectItem value="matchOnly">{trs("Match Play")}</SelectItem>
-              ) : (
+              ) : !isStrokes ? (
                 <SelectItem value="all">{trs("Suma Total (Todos)")}</SelectItem>
-              )}
+              ) : null}
             </SelectContent>
           </Select>
         </div>

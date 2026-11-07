@@ -5,7 +5,7 @@ import React, { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { disambiguateInitials } from '@/lib/playerInput';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { BetConfig, Player, CarritosTeamBet, TeamPressuresBet, markerInfo, MarkerState, TeamPressureUnitsConfig, TeamPressureOyesesConfig, WolfScoringMode, WolfTiming, SixesScoringMode, SixesCobro, VegasVariant, SixesSetAssignment, SixesBetInstance, VegasBetInstance, TeamHandicapMode, TeamHandicapConfig } from '@/types/golf';
+import { BetConfig, Player, CarritosTeamBet, CarritosScoringMethod, TeamPressuresBet, markerInfo, MarkerState, TeamPressureUnitsConfig, TeamPressureOyesesConfig, WolfScoringMode, WolfTiming, SixesScoringMode, SixesCobro, VegasVariant, SixesSetAssignment, SixesBetInstance, VegasBetInstance, TeamHandicapMode, TeamHandicapConfig } from '@/types/golf';
 import { getParejasActivePlayerIds } from './ParejasParticipationMatrix';
 import { BetSection } from './BetSection';
 import { AmountInput } from './AmountInput';
@@ -147,7 +147,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
   };
 
   // Carritos management
-  const addCarritosTeam = () => {
+  const addCarritosTeam = (scoringMethod: CarritosScoringMethod = 'points') => {
     const newTeam: CarritosTeamBet = {
       id: `carritos-${Date.now()}`,
       teamA: ['', ''],
@@ -155,7 +155,9 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       frontAmount: 100,
       backAmount: 100,
       totalAmount: 100,
-      scoringType: 'all',
+      // Medal por Parejas has no "Todos" modality; it starts on Bola Baja.
+      scoringType: scoringMethod === 'strokes' ? 'lowBall' : 'all',
+      scoringMethod,
       teamHandicaps: {},
       enabled: true,
     };
@@ -189,8 +191,8 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
 
 
   // For carritos primary - just delegate to addCarritosTeam
-  const addCarritosPrimary = () => {
-    addCarritosTeam();
+  const addCarritosPrimary = (scoringMethod: CarritosScoringMethod = 'points') => {
+    addCarritosTeam(scoringMethod);
   };
 
   // Check if primary carritos has any players set
@@ -285,7 +287,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
   ) => {
     const existingTeams = config.carritosTeams || [];
     const primary = hasPrimaryCarritos
-      ? [{ teamA: config.carritos.teamA, teamB: config.carritos.teamB }]
+      ? [{ teamA: config.carritos.teamA, teamB: config.carritos.teamB, scoringMethod: config.carritos.scoringMethod }]
       : [];
     const template = existingTeams[0] ?? (hasPrimaryCarritos ? config.carritos : undefined);
     let generated = buildBasePairCarritosTeams(
@@ -331,6 +333,8 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           oyesesEnabled: t.oyesesConfig?.enabled,
           oyesesValue: t.oyesesConfig?.valuePerOyes,
           oyesesModality: t.oyesesConfig?.modality,
+          // Carritos only (Foursomes builders ignore it); absent = 'points'.
+          scoringMethod: t.scoringMethod as CarritosScoringMethod | undefined,
         }
       : undefined;
 
@@ -367,11 +371,18 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
   ) => {
     const existingTeams = config.carritosTeams || [];
     const primary = hasPrimaryCarritos
-      ? [{ teamA: config.carritos.teamA, teamB: config.carritos.teamB }]
+      ? [{ teamA: config.carritos.teamA, teamB: config.carritos.teamB, scoringMethod: config.carritos.scoringMethod }]
       : [];
     const template = existingTeams[0] ?? (hasPrimaryCarritos ? config.carritos : undefined);
+    const storedDefaults = sixDefaultsCarritos ?? defaultsFromTemplate(template, 'all');
+    // Shuffle (no override) keeps the bet type currently shown in the first match,
+    // even if it was changed in the card after the last generation.
+    const currentMethod: CarritosScoringMethod | undefined = template
+      ? ((template as Partial<CarritosTeamBet>).scoringMethod ?? 'points')
+      : storedDefaults?.scoringMethod;
     const defaults =
-      defaultsOverride ?? sixDefaultsCarritos ?? defaultsFromTemplate(template, 'all');
+      defaultsOverride ??
+      (storedDefaults ? { ...storedDefaults, scoringMethod: currentMethod } : undefined);
     if (defaultsOverride) setSixDefaultsCarritos(defaultsOverride);
     let generated = buildCarritosFromPairs(
       pairs,
@@ -426,6 +437,19 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
 
   const carritosMatchCount =
     (config.carritosTeams || []).length + (hasPrimaryCarritos ? 1 : 0);
+
+  /** Card labels numbered per bet type: "Carritos 1, 2…" / "Medal por Parejas 1, 2…". */
+  const carritosLabels = (() => {
+    const methods: CarritosScoringMethod[] = [
+      ...(hasPrimaryCarritos ? [config.carritos.scoringMethod ?? 'points'] : []),
+      ...(config.carritosTeams || []).map((t) => t.scoringMethod ?? 'points'),
+    ] as CarritosScoringMethod[];
+    const counters: Record<CarritosScoringMethod, number> = { points: 0, strokes: 0 };
+    return methods.map((m) => {
+      counters[m] += 1;
+      return `${m === 'strokes' ? trs('Medal por Parejas') : trs('Carritos')} ${counters[m]}`;
+    });
+  })();
 
 
 
@@ -543,13 +567,13 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       {config.carritos.enabled && (
       <BetSection
         id="carritos"
-        title={trs("Carritos (Medal Parejas)")}
-        description={trs("Medal por equipos de 2")}
+        title={trs("Carritos / Medal por Parejas")}
+        description={trs("Parejas 2 vs 2: puntos por hoyo o golpes acumulados")}
         enabled={config.carritos.enabled}
         onToggle={(enabled) => {
           onUpdateBet('carritos', { enabled });
           if (enabled) {
-            if ((config.carritosTeams || []).length === 0 && !hasPrimaryCarritos) addCarritosTeam();
+            if ((config.carritosTeams || []).length === 0 && !hasPrimaryCarritos) addCarritosTeam('points');
             onToggleSection('carritos', true);
           } else {
             onToggleSection('carritos', false);
@@ -557,7 +581,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         }}
         isExpanded={expandedSections.includes('carritos')}
         onExpandChange={(open) => onToggleSection('carritos', open)}
-        helpText={trs("Medal por equipos de 2 vs 2. Se suma el score neto del equipo según la modalidad (Bola Baja, Bola Alta o Combinado) y se compara Front 9, Back 9 y Total 18. El equipo con menor total gana cada segmento.")}
+        helpText={trs("Parejas 2 vs 2 con dos variantes. Carritos: se ganan puntos por hoyo (Bola Baja, Bola Alta, Combinado o Todos). Medal por Parejas: se acumulan los golpes netos de la pareja en Front 9, Back 9 y Total 18 (Total = Front + Back) y gana el menor total; el empate no se paga. El medio golpe solo desempata un hoyo empatado cuando el score del jugador es el que cuenta, y vale un golpe completo.")}
       >
         {/* Show add button if no carritos configured yet */}
         {carritosOptions.length === 5 && (
@@ -587,10 +611,16 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
         {!hasPrimaryCarritos && (config.carritosTeams || []).length === 0 ? (
           <div className="text-center py-4">
             <p className="text-xs text-muted-foreground mb-2">{trs("No hay apuestas de carritos configuradas")}</p>
-            <Button variant="outline" size="sm" onClick={addCarritosPrimary} className="gap-1">
-              <Plus className="h-3.5 w-3.5" />
-              {trs("Agregar apuesta de Carritos")}
-            </Button>
+            <div className="flex flex-col items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => addCarritosPrimary('points')} className="gap-1">
+                <Plus className="h-3.5 w-3.5" />
+                {trs("Agregar apuesta de Carritos")}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => addCarritosPrimary('strokes')} className="gap-1">
+                <Plus className="h-3.5 w-3.5" />
+                {trs("Agregar Medal por Parejas")}
+              </Button>
+            </div>
           </div>
         ) : (
           <>
@@ -598,7 +628,8 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
             {/* Primary carritos */}
             {hasPrimaryCarritos && (
               <CarritosCard
-                label="Carritos 1"
+                label={carritosLabels[0]}
+                scoringMethod={config.carritos.scoringMethod ?? 'points'}
                 teamA={config.carritos.teamA}
                 teamB={config.carritos.teamB}
                 teamC={(config.carritos as any).teamC}
@@ -624,7 +655,8 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
             {config.carritosTeams?.map((team, idx) => (
               <CarritosCard
                 key={team.id}
-                label={`Carritos ${hasPrimaryCarritos ? idx + 2 : idx + 1}`}
+                label={carritosLabels[hasPrimaryCarritos ? idx + 1 : idx]}
+                scoringMethod={team.scoringMethod ?? 'points'}
                 teamA={team.teamA}
                 teamB={team.teamB}
                 teamC={(team as any).teamC}
@@ -651,11 +683,20 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={addCarritosTeam}
+              onClick={() => addCarritosTeam('points')}
               className="w-full mt-3 gap-1"
             >
               <Plus className="h-3.5 w-3.5" />
               {trs("Agregar otra apuesta de Carritos")}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => addCarritosTeam('strokes')}
+              className="w-full mt-2 gap-1"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              {trs("Agregar Medal por Parejas")}
             </Button>
           </>
         )}
@@ -1657,6 +1698,8 @@ const TeamPressureCard: React.FC<TeamPressureCardProps> = ({
 /* ─── Carritos Card ─── */
 interface CarritosCardProps {
   label: string;
+  /** 'points' = Carritos (default) · 'strokes' = Medal por Parejas */
+  scoringMethod?: CarritosScoringMethod;
   teamA: [string, string];
   teamB: [string, string];
   teamC?: [string, string];
@@ -1680,6 +1723,7 @@ interface CarritosCardProps {
 
 const CarritosCard: React.FC<CarritosCardProps> = ({
   label,
+  scoringMethod = 'points',
   teamA,
   teamB,
   teamC,
@@ -1771,11 +1815,36 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
         );
       })()}
 
+      {/* Bet type: Carritos (points per hole) vs Medal por Parejas (accumulated strokes) */}
+      <div className="flex items-center justify-between gap-2">
+        <Label className="text-[10px] font-semibold text-primary">{trs("Tipo de apuesta")}</Label>
+        <Select
+          value={scoringMethod}
+          onValueChange={(v: CarritosScoringMethod) => {
+            if (v === scoringMethod) return;
+            // Medal por Parejas has no "Todos"; returning to points keeps the modality.
+            if (v === 'strokes' && scoringType === 'all') {
+              onUpdate({ scoringMethod: v, scoringType: 'lowBall' });
+            } else {
+              onUpdate({ scoringMethod: v });
+            }
+          }}
+        >
+          <SelectTrigger className="h-7 w-52 text-[11px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="points">{trs("Carritos · puntos por hoyo")}</SelectItem>
+            <SelectItem value="strokes">{trs("Medal por Parejas · golpes acumulados")}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Scoring Type - after players, consistent with Presiones */}
       <div className="flex items-center justify-between">
         <Label className="text-[10px] font-semibold text-primary">{trs("Modalidad Juego")}</Label>
         <Select
-          value={scoringType}
+          value={scoringMethod === 'strokes' && scoringType === 'all' ? 'lowBall' : scoringType}
           onValueChange={(v: 'lowBall' | 'highBall' | 'combined' | 'all') => onUpdate({ scoringType: v })}
         >
           <SelectTrigger className="h-7 w-28 text-[11px]">
@@ -1785,7 +1854,7 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
             <SelectItem value="lowBall">{trs("Low Ball")}</SelectItem>
             <SelectItem value="highBall">{trs("High Ball")}</SelectItem>
             <SelectItem value="combined">{trs("Bola Baja + Bola Alta")}</SelectItem>
-            <SelectItem value="all">{trs("Todos")}</SelectItem>
+            {scoringMethod !== 'strokes' && <SelectItem value="all">{trs("Todos")}</SelectItem>}
           </SelectContent>
         </Select>
       </div>
