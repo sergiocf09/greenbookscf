@@ -99,6 +99,7 @@ import { calculateNinesBets } from '@/lib/bets/nines';
 import { calculateWolfBets } from '@/lib/bets/wolf';
 import { calculateSixesBets } from '@/lib/bets/sixes';
 import { calculateVegasBets } from '@/lib/bets/vegas';
+import { computeCarritosStrokesResult, getCarritosStrokesPaidSegments, type CarritosStrokesHoleDetail } from '@/lib/bets/carritosStrokes';
 import { collectStandardManchaHits, collectGenericManchaHits } from '@/lib/bets/manchas';
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -523,6 +524,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         combinedWinner?: 'A' | 'B' | 'tie';
         pointsA: number;
         pointsB: number;
+        // 'strokes' method ("Medal por Parejas") only
+        teamScoreA?: number;
+        teamScoreB?: number;
+        halfAppliedTeam?: 'A' | 'B' | null;
       } | null>;
       holeDetailsBack: Array<{
         holeNumber: number;
@@ -543,6 +548,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         combinedWinner?: 'A' | 'B' | 'tie';
         pointsA: number;
         pointsB: number;
+        // 'strokes' method ("Medal por Parejas") only
+        teamScoreA?: number;
+        teamScoreB?: number;
+        halfAppliedTeam?: 'A' | 'B' | null;
       } | null>;
       // Points per segment
       pointsAFront: number;
@@ -561,6 +570,20 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       backAmount: number;
       totalAmount: number;
       id?: string;
+      // 'strokes' method ("Medal por Parejas") only — accumulated team net strokes
+      method?: 'points' | 'strokes';
+      scoreAFront?: number;
+      scoreBFront?: number;
+      scoreABack?: number;
+      scoreBBack?: number;
+      scoreATotal?: number;
+      scoreBTotal?: number;
+      winnerFront?: 'A' | 'B' | 'tie';
+      winnerBack?: 'A' | 'B' | 'tie';
+      winnerTotal?: 'A' | 'B' | 'tie';
+      moneyAFront?: number;
+      moneyABack?: number;
+      moneyATotal?: number;
     }> = [];
 
     const calculateCarritosResult = (
@@ -575,9 +598,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         teamHandicaps?: Record<string, number>;
         id?: string;
         handicapConfig?: { mode?: string; slidingHalfPointMode?: 'halfPoint' | 'roundDown' };
+        scoringMethod?: 'points' | 'strokes';
       }
     ) => {
-      const { useTeamHandicaps, teamHandicaps, id, handicapConfig } = opts ?? {};
+      const { useTeamHandicaps, teamHandicaps, id, handicapConfig, scoringMethod } = opts ?? {};
 
       // Defensive: carritos config can store either `player.id` or `player.profileId`.
       // Normalize to the ids used by `scores/confirmedScores`.
@@ -607,6 +631,76 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
         return players.find((p) => p.id === playerId)?.handicap ?? 0;
       };
+
+      // "Medal por Parejas": delegate to the shared pure engine (single implementation).
+      if (scoringMethod === 'strokes') {
+        const handicaps: Record<string, number> = {};
+        [...resolvedTeamA, ...resolvedTeamB].forEach((pid) => { handicaps[pid] = getPlayerHandicapForCarritos(pid); });
+        const r = computeCarritosStrokesResult({
+          teamA: resolvedTeamA,
+          teamB: resolvedTeamB,
+          scoringType,
+          handicaps,
+          handicapConfig,
+          course,
+          confirmedScores,
+          roundHoles: betConfig.roundHoles,
+          frontAmount,
+          backAmount,
+          totalAmount,
+        });
+        const isNine = (betConfig.roundHoles ?? 18) === 9;
+        const toDetail = (d: CarritosStrokesHoleDetail | null) => d ? {
+          holeNumber: d.holeNumber,
+          grossA1: d.grossA1, hcpA1: d.hcpA1, netA1: d.netA1,
+          grossA2: d.grossA2, hcpA2: d.hcpA2, netA2: d.netA2,
+          grossB1: d.grossB1, hcpB1: d.hcpB1, netB1: d.netB1,
+          grossB2: d.grossB2, hcpB2: d.hcpB2, netB2: d.netB2,
+          pointsA: 0,
+          pointsB: 0,
+          teamScoreA: d.teamScoreA,
+          teamScoreB: d.teamScoreB,
+          halfAppliedTeam: d.halfAppliedTeam,
+        } : null;
+        return {
+          teamA: resolvedTeamA,
+          teamB: resolvedTeamB,
+          scoringType,
+          // Stroke advantage of team A per hole (positive = A better), null = skipped
+          netByHoleFront: r.holeDetailsFront.map((d) => (d ? d.diff : null)),
+          netByHoleBack: r.holeDetailsBack.map((d) => (d ? d.diff : null)),
+          holeDetailsFront: r.holeDetailsFront.map(toDetail),
+          holeDetailsBack: r.holeDetailsBack.map(toDetail),
+          pointsAFront: 0,
+          pointsBFront: 0,
+          pointsABack: 0,
+          pointsBBack: 0,
+          pointsATotal: 0,
+          pointsBTotal: 0,
+          pointsAAccumulated: 0,
+          pointsBAccumulated: 0,
+          moneyA: r.moneyA,
+          moneyB: -r.moneyA,
+          amount: frontAmount + (isNine ? 0 : backAmount) + (isNine ? 0 : totalAmount),
+          frontAmount,
+          backAmount: isNine ? 0 : backAmount,
+          totalAmount: isNine ? 0 : totalAmount,
+          id,
+          method: 'strokes' as const,
+          scoreAFront: r.scoreAFront,
+          scoreBFront: r.scoreBFront,
+          scoreABack: r.scoreABack,
+          scoreBBack: r.scoreBBack,
+          scoreATotal: r.scoreATotal,
+          scoreBTotal: r.scoreBTotal,
+          winnerFront: r.winnerFront,
+          winnerBack: r.winnerBack,
+          winnerTotal: r.winnerTotal,
+          moneyAFront: r.moneyAFront,
+          moneyABack: r.moneyABack,
+          moneyATotal: r.moneyATotal,
+        };
+      }
 
       // Detect half-point hole for visual display
       const isHalfPointMode = handicapConfig?.slidingHalfPointMode === 'halfPoint';
@@ -944,13 +1038,14 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
     // When carritosTeams array has entries, all carritos are managed there
     const hasCarritosTeams = (betConfig.carritosTeams?.length ?? 0) > 0;
     if (!hasCarritosTeams && betConfig.carritos.teamA[0] && betConfig.carritos.teamA[1] && betConfig.carritos.teamB[0] && betConfig.carritos.teamB[1]) {
-      const { teamA, teamB, frontAmount, backAmount, totalAmount, scoringType, teamHandicaps, useTeamHandicaps, handicapConfig } = betConfig.carritos;
+      const { teamA, teamB, frontAmount, backAmount, totalAmount, scoringType, teamHandicaps, useTeamHandicaps, handicapConfig, scoringMethod } = betConfig.carritos;
       results.push(
         calculateCarritosResult(teamA, teamB, frontAmount, backAmount, totalAmount, scoringType, {
           id: undefined,
           useTeamHandicaps,
           teamHandicaps,
           handicapConfig,
+          scoringMethod,
         })
       );
     }
@@ -964,6 +1059,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             useTeamHandicaps: true,
             teamHandicaps: team.teamHandicaps,
             handicapConfig: team.handicapConfig,
+            scoringMethod: team.scoringMethod,
           })
         );
       }
@@ -1000,6 +1096,33 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       const frontAmt = teamCfg?.frontAmount ?? 0;
       const backAmt = teamCfg?.backAmount ?? 0;
       const totalAmt = teamCfg?.totalAmount ?? 0;
+
+      // "Medal por Parejas": per-segment money comes from the segment winner (not points),
+      // plus a "36 vs 38" description per team perspective. Same betType/betId and
+      // monto/2-per-cross split as points. The engine's Carritos summaries are filtered
+      // out of liveBetSummaries (carritosEngineTypes), so there is no double counting.
+      if (result.method === 'strokes') {
+        getCarritosStrokesPaidSegments({
+          moneyAFront: result.moneyAFront ?? 0,
+          moneyABack: result.moneyABack ?? 0,
+          moneyATotal: result.moneyATotal ?? 0,
+          scoreAFront: result.scoreAFront ?? 0,
+          scoreBFront: result.scoreBFront ?? 0,
+          scoreABack: result.scoreABack ?? 0,
+          scoreBBack: result.scoreBBack ?? 0,
+          scoreATotal: result.scoreATotal ?? 0,
+          scoreBTotal: result.scoreBTotal ?? 0,
+        }).forEach(({ label, segment, moneyA: segMoneyA, descriptionA, descriptionB }) => {
+          const perPair = segMoneyA / 2;
+          [a1, a2].forEach(aId => {
+            [b1, b2].forEach(bId => {
+              carritosSummaries.push({ playerId: aId, vsPlayer: bId, betType: label, amount: perPair, segment, betId: carritosId, description: descriptionA });
+              carritosSummaries.push({ playerId: bId, vsPlayer: aId, betType: label, amount: -perPair, segment, betId: carritosId, description: descriptionB });
+            });
+          });
+        });
+        return;
+      }
 
       // Per-segment amounts from Carritos calculation
       const frontMoneyA = (() => {
