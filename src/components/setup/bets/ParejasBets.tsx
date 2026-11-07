@@ -1830,7 +1830,7 @@ const CarritosCard: React.FC<CarritosCardProps> = ({
             }
           }}
         >
-          <SelectTrigger className="h-7 w-48 text-[11px]">
+          <SelectTrigger className="h-7 w-52 text-[11px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
