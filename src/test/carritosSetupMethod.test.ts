@@ -64,13 +64,22 @@ describe('Carritos setup — scoringMethod (Medal por Parejas)', () => {
     expect(generated.every((g) => g.scoringMethod === 'strokes' && g.scoringType === 'combined')).toBe(true);
   });
 
-  it('bet-config merge keeps a local method change and a remote one on another match', () => {
-    const base = { carritosTeams: [team(), team({ id: 'c2' })] };
-    const local = { carritosTeams: [team({ scoringMethod: 'strokes', scoringType: 'lowBall' }), team({ id: 'c2' })] };
-    const remote = { carritosTeams: [team(), team({ id: 'c2', frontAmount: 200 })] };
-    const merged = mergeBetConfigChanges(base, local, remote) as { carritosTeams: CarritosTeamBet[] };
+  it('bet-config merge keeps a local method change', () => {
+    const base = { carritosTeams: [team()], carritos: { scoringMethod: 'points' }, medal: { frontAmount: 50 } };
+    const local = { carritosTeams: [team({ scoringMethod: 'strokes', scoringType: 'lowBall' })], carritos: { scoringMethod: 'strokes' }, medal: { frontAmount: 50 } };
+    const remote = { carritosTeams: [team()], carritos: { scoringMethod: 'points' }, medal: { frontAmount: 80 } };
+    const merged = mergeBetConfigChanges(base, local, remote) as any;
     expect(merged.carritosTeams[0].scoringMethod).toBe('strokes');
     expect(merged.carritosTeams[0].scoringType).toBe('lowBall');
-    expect(merged.carritosTeams[1].frontAmount).toBe(200);
+    expect(merged.carritos.scoringMethod).toBe('strokes');
+    expect(merged.medal.frontAmount).toBe(80);
+  });
+
+  it('bet-config merge keeps a remote method change when this phone did not touch Carritos', () => {
+    const base = { carritosTeams: [team()], medal: { frontAmount: 50 } };
+    const local = { carritosTeams: [team()], medal: { frontAmount: 70 } };
+    const remote = { carritosTeams: [team({ scoringMethod: 'strokes' })], medal: { frontAmount: 50 } };
+    const merged = mergeBetConfigChanges(base, local, remote) as { carritosTeams: CarritosTeamBet[] };
+    expect(merged.carritosTeams[0].scoringMethod).toBe('strokes');
   });
 });
