@@ -4,6 +4,7 @@
 import { Player, PlayerScore, BetConfig, GolfCourse } from '@/types/golf';
 import { calculateStrokesPerHole, calculateStrokesPerHoleWithHalf } from '../handicapUtils';
 import { BetSummary } from './shared';
+import { computeCarritosStrokesResult, getCarritosStrokesPaidSegments } from './carritosStrokes';
 
 export const calculateCarritosBets = (
   players: Player[],
@@ -25,6 +26,7 @@ export const calculateCarritosBets = (
     teamHandicaps?: Record<string, number>;
     useTeamHandicaps?: boolean;
     handicapConfig?: { mode?: string; slidingHalfPointMode?: 'halfPoint' | 'roundDown' };
+    scoringMethod?: 'points' | 'strokes';
   }> = [];
 
   const disabledIds = new Set(config.disabledTeamBetIds || []);
@@ -40,6 +42,7 @@ export const calculateCarritosBets = (
         frontAmount: c.frontAmount, backAmount: c.backAmount, totalAmount: c.totalAmount,
         scoringType: c.scoringType, teamHandicaps: c.teamHandicaps, useTeamHandicaps: c.useTeamHandicaps,
         handicapConfig: c.handicapConfig,
+        scoringMethod: c.scoringMethod,
       });
     }
   }
@@ -55,6 +58,7 @@ export const calculateCarritosBets = (
         frontAmount: team.frontAmount, backAmount: team.backAmount, totalAmount: team.totalAmount,
         scoringType: team.scoringType, teamHandicaps: team.teamHandicaps, useTeamHandicaps: true,
         handicapConfig: team.handicapConfig,
+        scoringMethod: team.scoringMethod,
       });
     }
   });
@@ -83,6 +87,34 @@ export const calculateCarritosBets = (
       }
       return players.find(p => p.id === playerId)?.handicap ?? 0;
     };
+
+    // "Medal por Parejas": accumulated team net strokes per segment (shared pure engine).
+    if (cfg.scoringMethod === 'strokes') {
+      const handicaps: Record<string, number> = {};
+      [...teamA, ...teamB].forEach(pid => { handicaps[pid] = getHandicap(pid); });
+      const result = computeCarritosStrokesResult({
+        teamA, teamB,
+        scoringType: cfg.scoringType,
+        handicaps,
+        handicapConfig: cfg.handicapConfig,
+        course,
+        confirmedScores: scores,
+        roundHoles: config.roundHoles,
+        frontAmount: cfg.frontAmount,
+        backAmount: cfg.backAmount,
+        totalAmount: cfg.totalAmount,
+      });
+      getCarritosStrokesPaidSegments(result).forEach(({ label, segment, moneyA, descriptionA, descriptionB }) => {
+        const perPairAmount = moneyA / 2;
+        teamA.forEach(aId => {
+          teamB.forEach(bId => {
+            summaries.push({ playerId: aId, vsPlayer: bId, betType: label, amount: perPairAmount, segment, betId, description: descriptionA });
+            summaries.push({ playerId: bId, vsPlayer: aId, betType: label, amount: -perPairAmount, segment, betId, description: descriptionB });
+          });
+        });
+      });
+      return;
+    }
 
     // Detect if any player has a .5 handicap (half-point mode)
     const isHalfPointMode = cfg.handicapConfig?.slidingHalfPointMode === 'halfPoint';
