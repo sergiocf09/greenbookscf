@@ -5,7 +5,7 @@ import React, { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { disambiguateInitials } from '@/lib/playerInput';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { BetConfig, Player, CarritosTeamBet, TeamPressuresBet, markerInfo, MarkerState, TeamPressureUnitsConfig, TeamPressureOyesesConfig, WolfScoringMode, WolfTiming, SixesScoringMode, SixesCobro, VegasVariant, SixesSetAssignment, SixesBetInstance, VegasBetInstance, TeamHandicapMode, TeamHandicapConfig } from '@/types/golf';
+import { BetConfig, Player, CarritosTeamBet, CarritosScoringMethod, TeamPressuresBet, markerInfo, MarkerState, TeamPressureUnitsConfig, TeamPressureOyesesConfig, WolfScoringMode, WolfTiming, SixesScoringMode, SixesCobro, VegasVariant, SixesSetAssignment, SixesBetInstance, VegasBetInstance, TeamHandicapMode, TeamHandicapConfig } from '@/types/golf';
 import { getParejasActivePlayerIds } from './ParejasParticipationMatrix';
 import { BetSection } from './BetSection';
 import { AmountInput } from './AmountInput';
@@ -147,7 +147,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
   };
 
   // Carritos management
-  const addCarritosTeam = () => {
+  const addCarritosTeam = (scoringMethod: CarritosScoringMethod = 'points') => {
     const newTeam: CarritosTeamBet = {
       id: `carritos-${Date.now()}`,
       teamA: ['', ''],
@@ -155,7 +155,9 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
       frontAmount: 100,
       backAmount: 100,
       totalAmount: 100,
-      scoringType: 'all',
+      // Medal por Parejas has no "Todos" modality; it starts on Bola Baja.
+      scoringType: scoringMethod === 'strokes' ? 'lowBall' : 'all',
+      scoringMethod,
       teamHandicaps: {},
       enabled: true,
     };
@@ -189,8 +191,8 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
 
 
   // For carritos primary - just delegate to addCarritosTeam
-  const addCarritosPrimary = () => {
-    addCarritosTeam();
+  const addCarritosPrimary = (scoringMethod: CarritosScoringMethod = 'points') => {
+    addCarritosTeam(scoringMethod);
   };
 
   // Check if primary carritos has any players set
@@ -285,7 +287,7 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
   ) => {
     const existingTeams = config.carritosTeams || [];
     const primary = hasPrimaryCarritos
-      ? [{ teamA: config.carritos.teamA, teamB: config.carritos.teamB }]
+      ? [{ teamA: config.carritos.teamA, teamB: config.carritos.teamB, scoringMethod: config.carritos.scoringMethod }]
       : [];
     const template = existingTeams[0] ?? (hasPrimaryCarritos ? config.carritos : undefined);
     let generated = buildBasePairCarritosTeams(
@@ -331,6 +333,9 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           oyesesEnabled: t.oyesesConfig?.enabled,
           oyesesValue: t.oyesesConfig?.valuePerOyes,
           oyesesModality: t.oyesesConfig?.modality,
+          ...(t.teamA !== undefined && 'frontAmount' in t && !('openingThreshold' in t)
+            ? { scoringMethod: (t.scoringMethod ?? 'points') as CarritosScoringMethod }
+            : {}),
         }
       : undefined;
 
@@ -367,11 +372,18 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
   ) => {
     const existingTeams = config.carritosTeams || [];
     const primary = hasPrimaryCarritos
-      ? [{ teamA: config.carritos.teamA, teamB: config.carritos.teamB }]
+      ? [{ teamA: config.carritos.teamA, teamB: config.carritos.teamB, scoringMethod: config.carritos.scoringMethod }]
       : [];
     const template = existingTeams[0] ?? (hasPrimaryCarritos ? config.carritos : undefined);
+    const storedDefaults = sixDefaultsCarritos ?? defaultsFromTemplate(template, 'all');
+    // Shuffle (no override) keeps the bet type currently shown in the first match,
+    // even if it was changed in the card after the last generation.
+    const currentMethod = (template as Partial<CarritosTeamBet> | undefined)?.scoringMethod;
     const defaults =
-      defaultsOverride ?? sixDefaultsCarritos ?? defaultsFromTemplate(template, 'all');
+      defaultsOverride ??
+      (storedDefaults
+        ? { ...storedDefaults, scoringMethod: currentMethod ?? storedDefaults.scoringMethod ?? 'points' }
+        : undefined);
     if (defaultsOverride) setSixDefaultsCarritos(defaultsOverride);
     let generated = buildCarritosFromPairs(
       pairs,
