@@ -333,9 +333,8 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
           oyesesEnabled: t.oyesesConfig?.enabled,
           oyesesValue: t.oyesesConfig?.valuePerOyes,
           oyesesModality: t.oyesesConfig?.modality,
-          ...(t.teamA !== undefined && 'frontAmount' in t && !('openingThreshold' in t)
-            ? { scoringMethod: (t.scoringMethod ?? 'points') as CarritosScoringMethod }
-            : {}),
+          // Carritos only (Foursomes builders ignore it); absent = 'points'.
+          scoringMethod: t.scoringMethod as CarritosScoringMethod | undefined,
         }
       : undefined;
 
@@ -378,12 +377,12 @@ export const ParejasBets: React.FC<ParejasBetsProps> = ({
     const storedDefaults = sixDefaultsCarritos ?? defaultsFromTemplate(template, 'all');
     // Shuffle (no override) keeps the bet type currently shown in the first match,
     // even if it was changed in the card after the last generation.
-    const currentMethod = (template as Partial<CarritosTeamBet> | undefined)?.scoringMethod;
+    const currentMethod: CarritosScoringMethod | undefined = template
+      ? ((template as Partial<CarritosTeamBet>).scoringMethod ?? 'points')
+      : storedDefaults?.scoringMethod;
     const defaults =
       defaultsOverride ??
-      (storedDefaults
-        ? { ...storedDefaults, scoringMethod: currentMethod ?? storedDefaults.scoringMethod ?? 'points' }
-        : undefined);
+      (storedDefaults ? { ...storedDefaults, scoringMethod: currentMethod } : undefined);
     if (defaultsOverride) setSixDefaultsCarritos(defaultsOverride);
     let generated = buildCarritosFromPairs(
       pairs,
