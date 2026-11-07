@@ -6,6 +6,7 @@
  * every combination of the remaining 3 players (A+B, A+C, B+C).
  */
 import {
+  CarritosScoringMethod,
   CarritosTeamBet,
   TeamPressuresBet,
   TeamHandicapMode,
@@ -29,6 +30,8 @@ export interface BasePairDefaults {
   oyesesEnabled?: boolean;
   oyesesValue?: number;
   oyesesModality?: 'acumulados' | 'sangron';
+  /** Carritos only: 'points' (Carritos) or 'strokes' (Medal por Parejas). Absent = 'points'. */
+  scoringMethod?: CarritosScoringMethod;
 }
 
 const DEFAULT_MARKERS: (keyof MarkerState)[] = [
@@ -51,14 +54,19 @@ export const getPairCombinations = (ids: string[]): Array<[string, string]> => {
   return out;
 };
 
-/** Stable key for a match (set of 4 players, team order irrelevant). */
+/**
+ * Stable key for a match (set of 4 players, team order irrelevant) plus the
+ * Carritos scoring method (absent = 'points'), so a Carritos and a Medal por
+ * Parejas between the same 4 players are different matches.
+ */
 export const matchKey = (
   teamA: [string, string],
-  teamB: [string, string]
+  teamB: [string, string],
+  scoringMethod?: CarritosScoringMethod
 ): string => {
   const a = [...teamA].sort().join('|');
   const b = [...teamB].sort().join('|');
-  return [a, b].sort().join('#');
+  return `${[a, b].sort().join('#')}@${scoringMethod ?? 'points'}`;
 };
 
 const uid = (prefix: string, idx: number) =>
@@ -158,6 +166,13 @@ export const buildBasePairCarritosTeams = (
     const hcp = defaults && resolveHandicaps
       ? resolveHandicaps(defaults.handicapMode, teamA, teamB)
       : undefined;
+    const scoringMethod: CarritosScoringMethod =
+      defaults?.scoringMethod ?? template?.scoringMethod ?? 'points';
+    const rawScoringType = (defaults?.scoringType ?? template?.scoringType ?? 'all') as
+      CarritosTeamBet['scoringType'];
+    // Medal por Parejas has no "Todos" modality in setup.
+    const scoringType =
+      scoringMethod === 'strokes' && rawScoringType === 'all' ? 'lowBall' : rawScoringType;
 
     return {
       id: uid('carritos', idx),
@@ -166,8 +181,8 @@ export const buildBasePairCarritosTeams = (
       frontAmount: defaults?.frontAmount ?? template?.frontAmount ?? 100,
       backAmount: defaults?.backAmount ?? template?.backAmount ?? 100,
       totalAmount: defaults?.totalAmount ?? template?.totalAmount ?? 100,
-      scoringType: (defaults?.scoringType ?? template?.scoringType ?? 'all') as
-        CarritosTeamBet['scoringType'],
+      scoringType,
+      scoringMethod,
       teamHandicaps: hcp?.teamHandicaps ?? { ...(template?.teamHandicaps ?? {}) },
       handicapConfig: defaults
         ? {
@@ -224,18 +239,22 @@ export const buildCarritosFromPairs = (
 
 /** Filters generated matches, dropping any whose 4-player set already exists. */
 
-export const dropExistingMatches = <
-  T extends { teamA: [string, string]; teamB: [string, string] }
->(
+type MatchLike = {
+  teamA: [string, string];
+  teamB: [string, string];
+  scoringMethod?: CarritosScoringMethod;
+};
+
+export const dropExistingMatches = <T extends MatchLike>(
   generated: T[],
-  existing: Array<{ teamA: [string, string]; teamB: [string, string] }>
+  existing: MatchLike[]
 ): T[] => {
   const existingKeys = new Set(
     existing
       .filter((e) => e.teamA?.[0] && e.teamA?.[1] && e.teamB?.[0] && e.teamB?.[1])
-      .map((e) => matchKey(e.teamA, e.teamB))
+      .map((e) => matchKey(e.teamA, e.teamB, e.scoringMethod))
   );
-  return generated.filter((g) => !existingKeys.has(matchKey(g.teamA, g.teamB)));
+  return generated.filter((g) => !existingKeys.has(matchKey(g.teamA, g.teamB, g.scoringMethod)));
 };
 
 /* ─── Pairing combinations (moved from ParejasBets to be shared) ─── */
