@@ -85,6 +85,10 @@ interface CarritosResultsCardProps {
       combinedWinner?: 'A' | 'B' | 'tie';
       pointsA: number;
       pointsB: number;
+      /** 'strokes' only: team strokes counted on this hole and half-stroke tie-break. */
+      teamScoreA?: number;
+      teamScoreB?: number;
+      halfAppliedTeam?: 'A' | 'B' | null;
     } | null>;
     holeDetailsBack: Array<{
       holeNumber: number;
@@ -105,6 +109,10 @@ interface CarritosResultsCardProps {
       combinedWinner?: 'A' | 'B' | 'tie';
       pointsA: number;
       pointsB: number;
+      /** 'strokes' only: team strokes counted on this hole and half-stroke tie-break. */
+      teamScoreA?: number;
+      teamScoreB?: number;
+      halfAppliedTeam?: 'A' | 'B' | null;
     } | null>;
     pointsAFront: number;
     pointsBFront: number;
@@ -121,6 +129,20 @@ interface CarritosResultsCardProps {
     backAmount?: number;
     totalAmount?: number;
     id?: string;
+    /** 'strokes' = "Medal por Parejas" (accumulated team net strokes). Absent = 'points'. */
+    method?: 'points' | 'strokes';
+    scoreAFront?: number;
+    scoreBFront?: number;
+    scoreABack?: number;
+    scoreBBack?: number;
+    scoreATotal?: number;
+    scoreBTotal?: number;
+    winnerFront?: 'A' | 'B' | 'tie';
+    winnerBack?: 'A' | 'B' | 'tie';
+    winnerTotal?: 'A' | 'B' | 'tie';
+    moneyAFront?: number;
+    moneyABack?: number;
+    moneyATotal?: number;
   };
   players: Player[];
   basePlayerId?: string;
@@ -134,8 +156,10 @@ interface CarritosResultsCardProps {
   amountsHidden?: boolean;
 }
 
-const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, players, basePlayerId, title = 'Carritos (Equipos)', roundHoles = 18, onCancel, isDisabled, onToggleDisabled, teamHandicaps, handicapConfig, amountsHidden = false }) => {
+const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, players, basePlayerId, title: titleProp, roundHoles = 18, onCancel, isDisabled, onToggleDisabled, teamHandicaps, handicapConfig, amountsHidden = false }) => {
   const { t } = useTranslation();
+  const isStrokes = results.method === 'strokes';
+  const title = titleProp ?? (isStrokes ? trs("Medal por Parejas") : 'Carritos (Equipos)');
 
   const showAmtSigned = (value: number): string =>
     amountsHidden ? '••••' : `${value >= 0 ? '+$' : '-$'}${fmtMoney(Math.abs(value))}`;
@@ -193,6 +217,9 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
           combinedWinner: invertWinner(d.combinedWinner as Winner | undefined),
           pointsA: d.pointsB,
           pointsB: d.pointsA,
+          teamScoreA: d.teamScoreB,
+          teamScoreB: d.teamScoreA,
+          halfAppliedTeam: d.halfAppliedTeam ? invertWinner(d.halfAppliedTeam) as 'A' | 'B' : d.halfAppliedTeam,
         };
       });
 
@@ -219,6 +246,9 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
           combinedWinner: invertWinner(d.combinedWinner as Winner | undefined),
           pointsA: d.pointsB,
           pointsB: d.pointsA,
+          teamScoreA: d.teamScoreB,
+          teamScoreB: d.teamScoreA,
+          halfAppliedTeam: d.halfAppliedTeam ? invertWinner(d.halfAppliedTeam) as 'A' | 'B' : d.halfAppliedTeam,
         };
       });
 
@@ -234,13 +264,37 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
     return w === 'A' ? t('dashboard.yourTeam') : t('dashboard.rival');
   };
 
-  const scoringLabel = results.scoringType === 'all'
+  const scoringLabel = isStrokes
+    ? `${results.scoringType === 'lowBall'
+        ? trs("Bola Baja")
+        : results.scoringType === 'highBall'
+          ? trs("Bola Alta")
+          : trs("Bola Baja + Bola Alta")} · ${trs("golpes acumulados")}`
+    : results.scoringType === 'all'
     ? 'LowBall + HighBall + Suma'
     : results.scoringType === 'lowBall'
       ? 'LowBall'
       : results.scoringType === 'highBall'
         ? 'HighBall'
         : 'LowBall + HighBall';
+
+  // "Medal por Parejas": accumulated strokes from the base team's perspective.
+  // advantage = rival strokes − base strokes (positive = base team ahead).
+  const strokesSegment = (a?: number, b?: number) => {
+    const base = (isBaseInTeamA ? a : b) ?? 0;
+    const rival = (isBaseInTeamA ? b : a) ?? 0;
+    return { base, rival, adv: rival - base };
+  };
+  const strokesFront = strokesSegment(results.scoreAFront, results.scoreBFront);
+  const strokesBack = strokesSegment(results.scoreABack, results.scoreBBack);
+  const strokesTotal = strokesSegment(results.scoreATotal, results.scoreBTotal);
+  const fmtAdv = (n: number) => `(${n > 0 ? '+' : ''}${n})`;
+  const strokesLine = (seg: { base: number; rival: number; adv: number }) =>
+    `${seg.base} ${trs("vs")} ${seg.rival} ${fmtAdv(seg.adv)}`;
+  // Segment sign used for tone and money: points use the point difference, strokes the advantage.
+  const segFront = isStrokes ? strokesFront.adv : baseTeamNetFront;
+  const segBack = isStrokes ? strokesBack.adv : baseTeamNetBack;
+  const segTotal = isStrokes ? strokesTotal.adv : baseTeamNetTotal;
   
   // Payment: Each loser pays 50% of their share to EACH winner
   // Total loss is split between 2 losers, then each loser splits their half between 2 winners
@@ -263,6 +317,29 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
   };
   
   const payment = getPaymentBreakdown();
+
+  /** "Medal por Parejas" popover footer: each team's strokes on the hole + half-stroke mark. */
+  const renderStrokesHoleFooter = (detail: { teamScoreA?: number; teamScoreB?: number; halfAppliedTeam?: 'A' | 'B' | null }) => {
+    const halfDot = <span className="inline-block h-2 w-2 rounded-full bg-green-600" />;
+    return (
+      <div className="pt-1 border-t border-border/50">
+        <p className="flex justify-between">
+          <span className="flex items-center gap-1">{t('dashboard.yourTeam')}{detail.halfAppliedTeam === 'A' && halfDot}</span>
+          <span className="tabular-nums">{detail.teamScoreA ?? '–'}</span>
+        </p>
+        <p className="flex justify-between">
+          <span className="flex items-center gap-1">{t('dashboard.rival')}{detail.halfAppliedTeam === 'B' && halfDot}</span>
+          <span className="tabular-nums">{detail.teamScoreB ?? '–'}</span>
+        </p>
+        {detail.halfAppliedTeam && (
+          <p className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            {halfDot}
+            {trs("Medio golpe aplicado: −1")}
+          </p>
+        )}
+      </div>
+    );
+  };
   
   return (
     <Card className={cn('border-accent/50', isDisabled && 'opacity-50')}>
@@ -296,7 +373,9 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                 size="icon"
                 className={cn('h-6 w-6', isDisabled ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground hover:text-destructive')}
                 onClick={onToggleDisabled}
-                title={isDisabled ? 'Reactivar Carritos' : trs("No considerar Carritos")}
+                title={isStrokes
+                  ? (isDisabled ? trs("Reactivar Medal por Parejas") : trs("No considerar Medal por Parejas"))
+                  : (isDisabled ? 'Reactivar Carritos' : trs("No considerar Carritos"))}
               >
                 {isDisabled ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
               </Button>
@@ -307,7 +386,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                 size="icon"
                 className="h-6 w-6 text-muted-foreground hover:text-destructive"
                 onClick={onCancel}
-                title={trs("Cancelar Carritos")}
+                title={isStrokes ? trs("Cancelar Medal por Parejas") : trs("Cancelar Carritos")}
               >
                 <XCircle className="h-4 w-4" />
               </Button>
@@ -330,7 +409,25 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
             </div>
             {/* Results row */}
             <div className="flex items-center gap-2">
-              <div className={cn('flex-1 grid gap-1 text-center text-sm tabular-nums', isNineHole ? 'grid-cols-1' : 'grid-cols-3')}>
+              <div className={cn('flex-1 grid gap-1 text-center tabular-nums', isStrokes && !isNineHole ? 'text-xs' : 'text-sm', isNineHole ? 'grid-cols-1' : 'grid-cols-3')}>
+                {isStrokes ? (
+                  <>
+                    <span className={cn('font-semibold whitespace-nowrap', getNetTone(strokesFront.adv))}>
+                      F9 {strokesLine(strokesFront)}
+                    </span>
+                    {!isNineHole && (
+                      <>
+                        <span className={cn('font-semibold whitespace-nowrap', getNetTone(strokesBack.adv))}>
+                          B9 {strokesLine(strokesBack)}
+                        </span>
+                        <span className={cn('font-bold whitespace-nowrap', getNetTone(strokesTotal.adv))}>
+                          T {strokesLine(strokesTotal)}
+                        </span>
+                      </>
+                    )}
+                  </>
+                ) : (
+                <>
                 <span className={cn('font-semibold', getNetTone(baseTeamNetFront))}>
                   F9 {baseTeamNetFront >= 0 ? '+' : ''}{baseTeamNetFront}
                 </span>
@@ -343,6 +440,8 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                       T {baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal}
                     </span>
                   </>
+                )}
+                </>
                 )}
               </div>
               <CollapsibleTrigger asChild>
@@ -370,12 +469,12 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium">{trs("Front 9")}</span>
               <div className="flex items-center gap-2">
-                <span className={cn('text-xs tabular-nums', getNetTone(baseTeamNetFront))}>
-                  {baseTeamNetFront >= 0 ? '+' : ''}{baseTeamNetFront} pts
+                <span className={cn('text-xs tabular-nums', getNetTone(segFront))}>
+                  {isStrokes ? strokesLine(strokesFront) : <>{baseTeamNetFront >= 0 ? '+' : ''}{baseTeamNetFront} pts</>}
                 </span>
                 {(() => {
                   const frontAmt = results.frontAmount ?? 0;
-                  const frontMoney = (baseTeamNetFront > 0 ? 1 : baseTeamNetFront < 0 ? -1 : 0) * frontAmt;
+                  const frontMoney = (segFront > 0 ? 1 : segFront < 0 ? -1 : 0) * frontAmt;
                   if (frontMoney === 0) return null;
                   return (
                     <span className={cn('text-xs font-bold tabular-nums',
@@ -414,13 +513,14 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                     <PopoverTrigger asChild>{pill}</PopoverTrigger>
                     <PopoverContent side="top" className="w-[95vw] max-w-sm p-3">
                       <div className="text-xs space-y-1">
-                        <p className="font-medium">{t('dashboard.hole')} {detail.holeNumber} • {net > 0 ? `+${net}` : `${net}`} pts</p>
+                        <p className="font-medium">{t('dashboard.hole')} {detail.holeNumber} • {net > 0 ? `+${net}` : `${net}`}{isStrokes ? '' : ' pts'}</p>
                         <TeamHoleGrid
                           teamAPlayers={displayTeamAPlayers}
                           teamBPlayers={displayTeamBPlayers}
                           shortNames={shortNames}
                           detail={detail}
                         />
+                        {isStrokes ? renderStrokesHoleFooter(detail) : (
                         <div className="pt-1 border-t border-border/50">
                           {(results.scoringType === 'lowBall' || results.scoringType === 'combined' || results.scoringType === 'all') && (
                             <p className="flex justify-between"><span>{trs("Bola Baja")}</span><span className="tabular-nums">{getWinnerText(detail.lowBallWinner)}</span></p>
@@ -433,6 +533,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                           )}
                           <p className="flex justify-between font-medium"><span>{trs("Puntos")}</span><span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span></p>
                         </div>
+                        )}
                       </div>
                     </PopoverContent>
                   </Popover>
@@ -447,12 +548,12 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium">{trs("Back 9")}</span>
               <div className="flex items-center gap-2">
-                <span className={cn('text-xs tabular-nums', getNetTone(baseTeamNetBack))}>
-                  {baseTeamNetBack >= 0 ? '+' : ''}{baseTeamNetBack} pts
+                <span className={cn('text-xs tabular-nums', getNetTone(segBack))}>
+                  {isStrokes ? strokesLine(strokesBack) : <>{baseTeamNetBack >= 0 ? '+' : ''}{baseTeamNetBack} pts</>}
                 </span>
                 {(() => {
                   const backAmt = results.backAmount ?? 0;
-                  const backMoney = (baseTeamNetBack > 0 ? 1 : baseTeamNetBack < 0 ? -1 : 0) * backAmt;
+                  const backMoney = (segBack > 0 ? 1 : segBack < 0 ? -1 : 0) * backAmt;
                   if (backMoney === 0) return null;
                   return (
                     <span className={cn('text-xs font-bold tabular-nums',
@@ -491,13 +592,14 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                     <PopoverTrigger asChild>{pill}</PopoverTrigger>
                     <PopoverContent side="top" className="w-[95vw] max-w-sm p-3">
                       <div className="text-xs space-y-1">
-                        <p className="font-medium">{t('dashboard.hole')} {detail.holeNumber} • {net > 0 ? `+${net}` : `${net}`} pts</p>
+                        <p className="font-medium">{t('dashboard.hole')} {detail.holeNumber} • {net > 0 ? `+${net}` : `${net}`}{isStrokes ? '' : ' pts'}</p>
                         <TeamHoleGrid
                           teamAPlayers={displayTeamAPlayers}
                           teamBPlayers={displayTeamBPlayers}
                           shortNames={shortNames}
                           detail={detail}
                         />
+                        {isStrokes ? renderStrokesHoleFooter(detail) : (
                         <div className="pt-1 border-t border-border/50">
                           {(results.scoringType === 'lowBall' || results.scoringType === 'combined' || results.scoringType === 'all') && (
                             <p className="flex justify-between"><span>{trs("Bola Baja")}</span><span className="tabular-nums">{getWinnerText(detail.lowBallWinner)}</span></p>
@@ -510,6 +612,7 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
                           )}
                           <p className="flex justify-between font-medium"><span>{trs("Puntos")}</span><span className="tabular-nums">{detail.pointsA} - {detail.pointsB}</span></p>
                         </div>
+                        )}
                       </div>
                     </PopoverContent>
                   </Popover>
@@ -522,12 +625,12 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
               <div className="flex items-center justify-between border-t border-border/50 pt-2">
                 <span className="text-xs font-medium">{trs("Total 18")}</span>
                 <div className="flex items-center gap-2">
-                  <span className={cn('text-sm tabular-nums', getNetTone(baseTeamNetTotal))}>
-                    {baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal} pts
+                  <span className={cn('text-sm tabular-nums', getNetTone(segTotal))}>
+                    {isStrokes ? strokesLine(strokesTotal) : <>{baseTeamNetTotal >= 0 ? '+' : ''}{baseTeamNetTotal} pts</>}
                   </span>
                   {(() => {
                     const totalAmt = results.totalAmount ?? 0;
-                    const totalMoney = (baseTeamNetTotal > 0 ? 1 : baseTeamNetTotal < 0 ? -1 : 0) * totalAmt;
+                    const totalMoney = (segTotal > 0 ? 1 : segTotal < 0 ? -1 : 0) * totalAmt;
                     if (totalMoney === 0) return null;
                     return (
                       <span className={cn('text-sm font-bold tabular-nums',
