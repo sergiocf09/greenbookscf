@@ -409,18 +409,18 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
             </div>
             {/* Results row */}
             <div className="flex items-center gap-2">
-              <div className={cn('flex-1 grid gap-1 text-center tabular-nums', isStrokes && !isNineHole ? 'text-xs' : 'text-sm', isNineHole ? 'grid-cols-1' : 'grid-cols-3')}>
+              <div className={cn('flex-1 grid gap-1 text-center tabular-nums', isStrokes && !isNineHole ? 'text-[11px] leading-tight' : 'text-sm', isNineHole ? 'grid-cols-1' : 'grid-cols-3')}>
                 {isStrokes ? (
                   <>
-                    <span className={cn('font-semibold whitespace-nowrap', getNetTone(strokesFront.adv))}>
+                    <span className={cn('font-semibold', getNetTone(strokesFront.adv))}>
                       F9 {strokesLine(strokesFront)}
                     </span>
                     {!isNineHole && (
                       <>
-                        <span className={cn('font-semibold whitespace-nowrap', getNetTone(strokesBack.adv))}>
+                        <span className={cn('font-semibold', getNetTone(strokesBack.adv))}>
                           B9 {strokesLine(strokesBack)}
                         </span>
-                        <span className={cn('font-bold whitespace-nowrap', getNetTone(strokesTotal.adv))}>
+                        <span className={cn('font-bold', getNetTone(strokesTotal.adv))}>
                           T {strokesLine(strokesTotal)}
                         </span>
                       </>
