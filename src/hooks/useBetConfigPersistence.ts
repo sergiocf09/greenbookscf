@@ -284,8 +284,20 @@ function diffBetConfigs(prev: any, next: any): string {
   if (!prev) return 'Configuración inicial guardada';
   const allChanges: string[] = [];
   for (const key of Object.keys(BET_LABELS)) {
-    allChanges.push(...diffBetSection(BET_LABELS[key], prev?.[key], next?.[key]));
+    // Primary Carritos may be a "Medal por Parejas" (scoringMethod 'strokes').
+    const label = key === 'carritos' && next?.carritos?.scoringMethod === 'strokes' ? 'Medal por Parejas' : BET_LABELS[key];
+    allChanges.push(...diffBetSection(label, prev?.[key], next?.[key]));
   }
+  // Bet type switch on any Carritos match (Carritos ↔ Medal por Parejas).
+  const methodOf = (c: any) => (c?.scoringMethod === 'strokes' ? 'Medal por Parejas' : 'Carritos');
+  const prevTeams: any[] = [prev?.carritos, ...(prev?.carritosTeams ?? [])];
+  const nextTeams: any[] = [next?.carritos, ...(next?.carritosTeams ?? [])];
+  nextTeams.forEach((n, i) => {
+    const before = i === 0 ? prevTeams[0] : prevTeams.find((t) => t?.id && t.id === n?.id);
+    if (n && before && methodOf(before) !== methodOf(n)) {
+      allChanges.push(`${methodOf(before)} → ${methodOf(n)}`);
+    }
+  });
   if (allChanges.length === 0) {
     // Fallback: detect any JSON diff
     try {
