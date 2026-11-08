@@ -144,7 +144,7 @@ All colors MUST be HSL.
    hole details fill the screen with large text instead of stretching with small text. */
 @media (min-width: 768px) and (min-height: 600px) {
   .tab-zoom-detail { zoom: 2.1; }
-  .tab-zoom-badges { zoom: 1.5; }
+  .tab-zoom-badges { zoom: 1.9; }
   .tab-zoom-panel { zoom: 2.1; }
   .tab-zoom-pop {
     zoom: 2.2;
@@ -159,7 +159,7 @@ All colors MUST be HSL.
 }
 @media (min-width: 1024px) and (min-height: 600px) {
   .tab-zoom-detail { zoom: 2.6; }
-  .tab-zoom-badges { zoom: 1.6; }
+  .tab-zoom-badges { zoom: 2.2; }
   .tab-zoom-panel { zoom: 2.6; }
   .tab-zoom-pop {
     zoom: 2.7;
