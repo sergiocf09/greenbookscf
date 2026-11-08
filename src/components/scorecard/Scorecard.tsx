@@ -325,7 +325,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                 <td className="px-2 py-1 sticky left-0 bg-card">
                   <div className="flex items-center gap-1">
                     <PlayerAvatar initials={disambiguatedInitials.get(player.id) || player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
-                    <span className="font-medium truncate max-w-[50px] text-xs">{formatPlayerName(player.name).split(' ')[0]}</span>
+                    <span className="font-medium truncate max-w-[50px] md:max-w-[120px] text-xs md:text-sm">{formatPlayerName(player.name).split(' ')[0]}</span>
                     {onQuickScoreClick && (
                       <TooltipProvider>
                         <Tooltip>
@@ -432,7 +432,7 @@ export const Scorecard: React.FC<ScorecardProps> = ({
                   <td className="px-2 py-1 sticky left-0 bg-card">
                     <div className="flex items-center gap-1">
                       <PlayerAvatar initials={disambiguatedInitials.get(player.id) || player.initials} background={player.color} size="sm" isLoggedInUser={player.id === basePlayerId} />
-                      <span className="font-medium truncate max-w-[50px] text-xs">{formatPlayerName(player.name).split(' ')[0]}</span>
+                      <span className="font-medium truncate max-w-[50px] md:max-w-[120px] text-xs md:text-sm">{formatPlayerName(player.name).split(' ')[0]}</span>
                       {onQuickScoreClick && (
                         <TooltipProvider>
                           <Tooltip>

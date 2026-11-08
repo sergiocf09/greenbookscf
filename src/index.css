@@ -125,3 +125,11 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Tablets (iPad): slightly larger base text so the wider layout stays easy to read.
+   Phones (including landscape, whose height is under 600px) and desktops are unaffected. */
+@media (min-width: 768px) and (min-height: 600px) and (pointer: coarse) {
+  html {
+    font-size: 17px;
+  }
+}

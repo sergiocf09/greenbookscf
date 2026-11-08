@@ -2620,7 +2620,7 @@ const Index = () => {
       {/* Navigation Tabs - show when round is in progress OR not in setup view */}
       {(isRoundStarted || view !== 'setup') && (
         <div className="bg-card border-b border-border">
-          <div className="max-w-md mx-auto">
+          <div className="max-w-md md:max-w-3xl lg:max-w-5xl mx-auto">
             <Tabs value={view === 'scoring' ? 'scoring' : view} onValueChange={(v) => { setView(v as AppView); if (v !== 'leaderboards') setLeaderboardDetailId(null); if (v !== 'rankings') setRankingDetailId(null); }}>
               <TabsList className="w-full grid grid-cols-5 h-14">
                 <TabsTrigger value="setup" className="text-xs flex flex-col items-center gap-0.5 py-1"><Settings className="h-4 w-4" /><span className="text-[10px] leading-tight">{trs("Setup")}</span></TabsTrigger>
@@ -2637,7 +2637,7 @@ const Index = () => {
       {/* Leaderboard Quick-Access Banner — distributes evenly when round is linked to multiple */}
       {linkedLeaderboards.length > 0 && isRoundStarted && roundState.status !== 'completed' && view !== 'leaderboards' && (
         <div className="w-full bg-amber-500/10 border-b border-amber-500/30">
-          <div className="max-w-md mx-auto flex items-stretch divide-x divide-amber-500/30">
+          <div className="max-w-md md:max-w-3xl lg:max-w-5xl mx-auto flex items-stretch divide-x divide-amber-500/30">
             {linkedLeaderboards.map((lb) => {
               // Abbreviate name when sharing the row with siblings: keep first letter
               // of each word, fall back to full name when there's only one leaderboard.
@@ -2679,7 +2679,7 @@ const Index = () => {
       )}
 
       {/* Main Content */}
-      <main className="max-w-md mx-auto p-4 space-y-4" {...swipeHandlers}>
+      <main className="max-w-md md:max-w-3xl lg:max-w-5xl mx-auto p-4 md:px-6 space-y-4" {...swipeHandlers}>
         {view === 'setup' && (
           <SetupView
             players={players}

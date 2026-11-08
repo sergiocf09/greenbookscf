@@ -176,7 +176,7 @@ export function AppHeader(props: AppHeaderProps) {
 
   return (
     <header className="bg-primary text-primary-foreground py-3 px-4 shadow-lg">
-      <div className="max-w-md mx-auto flex items-center">
+      <div className="max-w-md md:max-w-3xl lg:max-w-5xl mx-auto flex items-center">
         {/* Left: Logo */}
         <div className="flex items-center flex-shrink-0">
           <GreenBookLogo height={72} variant="header" />

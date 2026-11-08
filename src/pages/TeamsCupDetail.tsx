@@ -63,7 +63,7 @@ const TeamsCupDetail = () => {
         </div>
       </div>
 
-      <div className="p-4 max-w-lg mx-auto">
+      <div className="p-4 max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto">
         <TeamsCupDetailInline
           leaderboardId={id}
           onBack={() => navigate('/leaderboards')}
