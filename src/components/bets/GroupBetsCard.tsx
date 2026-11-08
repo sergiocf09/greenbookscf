@@ -2306,7 +2306,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
             {/* Manchas panel — columns: each player's incidents stacked vertically */}
             {showManchasPanel && manchasSummary && (
-              <div className="space-y-1 tab-zoom-detail">
+              <div className="space-y-1 tab-zoom-panel">
                 {(() => {
                   const allPlayerData = manchasSummary.playerData;
                   if (allPlayerData.length === 0) return <p className="text-xs text-muted-foreground text-center py-2">{trs("Sin manchas aún")}</p>;
@@ -2363,7 +2363,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
             {/* Unidades panel — columns: each player's incidents stacked vertically */}
             {showUnidadesPanel && unidadesSummary && (
-              <div className="space-y-1 tab-zoom-detail">
+              <div className="space-y-1 tab-zoom-panel">
                 {(() => {
                   const allPlayerData = unidadesSummary.playerData;
                   if (allPlayerData.length === 0) return <p className="text-xs text-muted-foreground text-center py-2">{trs("Sin unidades aún")}</p>;
@@ -2420,7 +2420,7 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
 
             {/* Oyeses panel — tabla con columna de posiciones y columnas por hoyo */}
             {showOyesesPanel && oyesesSummary && (
-              <div className="space-y-3 tab-zoom-detail">
+              <div className="space-y-3 tab-zoom-panel">
                 {oyesesSummary.holesWithData === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-2">{trs("Sin datos de Oyeses aún")}</p>
                 ) : (

@@ -141,6 +141,7 @@ All colors MUST be HSL.
 @media (min-width: 768px) and (min-height: 600px) {
   .tab-zoom-detail { zoom: 1.25; }
   .tab-zoom-badges { zoom: 1.5; }
+  .tab-zoom-panel { zoom: 1.4; }
   .tab-zoom-pop {
     zoom: 1.5;
     max-width: calc((100vw - 1.5rem) / 1.5) !important;
@@ -155,6 +156,7 @@ All colors MUST be HSL.
 @media (min-width: 1024px) and (min-height: 600px) {
   .tab-zoom-detail { zoom: 1.35; }
   .tab-zoom-badges { zoom: 1.6; }
+  .tab-zoom-panel { zoom: 1.5; }
   .tab-zoom-pop {
     zoom: 1.6;
     max-width: calc((100vw - 1.5rem) / 1.6) !important;
