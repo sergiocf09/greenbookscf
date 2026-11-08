@@ -125,7 +125,7 @@ const Leaderboards = () => {
         </div>
       </div>
 
-      <div className="p-4 max-w-lg mx-auto space-y-4">
+      <div className="p-4 max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto space-y-4">
         {/* Actions */}
         <div className="flex gap-2">
           <Dialog open={showCreateDialog} onOpenChange={(v) => { setShowCreateDialog(v); if (!v) setCreateType(null); }}>

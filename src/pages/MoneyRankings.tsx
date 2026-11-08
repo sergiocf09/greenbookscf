@@ -104,7 +104,7 @@ const MoneyRankings = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-primary text-primary-foreground py-3 px-4 shadow-lg">
-        <div className="flex items-center justify-between max-w-lg mx-auto">
+        <div className="flex items-center justify-between max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto">
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary/80" onClick={() => navigate('/')}>
               <ArrowLeft className="h-5 w-5" />
@@ -136,7 +136,7 @@ const MoneyRankings = () => {
         </div>
       </header>
 
-      <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
+      <div className="max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto px-4 py-4 space-y-4">
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
           <DialogTrigger asChild>
             <Button className="w-full" size="lg">

@@ -194,7 +194,7 @@ export function AppDialogs(props: AppDialogsProps) {
   return (
     <>
       <Dialog open={dialogs.history} onOpenChange={(v: boolean) => setDialog('history', v)}>
-        <DialogContent className="max-w-md px-3 sm:px-6">
+        <DialogContent className="max-w-md md:max-w-2xl lg:max-w-3xl px-3 sm:px-6">
           <DialogHeader>
             <DialogTitle>{trs("Historial de Rondas")}</DialogTitle>
           </DialogHeader>
@@ -325,7 +325,7 @@ export function AppDialogs(props: AppDialogsProps) {
 
       {/* Handicap History Dialog */}
       <Dialog open={dialogs.handicapHistory} onOpenChange={(v: boolean) => setDialog('handicapHistory', v)}>
-        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-md md:max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{trs("Historial de Handicap")}</DialogTitle>
           </DialogHeader>
@@ -335,7 +335,7 @@ export function AppDialogs(props: AppDialogsProps) {
 
 
       <Dialog open={dialogs.scorecard} onOpenChange={(v: boolean) => setDialog('scorecard', v)}>
-        <DialogContent className="max-w-lg max-h-[90vh] p-0 overflow-hidden">
+        <DialogContent className="max-w-lg md:max-w-3xl lg:max-w-4xl max-h-[90vh] p-0 overflow-hidden">
           <div className="overflow-y-auto overflow-x-hidden max-h-[90vh] p-6">
           <DialogHeader>
             <DialogTitle>{trs("Ronda Histórica")}</DialogTitle>
@@ -371,7 +371,7 @@ export function AppDialogs(props: AppDialogsProps) {
 
       {/* Historical Balances Dialog */}
       <Dialog open={dialogs.balances} onOpenChange={(v: boolean) => setDialog('balances', v)}>
-        <DialogContent className="max-w-md px-2 sm:px-6">
+        <DialogContent className="max-w-md md:max-w-2xl lg:max-w-3xl px-2 sm:px-6">
           <DialogHeader>
             <DialogTitle>{trs("Balances Históricos")}</DialogTitle>
           </DialogHeader>

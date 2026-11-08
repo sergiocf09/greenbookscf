@@ -722,7 +722,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
       </div>
 
 
-      <div className="px-3 py-2 max-w-lg mx-auto space-y-2">
+      <div className="px-3 py-2 max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto space-y-2">
         {/* Compact tournament title (Teams Cup style: 2 rows max) */}
         <div className="text-center space-y-1">
           <h1 className="text-lg font-bold leading-tight inline-flex items-center justify-center gap-1.5">

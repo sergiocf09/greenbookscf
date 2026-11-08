@@ -110,7 +110,7 @@ const LeaderboardDetail = () => {
         </div>
       </div>
 
-      <div className="p-4 max-w-lg mx-auto space-y-4">
+      <div className="p-4 max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto space-y-4">
         {/* Event info */}
         <Card>
           <CardHeader className="pb-2 pt-4 px-4">

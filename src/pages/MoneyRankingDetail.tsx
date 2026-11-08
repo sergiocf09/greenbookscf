@@ -221,7 +221,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
     <div className={isInline ? 'space-y-4' : 'min-h-screen bg-background'}>
       {!isInline && (
         <header className="bg-primary text-primary-foreground py-3 px-4 shadow-lg">
-          <div className="flex items-center gap-3 max-w-lg mx-auto">
+          <div className="flex items-center gap-3 max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto">
             <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary/80" onClick={goBack}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -239,7 +239,7 @@ const MoneyRankingDetail: React.FC<MoneyRankingDetailProps> = ({ inlineId, onBac
         </header>
       )}
 
-      <div className={isInline ? 'space-y-4' : 'max-w-lg mx-auto px-4 py-4 space-y-4'}>
+      <div className={isInline ? 'space-y-4' : 'max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto px-4 py-4 space-y-4'}>
         {isInline && (
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goBack}>
