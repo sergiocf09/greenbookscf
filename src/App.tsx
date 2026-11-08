@@ -7,17 +7,46 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { RoundProvider } from "@/contexts/RoundContext";
-import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import ResetPassword from "./pages/ResetPassword";
-import JoinRound from "./pages/JoinRound";
-import JoinByCode from "./pages/JoinByCode";
-import JoinLeaderboard from "./pages/JoinLeaderboard";
-import NotFound from "./pages/NotFound";
-import TermsOfService from "./pages/TermsOfService";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
 import { PWAInstallBanner } from "./components/PWAInstallBanner";
 import { Loader2 } from "lucide-react";
+
+// The main round screen is the heaviest part of the app. Loading it as its own
+// chunk lets the sign-in screen paint without downloading it first; it is
+// fetched right away when a saved session exists, and in idle time otherwise.
+const loadIndex = () => import("./pages/Index");
+const Index = lazy(loadIndex);
+
+const hasStoredSession = () => {
+  try {
+    return Object.keys(localStorage).some(
+      (k) => (k.startsWith("sb-") && k.endsWith("-auth-token")) || k.startsWith("guest_session_"),
+    );
+  } catch {
+    return false;
+  }
+};
+
+if (typeof window !== "undefined") {
+  if (hasStoredSession()) {
+    void loadIndex();
+  } else {
+    const prefetch = () => { void loadIndex(); };
+    const idle = (window as Window & { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback;
+    window.addEventListener("load", () => {
+      if (idle) idle(prefetch, { timeout: 5000 });
+      else setTimeout(prefetch, 2000);
+    }, { once: true });
+  }
+}
+
+const ResetPassword   = lazy(() => import("./pages/ResetPassword"));
+const JoinRound       = lazy(() => import("./pages/JoinRound"));
+const JoinByCode      = lazy(() => import("./pages/JoinByCode"));
+const JoinLeaderboard = lazy(() => import("./pages/JoinLeaderboard"));
+const NotFound        = lazy(() => import("./pages/NotFound"));
+const TermsOfService  = lazy(() => import("./pages/TermsOfService"));
+const PrivacyPolicy   = lazy(() => import("./pages/PrivacyPolicy"));
 
 // Lazy-loaded heavy routes (separate chunks)
 const Stats              = lazy(() => import("./pages/Stats"));
