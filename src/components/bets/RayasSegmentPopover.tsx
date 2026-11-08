@@ -209,7 +209,7 @@ export const RayasSegmentPopover: React.FC<RayasSegmentPopoverProps> = ({
             <div className="space-y-1">
               <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{trs("Skins")}</div>
               <div className="overflow-x-auto">
-                <div className="flex gap-0.5 min-w-max">
+                <div className="flex gap-0.5 w-max mx-auto">
                   {skinsHoles.map(hole => (
                     <div key={hole.holeNumber} className="flex flex-col items-center">
                       <span className="text-[8px] text-muted-foreground">{hole.holeNumber}</span>

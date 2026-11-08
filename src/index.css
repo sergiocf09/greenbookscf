@@ -155,7 +155,6 @@ All colors MUST be HSL.
   .tab-zoom-tip {
     zoom: 2.2;
     max-width: calc((100vw - 1.5rem) / 2.2) !important;
-    text-align: center;
   }
 }
 @media (min-width: 1024px) and (min-height: 600px) {
