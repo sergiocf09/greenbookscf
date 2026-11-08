@@ -2129,7 +2129,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                         <span className="font-medium text-sm">{trs(String(segment.label))}</span>
                                       </div>
                                       <div className="overflow-x-auto">
-                                        <div className="flex gap-0.5 w-max mx-auto">
+                                        <div className="flex gap-0.5 min-w-max">
                                           {skinsSegData.holes.map((hole) => (
                                             <div key={hole.holeNumber} className="flex flex-col items-center">
                                               <span className="text-[8px] text-muted-foreground">{hole.holeNumber}</span>
@@ -3203,7 +3203,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                         </div>
                                       ) : (
                                         <div className="overflow-x-auto">
-                                          <div className="flex gap-0.5 w-max mx-auto">
+                                          <div className="flex gap-0.5 min-w-max">
                                             {pressureSegmentData.holes.map((hole) => (
                                               <div key={hole.holeNumber} className="flex flex-col items-center">
                                                 <span className="text-[8px] text-muted-foreground">{hole.holeNumber}</span>
@@ -3237,7 +3237,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       </div>
                                       {/* Holes grid */}
                                       <div className="overflow-x-auto">
-                                        <div className="flex gap-0.5 w-max mx-auto">
+                                        <div className="flex gap-0.5 min-w-max">
                                           {skinsSegmentData.holes.map((hole) => (
                                             <div key={hole.holeNumber} className="flex flex-col items-center">
                                               <span className="text-[8px] text-muted-foreground">{hole.holeNumber}</span>
@@ -3290,7 +3290,7 @@ const BilateralDetail: React.FC<BilateralDetailProps> = ({
                                       <div className="space-y-2">
                                         <div className="font-medium text-sm">Putts {segment.label}</div>
                                         <div className="overflow-x-auto">
-                                          <div className="w-max mx-auto">
+                                          <div className="min-w-max">
                                             {/* Hole numbers row (with left spacer for name column) */}
                                             <div className="flex gap-0.5 items-center">
                                               <div className="w-16 shrink-0" />

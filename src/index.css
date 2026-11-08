@@ -138,36 +138,34 @@ All colors MUST be HSL.
    Phones — portrait or landscape (height < 600px) — are unaffected.
    Uses CSS zoom (not transform) so layout and popover positioning follow the enlarged size.
    Popovers/tooltips are portaled to <body>, so their zoom never compounds with tab-zoom-detail.
-   Zoom factors are chosen so the pre-zoom layout width stays phone-sized (~355-430px):
-   the results sections are ~765px wide upright and ~1037px sideways on iPad.
-   Popovers are capped at 28rem (pre-zoom) and to the screen width divided by the zoom, so
-   hole details fill the screen with large text instead of stretching with small text. */
+   Popovers are capped at 28rem (pre-zoom) so hole details stay compact and large instead of
+   stretching edge to edge with small text (many use w-[95vw]). */
 @media (min-width: 768px) and (min-height: 600px) {
-  .tab-zoom-detail { zoom: 2.1; }
-  .tab-zoom-badges { zoom: 1.9; }
-  .tab-zoom-panel { zoom: 2.1; }
+  .tab-zoom-detail { zoom: 1.35; }
+  .tab-zoom-badges { zoom: 1.5; }
+  .tab-zoom-panel { zoom: 1.4; }
   .tab-zoom-pop {
-    zoom: 2.2;
-    max-width: min(28rem, calc((100vw - 1.5rem) / 2.2)) !important;
-    max-height: calc((var(--radix-popover-content-available-height, 100dvh) - 0.5rem) / 2.2) !important;
+    zoom: 1.7;
+    max-width: min(28rem, calc((100vw - 1.5rem) / 1.7)) !important;
+    max-height: calc((var(--radix-popover-content-available-height, 100dvh) - 0.5rem) / 1.7) !important;
     overflow-y: auto;
   }
   .tab-zoom-tip {
-    zoom: 2.2;
-    max-width: calc((100vw - 1.5rem) / 2.2) !important;
+    zoom: 1.5;
+    max-width: calc((100vw - 1.5rem) / 1.5) !important;
   }
 }
 @media (min-width: 1024px) and (min-height: 600px) {
-  .tab-zoom-detail { zoom: 2.6; }
-  .tab-zoom-badges { zoom: 2.2; }
-  .tab-zoom-panel { zoom: 2.6; }
+  .tab-zoom-detail { zoom: 1.5; }
+  .tab-zoom-badges { zoom: 1.6; }
+  .tab-zoom-panel { zoom: 1.5; }
   .tab-zoom-pop {
-    zoom: 2.7;
-    max-width: min(28rem, calc((100vw - 1.5rem) / 2.7)) !important;
-    max-height: calc((var(--radix-popover-content-available-height, 100dvh) - 0.5rem) / 2.7) !important;
+    zoom: 1.85;
+    max-width: min(28rem, calc((100vw - 1.5rem) / 1.85)) !important;
+    max-height: calc((var(--radix-popover-content-available-height, 100dvh) - 0.5rem) / 1.85) !important;
   }
   .tab-zoom-tip {
-    zoom: 2.5;
-    max-width: calc((100vw - 1.5rem) / 2.5) !important;
+    zoom: 1.6;
+    max-width: calc((100vw - 1.5rem) / 1.6) !important;
   }
 }

@@ -399,11 +399,11 @@ const CarritosResultsCard: React.FC<CarritosResultsCardProps> = ({ results, play
           <div className="space-y-1">
             {/* Names row */}
             <div className="flex items-center justify-between text-sm">
-              <span className="font-medium truncate tab:whitespace-normal tab:break-words">
+              <span className="font-medium truncate">
                 {displayTeamAPlayers.map(p => getShortName(p)).join(' / ')}
               </span>
               <span className="text-muted-foreground text-xs mx-2">{trs("vs")}</span>
-              <span className="font-medium truncate text-right tab:whitespace-normal tab:break-words">
+              <span className="font-medium truncate text-right">
                 {displayTeamBPlayers.map(p => getShortName(p)).join(' / ')}
               </span>
             </div>
