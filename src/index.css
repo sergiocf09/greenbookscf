@@ -133,3 +133,37 @@ All colors MUST be HSL.
     font-size: 17px;
   }
 }
+
+/* Tablet scale (iPad portrait/landscape and other wide screens with enough height).
+   Phones — portrait or landscape (height < 600px) — are unaffected.
+   Uses CSS zoom (not transform) so layout and popover positioning follow the enlarged size.
+   Popovers/tooltips are portaled to <body>, so their zoom never compounds with tab-zoom-detail. */
+@media (min-width: 768px) and (min-height: 600px) {
+  .tab-zoom-detail { zoom: 1.25; }
+  .tab-zoom-badges { zoom: 1.5; }
+  .tab-zoom-panel { zoom: 1.4; }
+  .tab-zoom-pop {
+    zoom: 1.5;
+    max-width: calc((100vw - 1.5rem) / 1.5) !important;
+    max-height: calc((var(--radix-popover-content-available-height, 100dvh) - 0.5rem) / 1.5) !important;
+    overflow-y: auto;
+  }
+  .tab-zoom-tip {
+    zoom: 1.5;
+    max-width: calc((100vw - 1.5rem) / 1.5) !important;
+  }
+}
+@media (min-width: 1024px) and (min-height: 600px) {
+  .tab-zoom-detail { zoom: 1.35; }
+  .tab-zoom-badges { zoom: 1.6; }
+  .tab-zoom-panel { zoom: 1.5; }
+  .tab-zoom-pop {
+    zoom: 1.6;
+    max-width: calc((100vw - 1.5rem) / 1.6) !important;
+    max-height: calc((var(--radix-popover-content-available-height, 100dvh) - 0.5rem) / 1.6) !important;
+  }
+  .tab-zoom-tip {
+    zoom: 1.6;
+    max-width: calc((100vw - 1.5rem) / 1.6) !important;
+  }
+}

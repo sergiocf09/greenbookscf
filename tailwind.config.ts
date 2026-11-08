@@ -13,6 +13,10 @@ export default {
       },
     },
     extend: {
+      screens: {
+        // iPad and wider screens with enough height; phones (incl. landscape) excluded.
+        tab: { raw: "(min-width: 768px) and (min-height: 600px)" },
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
