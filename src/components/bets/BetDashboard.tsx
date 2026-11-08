@@ -2619,7 +2619,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
       {/* Balance vs */}
       <Card>
         <CardHeader className="py-3 pb-0">
-          <CardTitle className="text-sm flex items-center gap-2 min-w-0">
+          <CardTitle className="text-sm tab:text-lg flex items-center gap-2 min-w-0">
             <span className="text-muted-foreground">{trs("Balance")}</span>
             <span className="font-bold truncate">{formatPlayerName(basePlayer?.name || '—')}</span>
             <span className="text-muted-foreground">{trs("vs")}</span>
@@ -2691,18 +2691,18 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                           isCrossGroup && 'ring-2 ring-accent ring-offset-1 ring-offset-background rounded-lg'
                         )}
                       >
-                        {hasOverride && (
-                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full z-10" />
-                        )}
                         {/* Pill-shaped initials label - fixed width for uniformity */}
                         <div className={cn(
-                          'w-20 h-8 tab:w-36 tab:h-14 tab:text-2xl tab:rounded-xl rounded-lg flex items-center justify-center font-bold text-sm transition-all',
+                          'relative w-20 h-8 tab:w-36 tab:h-14 tab:text-2xl tab:rounded-xl rounded-lg flex items-center justify-center font-bold text-sm transition-all',
                           isSelected
                             ? 'bg-primary text-primary-foreground shadow-lg'
                             : rival.id === basePlayerId || rival.profileId === basePlayerId
                               ? 'bg-augusta-green text-augusta-gold'
                               : 'bg-white border-2 border-black text-black'
                         )}>
+                          {hasOverride && (
+                            <div className="absolute -top-1 -right-1 w-3 h-3 tab:w-4 tab:h-4 bg-accent rounded-full z-10" />
+                          )}
                           {getPlayerAbbr(rival)}
                         </div>
                         {/* Full name — tablets only (room to spare) */}
