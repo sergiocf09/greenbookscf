@@ -147,9 +147,9 @@ All colors MUST be HSL.
   .tab-zoom-badges { zoom: 1.5; }
   .tab-zoom-panel { zoom: 2.1; }
   .tab-zoom-pop {
-    zoom: 2.3;
-    max-width: min(28rem, calc((100vw - 1.5rem) / 2.3)) !important;
-    max-height: calc((var(--radix-popover-content-available-height, 100dvh) - 0.5rem) / 2.3) !important;
+    zoom: 2.2;
+    max-width: min(28rem, calc((100vw - 1.5rem) / 2.2)) !important;
+    max-height: calc((var(--radix-popover-content-available-height, 100dvh) - 0.5rem) / 2.2) !important;
     overflow-y: auto;
   }
   .tab-zoom-tip {
