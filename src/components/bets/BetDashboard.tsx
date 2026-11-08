@@ -2277,8 +2277,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
   return (
     <div className="space-y-4 overflow-x-hidden max-w-full min-w-0">
       
-      {/* Tabla General */}
-      <Card>
+      {/* Tabla General (enlarged on tablets) */}
+      <Card className="tab-zoom-detail">
         <CardHeader className="py-3 space-y-2">
           <CardTitle className="text-sm flex items-center justify-between">
             <span className="flex items-center gap-2">
@@ -2955,6 +2955,8 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           </div>
         );
       })()}
+      {/* Team bet cards (Carritos/Medal por Parejas/Foursomes) — enlarged on tablets */}
+      <div className="space-y-4 tab-zoom-detail empty:hidden">
       {/* All Carritos Results — only render if carritos is enabled */}
       {effectiveBetConfig.carritos.enabled && (() => {
         const hasCarritosTeams = (effectiveBetConfig.carritosTeams?.length ?? 0) > 0;
@@ -4145,8 +4147,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           </Card>
         );
       })}
+      </div>
 
-      {/* Indicators (Oyeses/Unidades/Manchas) — after Parejas, before Grupales */}
+      {/* Indicators (Oyeses/Unidades/Manchas) — after Parejas, before Grupales.
+          Not wrapped in tab-zoom-detail: it has its own tab-zoom-badges/panel scaling. */}
       <GroupBetsCard
         players={allPlayersForCalculations}
         scores={scores}
@@ -4165,6 +4169,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           IMPORTANT: Use the same `scores` map as the rest of the dashboard (not `confirmedScores`)
           so the tie-breaker UI can trigger consistently even when confirmation state is inconsistent.
       */}
+      <div className="space-y-4 tab-zoom-detail empty:hidden">
       <GroupBetsCard
         players={allPlayersForCalculations}
         scores={scores}
@@ -4323,6 +4328,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           />
         );
       })()}
+      </div>
 
       <AlertDialog open={!!confirmRemoveCross} onOpenChange={(o) => { if (!o) setConfirmRemoveCross(null); }}>
         <AlertDialogContent>
