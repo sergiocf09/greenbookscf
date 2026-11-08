@@ -2228,8 +2228,8 @@ export const GroupBetsCard: React.FC<GroupBetsCardProps> = ({
         {showIndicators && (manchasSummary || unidadesSummary || oyesesSummary) && (
           <>
             {(culebrasResult || pinguinosResult || zoologicoResults.length > 0) && <div className="border-t-2 border-primary/40" />}
-            {/* Toggle buttons row — order: Oyeses, Unidades, Manchas */}
-            <div className="flex justify-center gap-6">
+            {/* Toggle buttons row — order: Oyeses, Unidades, Manchas (enlarged on tablets) */}
+            <div className="flex justify-center gap-6 tab-zoom-badges">
               {oyesesSummary && (
                 <button
                   onClick={() => setShowOyesesPanel(v => !v)}

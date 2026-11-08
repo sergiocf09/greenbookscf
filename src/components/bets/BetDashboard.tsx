@@ -2637,7 +2637,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           <div className="flex items-stretch gap-0">
             {/* BASE column - left side */}
             <div className="flex flex-col items-center gap-2 pr-3">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{trs("Base")}</span>
+              <span className="text-[10px] tab:text-xs font-semibold uppercase tracking-wider text-muted-foreground">{trs("Base")}</span>
               {balanceVsPlayers.map((p) => {
                 const isActive = p.id === balanceBasePlayerId;
                 return (
@@ -2654,7 +2654,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                     )}
                     aria-pressed={isActive}
                   >
-                    <PlayerAvatar initials={getPlayerAbbr(p)} background={p.color} size="md" className="w-10 h-10 text-sm" isLoggedInUser={p.id === basePlayerId} />
+                    <PlayerAvatar initials={getPlayerAbbr(p)} background={p.color} size="md" className="w-10 h-10 text-sm tab:w-16 tab:h-16 tab:text-xl" isLoggedInUser={p.id === basePlayerId} />
                   </button>
                 );
               })}
@@ -2671,7 +2671,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
 
             {/* RIVALS area - right side, strict 2-col grid, centered in available height */}
             <div className="flex-1 pl-3 flex items-center justify-center">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-3 place-items-center w-full">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3 tab:gap-y-6 place-items-center w-full">
                 {rivals.map(rival => {
                   const rawBalance = getRivalBalance(rival.id);
                   const balance = roundToNearest5(rawBalance);
@@ -2696,7 +2696,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         )}
                         {/* Pill-shaped initials label - fixed width for uniformity */}
                         <div className={cn(
-                          'w-20 h-8 rounded-lg flex items-center justify-center font-bold text-sm transition-all',
+                          'w-20 h-8 tab:w-36 tab:h-14 tab:text-2xl tab:rounded-xl rounded-lg flex items-center justify-center font-bold text-sm transition-all',
                           isSelected
                             ? 'bg-primary text-primary-foreground shadow-lg'
                             : rival.id === basePlayerId || rival.profileId === basePlayerId
@@ -2705,13 +2705,17 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         )}>
                           {getPlayerAbbr(rival)}
                         </div>
+                        {/* Full name — tablets only (room to spare) */}
+                        <span className="hidden tab:block max-w-[13rem] truncate text-base font-medium text-foreground">
+                          {formatPlayerName(rival.name)}
+                        </span>
                         {/* Balance below */}
                         <div className={cn(
-                          'text-sm font-bold flex items-center gap-0.5',
+                          'text-sm tab:text-xl font-bold flex items-center gap-0.5 tab:gap-1',
                           balance > 0 ? 'text-green-600' : balance < 0 ? 'text-destructive' : 'text-muted-foreground'
                         )}>
                           {balance !== 0 && (
-                            balance > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />
+                            balance > 0 ? <TrendingUp className="h-3 w-3 tab:h-5 tab:w-5" /> : <TrendingDown className="h-3 w-3 tab:h-5 tab:w-5" />
                           )}
                           {amountsHidden && !isSelected ? '••••' : `$${fmtMoney(Math.abs(balance))}`}
                         </div>
@@ -2741,13 +2745,16 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                   const bal = roundToNearest5(crossBalance(cb));
                   return (
                     <button key={id} type="button" onClick={() => setSelectedRival(isSel ? null : id)} className="relative flex flex-col items-center gap-1.5 transition-all">
-                      <span className="absolute -top-2 left-1/2 -translate-x-1/2 z-10 rounded-full bg-accent text-accent-foreground px-1.5 text-[9px] font-bold leading-4 tracking-wide">{trs("CRUCE")}</span>
-                      <div className={cn('w-20 h-8 rounded-lg flex items-center justify-center font-bold text-sm transition-all border-2 border-dashed',
+                      <span className="absolute -top-2 left-1/2 -translate-x-1/2 z-10 rounded-full bg-accent text-accent-foreground px-1.5 text-[9px] tab:text-xs tab:px-2 font-bold leading-4 tab:leading-5 tracking-wide">{trs("CRUCE")}</span>
+                      <div className={cn('w-20 h-8 tab:w-36 tab:h-14 tab:text-2xl tab:rounded-xl rounded-lg flex items-center justify-center font-bold text-sm transition-all border-2 border-dashed',
                         isSel ? 'bg-primary text-primary-foreground border-primary shadow-lg' : 'bg-background border-accent text-foreground')}>
                         {partner.initials}
                       </div>
-                      <div className={cn('text-sm font-bold flex items-center gap-0.5', bal > 0 ? 'text-green-600' : bal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                        {bal !== 0 && (bal > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />)}
+                      <span className="hidden tab:block max-w-[13rem] truncate text-base font-medium text-foreground">
+                        {formatPlayerName(partner.name)}
+                      </span>
+                      <div className={cn('text-sm tab:text-xl font-bold flex items-center gap-0.5 tab:gap-1', bal > 0 ? 'text-green-600' : bal < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                        {bal !== 0 && (bal > 0 ? <TrendingUp className="h-3 w-3 tab:h-5 tab:w-5" /> : <TrendingDown className="h-3 w-3 tab:h-5 tab:w-5" />)}
                         {amountsHidden && !isSel ? '••••' : `$${fmtMoney(Math.abs(bal))}`}
                       </div>
                     </button>
@@ -2761,10 +2768,10 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
                         type="button"
                         className="flex flex-col items-center gap-1.5 transition-all"
                       >
-                        <div className="w-20 h-8 rounded-lg flex items-center justify-center bg-muted/50 border-2 border-dashed border-muted-foreground/30">
-                          <UserPlus className="h-4 w-4 text-muted-foreground" />
+                        <div className="w-20 h-8 tab:w-36 tab:h-14 tab:rounded-xl rounded-lg flex items-center justify-center bg-muted/50 border-2 border-dashed border-muted-foreground/30">
+                          <UserPlus className="h-4 w-4 tab:h-6 tab:w-6 text-muted-foreground" />
                         </div>
-                        <span className="text-[10px] text-muted-foreground">{trs("+ Grupo")}</span>
+                        <span className="text-[10px] tab:text-sm text-muted-foreground">{trs("+ Grupo")}</span>
                       </button>
                     </DialogTrigger>
                     <DialogContent className="max-w-sm">
@@ -2862,7 +2869,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         const isVisible = selectedRival === rival.id;
         const isCrossGroupSelected = selectedCrossGroupPlayers.some(p => p.id === rival.id);
         return (
-          <div key={rival.id} style={isVisible ? undefined : { display: 'none' }}>
+          <div key={rival.id} className="tab-zoom-detail" style={isVisible ? undefined : { display: 'none' }}>
             {isVisible && isCrossGroupSelected && (
               <CrossGroupHandicapWidget
                 basePlayer={basePlayer}
@@ -2918,7 +2925,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         const grouped = groupSummariesByType(meP.id, otherP.id, summaries);
         const total = Object.values(grouped).reduce((s, g) => s + g.total, 0);
         return (
-          <div className="space-y-2">
+          <div className="space-y-2 tab-zoom-detail">
             {renderCrossConfig(cb)}
             <BilateralDetail
               players={vPlayers}
