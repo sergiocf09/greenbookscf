@@ -20,6 +20,7 @@ import {
 } from '@/types/golf';
 import { devError, devLog, devWarn } from '@/lib/logger';
 import { rebaseBetConfig } from '@/lib/betConfigMerge';
+import { pickTeamBetToggles } from '@/lib/teamBetPersistence';
 
 interface UseBetConfigPersistenceProps {
   roundId: string | null;
@@ -200,6 +201,9 @@ interface RoundBetConfig {
   wolfSetup?: any;
   sixesBets?: any[];
   vegasBets?: any[];
+  /** Explicit on/off switches; without them a removed Sixes/Vegas revives on reload. */
+  sixesEnabled?: boolean;
+  vegasEnabled?: boolean;
   ninesBets?: any[];
   parejasExcluded?: Record<string, string[]>;
   matchPlay?: {
@@ -564,6 +568,7 @@ export const useBetConfigPersistence = ({
       if (dbConfig.wolfSetup) newConfig.wolfSetup = normalizeWolfSetup(dbConfig.wolfSetup);
       if ('sixesBets' in dbConfig) newConfig.sixesBets = dbConfig.sixesBets;
       if ('vegasBets' in dbConfig) newConfig.vegasBets = dbConfig.vegasBets;
+      Object.assign(newConfig, pickTeamBetToggles(dbConfig));
       if ('ninesBets' in dbConfig) newConfig.ninesBets = dbConfig.ninesBets;
       if ('parejasExcluded' in dbConfig) newConfig.parejasExcluded = dbConfig.parejasExcluded;
 
@@ -689,6 +694,7 @@ export const useBetConfigPersistence = ({
         wolfSetup: config.wolfSetup,
         sixesBets: config.sixesBets,
         vegasBets: config.vegasBets,
+        ...pickTeamBetToggles(config),
         ninesBets: config.ninesBets,
         parejasExcluded: config.parejasExcluded,
         matchPlay: (config as any).matchPlay,

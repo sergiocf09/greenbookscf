@@ -265,3 +265,21 @@ describe('team bet persistence guards', () => {
     expect(frontBetIds.has('carritos-b')).toBe(true);
   });
 });
+describe('Sixes/Vegas on-off switch survives reload', () => {
+  it('a Sixes bet switched off stays off after save and reload', async () => {
+    const { pickTeamBetToggles } = await import('@/lib/teamBetPersistence');
+    const local = { ...baseConfig(), sixesEnabled: false };
+    const saved = JSON.parse(JSON.stringify({ sixesBets: local.sixesBets, ...pickTeamBetToggles(local) }));
+    const reloaded = { ...defaultBetConfig, sixesBets: saved.sixesBets, ...pickTeamBetToggles(saved) } as BetConfig;
+    expect(reloaded.sixesBets?.length).toBe(1);
+    expect(isSixesSettlementActive(reloaded)).toBe(false);
+  });
+
+  it('a Vegas bet switched off stays off after save and reload', async () => {
+    const { pickTeamBetToggles } = await import('@/lib/teamBetPersistence');
+    const local = { ...baseConfig(), vegasEnabled: false };
+    const saved = JSON.parse(JSON.stringify({ vegasBets: local.vegasBets, ...pickTeamBetToggles(local) }));
+    const reloaded = { ...defaultBetConfig, vegasBets: saved.vegasBets, ...pickTeamBetToggles(saved) } as BetConfig;
+    expect(isVegasSettlementActive(reloaded)).toBe(false);
+  });
+});

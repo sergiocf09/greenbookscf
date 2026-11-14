@@ -103,3 +103,16 @@ export const assertNoCanceledTeamBetLedgerEntries = (
     throw new Error(`Canceled team bet ledger validation failed: ${violations.join('; ')}`);
   }
 };
+/**
+ * Sixes/Vegas keep their configured bets when switched off, so the explicit
+ * `sixesEnabled` / `vegasEnabled` flags must be persisted and restored;
+ * otherwise the "has bets" fallback re-enables a removed bet on reload.
+ */
+export const pickTeamBetToggles = (
+  config: Partial<Pick<BetConfig, 'sixesEnabled' | 'vegasEnabled'>> | null | undefined
+): Partial<Pick<BetConfig, 'sixesEnabled' | 'vegasEnabled'>> => {
+  const toggles: Partial<Pick<BetConfig, 'sixesEnabled' | 'vegasEnabled'>> = {};
+  if (typeof config?.sixesEnabled === 'boolean') toggles.sixesEnabled = config.sixesEnabled;
+  if (typeof config?.vegasEnabled === 'boolean') toggles.vegasEnabled = config.vegasEnabled;
+  return toggles;
+};
