@@ -10,6 +10,7 @@ import { Constants } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import { defaultBetConfig } from '@/components/setup/BetSetup';
 import { restoreMarkerStateFromRows } from '@/lib/markerPersistence';
+import { pickAutoRestoreRoundId } from '@/lib/autoRestoreRound';
 import { devError, devLog, devWarn } from '@/lib/logger';
 import { initialsFromPlayerName, validatePlayerName, formatPlayerName } from '@/lib/playerInput';
 import { generateRoundSnapshot } from '@/lib/roundSnapshot';
@@ -359,8 +360,13 @@ export const useRoundManagement = ({
             .select('round_id').eq('profile_id', profile.id);
           exitedIds = new Set((exits ?? []).map((e: any) => e.round_id));
         }
+        // Only recent rounds (today/yesterday) reopen by themselves; older
+        // unfinished rounds stay in the pending list for a manual restore.
         const autoRestoreRoundId = !explicitRestoreRoundId
-          ? mappedPending.find(r => !exitedIds.has(r.roundId) && !localStorage.getItem(`round_closed_${r.roundId}`))?.roundId ?? null
+          ? pickAutoRestoreRoundId(
+              mappedPending,
+              id => exitedIds.has(id) || !!localStorage.getItem(`round_closed_${id}`),
+            )
           : null;
         const restoreRoundId = explicitRestoreRoundId || autoRestoreRoundId;
 

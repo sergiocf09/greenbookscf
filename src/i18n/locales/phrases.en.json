@@ -2013,5 +2013,6 @@
   "Reactivar Medal por Parejas": "Reactivate Team Medal",
   "No considerar Medal por Parejas": "Exclude Team Medal",
   "Cancelar Medal por Parejas": "Cancel Team Medal",
-  "Medio golpe aplicado: −1": "Half stroke applied: −1"
+  "Medio golpe aplicado: −1": "Half stroke applied: −1",
+  "Solo el organizador o un coadmin puede cambiar las apuestas. Tu cambio no se guardó.": "Only the organizer or a co-admin can change the bets. Your change was not saved."
 }

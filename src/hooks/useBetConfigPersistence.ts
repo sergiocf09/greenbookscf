@@ -2,6 +2,7 @@ import { normalizeWolfSetup } from '@/lib/bets/wolf';
 import { trs } from '@/i18n/tr';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import {
   BetConfig,
   BilateralHandicap,
@@ -714,6 +715,22 @@ export const useBetConfigPersistence = ({
       savingRef.current = false;
 
       if (error) {
+        if (String(error.message ?? '').includes('ROUND_ADMIN_REQUIRED')) {
+          // Only organizer/co-admins may change bets. Revert a deliberate edit
+          // to the saved config; silently ignore background drift.
+          const description = diffBetConfigs(prevSavedConfigRef.current, configToSave);
+          if (description !== 'Ajustes menores en configuración' && description !== 'Sin cambios detectables') {
+            toast.error(trs('Solo el organizador o un coadmin puede cambiar las apuestas. Tu cambio no se guardó.'), { id: 'bet-config-admin-only' });
+            const { data: fresh } = await supabase
+              .from('rounds').select('bet_config').eq('id', roundId).single();
+            if (fresh?.bet_config && activeRoundRef.current === roundId) {
+              isApplyingRemoteRef.current = true;
+              applyDbConfigToState(fresh.bet_config as RoundBetConfig);
+              prevSavedConfigRef.current = fresh.bet_config;
+            }
+          }
+          return;
+        }
         devError('Error saving bet config:', error);
         return;
       }
@@ -747,7 +764,7 @@ export const useBetConfigPersistence = ({
       savingRef.current = false;
       devError('Error in saveBetConfig:', err);
     }
-  }, [roundId, logEvent, setBetConfig]);
+  }, [roundId, logEvent, setBetConfig, applyDbConfigToState]);
 
   const saveBetConfig = useCallback((config: BetConfig, baseline = prevSavedConfigRef.current) => {
     const targetRound = roundId;
