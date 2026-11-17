@@ -15,6 +15,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { EditMultiDayConfigDialog } from './EditMultiDayConfigDialog';
 import { PrizeSetupDialog } from './prizes/PrizeSetupDialog';
+import { PrizesPanel, isPrizesPanelVisible } from './prizes/PrizesPanel';
+import { multiDayCandidates } from '@/lib/prizeCandidates';
+import { useLeaderboardExpectedHoles } from '@/hooks/useLeaderboardExpectedHoles';
+import { useLeaderboardPrizes } from '@/hooks/useLeaderboardPrizes';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -433,6 +437,30 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
     [standingsByDay, rules.aggregation, rules.best_n, sortMode],
   );
 
+  // ── Prizes (multi-day only; never Teams Cup / League) ──
+  const isPrizeEligible = event?.competition_type === 'multi_day';
+  const { prizes, loading: prizesLoading } = useLeaderboardPrizes(isPrizeEligible ? leaderboardId : null);
+  const showPrizesTab = isPrizeEligible && isPrizesPanelVisible(isCreator, prizes);
+  const expectedHolesInfo = useLeaderboardExpectedHoles(isPrizeEligible ? leaderboardId : null, true, rules.days);
+  const prizeCandidates = useMemo(
+    () => multiDayCandidates({
+      participants, standingsByDay, rules, expectedHolesByDay: expectedHolesInfo.expectedHolesByDay, accumulated,
+    }),
+    [participants, standingsByDay, rules, expectedHolesInfo.expectedHolesByDay, accumulated],
+  );
+  const prizeCandidatesProjection = useMemo(
+    () => multiDayCandidates({
+      participants, standingsByDay, rules, expectedHolesByDay: expectedHolesInfo.expectedHolesByDay, accumulated, projection: true,
+    }),
+    [participants, standingsByDay, rules, expectedHolesInfo.expectedHolesByDay, accumulated],
+  );
+  // A stored 'prizes' tab falls back to the accumulated view when prizes are no longer visible.
+  useEffect(() => {
+    if (selectedTab !== 'prizes' || !event || prizesLoading) return;
+    if (!showPrizesTab) setSelectedTab('all');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTab, showPrizesTab, event, prizesLoading]);
+
   const formatVsPar = (v: number): string => v === 0 ? 'E' : v > 0 ? `+${v}` : `${v}`;
   const vsParColor = (v: number): string => {
     if (v < 0) return 'text-green-600 font-semibold';
@@ -754,7 +782,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
 
         {/* Tabs + standings */}
         <div className="rounded-md border bg-card pt-2 pb-2">
-          {availableModes.length > 1 && (
+          {availableModes.length > 1 && selectedTab !== 'prizes' && (
             <div className="px-3 mb-1.5">
               <Tabs value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
                 <TabsList className="w-full h-7">
@@ -791,6 +819,11 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                     </TabsTrigger>
                   );
                 })}
+                {showPrizesTab && (
+                  <TabsTrigger value="prizes" className="text-xs h-7 min-w-[80px] shrink-0 gap-1">
+                    <Trophy className="h-3 w-3 text-amber-500" />{trs('Premios')}
+                  </TabsTrigger>
+                )}
               </TabsList>
 
               {rules.days.map(d => (
@@ -807,6 +840,30 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
               <TabsContent value="all" className="mt-2">
                 {renderAccumulated()}
               </TabsContent>
+
+              {showPrizesTab && (
+                <TabsContent value="prizes" className="mt-2">
+                  <PrizesPanel
+                    leaderboardId={event.id}
+                    isMultiDay
+                    participants={participants.map(p => ({
+                      id: p.id,
+                      display_name: p.display_name,
+                      initials: initialsMap.get(p.id) ?? p.initials,
+                      avatar_color: p.avatar_color,
+                      profile_id: p.profile_id,
+                    }))}
+                    candidates={prizeCandidates}
+                    candidatesProjection={prizeCandidatesProjection}
+                    scoringModes={availableModes}
+                    expectedHolesInfo={{
+                      daysWithoutRound: expectedHolesInfo.daysWithoutRound,
+                      unreliable: expectedHolesInfo.unreliable,
+                    }}
+                    onOpenSetup={isCreator ? () => setShowPrizeSetup(true) : undefined}
+                  />
+                </TabsContent>
+              )}
             </Tabs>
           </div>
         </div>

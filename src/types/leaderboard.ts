@@ -174,3 +174,11 @@ export interface PayoutResult {
   totalUnallocated: number;
   totalPendingAwards: number;
 }
+
+/** Immutable snapshot stored in leaderboard_prizes.final_payouts when prizes are frozen. */
+export type FinalPayoutsSnapshot = PayoutResult & {
+  frozenAt: string;
+  participants: Record<string, { name: string; initials: string; color: string }>;
+  pools: { id: string; label: string; mode: PrizeMode }[];
+  awards: { id: string; label: string; amount: number }[];
+};

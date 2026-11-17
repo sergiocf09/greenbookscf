@@ -23,6 +23,9 @@ import { toast } from 'sonner';
 import { formatPlayerName } from '@/lib/playerInput';
 import { EditLeaderboardConfigDialog } from './EditLeaderboardConfigDialog';
 import { PrizeSetupDialog } from './prizes/PrizeSetupDialog';
+import { PrizesPanel } from './prizes/PrizesPanel';
+import { singleDayCandidates } from '@/lib/prizeCandidates';
+import { useLeaderboardExpectedHoles } from '@/hooks/useLeaderboardExpectedHoles';
 
 type SortMode = 'gross' | 'net' | 'stableford';
 
@@ -80,6 +83,16 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
   useEffect(() => {
     fetchDetail();
   }, [fetchDetail, isRoundLinked]);
+
+  const expectedHolesInfo = useLeaderboardExpectedHoles(leaderboardId, false);
+  const prizeCandidates = useMemo(
+    () => singleDayCandidates({ standings, expectedHoles: expectedHolesInfo.expectedHoles }),
+    [standings, expectedHolesInfo.expectedHoles],
+  );
+  const prizeCandidatesProjection = useMemo(
+    () => singleDayCandidates({ standings, expectedHoles: expectedHolesInfo.expectedHoles, projection: true }),
+    [standings, expectedHolesInfo.expectedHoles],
+  );
 
   const sortedStandings = useMemo(() => {
     const filtered = standings.filter(s => s.holesPlayed > 0);
@@ -175,7 +188,8 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
 
   const availableModes = event.scoring_modes || ['gross', 'net'];
   const competitionType = (event as { competition_type?: string }).competition_type;
-  const canConfigurePrizes = isCreator && (!competitionType || competitionType === 'standard');
+  const isPrizeEligibleType = !competitionType || competitionType === 'standard';
+  const canConfigurePrizes = isCreator && isPrizeEligibleType;
 
   return (
     <div className="space-y-2">
@@ -411,6 +425,25 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
           )}
         </CardContent>
       </Card>
+
+      {isPrizeEligibleType && (
+        <PrizesPanel
+          leaderboardId={event.id}
+          isMultiDay={false}
+          participants={participants.map(p => ({
+            id: p.id,
+            display_name: p.display_name || trs('Jugador'),
+            initials: p.initials || '??',
+            avatar_color: p.avatar_color || '#3B82F6',
+            profile_id: p.profile_id,
+          }))}
+          candidates={prizeCandidates}
+          candidatesProjection={prizeCandidatesProjection}
+          scoringModes={availableModes}
+          expectedHolesInfo={{ daysWithoutRound: [], unreliable: expectedHolesInfo.unreliable }}
+          onOpenSetup={canConfigurePrizes ? () => setShowPrizeSetup(true) : undefined}
+        />
+      )}
 
       {/* Rename dialog */}
       <Dialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>

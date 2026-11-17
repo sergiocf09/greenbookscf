@@ -6,7 +6,7 @@ import type { Json } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { trs } from '@/i18n/tr';
 import { DEFAULT_PRIZE_CONFIG, normalizePrizeConfig, normalizeSpecialAwards } from '@/lib/leaderboardPrizes';
-import type { PayoutResult, PrizeConfig, SpecialAward } from '@/types/leaderboard';
+import type { FinalPayoutsSnapshot, PrizeConfig, SpecialAward } from '@/types/leaderboard';
 
 export type LeaderboardPrizeStatus = 'draft' | 'live' | 'final';
 
@@ -15,7 +15,8 @@ export interface LeaderboardPrizesState {
   config: PrizeConfig;
   awards: SpecialAward[];
   status: LeaderboardPrizeStatus;
-  finalPayouts: PayoutResult | null;
+  /** Frozen snapshot; legacy rows may lack participants/pools/awards metadata. */
+  finalPayouts: FinalPayoutsSnapshot | null;
   finalizedAt: string | null;
   /** false when no row exists yet (defaults returned). */
   exists: boolean;
@@ -41,6 +42,8 @@ export function useLeaderboardPrizes(leaderboardId: string | null) {
     queryKey: prizesKey(leaderboardId),
     enabled: !!leaderboardId,
     staleTime: 15_000,
+    // Live prizes poll so participants see changes without reloading.
+    refetchInterval: (query) => (query.state.data?.status === 'live' ? 30_000 : false),
     queryFn: async (): Promise<LeaderboardPrizesState> => {
       const { data, error } = await supabase
         .from('leaderboard_prizes')
@@ -55,7 +58,7 @@ export function useLeaderboardPrizes(leaderboardId: string | null) {
         config: normalizePrizeConfig(data.config),
         awards: normalizeSpecialAwards(data.awards),
         status,
-        finalPayouts: (data.final_payouts as unknown as PayoutResult | null) ?? null,
+        finalPayouts: (data.final_payouts as unknown as FinalPayoutsSnapshot | null) ?? null,
         finalizedAt: data.finalized_at,
         exists: true,
       };
@@ -98,7 +101,7 @@ export function useLeaderboardPrizes(leaderboardId: string | null) {
   });
 
   const statusMutation = useMutation({
-    mutationFn: async ({ status, finalPayouts }: { status: LeaderboardPrizeStatus; finalPayouts?: PayoutResult | null }) => {
+    mutationFn: async ({ status, finalPayouts }: { status: LeaderboardPrizeStatus; finalPayouts?: FinalPayoutsSnapshot | null }) => {
       if (!leaderboardId) throw new Error('missing leaderboard');
       const isFinal = status === 'final';
       const { error } = await supabase
@@ -128,7 +131,7 @@ export function useLeaderboardPrizes(leaderboardId: string | null) {
     }
   }, [saveMutation]);
 
-  const setStatus = useCallback(async (status: LeaderboardPrizeStatus, finalPayouts?: PayoutResult | null): Promise<boolean> => {
+  const setStatus = useCallback(async (status: LeaderboardPrizeStatus, finalPayouts?: FinalPayoutsSnapshot | null): Promise<boolean> => {
     try {
       await statusMutation.mutateAsync({ status, finalPayouts });
       return true;
