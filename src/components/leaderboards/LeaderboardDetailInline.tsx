@@ -26,6 +26,15 @@ import { PrizeSetupDialog } from './prizes/PrizeSetupDialog';
 import { PrizesPanel } from './prizes/PrizesPanel';
 import { singleDayCandidates } from '@/lib/prizeCandidates';
 import { useLeaderboardExpectedHoles } from '@/hooks/useLeaderboardExpectedHoles';
+import { format as formatDate } from 'date-fns';
+import { enUS, es as esLocale } from 'date-fns/locale';
+import i18n from '@/i18n';
+import { parseLocalDate } from '@/lib/dateUtils';
+
+const formatShareDate = (d: string) => {
+  const en = i18n.language === 'en';
+  return formatDate(parseLocalDate(d), en ? 'MMM d, yyyy' : "d 'de' MMM yyyy", { locale: en ? enUS : esLocale });
+};
 
 type SortMode = 'gross' | 'net' | 'stableford';
 
@@ -442,6 +451,8 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
           scoringModes={availableModes}
           expectedHolesInfo={{ daysWithoutRound: [], unreliable: expectedHolesInfo.unreliable }}
           onOpenSetup={canConfigurePrizes ? () => setShowPrizeSetup(true) : undefined}
+          leaderboardName={event.name}
+          dateLabel={event.start_date ? formatShareDate(event.start_date) : undefined}
         />
       )}
 

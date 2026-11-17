@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { enUS, es } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { AlertTriangle, Award, Loader2, Lock, Medal, RotateCcw, Send, Settings, Trophy, Undo2 } from 'lucide-react';
+import { AlertTriangle, Award, Loader2, Lock, Medal, RotateCcw, Send, Settings, Share2, Trophy, Undo2 } from 'lucide-react';
 import i18n from '@/i18n';
 import { trs } from '@/i18n/tr';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,8 +22,11 @@ import { fmtMoney } from '@/lib/formatMoney';
 import { formatPlayerName } from '@/lib/playerInput';
 import { computePrizePayouts, validatePrizeConfig } from '@/lib/leaderboardPrizes';
 import { useLeaderboardPrizes, type LeaderboardPrizesState } from '@/hooks/useLeaderboardPrizes';
+import { buildPrizesSharePayouts, sharePayoutsFromSnapshot } from '@/lib/prizesShareData';
+import { PrizePlayerCard } from './PrizePlayerCard';
+import { PrizesShareImage } from './PrizesShareImage';
 import type {
-  FinalPayoutsSnapshot, PayoutResult, PlayerPayoutItem, PrizeCandidate, PrizeMode,
+  FinalPayoutsSnapshot, PayoutResult, PrizeCandidate, PrizeMode,
 } from '@/types/leaderboard';
 
 export interface PrizesPanelParticipant {
@@ -46,6 +49,9 @@ interface Props {
   expectedHolesInfo: { daysWithoutRound: number[]; unreliable: boolean };
   /** Opens PrizeSetupDialog (creator only). */
   onOpenSetup?: () => void;
+  /** Leaderboard name and date shown on the share image. */
+  leaderboardName?: string;
+  dateLabel?: string;
 }
 
 /** Spanish word, plus the English word shown when the UI is in English. */
@@ -65,7 +71,7 @@ export function isPrizesPanelVisible(isCreator: boolean, prizes: LeaderboardPriz
   return !!prizes?.exists && (prizes.status === 'live' || prizes.status === 'final');
 }
 
-const formatFrozenAt = (iso: string | null | undefined) => {
+export const formatFrozenAt = (iso: string | null | undefined) => {
   if (!iso) return '';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
@@ -74,7 +80,8 @@ const formatFrozenAt = (iso: string | null | undefined) => {
 };
 
 export const PrizesPanel: React.FC<Props> = ({
-  leaderboardId, isMultiDay, participants, candidates, candidatesProjection, expectedHolesInfo, onOpenSetup,
+  leaderboardId, isMultiDay, participants, candidates, candidatesProjection, scoringModes, expectedHolesInfo, onOpenSetup,
+  leaderboardName, dateLabel,
 }) => {
   const { profile } = useAuth();
   const { prizes, loading, isCreator, setStatus, saving } = useLeaderboardPrizes(leaderboardId);
@@ -82,6 +89,7 @@ export const PrizesPanel: React.FC<Props> = ({
   const [freezeOpen, setFreezeOpen] = useState(false);
   const [freezeText, setFreezeText] = useState('');
   const [reopenOpen, setReopenOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const status = prizes?.status ?? 'draft';
   const isFinal = status === 'final';
@@ -177,14 +185,20 @@ export const PrizesPanel: React.FC<Props> = ({
     return config?.categories.find(c => c.id === pool.categoryId)?.name ?? null;
   };
 
-  const itemLabel = (it: PlayerPayoutItem) => {
-    if (it.kind === 'pool') {
-      const place = it.place != null ? ` ${it.place}º` : '';
-      const tie = it.tied ? ` ${trs('(empate)')}` : '';
-      return `${it.label}${place}${tie} · ${fmtMoney(it.amount)}`;
-    }
-    return `${it.label} · ${fmtMoney(it.amount)}`;
-  };
+  const canShare = status === 'live' || status === 'final';
+  // Share image: final reads ONLY the frozen snapshot; live uses the strict (official) calculation.
+  const sharePayouts = !canShare ? null : isFinal
+    ? (snapshot ? sharePayoutsFromSnapshot(snapshot, trs('Jugador')) : null)
+    : buildPrizesSharePayouts({
+        result: strictResult,
+        pools: poolsList,
+        awards: awardsList,
+        nameOf: pid => nameOf(pid),
+      });
+  const shareDate = dateLabel || formatFrozenAt(snapshot?.frozenAt ?? prizes.finalizedAt).split(' · ')[0];
+  const shareModes = (scoringModes || [])
+    .filter((m): m is PrizeMode => m === 'gross' || m === 'net' || m === 'stableford')
+    .map(m => trs(MODE_LABEL[m]));
 
   const handleFreeze = async () => {
     if (!config) return;
@@ -243,7 +257,15 @@ export const PrizesPanel: React.FC<Props> = ({
           <CardTitle className="text-base flex items-center gap-1.5">
             <Trophy className="h-4 w-4 text-amber-500" />{trs('Premios')}
           </CardTitle>
-          <StatusBadge status={status} frozenLabel={frozenLabel} />
+          <div className="flex items-start gap-1">
+            <StatusBadge status={status} frozenLabel={frozenLabel} />
+            {canShare && sharePayouts && (
+              <Button variant="ghost" size="icon" className="h-7 w-7 -mt-0.5" aria-label={trs('Compartir premios')}
+                title={trs('Compartir premios')} onClick={() => setShareOpen(true)}>
+                <Share2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
         <p className="text-[11px] text-muted-foreground leading-snug">
           {status === 'draft'
@@ -320,28 +342,15 @@ export const PrizesPanel: React.FC<Props> = ({
                 const who = nameOf(pp.participantId);
                 const isMe = !!profile?.id && who.profileId === profile.id;
                 return (
-                  <div
+                  <PrizePlayerCard
                     key={pp.participantId}
-                    className={cn('rounded-lg border bg-card p-2.5', isMe && 'border-primary border-2 bg-primary/5')}
-                  >
-                    <div className="flex items-center gap-2">
-                      <PlayerAvatar initials={who.initials} background={who.color} size="md" isLoggedInUser={isMe} />
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-sm truncate">{who.name}</p>
-                        {isMe && <p className="text-[10px] font-semibold text-primary uppercase">{trs('Tu premio')}</p>}
-                      </div>
-                      <span className="text-xl font-extrabold tabular-nums text-amber-600 dark:text-amber-400">
-                        {fmtMoney(pp.total)}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-1 mt-1.5">
-                      {pp.items.map((it, i) => (
-                        <span key={`${it.refId}-${i}`} className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-foreground">
-                          {itemLabel(it)}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                    name={who.name}
+                    initials={who.initials}
+                    color={who.color}
+                    total={pp.total}
+                    items={pp.items}
+                    isMe={isMe}
+                  />
                 );
               })}
             </div>
@@ -517,6 +526,18 @@ export const PrizesPanel: React.FC<Props> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {sharePayouts && (status === 'live' || status === 'final') && (
+        <PrizesShareImage
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          title={leaderboardName || trs('Premios')}
+          dateLabel={shareDate}
+          modeLabelPairs={shareModes}
+          payouts={sharePayouts}
+          status={status}
+        />
+      )}
 
       {/* Reopen confirmation */}
       <AlertDialog open={reopenOpen} onOpenChange={o => { if (!saving) setReopenOpen(o); }}>

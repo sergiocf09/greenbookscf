@@ -861,6 +861,16 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                       unreliable: expectedHolesInfo.unreliable,
                     }}
                     onOpenSetup={isCreator ? () => setShowPrizeSetup(true) : undefined}
+                    leaderboardName={event.name}
+                    dateLabel={(() => {
+                      const dates = rules.days.map(d => d.date).filter(Boolean).sort();
+                      if (dates.length === 0) return undefined;
+                      const en = i18n.language === 'en';
+                      const fmt = (d: string) => format(parseLocalDate(d), en ? 'MMM d, yyyy' : "d 'de' MMM yyyy", { locale: en ? enUS : es });
+                      return dates.length === 1 || dates[0] === dates[dates.length - 1]
+                        ? fmt(dates[0])
+                        : `${fmt(dates[0])} – ${fmt(dates[dates.length - 1])}`;
+                    })()}
                   />
                 </TabsContent>
               )}

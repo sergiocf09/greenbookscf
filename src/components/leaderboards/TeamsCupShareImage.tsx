@@ -68,7 +68,7 @@ const MATCH_ROW_H = 116;
 const MATCHES_HEADER_H = 56;
 const FOOTER_H = 128;
 
-function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+export function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.lineTo(x + w - r, y);
@@ -178,7 +178,7 @@ export function computeCupShareHeight(props: TeamsCupShareImageProps): number {
   return Math.max(1000, h);
 }
 
-function truncate(ctx: CanvasRenderingContext2D, text: string, maxW: number): string {
+export function truncate(ctx: CanvasRenderingContext2D, text: string, maxW: number): string {
   if (ctx.measureText(text).width <= maxW) return text;
   let t = text;
   while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);

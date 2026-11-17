@@ -28,6 +28,7 @@ import { formatPlayerName } from '@/lib/playerInput';
 import { useHistoricalCompetitions } from '@/hooks/useHistoricalCompetitions';
 import { HistoricalCupSummaryCard } from '@/components/leaderboards/HistoricalCupSummaryCard';
 import { HistoricalStrokeSummaryCard } from '@/components/leaderboards/HistoricalStrokeSummaryCard';
+import { HistoricalPrizesCard } from '@/components/leaderboards/prizes/HistoricalPrizesCard';
 
 
 interface PlayerScoreData {
@@ -586,7 +587,16 @@ export const HistoricalRoundView: React.FC<HistoricalRoundViewProps> = ({
                 currentUserProfileId={currentUserProfileId}
               />
             ) : (
-              <HistoricalStrokeSummaryCard key={lb.id} competition={lb} />
+              <React.Fragment key={lb.id}>
+                <HistoricalStrokeSummaryCard competition={lb} />
+                {(lb.competition_type === 'standard' || lb.competition_type === 'multi_day') && (
+                  <HistoricalPrizesCard
+                    leaderboardId={lb.id}
+                    title={lb.name}
+                    myParticipantId={lb.myStanding?.participantId ?? null}
+                  />
+                )}
+              </React.Fragment>
             )
           ))}
 
