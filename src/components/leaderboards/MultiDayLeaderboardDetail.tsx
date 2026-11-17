@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, RefreshCw, Calendar, Settings, Pencil, Trash2, CheckCircle, Link2Off, Link } from 'lucide-react';
+import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, RefreshCw, Calendar, Settings, Pencil, Trash2, CheckCircle, Link2Off, Link, Award } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { EditMultiDayConfigDialog } from './EditMultiDayConfigDialog';
+import { PrizeSetupDialog } from './prizes/PrizeSetupDialog';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -83,6 +84,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
     try { localStorage.setItem(tabStorageKey, v); } catch {}
   };
   const [showEditConfig, setShowEditConfig] = useState(false);
+  const [showPrizeSetup, setShowPrizeSetup] = useState(false);
   const [showRename, setShowRename] = useState(false);
   const [renameValue, setRenameValue] = useState('');
   const [showDelete, setShowDelete] = useState(false);
@@ -695,6 +697,11 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                 <DropdownMenuItem onClick={() => setShowEditConfig(true)}>
                   <Settings className="h-4 w-4 mr-2" />{' '}{trs("Editar configuración")}
                 </DropdownMenuItem>
+                {event.competition_type === 'multi_day' && (
+                  <DropdownMenuItem onClick={() => setShowPrizeSetup(true)}>
+                    <Award className="h-4 w-4 mr-2" />{' '}{trs("Configurar premios")}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => { fetchLinkedRounds(); setShowLinkedRounds(true); }}>
                   <Link2Off className="h-4 w-4 mr-2" />{' '}{trs("Gestionar rondas vinculadas")}
                 </DropdownMenuItem>
@@ -819,6 +826,24 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
             }}
             onSaved={fetchAll}
           />
+
+          {event.competition_type === 'multi_day' && (
+            <PrizeSetupDialog
+              open={showPrizeSetup}
+              onOpenChange={setShowPrizeSetup}
+              leaderboardId={event.id}
+              isMultiDay
+              scoringModes={event.scoring_modes || ['gross', 'net']}
+              days={rules.days}
+              participants={participants.map(p => ({
+                id: p.id,
+                display_name: p.display_name,
+                initials: p.initials,
+                avatar_color: p.avatar_color,
+                handicap_for_leaderboard: p.handicap_for_leaderboard,
+              }))}
+            />
+          )}
 
           <Dialog open={showRename} onOpenChange={setShowRename}>
             <DialogContent>

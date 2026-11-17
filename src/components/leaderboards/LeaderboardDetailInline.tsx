@@ -14,7 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { Loader2, Trophy, Share2, Users, Copy, Hash, Link2, Unlink, Pencil, Trash2, Settings, CheckCircle, RefreshCw } from 'lucide-react';
+import { Loader2, Trophy, Share2, Users, Copy, Hash, Link2, Unlink, Pencil, Trash2, Settings, CheckCircle, RefreshCw, Award } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { formatPlayerName } from '@/lib/playerInput';
 import { EditLeaderboardConfigDialog } from './EditLeaderboardConfigDialog';
+import { PrizeSetupDialog } from './prizes/PrizeSetupDialog';
 
 type SortMode = 'gross' | 'net' | 'stableford';
 
@@ -73,6 +74,7 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [closeConfirmText, setCloseConfirmText] = useState('');
   const [showEditConfig, setShowEditConfig] = useState(false);
+  const [showPrizeSetup, setShowPrizeSetup] = useState(false);
 
   // Refresh when link status changes so the list/scores update immediately after (des)vincular
   useEffect(() => {
@@ -172,6 +174,8 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
   }
 
   const availableModes = event.scoring_modes || ['gross', 'net'];
+  const competitionType = (event as { competition_type?: string }).competition_type;
+  const canConfigurePrizes = isCreator && (!competitionType || competitionType === 'standard');
 
   return (
     <div className="space-y-2">
@@ -220,6 +224,11 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
                 <DropdownMenuItem onClick={() => setShowEditConfig(true)}>
                   <Settings className="h-4 w-4 mr-2" />{' '}{trs("Editar configuración")}
                 </DropdownMenuItem>
+                {canConfigurePrizes && (
+                  <DropdownMenuItem onClick={() => setShowPrizeSetup(true)}>
+                    <Award className="h-4 w-4 mr-2" />{' '}{trs("Configurar premios")}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
@@ -485,6 +494,22 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
             rules_json: event.rules_json || {},
           }}
           onSaved={fetchDetail}
+        />
+      )}
+      {canConfigurePrizes && (
+        <PrizeSetupDialog
+          open={showPrizeSetup}
+          onOpenChange={setShowPrizeSetup}
+          leaderboardId={event.id}
+          isMultiDay={false}
+          scoringModes={event.scoring_modes || ['gross', 'net']}
+          participants={participants.map(p => ({
+            id: p.id,
+            display_name: p.display_name || trs('Jugador'),
+            initials: p.initials || '??',
+            avatar_color: p.avatar_color || '#3B82F6',
+            handicap_for_leaderboard: p.handicap_for_leaderboard,
+          }))}
         />
       )}
     </div>
