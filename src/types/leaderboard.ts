@@ -81,3 +81,96 @@ export function cupSessionLabel(day: CupDay, session: CupSession, multiSession: 
   const sessPart = session.label?.trim() || `S${session.session_number}`;
   return `${dayPart} · ${sessPart}`;
 }
+
+/* ── Leaderboard prizes (individual Day / Multi-day) ── */
+
+export type PrizeMode = 'gross' | 'net' | 'stableford';
+
+export interface PrizeTier {
+  place: number;
+  amount: number;
+}
+
+export interface PrizeCategory {
+  id: string;
+  name: string;
+  hcpMin?: number | null;
+  hcpMax?: number | null;
+}
+
+export interface PrizePool {
+  id: string;
+  mode: PrizeMode;
+  categoryId: string | null;
+  label: string;
+  tiers: PrizeTier[];
+  /** Ids of EARLIER pools (array order) whose winners cannot win in this pool. */
+  excludeWinnersOf: string[];
+}
+
+export interface PrizeConfig {
+  totalPool?: number | null;
+  categories: PrizeCategory[];
+  /** participantId → categoryId */
+  assignments: Record<string, string>;
+  pools: PrizePool[];
+  manualExclusions: { poolId: string; participantId: string }[];
+}
+
+export interface SpecialAward {
+  id: string;
+  label: string;
+  holeNumber?: number | null;
+  dayNumber?: number | null;
+  amount: number;
+  winnerParticipantId: string | null;
+  categoryId?: string | null;
+  note?: string;
+}
+
+export interface PrizeCandidate {
+  participantId: string;
+  completed: boolean;
+  /** gross/net: vs par, LOWER is better. stableford: points, HIGHER is better. */
+  metrics: { gross: number; net: number; stableford: number };
+}
+
+export interface PayoutRow {
+  participantId: string;
+  rank: number;
+  tied: boolean;
+  tiedCount: number;
+  amount: number;
+}
+
+export interface PoolPayout {
+  poolId: string;
+  rows: PayoutRow[];
+  allocated: number;
+  unallocated: number;
+}
+
+export interface PlayerPayoutItem {
+  kind: 'pool' | 'award';
+  refId: string;
+  label: string;
+  place?: number;
+  tied?: boolean;
+  amount: number;
+}
+
+export interface PlayerPayout {
+  participantId: string;
+  total: number;
+  items: PlayerPayoutItem[];
+}
+
+export interface PayoutResult {
+  pools: PoolPayout[];
+  awards: { awardId: string; participantId: string | null; amount: number }[];
+  /** Sorted by total, descending. Only players with total > 0. */
+  byParticipant: PlayerPayout[];
+  totalAllocated: number;
+  totalUnallocated: number;
+  totalPendingAwards: number;
+}

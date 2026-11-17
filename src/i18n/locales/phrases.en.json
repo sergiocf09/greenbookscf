@@ -2014,5 +2014,7 @@
   "No considerar Medal por Parejas": "Exclude Team Medal",
   "Cancelar Medal por Parejas": "Cancel Team Medal",
   "Medio golpe aplicado: −1": "Half stroke applied: −1",
-  "Solo el organizador o un coadmin puede cambiar las apuestas. Tu cambio no se guardó.": "Only the organizer or a co-admin can change the bets. Your change was not saved."
+  "Solo el organizador o un coadmin puede cambiar las apuestas. Tu cambio no se guardó.": "Only the organizer or a co-admin can change the bets. Your change was not saved.",
+  "No se pudieron guardar los premios. Intenta de nuevo.": "Couldn't save the prizes. Please try again.",
+  "No se pudo actualizar el estado de los premios. Intenta de nuevo.": "Couldn't update the prize status. Please try again."
 }

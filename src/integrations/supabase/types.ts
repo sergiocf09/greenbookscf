@@ -1084,6 +1084,47 @@ export type Database = {
           },
         ]
       }
+      leaderboard_prizes: {
+        Row: {
+          awards: Json
+          config: Json
+          created_at: string
+          final_payouts: Json | null
+          finalized_at: string | null
+          leaderboard_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          awards?: Json
+          config?: Json
+          created_at?: string
+          final_payouts?: Json | null
+          finalized_at?: string | null
+          leaderboard_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          awards?: Json
+          config?: Json
+          created_at?: string
+          final_payouts?: Json | null
+          finalized_at?: string | null
+          leaderboard_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaderboard_prizes_leaderboard_id_fkey"
+            columns: ["leaderboard_id"]
+            isOneToOne: true
+            referencedRelation: "leaderboard_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leaderboard_rounds: {
         Row: {
           added_at: string

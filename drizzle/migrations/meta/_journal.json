@@ -211,6 +211,13 @@
       "when": 1794858797080,
       "tag": "0029_round_bet_config_admin_only_and_setup_autoclose",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1794956232603,
+      "tag": "0030_leaderboard_prizes",
+      "breakpoints": true
     }
   ]
 }
