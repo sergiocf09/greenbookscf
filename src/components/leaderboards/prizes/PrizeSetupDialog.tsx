@@ -164,7 +164,7 @@ const SectionTitle: React.FC<{ title: string; hint?: React.ReactNode }> = ({ tit
 export const PrizeSetupDialog: React.FC<Props> = ({
   open, onOpenChange, leaderboardId, isMultiDay, scoringModes, days, participants,
 }) => {
-  const { prizes, isCreator, savePrizes, saving, refetch } = useLeaderboardPrizes(leaderboardId);
+  const { prizes, isCreator, savePrizes, setStatus, saving, refetch } = useLeaderboardPrizes(leaderboardId);
   const par3 = useLeaderboardPar3Slots(leaderboardId, isMultiDay, days, open);
 
   const availableModes = useMemo<PrizeMode[]>(() => {
@@ -500,8 +500,11 @@ export const PrizeSetupDialog: React.FC<Props> = ({
       : { ...config, categories: [], assignments: {}, pools: config.pools.map(p => ({ ...p, categoryId: null })) };
     const finalAwards = awards.map(a => ({ ...a, label: a.label.trim(), amount: cents(a.amount) / 100 }));
     const ok = await savePrizes({ config: finalConfig, awards: finalAwards });
+    // Saving a new or draft setup publishes it so every participant can follow the prizes live.
+    const publish = !prizes?.exists || prizes.status === 'draft';
+    const published = ok && publish ? await setStatus('live') : false;
     if (ok) {
-      toast.success(trs('Premios guardados'));
+      toast.success(published ? trs('Premios guardados y visibles para todos') : trs('Premios guardados'));
       setBaseline(snapshotOf(finalConfig, finalAwards));
       onOpenChange(false);
     }
@@ -740,15 +743,32 @@ export const PrizeSetupDialog: React.FC<Props> = ({
                               </Select>
                             </div>
 
-                            <div className="flex items-center gap-2">
-                              <Label className="text-xs">{trs('Lugares')}</Label>
-                              <Input
-                                type="number" inputMode="numeric" min={1} max={MAX_PLACES}
-                                value={tiers.length}
-                                onChange={e => setPlaces(pool.id, Number(e.target.value))}
-                                className="h-8 w-16 text-center text-sm"
-                                aria-label={trs('Número de lugares')}
-                              />
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <Label className="text-xs mr-0.5">{trs('Lugares premiados')}</Label>
+                              {[1, 2, 3, 4, 5].map(n => (
+                                <Button
+                                  key={n} type="button" size="sm"
+                                  variant={tiers.length === n ? 'default' : 'outline'}
+                                  className="h-8 w-8 p-0 text-xs tabular-nums"
+                                  onClick={() => setPlaces(pool.id, n)}
+                                  aria-label={`${n} ${trs('lugares')}`}
+                                  aria-pressed={tiers.length === n}
+                                >
+                                  {n}
+                                </Button>
+                              ))}
+                              <Button
+                                type="button" size="sm"
+                                variant={tiers.length > 5 ? 'default' : 'outline'}
+                                className="h-8 min-w-8 px-2 text-xs tabular-nums"
+                                onClick={() => setPlaces(pool.id, Math.max(6, tiers.length + 1))}
+                                disabled={tiers.length >= MAX_PLACES}
+                                aria-label={trs('Más lugares')}
+                              >
+                                {tiers.length > 5 ? `${tiers.length}+` : '+'}
+                              </Button>
+                            </div>
+                            <div className="flex items-center">
                               <Button
                                 variant="outline" size="sm" className="ml-auto h-8 text-xs"
                                 onClick={() => (percentFor === pool.id ? setPercentFor(null) : openPercent(pool))}
@@ -1054,7 +1074,7 @@ export const PrizeSetupDialog: React.FC<Props> = ({
               {!readOnly && (
                 <Button className="flex-1" onClick={handleSave} disabled={!initialized || saving || errors.length > 0}>
                   {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {trs('Guardar')}
+                  {!prizes?.exists || prizes.status === 'draft' ? trs('Guardar y publicar') : trs('Guardar')}
                 </Button>
               )}
             </div>

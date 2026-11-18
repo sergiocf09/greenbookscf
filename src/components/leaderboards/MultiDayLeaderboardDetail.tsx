@@ -82,7 +82,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
   }, [event?.id]);
   const tabStorageKey = `mdlb:selectedTab:${leaderboardId}`;
   const [selectedTab, setSelectedTabState] = useState<string>(() => {
-    try { return localStorage.getItem(tabStorageKey) || 'all'; } catch { return 'all'; }
+    try { return localStorage.getItem(tabStorageKey) || 'prizes'; } catch { return 'prizes'; }
   });
   const setSelectedTab = (v: string) => {
     setSelectedTabState(v);
@@ -458,7 +458,8 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
   // A stored 'prizes' tab falls back to the accumulated view when prizes are no longer visible.
   useEffect(() => {
     if (selectedTab !== 'prizes' || !event || prizesLoading) return;
-    if (!showPrizesTab) setSelectedTab('all');
+    // Fallback is not persisted so the prizes tab opens first once prizes are published.
+    if (!showPrizesTab) setSelectedTabState('all');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTab, showPrizesTab, event, prizesLoading]);
 
@@ -810,6 +811,11 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                 >
                   {trs("Acumulado")}
                 </TabsTrigger>
+                {showPrizesTab && (
+                  <TabsTrigger value="prizes" className="text-xs h-7 min-w-[80px] shrink-0 gap-1">
+                    <Trophy className="h-3 w-3 text-amber-500" />{trs('Premios')}
+                  </TabsTrigger>
+                )}
                 {rules.days.map(d => {
                   const isToday = d.date === todayStr;
                   return (
@@ -823,11 +829,6 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                     </TabsTrigger>
                   );
                 })}
-                {showPrizesTab && (
-                  <TabsTrigger value="prizes" className="text-xs h-7 min-w-[80px] shrink-0 gap-1">
-                    <Trophy className="h-3 w-3 text-amber-500" />{trs('Premios')}
-                  </TabsTrigger>
-                )}
               </TabsList>
 
               {rules.days.map(d => (

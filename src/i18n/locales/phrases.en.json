@@ -2164,5 +2164,9 @@
   "Estado": "Status",
   "Final": "Final",
   "En vivo": "Live",
-  "Borrador": "Draft"
+  "Borrador": "Draft",
+  "Lugares premiados": "Paid places",
+  "Más lugares": "More places",
+  "Guardar y publicar": "Save and publish",
+  "Premios guardados y visibles para todos": "Prizes saved and visible to everyone"
 }
