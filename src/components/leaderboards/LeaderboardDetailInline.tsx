@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -23,7 +23,7 @@ import { toast } from 'sonner';
 import { formatPlayerName } from '@/lib/playerInput';
 import { EditLeaderboardConfigDialog } from './EditLeaderboardConfigDialog';
 import { PrizeSetupDialog } from './prizes/PrizeSetupDialog';
-import { PrizesPanel } from './prizes/PrizesPanel';
+import { PrizesPanel, isPrizesPanelVisible } from './prizes/PrizesPanel';
 import { PrizesChip } from './prizes/PrizesConfigEntry';
 import { useLeaderboardPrizes } from '@/hooks/useLeaderboardPrizes';
 import { singleDayCandidates } from '@/lib/prizeCandidates';
@@ -89,8 +89,9 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
   const [closeConfirmText, setCloseConfirmText] = useState('');
   const [showEditConfig, setShowEditConfig] = useState(false);
   const [showPrizeSetup, setShowPrizeSetup] = useState(false);
+  const [mainTab, setMainTab] = useState<'leaderboard' | 'prizes'>('leaderboard');
   const prizeTypeOk = !!event && (!(event as { competition_type?: string }).competition_type || (event as { competition_type?: string }).competition_type === 'standard');
-  const { prizes: prizesEntry } = useLeaderboardPrizes(prizeTypeOk && isCreator ? event?.id ?? null : null);
+  const { prizes: prizesEntry } = useLeaderboardPrizes(prizeTypeOk ? event?.id ?? null : null);
 
   // Refresh when link status changes so the list/scores update immediately after (des)vincular
   useEffect(() => {
@@ -199,118 +200,8 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
     );
   }
 
-  const availableModes = event.scoring_modes || ['gross', 'net'];
-  const competitionType = (event as { competition_type?: string }).competition_type;
-  const isPrizeEligibleType = !competitionType || competitionType === 'standard';
-  const canConfigurePrizes = isCreator && isPrizeEligibleType;
-
-  return (
-    <div className="space-y-2">
-      {/* Top bar: code chip + actions */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0" />
-
-        <div className="flex items-center gap-1 shrink-0">
-          {hasActiveRound && !isRoundLinked && onLinkRound && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onLinkRound}
-              aria-label={trs("Vincular ronda")}
-              title={trs("Vincular ronda activa")}
-            >
-              <Link2 className="h-4 w-4" />
-            </Button>
-          )}
-          {hasActiveRound && isRoundLinked && onUnlinkRound && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onUnlinkRound}
-              aria-label={trs("Desvincular ronda")}
-              title={trs("Desvincular ronda")}
-              className="text-destructive hover:text-destructive"
-            >
-              <Unlink className="h-4 w-4" />
-            </Button>
-          )}
-          <Button variant="ghost" size="icon" onClick={copyShareLink} aria-label={trs("Compartir")}>
-            <Share2 className="h-4 w-4" />
-          </Button>
-          {isCreator && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label={trs("Configuración")}>
-                  <Settings className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => { setRenameValue(event.name); setShowRenameDialog(true); }}>
-                  <Pencil className="h-4 w-4 mr-2" />{' '}{trs("Editar nombre")}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setShowEditConfig(true)}>
-                  <Settings className="h-4 w-4 mr-2" />{' '}{trs("Editar configuración")}
-                </DropdownMenuItem>
-                {canConfigurePrizes && (
-                  <DropdownMenuItem onClick={() => setShowPrizeSetup(true)}>
-                    <Award className="h-4 w-4 mr-2" />{' '}{trs("Configurar premios")}
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onClick={() => { setShowDeleteConfirm(true); setDeleteConfirmText(''); }}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />{' '}{trs("Eliminar leaderboard")}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-          {isCreator && event && (
-            event.status === 'active' ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 text-muted-foreground border-muted-foreground/30 text-xs"
-                onClick={() => { setCloseConfirmText(''); setShowCloseConfirm(true); }}
-              >
-                <CheckCircle className="h-3.5 w-3.5" />
-                {trs("Cerrar competencia")}
-              </Button>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground text-xs gap-1.5"
-                onClick={reopenLeaderboard}
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-                {trs("Reactivar competencia")}
-              </Button>
-            )
-          )}
-        </div>
-      </div>
-
-      {/* Tournament name + mode on one line */}
-      <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-2 min-w-0">
-          <Trophy className="h-5 w-5 text-amber-500 shrink-0" />
-          <span className="font-semibold text-lg truncate">{event.name}</span>
-        </div>
-        <span className="text-sm text-muted-foreground whitespace-nowrap ml-2">
-          {availableModes.map(m => m === 'gross' ? 'Gross' : m === 'net' ? 'Neto' : 'Stableford').join(' · ')}
-        </span>
-      </div>
-      {canConfigurePrizes && (
-        <div className="flex justify-end">
-          <PrizesChip prizes={prizesEntry} onClick={() => setShowPrizeSetup(true)} />
-        </div>
-      )}
-
-
-      {/* Leaderboard table */}
-      <Card>
+  const renderStandingsCard = () => (
+    <Card>
         <CardHeader className="pb-1 pt-3 px-4">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">{trs("Leaderboard")}</CardTitle>
@@ -442,9 +333,10 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
             </table>
           )}
         </CardContent>
-      </Card>
+    </Card>
+  );
 
-      {isPrizeEligibleType && (
+  const renderPrizesPanel = () => (
         <PrizesPanel
           leaderboardId={event.id}
           isMultiDay={false}
@@ -463,8 +355,149 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
           leaderboardName={event.name}
           dateLabel={event.start_date ? formatShareDate(event.start_date) : undefined}
         />
+  );
+
+  const availableModes = event.scoring_modes || ['gross', 'net'];
+  const competitionType = (event as { competition_type?: string }).competition_type;
+  const isPrizeEligibleType = !competitionType || competitionType === 'standard';
+  const canConfigurePrizes = isCreator && isPrizeEligibleType;
+
+  return (
+    <div className="space-y-2">
+      {/* Top bar: code chip + actions */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0" />
+
+        <div className="flex items-center gap-1 shrink-0">
+          {hasActiveRound && !isRoundLinked && onLinkRound && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onLinkRound}
+              aria-label={trs("Vincular ronda")}
+              title={trs("Vincular ronda activa")}
+            >
+              <Link2 className="h-4 w-4" />
+            </Button>
+          )}
+          {hasActiveRound && isRoundLinked && onUnlinkRound && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onUnlinkRound}
+              aria-label={trs("Desvincular ronda")}
+              title={trs("Desvincular ronda")}
+              className="text-destructive hover:text-destructive"
+            >
+              <Unlink className="h-4 w-4" />
+            </Button>
+          )}
+          <Button variant="ghost" size="icon" onClick={copyShareLink} aria-label={trs("Compartir")}>
+            <Share2 className="h-4 w-4" />
+          </Button>
+          {isCreator && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label={trs("Configuración")}>
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => { setRenameValue(event.name); setShowRenameDialog(true); }}>
+                  <Pencil className="h-4 w-4 mr-2" />{' '}{trs("Editar nombre")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowEditConfig(true)}>
+                  <Settings className="h-4 w-4 mr-2" />{' '}{trs("Editar configuración")}
+                </DropdownMenuItem>
+                {canConfigurePrizes && (
+                  <DropdownMenuItem onClick={() => setShowPrizeSetup(true)}>
+                    <Award className="h-4 w-4 mr-2" />{' '}{trs("Configurar premios")}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => { setShowDeleteConfirm(true); setDeleteConfirmText(''); }}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />{' '}{trs("Eliminar leaderboard")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          {isCreator && event && (
+            event.status === 'active' ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-muted-foreground border-muted-foreground/30 text-xs"
+                onClick={() => { setCloseConfirmText(''); setShowCloseConfirm(true); }}
+              >
+                <CheckCircle className="h-3.5 w-3.5" />
+                {trs("Cerrar competencia")}
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground text-xs gap-1.5"
+                onClick={reopenLeaderboard}
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                {trs("Reactivar competencia")}
+              </Button>
+            )
+          )}
+        </div>
+      </div>
+
+      {/* Tournament name + mode on one line */}
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <Trophy className="h-5 w-5 text-amber-500 shrink-0" />
+          <span className="font-semibold text-lg truncate">{event.name}</span>
+        </div>
+        <span className="text-sm text-muted-foreground whitespace-nowrap ml-2">
+          {availableModes.map(m => m === 'gross' ? 'Gross' : m === 'net' ? 'Neto' : 'Stableford').join(' · ')}
+        </span>
+      </div>
+      {canConfigurePrizes && (
+        <div className="flex justify-end">
+          <PrizesChip prizes={prizesEntry} onClick={() => setShowPrizeSetup(true)} />
+        </div>
       )}
 
+
+
+
+
+
+
+      {/* Leaderboard table + prizes as separate tabs */}
+      {isPrizeEligibleType && isPrizesPanelVisible(isCreator, prizesEntry) ? (
+        <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as 'leaderboard' | 'prizes')}>
+          <TabsList className="w-full h-9">
+            <TabsTrigger value="leaderboard" className="flex-1 text-xs h-8 gap-1">
+              <Trophy className="h-3.5 w-3.5" />
+              {trs("Leaderboard")}
+            </TabsTrigger>
+            <TabsTrigger value="prizes" className="flex-1 text-xs h-8 gap-1">
+              <Award className="h-3.5 w-3.5 text-amber-500" />
+              {trs("Premios")}
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="leaderboard" className="mt-2">
+            {renderStandingsCard()}
+          </TabsContent>
+          <TabsContent value="prizes" className="mt-2">
+            {renderPrizesPanel()}
+          </TabsContent>
+        </Tabs>
+      ) : (
+        <>
+          {renderStandingsCard()}
+          {renderPrizesPanel()}
+        </>
+      )}
 
       {/* Rename dialog */}
       <Dialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>

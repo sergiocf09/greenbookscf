@@ -455,12 +455,6 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
     }),
     [participants, standingsByDay, rules, expectedHolesInfo.expectedHolesByDay, accumulated],
   );
-  // Prizes now render below the standings; a previously stored 'prizes' tab falls back to the accumulated view.
-  useEffect(() => {
-    if (selectedTab === 'prizes') setSelectedTab('all');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTab]);
-
   const formatVsPar = (v: number): string => v === 0 ? 'E' : v > 0 ? `+${v}` : `${v}`;
   const vsParColor = (v: number): string => {
     if (v < 0) return 'text-green-600 font-semibold';
@@ -822,6 +816,13 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                     </TabsTrigger>
                   );
                 })}
+                {showPrizesTab && (
+                  <TabsTrigger value="prizes"
+                    className="text-xs h-7 min-w-[72px] shrink-0 gap-1 font-semibold">
+                    <Award className="h-3.5 w-3.5 text-amber-500" />
+                    {trs("Premios")}
+                  </TabsTrigger>
+                )}
               </TabsList>
 
               {rules.days.map(d => (
@@ -839,43 +840,43 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                 {renderAccumulated()}
               </TabsContent>
 
+              {showPrizesTab && (
+                <TabsContent value="prizes" className="mt-2">
+                  <PrizesPanel
+                    leaderboardId={event.id}
+                    isMultiDay
+                    participants={participants.map(p => ({
+                      id: p.id,
+                      display_name: p.display_name,
+                      initials: initialsMap.get(p.id) ?? p.initials,
+                      avatar_color: p.avatar_color,
+                      profile_id: p.profile_id,
+                    }))}
+                    candidates={prizeCandidates}
+                    candidatesProjection={prizeCandidatesProjection}
+                    scoringModes={availableModes}
+                    expectedHolesInfo={{
+                      daysWithoutRound: expectedHolesInfo.daysWithoutRound,
+                      unreliable: expectedHolesInfo.unreliable,
+                    }}
+                    onOpenSetup={isCreator ? () => setShowPrizeSetup(true) : undefined}
+                    leaderboardName={event.name}
+                    dateLabel={(() => {
+                      const dates = rules.days.map(d => d.date).filter(Boolean).sort();
+                      if (dates.length === 0) return undefined;
+                      const en = i18n.language === 'en';
+                      const fmt = (d: string) => format(parseLocalDate(d), en ? 'MMM d, yyyy' : "d 'de' MMM yyyy", { locale: en ? enUS : es });
+                      return dates.length === 1 || dates[0] === dates[dates.length - 1]
+                        ? fmt(dates[0])
+                        : `${fmt(dates[0])} – ${fmt(dates[dates.length - 1])}`;
+                    })()}
+                  />
+                </TabsContent>
+              )}
+
             </Tabs>
           </div>
         </div>
-
-        {showPrizesTab && (
-          <div className="mt-2">
-          <PrizesPanel
-            leaderboardId={event.id}
-            isMultiDay
-            participants={participants.map(p => ({
-              id: p.id,
-              display_name: p.display_name,
-              initials: initialsMap.get(p.id) ?? p.initials,
-              avatar_color: p.avatar_color,
-              profile_id: p.profile_id,
-            }))}
-            candidates={prizeCandidates}
-            candidatesProjection={prizeCandidatesProjection}
-            scoringModes={availableModes}
-            expectedHolesInfo={{
-              daysWithoutRound: expectedHolesInfo.daysWithoutRound,
-              unreliable: expectedHolesInfo.unreliable,
-            }}
-            onOpenSetup={isCreator ? () => setShowPrizeSetup(true) : undefined}
-            leaderboardName={event.name}
-            dateLabel={(() => {
-              const dates = rules.days.map(d => d.date).filter(Boolean).sort();
-              if (dates.length === 0) return undefined;
-              const en = i18n.language === 'en';
-              const fmt = (d: string) => format(parseLocalDate(d), en ? 'MMM d, yyyy' : "d 'de' MMM yyyy", { locale: en ? enUS : es });
-              return dates.length === 1 || dates[0] === dates[dates.length - 1]
-                ? fmt(dates[0])
-                : `${fmt(dates[0])} – ${fmt(dates[dates.length - 1])}`;
-            })()}
-          />
-          </div>
-        )}
       </div>
 
       {isCreator && (
