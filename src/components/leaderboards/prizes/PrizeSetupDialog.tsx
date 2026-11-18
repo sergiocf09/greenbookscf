@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { trs } from '@/i18n/tr';
 import { toast } from 'sonner';
 import {
-  AlertTriangle, ArrowDown, ArrowUp, Award, Loader2, Lock, Percent, Plus, Sparkles, Trash2, X,
+  AlertTriangle, ArrowDown, ArrowUp, Award, Loader2, Lock, Minus, Percent, Plus, Sparkles, Trash2, X,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
@@ -23,7 +23,10 @@ import {
   autoAssignCategoriesByHandicap, DEFAULT_PRIZE_CONFIG, normalizePrizeConfig, normalizeSpecialAwards,
   presetTiers, validatePrizeConfig,
 } from '@/lib/leaderboardPrizes';
-import { mergeGeneratedSlots } from '@/lib/prizeSlots';
+import {
+  awardWinnerCount, extrasRemovedBy, groupSpecialAwards, MAX_AWARD_WINNERS, mergeGeneratedSlots,
+  patchAwardBase, removeAwardGroup, setAwardWinnerCount, syncAwardGroups,
+} from '@/lib/prizeSlots';
 import { useLeaderboardPrizes, type LeaderboardPrizesState } from '@/hooks/useLeaderboardPrizes';
 import { useLeaderboardPar3Slots } from '@/hooks/useLeaderboardPar3Slots';
 import type {
@@ -159,6 +162,70 @@ const SectionTitle: React.FC<{ title: string; hint?: React.ReactNode }> = ({ tit
   </span>
 );
 
+/**
+ * Compact count selector: one chip per value in `chips`, plus a last chip that
+ * reads "+" while value <= last chip and turns into a "− N +" stepper above it.
+ * Never renders more than chips.length + 1 chips.
+ */
+const CountChips: React.FC<{
+  value: number;
+  chips: number[];
+  max: number;
+  onChange: (n: number) => void;
+  ariaLabel: string;
+}> = ({ value, chips, max, onChange, ariaLabel }) => {
+  const last = chips[chips.length - 1] ?? 1;
+  const stepping = value > last;
+  return (
+    <div className="flex shrink-0 items-center gap-1" role="group" aria-label={ariaLabel}>
+      {chips.map(n => (
+        <Button
+          key={n} type="button" size="sm"
+          variant={value === n ? 'default' : 'outline'}
+          className="h-9 w-9 p-0 text-xs tabular-nums"
+          onClick={() => onChange(n)}
+          aria-label={`${ariaLabel}: ${n}`}
+          aria-pressed={value === n}
+        >
+          {n}
+        </Button>
+      ))}
+      {stepping ? (
+        <div className="flex h-9 items-center overflow-hidden rounded-md bg-primary text-primary-foreground shadow-sm">
+          <button
+            type="button"
+            className="flex h-9 w-7 items-center justify-center hover:bg-primary-foreground/10 disabled:opacity-50"
+            onClick={() => onChange(value - 1)}
+            aria-label={`${trs('Quitar lugar')} (${value - 1})`}
+          >
+            <Minus className="h-3.5 w-3.5" />
+          </button>
+          <span className="min-w-[1.25rem] text-center text-xs font-semibold tabular-nums" aria-live="polite">{value}</span>
+          <button
+            type="button"
+            className="flex h-9 w-7 items-center justify-center hover:bg-primary-foreground/10 disabled:opacity-50"
+            onClick={() => onChange(value + 1)}
+            disabled={value >= max}
+            aria-label={`${trs('Agregar lugar')} (${value + 1})`}
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      ) : (
+        <Button
+          type="button" size="sm" variant="outline"
+          className="h-9 w-9 p-0 text-xs"
+          onClick={() => onChange(last + 1)}
+          disabled={last >= max}
+          aria-label={trs('Más lugares')}
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </Button>
+      )}
+    </div>
+  );
+};
+
 /* ── Dialog ── */
 
 export const PrizeSetupDialog: React.FC<Props> = ({
@@ -183,6 +250,9 @@ export const PrizeSetupDialog: React.FC<Props> = ({
   const [confirmDisableCategories, setConfirmDisableCategories] = useState(false);
   const [pendingDeleteCategory, setPendingDeleteCategory] = useState<string | null>(null);
   const [pendingDeletePool, setPendingDeletePool] = useState<string | null>(null);
+  const [pendingReduce, setPendingReduce] = useState<
+    { kind: 'pool' | 'award'; id: string; count: number; removed: number } | null
+  >(null);
 
   const [newPoolMode, setNewPoolMode] = useState<PrizeMode>(availableModes[0]);
   const [newPoolCategory, setNewPoolCategory] = useState<string>(NONE);
@@ -279,6 +349,9 @@ export const PrizeSetupDialog: React.FC<Props> = ({
     setConfig(c => ({ ...c, pools: c.pools.map(p => (p.id === id ? fn(p) : p)) }));
   const patchAward = (id: string, patch: Partial<SpecialAward>) =>
     setAwards(list => list.map(a => (a.id === id ? { ...a, ...patch } : a)));
+  /** Base award edits also refresh the derived label and shared fields of its extra places. */
+  const patchBaseAward = (id: string, patch: Partial<SpecialAward>) =>
+    setAwards(list => patchAwardBase(list, id, patch));
   const categoryName = (id: string | null | undefined) => config.categories.find(c => c.id === id)?.name ?? null;
 
   const addCategory = () =>
@@ -413,6 +486,27 @@ export const PrizeSetupDialog: React.FC<Props> = ({
     });
   };
 
+  /** Reducing places asks first only when a removed place already has an amount. */
+  const requestPlaces = (pool: PrizePool, n: number) => {
+    const removed = pool.tiers.filter(t => t.place > n && cents(t.amount) > 0).length;
+    if (removed > 0) setPendingReduce({ kind: 'pool', id: pool.id, count: n, removed });
+    else setPlaces(pool.id, n);
+  };
+
+  const applyWinnerCount = (baseId: string, n: number) => setAwards(list => setAwardWinnerCount(list, baseId, n));
+  const requestWinnerCount = (baseId: string, n: number) => {
+    const removed = extrasRemovedBy(awards, baseId, n).filter(a => cents(a.amount) > 0).length;
+    if (removed > 0) setPendingReduce({ kind: 'award', id: baseId, count: n, removed });
+    else applyWinnerCount(baseId, n);
+  };
+
+  const confirmReduce = () => {
+    if (!pendingReduce) return;
+    if (pendingReduce.kind === 'pool') setPlaces(pendingReduce.id, pendingReduce.count);
+    else applyWinnerCount(pendingReduce.id, pendingReduce.count);
+    setPendingReduce(null);
+  };
+
   const setTierAmount = (id: string, place: number, amount: number) =>
     patchPool(id, p => ({ ...p, tiers: p.tiers.map(t => (t.place === place ? { ...t, amount } : t)) }));
 
@@ -498,7 +592,7 @@ export const PrizeSetupDialog: React.FC<Props> = ({
     const finalConfig: PrizeConfig = useCategories
       ? config
       : { ...config, categories: [], assignments: {}, pools: config.pools.map(p => ({ ...p, categoryId: null })) };
-    const finalAwards = awards.map(a => ({ ...a, label: a.label.trim(), amount: cents(a.amount) / 100 }));
+    const finalAwards = syncAwardGroups(awards.map(a => ({ ...a, label: a.label.trim(), amount: cents(a.amount) / 100 })));
     const ok = await savePrizes({ config: finalConfig, awards: finalAwards });
     // Saving a new or draft setup publishes it so every participant can follow the prizes live.
     const publish = !prizes?.exists || prizes.status === 'draft';
@@ -743,43 +837,22 @@ export const PrizeSetupDialog: React.FC<Props> = ({
                               </Select>
                             </div>
 
-                            <div className="space-y-1">
-                              <Label className="text-xs">{trs('Lugares premiados')}</Label>
-                              <div className="flex flex-nowrap items-center gap-1.5">
-                              {[1, 2, 3, 4, 5].map(n => (
-                                <Button
-                                  key={n} type="button" size="sm"
-                                  variant={tiers.length === n ? 'default' : 'outline'}
-                                  className="h-8 w-8 p-0 text-xs tabular-nums"
-                                  onClick={() => setPlaces(pool.id, n)}
-                                  aria-label={`${n} ${trs('lugares')}`}
-                                  aria-pressed={tiers.length === n}
-                                >
-                                  {n}
-                                </Button>
-                              ))}
-                              <Button
-                                type="button" size="sm"
-                                variant={tiers.length > 5 ? 'default' : 'outline'}
-                                className="h-8 min-w-8 px-2 text-xs tabular-nums"
-                                onClick={() => setPlaces(pool.id, Math.max(6, tiers.length + 1))}
-                                disabled={tiers.length >= MAX_PLACES}
-                                aria-label={trs('Más lugares')}
-                              >
-                                {tiers.length > 5 ? tiers.length : '+'}
-                              </Button>
-                              {tiers.length > 5 && (
-                                <Button
-                                  type="button" size="sm" variant="outline"
-                                  className="h-8 w-8 p-0 text-xs"
-                                  onClick={() => setPlaces(pool.id, tiers.length + 1)}
-                                  disabled={tiers.length >= MAX_PLACES}
-                                  aria-label={trs('Más lugares')}
-                                >
-                                  +
-                                </Button>
-                              )}
-                              </div>
+                            <div className="flex items-center gap-2">
+                              <span className="min-w-0 flex-1 truncate whitespace-nowrap text-xs font-medium">
+                                {tiers.length > 3 ? (
+                                  <>
+                                    <span className="min-[420px]:hidden">{trs('Lugares')}</span>
+                                    <span className="hidden min-[420px]:inline">{trs('Lugares premiados')}</span>
+                                  </>
+                                ) : trs('Lugares premiados')}
+                              </span>
+                              <CountChips
+                                value={tiers.length}
+                                chips={[1, 2, 3]}
+                                max={MAX_PLACES}
+                                onChange={n => requestPlaces(pool, Math.max(1, Math.min(MAX_PLACES, n)))}
+                                ariaLabel={trs('Lugares premiados')}
+                              />
                             </div>
                             <div className="flex items-center">
                               <Button
@@ -992,12 +1065,28 @@ export const PrizeSetupDialog: React.FC<Props> = ({
                         </Button>
                       </div>
 
-                      {awards.map(a => (
+                      {groupSpecialAwards(awards).map(({ base: a, extras }) => {
+                        const group = [a, ...extras];
+                        const takenBy = (selfId: string) =>
+                          new Set(group.filter(x => x.id !== selfId && x.winnerParticipantId).map(x => x.winnerParticipantId!));
+                        const winnerOptions = (selfId: string) => {
+                          const taken = takenBy(selfId);
+                          return sortedParticipants.map(p => (
+                            <SelectItem key={p.id} value={p.id} disabled={taken.has(p.id)}>
+                              <span className="flex items-center gap-2">
+                                <PlayerAvatar initials={p.initials} background={p.avatar_color} size="sm" />
+                                <span className="truncate">{p.display_name}</span>
+                              </span>
+                            </SelectItem>
+                          ));
+                        };
+                        const isBase = !a.groupId;
+                        return (
                         <div key={a.id} className="space-y-2 rounded-lg border bg-card p-3 shadow-sm">
                           <div className="flex items-center gap-1.5">
                             <Input
                               value={a.label}
-                              onChange={e => patchAward(a.id, { label: e.target.value })}
+                              onChange={e => patchBaseAward(a.id, { label: e.target.value })}
                               placeholder={trs('Ej. Drive más largo')}
                               className="h-8 flex-1 text-sm font-medium"
                               aria-label={trs('Nombre del premio')}
@@ -1010,7 +1099,7 @@ export const PrizeSetupDialog: React.FC<Props> = ({
                             />
                             <Button
                               variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-destructive hover:text-destructive"
-                              onClick={() => setAwards(list => list.filter(x => x.id !== a.id))}
+                              onClick={() => setAwards(list => removeAwardGroup(list, a.id))}
                               aria-label={trs('Eliminar premio')}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -1024,13 +1113,13 @@ export const PrizeSetupDialog: React.FC<Props> = ({
                               <SelectTrigger className="h-8 text-xs" aria-label={trs('Ganador')}><SelectValue /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value={NONE}>{trs('Sin ganador aún')}</SelectItem>
-                                {sortedParticipants.map(playerOption)}
+                                {winnerOptions(a.id)}
                               </SelectContent>
                             </Select>
                             {useCategories && config.categories.length > 0 && (
                               <Select
                                 value={a.categoryId ?? NONE}
-                                onValueChange={v => patchAward(a.id, { categoryId: v === NONE ? null : v })}
+                                onValueChange={v => patchBaseAward(a.id, { categoryId: v === NONE ? null : v })}
                               >
                                 <SelectTrigger className="h-8 text-xs" aria-label={trs('Categoría')}><SelectValue /></SelectTrigger>
                                 <SelectContent>
@@ -1042,15 +1131,50 @@ export const PrizeSetupDialog: React.FC<Props> = ({
                               </Select>
                             )}
                           </div>
+                          {isBase && (
+                            <div className="flex items-center gap-2">
+                              <span className="min-w-0 flex-1 truncate whitespace-nowrap text-xs font-medium">{trs('Ganadores')}</span>
+                              <CountChips
+                                value={awardWinnerCount(awards, a.id)}
+                                chips={[1]}
+                                max={MAX_AWARD_WINNERS}
+                                onChange={n => requestWinnerCount(a.id, n)}
+                                ariaLabel={trs('Ganadores')}
+                              />
+                            </div>
+                          )}
+                          {extras.map(x => (
+                            <div key={x.id} className="grid grid-cols-[2rem_5.5rem_1fr] items-center gap-1.5">
+                              <span className="text-xs font-semibold text-primary">{x.place ?? 2}º</span>
+                              <AmountInput
+                                value={Number(x.amount) || 0}
+                                onChange={v => patchAward(x.id, { amount: v })}
+                                ariaLabel={`${trs('Monto')} ${x.place ?? 2}º`}
+                              />
+                              <Select
+                                value={x.winnerParticipantId ?? NONE}
+                                onValueChange={v => patchAward(x.id, { winnerParticipantId: v === NONE ? null : v })}
+                              >
+                                <SelectTrigger className="h-8 min-w-0 text-xs" aria-label={`${trs('Ganador')} ${x.place ?? 2}º`}>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value={NONE}>{trs('Sin ganador aún')}</SelectItem>
+                                  {winnerOptions(x.id)}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          ))}
                           <Input
                             value={a.note ?? ''}
-                            onChange={e => patchAward(a.id, { note: e.target.value })}
+                            onChange={e => patchBaseAward(a.id, { note: e.target.value })}
                             placeholder={trs('Nota (opcional)')}
                             className="h-8 text-xs"
                             aria-label={trs('Nota')}
                           />
                         </div>
-                      ))}
+                        );
+                      })}
                     </fieldset>
                   </AccordionContent>
                 </AccordionItem>
@@ -1143,6 +1267,21 @@ export const PrizeSetupDialog: React.FC<Props> = ({
             >
               {trs('Eliminar')}
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!pendingReduce} onOpenChange={v => !v && setPendingReduce(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{trs('¿Quitar lugares?')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {trs('Se quitarán')} {pendingReduce?.removed ?? 0} {trs('lugares con monto')}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{trs('Cancelar')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmReduce}>{trs('Quitar')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

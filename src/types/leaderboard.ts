@@ -126,6 +126,10 @@ export interface SpecialAward {
   winnerParticipantId: string | null;
   categoryId?: string | null;
   note?: string;
+  /** Base award id when this is an extra place (2º, 3º…) of a multi-winner award; absent = place 1 of its own group. */
+  groupId?: string | null;
+  /** Place within the group (2, 3…) for extra places; absent = 1. */
+  place?: number | null;
 }
 
 export interface PrizeCandidate {
