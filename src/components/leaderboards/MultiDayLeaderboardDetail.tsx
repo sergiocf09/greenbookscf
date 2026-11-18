@@ -82,7 +82,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
   }, [event?.id]);
   const tabStorageKey = `mdlb:selectedTab:${leaderboardId}`;
   const [selectedTab, setSelectedTabState] = useState<string>(() => {
-    try { return localStorage.getItem(tabStorageKey) || 'prizes'; } catch { return 'prizes'; }
+    try { return localStorage.getItem(tabStorageKey) || 'all'; } catch { return 'all'; }
   });
   const setSelectedTab = (v: string) => {
     setSelectedTabState(v);
@@ -440,7 +440,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
 
   // ── Prizes (multi-day only; never Teams Cup / League) ──
   const isPrizeEligible = event?.competition_type === 'multi_day';
-  const { prizes, loading: prizesLoading } = useLeaderboardPrizes(isPrizeEligible ? leaderboardId : null);
+  const { prizes } = useLeaderboardPrizes(isPrizeEligible ? leaderboardId : null);
   const showPrizesTab = isPrizeEligible && isPrizesPanelVisible(isCreator, prizes);
   const expectedHolesInfo = useLeaderboardExpectedHoles(isPrizeEligible ? leaderboardId : null, true, rules.days);
   const prizeCandidates = useMemo(
@@ -455,13 +455,11 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
     }),
     [participants, standingsByDay, rules, expectedHolesInfo.expectedHolesByDay, accumulated],
   );
-  // A stored 'prizes' tab falls back to the accumulated view when prizes are no longer visible.
+  // Prizes now render below the standings; a previously stored 'prizes' tab falls back to the accumulated view.
   useEffect(() => {
-    if (selectedTab !== 'prizes' || !event || prizesLoading) return;
-    // Fallback is not persisted so the prizes tab opens first once prizes are published.
-    if (!showPrizesTab) setSelectedTabState('all');
+    if (selectedTab === 'prizes') setSelectedTab('all');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTab, showPrizesTab, event, prizesLoading]);
+  }, [selectedTab]);
 
   const formatVsPar = (v: number): string => v === 0 ? 'E' : v > 0 ? `+${v}` : `${v}`;
   const vsParColor = (v: number): string => {
@@ -787,7 +785,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
 
         {/* Tabs + standings */}
         <div className="rounded-md border bg-card pt-2 pb-2">
-          {availableModes.length > 1 && selectedTab !== 'prizes' && (
+          {availableModes.length > 1 && (
             <div className="px-3 mb-1.5">
               <Tabs value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
                 <TabsList className="w-full h-7">
@@ -811,11 +809,6 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                 >
                   {trs("Acumulado")}
                 </TabsTrigger>
-                {showPrizesTab && (
-                  <TabsTrigger value="prizes" className="text-xs h-7 min-w-[80px] shrink-0 gap-1">
-                    <Trophy className="h-3 w-3 text-amber-500" />{trs('Premios')}
-                  </TabsTrigger>
-                )}
                 {rules.days.map(d => {
                   const isToday = d.date === todayStr;
                   return (
@@ -846,42 +839,43 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                 {renderAccumulated()}
               </TabsContent>
 
-              {showPrizesTab && (
-                <TabsContent value="prizes" className="mt-2">
-                  <PrizesPanel
-                    leaderboardId={event.id}
-                    isMultiDay
-                    participants={participants.map(p => ({
-                      id: p.id,
-                      display_name: p.display_name,
-                      initials: initialsMap.get(p.id) ?? p.initials,
-                      avatar_color: p.avatar_color,
-                      profile_id: p.profile_id,
-                    }))}
-                    candidates={prizeCandidates}
-                    candidatesProjection={prizeCandidatesProjection}
-                    scoringModes={availableModes}
-                    expectedHolesInfo={{
-                      daysWithoutRound: expectedHolesInfo.daysWithoutRound,
-                      unreliable: expectedHolesInfo.unreliable,
-                    }}
-                    onOpenSetup={isCreator ? () => setShowPrizeSetup(true) : undefined}
-                    leaderboardName={event.name}
-                    dateLabel={(() => {
-                      const dates = rules.days.map(d => d.date).filter(Boolean).sort();
-                      if (dates.length === 0) return undefined;
-                      const en = i18n.language === 'en';
-                      const fmt = (d: string) => format(parseLocalDate(d), en ? 'MMM d, yyyy' : "d 'de' MMM yyyy", { locale: en ? enUS : es });
-                      return dates.length === 1 || dates[0] === dates[dates.length - 1]
-                        ? fmt(dates[0])
-                        : `${fmt(dates[0])} – ${fmt(dates[dates.length - 1])}`;
-                    })()}
-                  />
-                </TabsContent>
-              )}
             </Tabs>
           </div>
         </div>
+
+        {showPrizesTab && (
+          <div className="mt-2">
+          <PrizesPanel
+            leaderboardId={event.id}
+            isMultiDay
+            participants={participants.map(p => ({
+              id: p.id,
+              display_name: p.display_name,
+              initials: initialsMap.get(p.id) ?? p.initials,
+              avatar_color: p.avatar_color,
+              profile_id: p.profile_id,
+            }))}
+            candidates={prizeCandidates}
+            candidatesProjection={prizeCandidatesProjection}
+            scoringModes={availableModes}
+            expectedHolesInfo={{
+              daysWithoutRound: expectedHolesInfo.daysWithoutRound,
+              unreliable: expectedHolesInfo.unreliable,
+            }}
+            onOpenSetup={isCreator ? () => setShowPrizeSetup(true) : undefined}
+            leaderboardName={event.name}
+            dateLabel={(() => {
+              const dates = rules.days.map(d => d.date).filter(Boolean).sort();
+              if (dates.length === 0) return undefined;
+              const en = i18n.language === 'en';
+              const fmt = (d: string) => format(parseLocalDate(d), en ? 'MMM d, yyyy' : "d 'de' MMM yyyy", { locale: en ? enUS : es });
+              return dates.length === 1 || dates[0] === dates[dates.length - 1]
+                ? fmt(dates[0])
+                : `${fmt(dates[0])} – ${fmt(dates[dates.length - 1])}`;
+            })()}
+          />
+          </div>
+        )}
       </div>
 
       {isCreator && (

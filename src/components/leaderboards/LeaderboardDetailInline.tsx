@@ -308,26 +308,6 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
         </div>
       )}
 
-      {isPrizeEligibleType && (
-        <PrizesPanel
-          leaderboardId={event.id}
-          isMultiDay={false}
-          participants={participants.map(p => ({
-            id: p.id,
-            display_name: p.display_name || trs('Jugador'),
-            initials: p.initials || '??',
-            avatar_color: p.avatar_color || '#3B82F6',
-            profile_id: p.profile_id,
-          }))}
-          candidates={prizeCandidates}
-          candidatesProjection={prizeCandidatesProjection}
-          scoringModes={availableModes}
-          expectedHolesInfo={{ daysWithoutRound: [], unreliable: expectedHolesInfo.unreliable }}
-          onOpenSetup={canConfigurePrizes ? () => setShowPrizeSetup(true) : undefined}
-          leaderboardName={event.name}
-          dateLabel={event.start_date ? formatShareDate(event.start_date) : undefined}
-        />
-      )}
 
       {/* Leaderboard table */}
       <Card>
@@ -463,6 +443,27 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
           )}
         </CardContent>
       </Card>
+
+      {isPrizeEligibleType && (
+        <PrizesPanel
+          leaderboardId={event.id}
+          isMultiDay={false}
+          participants={participants.map(p => ({
+            id: p.id,
+            display_name: p.display_name || trs('Jugador'),
+            initials: p.initials || '??',
+            avatar_color: p.avatar_color || '#3B82F6',
+            profile_id: p.profile_id,
+          }))}
+          candidates={prizeCandidates}
+          candidatesProjection={prizeCandidatesProjection}
+          scoringModes={availableModes}
+          expectedHolesInfo={{ daysWithoutRound: [], unreliable: expectedHolesInfo.unreliable }}
+          onOpenSetup={canConfigurePrizes ? () => setShowPrizeSetup(true) : undefined}
+          leaderboardName={event.name}
+          dateLabel={event.start_date ? formatShareDate(event.start_date) : undefined}
+        />
+      )}
 
 
       {/* Rename dialog */}
