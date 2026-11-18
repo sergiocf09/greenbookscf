@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { EditMultiDayConfigDialog } from './EditMultiDayConfigDialog';
 import { PrizeSetupDialog } from './prizes/PrizeSetupDialog';
 import { PrizesPanel, isPrizesPanelVisible } from './prizes/PrizesPanel';
+import { PrizesChip } from './prizes/PrizesConfigEntry';
 import { multiDayCandidates } from '@/lib/prizeCandidates';
 import { useLeaderboardExpectedHoles } from '@/hooks/useLeaderboardExpectedHoles';
 import { useLeaderboardPrizes } from '@/hooks/useLeaderboardPrizes';
@@ -777,6 +778,9 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
               <Users className="h-3 w-3" />
               {participants.length} {trs('jugadores')}
             </span>
+            {isCreator && isPrizeEligible && (
+              <PrizesChip prizes={prizes} onClick={() => setShowPrizeSetup(true)} />
+            )}
           </div>
         </div>
 
@@ -892,6 +896,8 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
               rules_json: event.rules_json || {},
             }}
             onSaved={fetchAll}
+            onOpenPrizes={isPrizeEligible ? () => setShowPrizeSetup(true) : undefined}
+            prizes={prizes}
           />
 
           {event.competition_type === 'multi_day' && (

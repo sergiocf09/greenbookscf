@@ -2157,5 +2157,12 @@
   "Premios por jugador": "Prizes by player",
   "Premios · Final": "Prizes · Final",
   "más": "more",
-  "Bolsa": "Pool"
+  "Bolsa": "Pool",
+  "Agregar premios": "Add prizes",
+  "Sin configurar": "Not set up",
+  "Puedes configurarlos antes de vincular rondas": "You can set them up before linking rounds",
+  "Estado": "Status",
+  "Final": "Final",
+  "En vivo": "Live",
+  "Borrador": "Draft"
 }

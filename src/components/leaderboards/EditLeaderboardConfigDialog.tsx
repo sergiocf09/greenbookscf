@@ -1,6 +1,7 @@
 import { StablefordPointsEditor } from '@/components/leaderboards/StablefordPointsEditor';
 import { resolveLeaderboardStablefordPoints, type LeaderboardStablefordPoints } from '@/lib/leaderboardAggregation';
 import { trs } from '@/i18n/tr';
+import { PrizesConfigSection, type PrizeEntryStatus } from '@/components/leaderboards/prizes/PrizesConfigEntry';
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,9 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
+  /** Opens the prize setup; section hidden when absent. */
+  onOpenPrizes?: () => void;
+  prizes?: PrizeEntryStatus;
   open: boolean;
   onOpenChange: (v: boolean) => void;
   event: {
@@ -31,7 +35,7 @@ const MODES = [
   { key: 'stableford', label: 'Stableford' },
 ];
 
-export const EditLeaderboardConfigDialog: React.FC<Props> = ({ open, onOpenChange, event, onSaved }) => {
+export const EditLeaderboardConfigDialog: React.FC<Props> = ({ open, onOpenChange, event, onSaved, onOpenPrizes, prizes }) => {
   const [name, setName] = useState(event.name);
   const [description, setDescription] = useState(event.description || '');
   const [startDate, setStartDate] = useState(event.start_date);
@@ -112,6 +116,9 @@ export const EditLeaderboardConfigDialog: React.FC<Props> = ({ open, onOpenChang
             )}
           </div>
         </div>
+        {onOpenPrizes && (
+          <PrizesConfigSection prizes={prizes} onOpen={() => { onOpenChange(false); onOpenPrizes(); }} />
+        )}
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>{trs("Cancelar")}</Button>
           <Button disabled={!name.trim() || modes.length === 0 || saving} onClick={handleSave}>

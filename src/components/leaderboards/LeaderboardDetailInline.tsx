@@ -24,6 +24,8 @@ import { formatPlayerName } from '@/lib/playerInput';
 import { EditLeaderboardConfigDialog } from './EditLeaderboardConfigDialog';
 import { PrizeSetupDialog } from './prizes/PrizeSetupDialog';
 import { PrizesPanel } from './prizes/PrizesPanel';
+import { PrizesChip } from './prizes/PrizesConfigEntry';
+import { useLeaderboardPrizes } from '@/hooks/useLeaderboardPrizes';
 import { singleDayCandidates } from '@/lib/prizeCandidates';
 import { useLeaderboardExpectedHoles } from '@/hooks/useLeaderboardExpectedHoles';
 import { format as formatDate } from 'date-fns';
@@ -87,6 +89,8 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
   const [closeConfirmText, setCloseConfirmText] = useState('');
   const [showEditConfig, setShowEditConfig] = useState(false);
   const [showPrizeSetup, setShowPrizeSetup] = useState(false);
+  const prizeTypeOk = !!event && (!(event as { competition_type?: string }).competition_type || (event as { competition_type?: string }).competition_type === 'standard');
+  const { prizes: prizesEntry } = useLeaderboardPrizes(prizeTypeOk && isCreator ? event?.id ?? null : null);
 
   // Refresh when link status changes so the list/scores update immediately after (des)vincular
   useEffect(() => {
@@ -298,7 +302,32 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
           {availableModes.map(m => m === 'gross' ? 'Gross' : m === 'net' ? 'Neto' : 'Stableford').join(' · ')}
         </span>
       </div>
+      {canConfigurePrizes && (
+        <div className="flex justify-end">
+          <PrizesChip prizes={prizesEntry} onClick={() => setShowPrizeSetup(true)} />
+        </div>
+      )}
 
+      {isPrizeEligibleType && (
+        <PrizesPanel
+          leaderboardId={event.id}
+          isMultiDay={false}
+          participants={participants.map(p => ({
+            id: p.id,
+            display_name: p.display_name || trs('Jugador'),
+            initials: p.initials || '??',
+            avatar_color: p.avatar_color || '#3B82F6',
+            profile_id: p.profile_id,
+          }))}
+          candidates={prizeCandidates}
+          candidatesProjection={prizeCandidatesProjection}
+          scoringModes={availableModes}
+          expectedHolesInfo={{ daysWithoutRound: [], unreliable: expectedHolesInfo.unreliable }}
+          onOpenSetup={canConfigurePrizes ? () => setShowPrizeSetup(true) : undefined}
+          leaderboardName={event.name}
+          dateLabel={event.start_date ? formatShareDate(event.start_date) : undefined}
+        />
+      )}
 
       {/* Leaderboard table */}
       <Card>
@@ -435,26 +464,6 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
         </CardContent>
       </Card>
 
-      {isPrizeEligibleType && (
-        <PrizesPanel
-          leaderboardId={event.id}
-          isMultiDay={false}
-          participants={participants.map(p => ({
-            id: p.id,
-            display_name: p.display_name || trs('Jugador'),
-            initials: p.initials || '??',
-            avatar_color: p.avatar_color || '#3B82F6',
-            profile_id: p.profile_id,
-          }))}
-          candidates={prizeCandidates}
-          candidatesProjection={prizeCandidatesProjection}
-          scoringModes={availableModes}
-          expectedHolesInfo={{ daysWithoutRound: [], unreliable: expectedHolesInfo.unreliable }}
-          onOpenSetup={canConfigurePrizes ? () => setShowPrizeSetup(true) : undefined}
-          leaderboardName={event.name}
-          dateLabel={event.start_date ? formatShareDate(event.start_date) : undefined}
-        />
-      )}
 
       {/* Rename dialog */}
       <Dialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>
@@ -538,6 +547,8 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
             rules_json: event.rules_json || {},
           }}
           onSaved={fetchDetail}
+          onOpenPrizes={canConfigurePrizes ? () => setShowPrizeSetup(true) : undefined}
+          prizes={prizesEntry}
         />
       )}
       {canConfigurePrizes && (
