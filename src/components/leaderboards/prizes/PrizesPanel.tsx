@@ -275,43 +275,6 @@ export const PrizesPanel: React.FC<Props> = ({
               : trs('Los premios quedaron congelados y ya no cambian con los scores.')}
         </p>
 
-        {isCreator && (
-          <div className="flex flex-wrap gap-1.5">
-            <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={onOpenSetup}>
-              <Settings className="h-3.5 w-3.5" />{trs('Configurar premios')}
-            </Button>
-            {status === 'draft' && (
-              <Button size="sm" className="h-8 text-xs gap-1" disabled={saving} onClick={handlePublish}>
-                <Send className="h-3.5 w-3.5" />{trs('Publicar a participantes')}
-              </Button>
-            )}
-            {status === 'live' && (
-              <>
-                <Button size="sm" variant="outline" className="h-8 text-xs gap-1" disabled={saving} onClick={handleToDraft}>
-                  <Undo2 className="h-3.5 w-3.5" />{trs('Pasar a borrador')}
-                </Button>
-                <Button size="sm" className="h-8 text-xs gap-1" disabled={saving}
-                  onClick={() => { setFreezeText(''); setFreezeOpen(true); }}>
-                  <Lock className="h-3.5 w-3.5" />{trs('Congelar premios')}
-                </Button>
-              </>
-            )}
-            {status === 'final' && (
-              <Button size="sm" variant="outline" className="h-8 text-xs gap-1" disabled={saving} onClick={() => setReopenOpen(true)}>
-                <RotateCcw className="h-3.5 w-3.5" />{trs('Reabrir premios')}
-              </Button>
-            )}
-          </div>
-        )}
-
-        {isCreator && !isFinal && (
-          <div className="flex items-center justify-between gap-2 rounded-md bg-muted/50 px-2.5 py-1.5">
-            <Label htmlFor={`prize-projection-${leaderboardId}`} className="text-xs font-normal leading-tight">
-              {trs('Proyección (incluye jugadores en curso)')}
-            </Label>
-            <Switch id={`prize-projection-${leaderboardId}`} checked={projection} onCheckedChange={setProjection} />
-          </div>
-        )}
         {useProjection && (
           <span className="inline-flex w-fit rounded-full border border-dashed border-amber-500/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
             {trs('Proyección — no oficial')}
@@ -476,6 +439,51 @@ export const PrizesPanel: React.FC<Props> = ({
             <Notice>{trs('No se encontró el detalle congelado. Reabre y vuelve a congelar los premios.')}</Notice>
           )}
         </div>
+
+        {isCreator && (
+          <section className="space-y-1.5 rounded-md border border-dashed p-2.5">
+            <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {trs('Opciones del organizador')}
+            </h3>
+            {isCreator && (
+              <div className="flex flex-wrap gap-1.5">
+                <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={onOpenSetup}>
+                  <Settings className="h-3.5 w-3.5" />{trs('Configurar premios')}
+                </Button>
+                {status === 'draft' && (
+                  <Button size="sm" className="h-8 text-xs gap-1" disabled={saving} onClick={handlePublish}>
+                    <Send className="h-3.5 w-3.5" />{trs('Publicar a participantes')}
+                  </Button>
+                )}
+                {status === 'live' && (
+                  <>
+                    <Button size="sm" variant="outline" className="h-8 text-xs gap-1" disabled={saving} onClick={handleToDraft}>
+                      <Undo2 className="h-3.5 w-3.5" />{trs('Pasar a borrador')}
+                    </Button>
+                    <Button size="sm" className="h-8 text-xs gap-1" disabled={saving}
+                      onClick={() => { setFreezeText(''); setFreezeOpen(true); }}>
+                      <Lock className="h-3.5 w-3.5" />{trs('Congelar premios')}
+                    </Button>
+                  </>
+                )}
+                {status === 'final' && (
+                  <Button size="sm" variant="outline" className="h-8 text-xs gap-1" disabled={saving} onClick={() => setReopenOpen(true)}>
+                    <RotateCcw className="h-3.5 w-3.5" />{trs('Reabrir premios')}
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {isCreator && !isFinal && (
+              <div className="flex items-center justify-between gap-2 rounded-md bg-muted/50 px-2.5 py-1.5">
+                <Label htmlFor={`prize-projection-${leaderboardId}`} className="text-xs font-normal leading-tight">
+                  {trs('Proyección (incluye jugadores en curso)')}
+                </Label>
+                <Switch id={`prize-projection-${leaderboardId}`} checked={projection} onCheckedChange={setProjection} />
+              </div>
+            )}
+          </section>
+        )}
 
         <p className="text-[10px] text-muted-foreground leading-snug text-center px-2">
           {trs('GreenBook solo calcula el reparto. El cobro y el pago de premios es un acuerdo entre los participantes.')}

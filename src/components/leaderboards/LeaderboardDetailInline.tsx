@@ -460,7 +460,7 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
           {availableModes.map(m => m === 'gross' ? 'Gross' : m === 'net' ? 'Neto' : 'Stableford').join(' · ')}
         </span>
       </div>
-      {canConfigurePrizes && (
+      {canConfigurePrizes && !prizesEntry?.exists && (
         <div className="flex justify-end">
           <PrizesChip prizes={prizesEntry} onClick={() => setShowPrizeSetup(true)} />
         </div>

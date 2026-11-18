@@ -771,7 +771,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
               <Users className="h-3 w-3" />
               {participants.length} {trs('jugadores')}
             </span>
-            {isCreator && isPrizeEligible && (
+            {isCreator && isPrizeEligible && !prizes?.exists && (
               <PrizesChip prizes={prizes} onClick={() => setShowPrizeSetup(true)} />
             )}
           </div>

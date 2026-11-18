@@ -743,8 +743,9 @@ export const PrizeSetupDialog: React.FC<Props> = ({
                               </Select>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <Label className="text-xs mr-0.5">{trs('Lugares premiados')}</Label>
+                            <div className="space-y-1">
+                              <Label className="text-xs">{trs('Lugares premiados')}</Label>
+                              <div className="flex flex-nowrap items-center gap-1.5">
                               {[1, 2, 3, 4, 5].map(n => (
                                 <Button
                                   key={n} type="button" size="sm"
@@ -765,8 +766,20 @@ export const PrizeSetupDialog: React.FC<Props> = ({
                                 disabled={tiers.length >= MAX_PLACES}
                                 aria-label={trs('Más lugares')}
                               >
-                                {tiers.length > 5 ? `${tiers.length}+` : '+'}
+                                {tiers.length > 5 ? tiers.length : '+'}
                               </Button>
+                              {tiers.length > 5 && (
+                                <Button
+                                  type="button" size="sm" variant="outline"
+                                  className="h-8 w-8 p-0 text-xs"
+                                  onClick={() => setPlaces(pool.id, tiers.length + 1)}
+                                  disabled={tiers.length >= MAX_PLACES}
+                                  aria-label={trs('Más lugares')}
+                                >
+                                  +
+                                </Button>
+                              )}
+                              </div>
                             </div>
                             <div className="flex items-center">
                               <Button
