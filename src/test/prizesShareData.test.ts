@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildPrizesSharePayouts, buildShareAwardBlocks, sharePayoutsFromSnapshot } from '@/lib/prizesShareData';
+import { buildPrizesSharePayouts, buildShareAwardBlocks, poolShareTitle, sharePayoutsFromSnapshot } from '@/lib/prizesShareData';
 import type { FinalPayoutsSnapshot } from '@/types/leaderboard';
 
 const snap = {
@@ -63,5 +63,27 @@ describe('buildShareAwardBlocks', () => {
     expect(blocks).toHaveLength(1);
     expect(blocks[0].heading).toBe('Premios especiales');
     expect(blocks[0].cards.map(c => [c.title, c.rows.length])).toEqual([['Drive largo', 2], ['Más cerca', 1]]);
+  });
+});
+
+describe('poolShareTitle', () => {
+  it('does not repeat a category the pool label already carries', () => {
+    expect(poolShareTitle('Stableford · Cat. A', 'Cat. A', 'A')).toBe('Stableford · Cat. A');
+    expect(poolShareTitle('Gross · Cat. B', 'Cat. B', 'B')).toBe('Gross · Cat. B');
+  });
+
+  it('appends the category when the label omits it', () => {
+    expect(poolShareTitle('Gross', 'Cat. B', 'B')).toBe('Gross · Cat. B');
+    expect(poolShareTitle('Bolsa', 'Cat. A', 'A')).toBe('Bolsa · Cat. A');
+  });
+
+  it('treats a bare category word in the label as already shown', () => {
+    expect(poolShareTitle('Stableford · A', 'Cat. A', 'A')).toBe('Stableford · A');
+  });
+
+  it('keeps the label untouched without a category', () => {
+    expect(poolShareTitle('Neto', null, null)).toBe('Neto');
+    expect(poolShareTitle('Neto', '', '')).toBe('Neto');
+    expect(poolShareTitle('', 'Cat. A', 'A')).toBe('Cat. A');
   });
 });

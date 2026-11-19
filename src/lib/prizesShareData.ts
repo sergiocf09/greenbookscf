@@ -41,6 +41,24 @@ export interface ShareNameInfo { name: string; initials: string; color: string }
 /** Max places listed per pool in the "winners by pool" block. */
 export const SHARE_POOL_MAX_RANK = 3;
 
+const normText = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const tokensOf = (s: string) => normText(s).split(/[^a-z0-9]+/).filter(Boolean);
+
+/**
+ * Pool title for the share image. The category suffix is appended only when the
+ * stored label doesn't already mention the category, so a pool labelled
+ * "Stableford · Cat. A" never becomes "Stableford · Cat. A · Cat. A".
+ */
+export function poolShareTitle(base: string, categorySuffix: string | null, categoryName?: string | null): string {
+  const b = (base || '').trim();
+  const s = (categorySuffix || '').trim();
+  if (!s) return b;
+  const ncat = normText((categoryName || '').trim());
+  const already = normText(b).includes(normText(s)) || (!!ncat && tokensOf(b).includes(ncat));
+  if (already) return b;
+  return b ? `${b} · ${s}` : s;
+}
+
 export function buildPrizesSharePayouts(params: {
   result: Pick<PayoutResult, 'byParticipant' | 'pools' | 'awards'>;
   pools: { id: string; label: string; mode?: PrizeMode; categoryName?: string | null }[];

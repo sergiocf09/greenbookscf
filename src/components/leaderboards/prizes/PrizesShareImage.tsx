@@ -5,7 +5,7 @@ import { fmtMoney } from '@/lib/formatMoney';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { roundRectPath, truncate } from '@/components/leaderboards/TeamsCupShareImage';
-import { buildShareAwardBlocks, type PrizesShareItem, type PrizesSharePayouts, type ShareAwardCard } from '@/lib/prizesShareData';
+import { buildShareAwardBlocks, poolShareTitle, type PrizesShareItem, type PrizesSharePayouts, type ShareAwardCard } from '@/lib/prizesShareData';
 import { summarizePrizeItems } from '@/lib/prizeResultStats';
 import { prizeSummaryChipLabel } from './PrizePlayerCard';
 
@@ -245,8 +245,11 @@ export function drawPrizesShareCanvas(ctx: CanvasRenderingContext2D, props: Omit
     const RES_X = W - PAD - 190;
     for (const pool of payouts.pools) {
       const withStats = pool.rows.some(r => r.hcp != null || !!r.result);
-      const poolTitle = [pool.label || trs('Bolsa'), pool.categoryName ? `${trs('Cat.')} ${pool.categoryName}` : null]
-        .filter(Boolean).join(' · ');
+      const poolTitle = poolShareTitle(
+        pool.label || trs('Bolsa'),
+        pool.categoryName ? `${trs('Cat.')} ${pool.categoryName}` : null,
+        pool.categoryName,
+      );
       ctx.textAlign = 'left';
       ctx.fillStyle = GOLD;
       ctx.font = 'bold 26px Georgia, serif';
