@@ -662,7 +662,7 @@ export const PrizeSetupDialog: React.FC<Props> = ({
                     />
                   </AccordionTrigger>
                   <AccordionContent>
-                    <fieldset disabled={readOnly} className="space-y-2">
+                    <fieldset disabled={readOnly} className="min-w-0 space-y-2">
                       <Label className="text-xs">{trs('Monto total a repartir (opcional)')}</Label>
                       <OptionalNumberInput
                         value={config.totalPool ?? null}
@@ -687,10 +687,10 @@ export const PrizeSetupDialog: React.FC<Props> = ({
                     />
                   </AccordionTrigger>
                   <AccordionContent>
-                    <fieldset disabled={readOnly} className="space-y-3">
+                    <fieldset disabled={readOnly} className="min-w-0 space-y-3">
                       <label className="flex items-center justify-between gap-2">
                         <span className="text-sm">{trs('Usar categorías')}</span>
-                        <Switch checked={useCategories} onCheckedChange={onToggleCategories} />
+                        <Switch className="shrink-0" checked={useCategories} onCheckedChange={onToggleCategories} />
                       </label>
 
                       {useCategories && (
@@ -737,15 +737,15 @@ export const PrizeSetupDialog: React.FC<Props> = ({
                               </div>
                             ))}
                             <p className="text-[10px] text-muted-foreground">{trs('Rango vacío = sin límite. Ambos extremos se incluyen.')}</p>
-                            <div className="flex gap-2">
-                              <Button variant="outline" size="sm" className="h-8 flex-1 text-xs" onClick={addCategory}>
-                                <Plus className="mr-1 h-3.5 w-3.5" />{trs('Agregar categoría')}
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button variant="outline" size="sm" className="h-auto min-h-9 min-w-0 whitespace-normal px-2 py-1.5 text-xs leading-tight" onClick={addCategory}>
+                                <Plus className="mr-1 h-3.5 w-3.5 shrink-0" />{trs('Agregar categoría')}
                               </Button>
                               <Button
-                                variant="secondary" size="sm" className="h-8 flex-1 text-xs"
+                                variant="secondary" size="sm" className="h-auto min-h-9 min-w-0 whitespace-normal px-2 py-1.5 text-xs leading-tight"
                                 onClick={autoAssign} disabled={config.categories.length === 0 || participants.length === 0}
                               >
-                                <Sparkles className="mr-1 h-3.5 w-3.5" />{trs('Asignar por hándicap')}
+                                <Sparkles className="mr-1 h-3.5 w-3.5 shrink-0" />{trs('Asignar por hándicap')}
                               </Button>
                             </div>
                           </div>
@@ -790,7 +790,7 @@ export const PrizeSetupDialog: React.FC<Props> = ({
                     <SectionTitle title={trs('Bolsas de premios')} hint={`${config.pools.length}`} />
                   </AccordionTrigger>
                   <AccordionContent>
-                    <fieldset disabled={readOnly} className="space-y-3">
+                    <fieldset disabled={readOnly} className="min-w-0 space-y-3">
                       {config.pools.length === 0 && (
                         <p className="text-xs text-muted-foreground">{trs('Agrega una bolsa para premiar por lugar.')}</p>
                       )}
@@ -951,7 +951,7 @@ export const PrizeSetupDialog: React.FC<Props> = ({
                       />
                     </AccordionTrigger>
                     <AccordionContent>
-                      <fieldset disabled={readOnly} className="space-y-3">
+                      <fieldset disabled={readOnly} className="min-w-0 space-y-3">
                         <p className="text-[11px] text-muted-foreground">
                           {trs('Los empates reparten por igual la suma de los lugares empatados. Solo cobran quienes completan todos los hoyos.')}
                         </p>
@@ -1041,7 +1041,7 @@ export const PrizeSetupDialog: React.FC<Props> = ({
                     <SectionTitle title={trs('Premios especiales')} hint={`${awards.length}`} />
                   </AccordionTrigger>
                   <AccordionContent>
-                    <fieldset disabled={readOnly} className="space-y-3">
+                    <fieldset disabled={readOnly} className="min-w-0 space-y-3">
                       <div className="flex flex-col gap-2">
                         <Button
                           variant="secondary" size="sm" className="h-8 text-xs"
@@ -1091,12 +1091,6 @@ export const PrizeSetupDialog: React.FC<Props> = ({
                               className="h-8 flex-1 text-sm font-medium"
                               aria-label={trs('Nombre del premio')}
                             />
-                            <AmountInput
-                              value={Number(a.amount) || 0}
-                              onChange={v => patchAward(a.id, { amount: v })}
-                              className="w-24"
-                              ariaLabel={trs('Monto')}
-                            />
                             <Button
                               variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-destructive hover:text-destructive"
                               onClick={() => setAwards(list => removeAwardGroup(list, a.id))}
@@ -1105,32 +1099,20 @@ export const PrizeSetupDialog: React.FC<Props> = ({
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </div>
-                          <div className={cn('grid gap-2', useCategories && config.categories.length > 0 ? 'grid-cols-2' : 'grid-cols-1')}>
+                          {useCategories && config.categories.length > 0 && (
                             <Select
-                              value={a.winnerParticipantId ?? NONE}
-                              onValueChange={v => patchAward(a.id, { winnerParticipantId: v === NONE ? null : v })}
+                              value={a.categoryId ?? NONE}
+                              onValueChange={v => patchBaseAward(a.id, { categoryId: v === NONE ? null : v })}
                             >
-                              <SelectTrigger className="h-8 text-xs" aria-label={trs('Ganador')}><SelectValue /></SelectTrigger>
+                              <SelectTrigger className="h-8 text-xs" aria-label={trs('Categoría')}><SelectValue /></SelectTrigger>
                               <SelectContent>
-                                <SelectItem value={NONE}>{trs('Sin ganador aún')}</SelectItem>
-                                {winnerOptions(a.id)}
+                                <SelectItem value={NONE}>{trs('Todos')}</SelectItem>
+                                {config.categories.map(c => (
+                                  <SelectItem key={c.id} value={c.id}>{c.name || trs('sin nombre')}</SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
-                            {useCategories && config.categories.length > 0 && (
-                              <Select
-                                value={a.categoryId ?? NONE}
-                                onValueChange={v => patchBaseAward(a.id, { categoryId: v === NONE ? null : v })}
-                              >
-                                <SelectTrigger className="h-8 text-xs" aria-label={trs('Categoría')}><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value={NONE}>{trs('Todos')}</SelectItem>
-                                  {config.categories.map(c => (
-                                    <SelectItem key={c.id} value={c.id}>{c.name || trs('sin nombre')}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          </div>
+                          )}
                           {isBase && (
                             <div className="flex items-center gap-2">
                               <span className="min-w-0 flex-1 truncate whitespace-nowrap text-xs font-medium">{trs('Ganadores')}</span>
@@ -1143,19 +1125,22 @@ export const PrizeSetupDialog: React.FC<Props> = ({
                               />
                             </div>
                           )}
-                          {extras.map(x => (
+                          {/* One uniform row per place (1º, 2º, 3º…) so the capture order reads top-down. */}
+                          {group.map((x, idx) => {
+                            const place = x === a ? (a.place ?? 1) : (x.place ?? idx + 1);
+                            return (
                             <div key={x.id} className="grid grid-cols-[2rem_5.5rem_1fr] items-center gap-1.5">
-                              <span className="text-xs font-semibold text-primary">{x.place ?? 2}º</span>
+                              <span className="text-xs font-semibold text-primary">{place}º</span>
                               <AmountInput
                                 value={Number(x.amount) || 0}
                                 onChange={v => patchAward(x.id, { amount: v })}
-                                ariaLabel={`${trs('Monto')} ${x.place ?? 2}º`}
+                                ariaLabel={`${trs('Monto')} ${place}º`}
                               />
                               <Select
                                 value={x.winnerParticipantId ?? NONE}
                                 onValueChange={v => patchAward(x.id, { winnerParticipantId: v === NONE ? null : v })}
                               >
-                                <SelectTrigger className="h-8 min-w-0 text-xs" aria-label={`${trs('Ganador')} ${x.place ?? 2}º`}>
+                                <SelectTrigger className="h-8 min-w-0 text-xs" aria-label={`${trs('Ganador')} ${place}º`}>
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -1164,7 +1149,8 @@ export const PrizeSetupDialog: React.FC<Props> = ({
                                 </SelectContent>
                               </Select>
                             </div>
-                          ))}
+                            );
+                          })}
                           <Input
                             value={a.note ?? ''}
                             onChange={e => patchBaseAward(a.id, { note: e.target.value })}
