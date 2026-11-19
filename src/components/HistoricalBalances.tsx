@@ -56,6 +56,8 @@ import { History } from 'lucide-react';
 import { isValidSnapshot, RoundSnapshot } from '@/lib/roundSnapshot';
 import { formatPlayerName } from '@/lib/playerInput';
 import { fetchCrossHistory, crossHistoryTotal, type CrossHistoryLine } from '@/lib/crossBetHistory';
+import { fetchTournamentWinnings, tournamentWinningsTotal, type TournamentWinningLine } from '@/lib/tournamentWinnings';
+import { ChevronDown } from 'lucide-react';
 
 interface RivalBalance {
   id: string;
@@ -241,6 +243,18 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   // Cache all snapshots to reuse in detail view
   const [allSnapshots, setAllSnapshots] = useState<RoundSnapshot[]>([]);
   const [crossHistory, setCrossHistory] = useState<CrossHistoryLine[]>([]);
+  // Frozen competition prizes won (never entry fees); shown as a "Torneos" row.
+  const [tournamentLines, setTournamentLines] = useState<TournamentWinningLine[]>([]);
+  const [tournamentsOpen, setTournamentsOpen] = useState(false);
+  const tournamentsTotal = useMemo(() => tournamentWinningsTotal(tournamentLines), [tournamentLines]);
+  useEffect(() => {
+    if (!profile) return;
+    let cancelled = false;
+    fetchTournamentWinnings(profile.id)
+      .then(lines => { if (!cancelled) setTournamentLines(lines); })
+      .catch(err => devError('Error fetching tournament winnings:', err));
+    return () => { cancelled = true; };
+  }, [profile]);
 
   const { summaryByRival, addEntry: addPreApp, deleteEntry: deletePreApp, updateEntry: updatePreApp } = usePreAppBalances();
   const preAppMap = summaryByRival();
@@ -1098,7 +1112,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   }
 
   // Main summary view
-  if (rivals.length === 0 && myRounds.length === 0) {
+  if (rivals.length === 0 && myRounds.length === 0 && tournamentLines.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
         <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-50" />
@@ -1111,7 +1125,7 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
   const displayedTotalNet = rivals.reduce((sum, r) => {
     const pre = preAppMap.get(r.id)?.totalAmount ?? 0;
     return sum + r.netAmount + (includePreApp ? pre : 0);
-  }, 0);
+  }, tournamentsTotal);
 
   return (
     <div className="space-y-3 overflow-hidden">
@@ -1242,6 +1256,48 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                 </button>
               </div>
             </div>
+            {tournamentLines.length > 0 && (
+              <div className="bg-card border border-primary/30 rounded-lg overflow-hidden mr-1">
+                <button
+                  type="button"
+                  onClick={() => setTournamentsOpen(o => !o)}
+                  aria-expanded={tournamentsOpen}
+                  className="w-full px-2 py-1.5 flex items-center gap-1.5 hover:bg-muted/50 transition-colors"
+                >
+                  <span className="w-4 flex-shrink-0" />
+                  <span className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Trophy className="h-3.5 w-3.5 text-primary" />
+                  </span>
+                  <span className="text-xs font-medium truncate min-w-0">{trs('Torneos')}</span>
+                  <span className="text-[10px] text-muted-foreground flex-shrink-0">({tournamentLines.length})</span>
+                  <span className="ml-auto font-bold text-sm flex-shrink-0 text-green-600 dark:text-green-500">
+                    +${fmtMoney(tournamentsTotal)}
+                  </span>
+                  <ChevronDown className={cn('h-3 w-3 text-muted-foreground flex-shrink-0 transition-transform', tournamentsOpen && 'rotate-180')} />
+                </button>
+                {tournamentsOpen && (
+                  <ul className="border-t border-border divide-y divide-border">
+                    {tournamentLines.map(line => (
+                      <li key={line.leaderboardId} className="px-3 py-1.5 flex items-center gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium truncate">{line.name}</p>
+                          <p className="text-[10px] text-muted-foreground truncate">
+                            {line.date ? format(parseLocalDate(line.date), i18n.language === 'en' ? 'MMM d, yyyy' : "d MMM yyyy", { locale: dateLocale }) : ''}
+                            {line.courseNames.length > 0 && ` · ${line.courseNames.join(', ')}`}
+                          </p>
+                        </div>
+                        <span className="text-xs font-semibold flex-shrink-0 text-green-600 dark:text-green-500">
+                          +${fmtMoney(line.amount)}
+                        </span>
+                      </li>
+                    ))}
+                    <li className="px-3 py-1 text-[10px] text-muted-foreground leading-snug">
+                      {trs('Solo premios ganados en competencias congeladas; no incluye inscripciones.')}
+                    </li>
+                  </ul>
+                )}
+              </div>
+            )}
             <ScrollArea className="h-[280px]">
               <div className="space-y-1.5 pr-1">
                 {rivals.filter(r => showGuests || !r.isGuest)
