@@ -1291,9 +1291,6 @@ export const HistoricalBalances = React.forwardRef<HTMLDivElement, HistoricalBal
                         </span>
                       </li>
                     ))}
-                    <li className="px-3 py-1 text-[10px] text-muted-foreground leading-snug">
-                      {trs('Solo premios ganados en competencias congeladas; no incluye inscripciones.')}
-                    </li>
                   </ul>
                 )}
               </div>
