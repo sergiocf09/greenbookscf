@@ -20,6 +20,7 @@ import { fmtMoney } from '@/lib/formatMoney';
 import { formatPlayerName } from '@/lib/playerInput';
 import { computePrizePayouts, validatePrizeConfig } from '@/lib/leaderboardPrizes';
 import { withoutStaleWinners } from '@/lib/prizeCandidates';
+import { roundPayoutForDisplay } from '@/lib/prizeDisplayRounding';
 import { useLeaderboardPrizes, type LeaderboardPrizesState } from '@/hooks/useLeaderboardPrizes';
 import { buildAwardDisplaySections } from '@/lib/prizeAwardDisplay';
 import { buildPrizesSharePayouts, poolModeSubtitle, sharePayoutsFromSnapshot } from '@/lib/prizesShareData';
@@ -114,9 +115,11 @@ export const PrizesPanel: React.FC<Props> = ({
     () => (config ? computePrizePayouts({ config, awards: liveAwards, candidates: candidatesProjection }) : EMPTY_RESULT),
     [config, liveAwards, candidatesProjection],
   );
-  const result: PayoutResult = isFinal
+  const exactResult: PayoutResult = isFinal
     ? (snapshot ? { ...EMPTY_RESULT, ...snapshot } : EMPTY_RESULT)
     : provisionalResult;
+  // Whole pesos on screen (largest remainder per pool, totals preserved); stored data stays exact.
+  const result = useMemo(() => roundPayoutForDisplay(exactResult), [exactResult]);
   const nameOf = (pid: string) => {
     const snap = snapshot?.participants?.[pid];
     if (snap) return { name: snap.name, initials: snap.initials, color: snap.color, profileId: partById.get(pid)?.profile_id ?? null };
@@ -173,7 +176,7 @@ export const PrizesPanel: React.FC<Props> = ({
     const source = isFinal && snapshot?.awards
       ? snapshot.awards
       : liveAwards.map(a => ({ id: a.id, label: a.label, amount: Number(a.amount) || 0, groupId: a.groupId ?? null, place: a.place ?? null }));
-    return source.map(a => ({ ...a, winner: winnerById.get(a.id) ?? null }));
+    return source.map(a => ({ ...a, amount: Math.round(Number(a.amount) || 0), winner: winnerById.get(a.id) ?? null }));
   }, [isFinal, snapshot, liveAwards, result.awards]);
   const awardSections = useMemo(() => buildAwardDisplaySections(awardsList), [awardsList]);
 
@@ -226,7 +229,7 @@ export const PrizesPanel: React.FC<Props> = ({
   const sharePayouts = !canShare ? null : isFinal
     ? (snapshot ? sharePayoutsFromSnapshot(snapshot, trs('Jugador')) : null)
     : buildPrizesSharePayouts({
-        result: provisionalResult,
+        result,
         pools: poolsList,
         awards: awardsList,
         nameOf: pid => nameOf(pid),
@@ -287,9 +290,9 @@ export const PrizesPanel: React.FC<Props> = ({
   const freezeWarnings: string[] = [];
   if (incompleteCount > 0) freezeWarnings.push(`${trs('Jugadores que aún no completan:')} ${incompleteCount}`);
   if (pendingAwards.length > 0) {
-    freezeWarnings.push(`${trs('Premios especiales sin ganador:')} ${pendingAwards.length} (${fmtMoney(strictResult.totalPendingAwards)})`);
+    freezeWarnings.push(`${trs('Premios especiales sin ganador:')} ${pendingAwards.length} (${fmtMoney(Math.round(strictResult.totalPendingAwards))})`);
   }
-  if (strictResult.totalUnallocated > 0) freezeWarnings.push(`${trs('Monto sin repartir:')} ${fmtMoney(strictResult.totalUnallocated)}`);
+  if (strictResult.totalUnallocated > 0) freezeWarnings.push(`${trs('Monto sin repartir:')} ${fmtMoney(Math.round(strictResult.totalUnallocated))}`);
   if (totalPoolExceeded) freezeWarnings.push(trs('La suma de premios supera la bolsa total.'));
 
   return (

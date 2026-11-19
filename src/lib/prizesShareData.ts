@@ -8,6 +8,7 @@ import type { PayoutResult } from '@/types/leaderboard';
 import { buildAwardDisplaySections } from '@/lib/prizeAwardDisplay';
 import type { PrizeResultStat } from '@/lib/prizeResultStats';
 import type { PrizeMode } from '@/types/leaderboard';
+import { roundPayoutForDisplay } from '@/lib/prizeDisplayRounding';
 
 export interface PrizesShareItem { kind?: 'pool' | 'award'; label: string; place?: number; tied?: boolean; amount: number }
 export interface PrizesSharePlayer {
@@ -131,13 +132,17 @@ export function sharePayoutsFromSnapshot(
   snap: import('@/types/leaderboard').FinalPayoutsSnapshot,
   fallbackName: string,
 ): PrizesSharePayouts {
+  const shown = roundPayoutForDisplay({
+    byParticipant: snap.byParticipant || [], pools: snap.pools || [], awards: snap.awards || [],
+    totalAllocated: 0, totalUnallocated: 0, totalPendingAwards: 0,
+  });
   return buildPrizesSharePayouts({
-    result: { byParticipant: snap.byParticipant || [], pools: snap.pools || [], awards: snap.awards || [] },
+    result: { byParticipant: shown.byParticipant, pools: shown.pools, awards: shown.awards },
     pools: ((snap.pools || []) as unknown as {
       id?: string; poolId?: string; label?: string; mode?: PrizeMode; categoryName?: string | null;
     }[]).map(p => ({ id: p.id ?? p.poolId ?? '', label: p.label ?? '', mode: p.mode, categoryName: p.categoryName ?? null })),
     awards: ((snap.awards || []) as unknown as { id?: string; awardId?: string; label?: string; amount?: number }[])
-      .map(a => ({ id: a.id ?? a.awardId ?? '', label: a.label ?? '', amount: Number(a.amount) || 0 })),
+      .map(a => ({ id: a.id ?? a.awardId ?? '', label: a.label ?? '', amount: Math.round(Number(a.amount) || 0) })),
     nameOf: pid => snap.participants?.[pid] ?? { name: fallbackName, initials: '??', color: '#3B82F6' },
     statsOf: pid => {
       const sp = snap.participants?.[pid];
