@@ -23,7 +23,7 @@ import { formatPlayerName } from '@/lib/playerInput';
 import { computePrizePayouts, validatePrizeConfig } from '@/lib/leaderboardPrizes';
 import { useLeaderboardPrizes, type LeaderboardPrizesState } from '@/hooks/useLeaderboardPrizes';
 import { buildAwardDisplaySections } from '@/lib/prizeAwardDisplay';
-import { buildPrizesSharePayouts, sharePayoutsFromSnapshot } from '@/lib/prizesShareData';
+import { buildPrizesSharePayouts, poolModeSubtitle, sharePayoutsFromSnapshot } from '@/lib/prizesShareData';
 import { PrizePlayerCard } from './PrizePlayerCard';
 import { PrizesShareImage, resultColumnLabel } from './PrizesShareImage';
 import type { PrizeResultStat, PrizeResultStats } from '@/lib/prizeResultStats';
@@ -374,7 +374,7 @@ export const PrizesPanel: React.FC<Props> = ({
             const payout = result.pools.find(p => p.poolId === pool.id);
             const modeLabel = trs(MODE_LABEL[pool.mode]);
             const title = pool.label || modeLabel;
-            const subtitle = title === modeLabel ? '' : modeLabel;
+            const subtitle = poolModeSubtitle(pool.label, modeLabel);
             const rows = payout?.rows ?? [];
             const withStats = rows.some(r => !!statsOf(r.participantId));
             const cols = withStats

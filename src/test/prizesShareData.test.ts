@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildPrizesSharePayouts, buildShareAwardBlocks, poolShareTitle, sharePayoutsFromSnapshot } from '@/lib/prizesShareData';
+import { buildPrizesSharePayouts, buildShareAwardBlocks, poolModeSubtitle, poolShareTitle, sharePayoutsFromSnapshot } from '@/lib/prizesShareData';
 import type { FinalPayoutsSnapshot } from '@/types/leaderboard';
 
 const snap = {
@@ -85,5 +85,23 @@ describe('poolShareTitle', () => {
     expect(poolShareTitle('Neto', null, null)).toBe('Neto');
     expect(poolShareTitle('Neto', '', '')).toBe('Neto');
     expect(poolShareTitle('', 'Cat. A', 'A')).toBe('Cat. A');
+  });
+});
+
+describe('poolModeSubtitle', () => {
+  it('drops the mode hint when the label already names the mode', () => {
+    expect(poolModeSubtitle('Stableford · Cat. A', 'Stableford')).toBe('');
+    expect(poolModeSubtitle('Gross · Cat. A', 'Gross')).toBe('');
+    expect(poolModeSubtitle('Stableford', 'Stableford')).toBe('');
+  });
+
+  it('keeps the mode hint for a label that does not name it', () => {
+    expect(poolModeSubtitle('Bolsa Grande', 'Neto')).toBe('Neto');
+    expect(poolModeSubtitle('Bolsa Grossa', 'Gross')).toBe('Gross');
+  });
+
+  it('is empty when there is no label or no mode', () => {
+    expect(poolModeSubtitle('', 'Neto')).toBe('');
+    expect(poolModeSubtitle('Bolsa Grande', '')).toBe('');
   });
 });

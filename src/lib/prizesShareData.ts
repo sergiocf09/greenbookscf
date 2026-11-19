@@ -59,6 +59,20 @@ export function poolShareTitle(base: string, categorySuffix: string | null, cate
   return b ? `${b} · ${s}` : s;
 }
 
+/**
+ * Mode hint shown next to a pool title ("Stableford", "Gross"...). It is dropped
+ * when the pool label already names the mode, so "Stableford · Cat. A" is not
+ * followed by a second, repeated "Stableford".
+ */
+export function poolModeSubtitle(label: string, modeLabel: string): string {
+  const l = (label || '').trim();
+  const m = (modeLabel || '').trim();
+  if (!l || !m) return '';
+  const lt = tokensOf(l);
+  if (tokensOf(m).every(t => lt.includes(t))) return '';
+  return m;
+}
+
 export function buildPrizesSharePayouts(params: {
   result: Pick<PayoutResult, 'byParticipant' | 'pools' | 'awards'>;
   pools: { id: string; label: string; mode?: PrizeMode; categoryName?: string | null }[];
