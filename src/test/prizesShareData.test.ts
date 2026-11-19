@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildPrizesSharePayouts, sharePayoutsFromSnapshot } from '@/lib/prizesShareData';
+import { buildPrizesSharePayouts, buildShareAwardBlocks, sharePayoutsFromSnapshot } from '@/lib/prizesShareData';
 import type { FinalPayoutsSnapshot } from '@/types/leaderboard';
 
 const snap = {
@@ -18,7 +18,7 @@ describe('prizes share data', () => {
   it('final share uses only snapshot names, fallback for unknown players', () => {
     const out = sharePayoutsFromSnapshot(snap, 'Jugador');
     expect(out.byParticipant[0]).toMatchObject({ name: 'Ana Frozen', initials: 'AF', total: 5000 });
-    expect(out.awards).toEqual([{ label: 'Oyes · Hoyo 3', winnerName: null, amount: 500 }]);
+    expect(out.awards).toEqual([{ label: 'Oyes · Hoyo 3', winnerName: null, amount: 500, id: 'o1', groupId: null, place: null }]);
   });
 
   it('pool block lists only places 1–3', () => {
@@ -34,5 +34,34 @@ describe('prizes share data', () => {
       nameOf: () => ({ name: 'Live Name', initials: 'LN', color: '#222' }),
     });
     expect(out.awards[0].winnerName).toBe('Live Name');
+  });
+});
+
+
+describe('buildShareAwardBlocks', () => {
+  it('shows the Oyes heading once and one card per hole with places 1º, 2º, 3º in order', () => {
+    const blocks = buildShareAwardBlocks([
+      { id: 'h5', label: 'Oyes · Hoyo 5', winnerName: 'Cynthia', amount: 2000 },
+      { id: 'h5-p3', label: 'Oyes · Hoyo 5 · 3º', winnerName: 'Sergio F', amount: 500, groupId: 'h5', place: 3 },
+      { id: 'h5-p2', label: 'Oyes · Hoyo 5 · 2º', winnerName: 'Sergio D', amount: 1000, groupId: 'h5', place: 2 },
+      { id: 'h7', label: 'Oyes · Hoyo 7', winnerName: 'Sergio D', amount: 2000 },
+    ], 'Premios especiales');
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].heading).toBe('Oyes');
+    expect(blocks[0].cards.map(c => c.title)).toEqual(['Hoyo 5', 'Hoyo 7']);
+    expect(blocks[0].cards[0].rows.map(r => [r.place, r.winnerName, r.amount])).toEqual([
+      [1, 'Cynthia', 2000], [2, 'Sergio D', 1000], [3, 'Sergio F', 500],
+    ]);
+  });
+
+  it('groups frozen snapshot extras by the -p<n> id and gathers unprefixed awards under one block', () => {
+    const blocks = buildShareAwardBlocks([
+      { id: 'd1', label: 'Drive largo', winnerName: 'Ana', amount: 300 },
+      { id: 'd1-p2', label: 'Drive largo · 2º', winnerName: 'Luis', amount: 100 },
+      { id: 'c1', label: 'Más cerca', winnerName: null, amount: 200 },
+    ], 'Premios especiales');
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].heading).toBe('Premios especiales');
+    expect(blocks[0].cards.map(c => [c.title, c.rows.length])).toEqual([['Drive largo', 2], ['Más cerca', 1]]);
   });
 });

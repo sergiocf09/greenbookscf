@@ -5,7 +5,7 @@ import { fmtMoney } from '@/lib/formatMoney';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { roundRectPath, truncate } from '@/components/leaderboards/TeamsCupShareImage';
-import type { PrizesShareItem, PrizesSharePayouts } from '@/lib/prizesShareData';
+import { buildShareAwardBlocks, type PrizesShareItem, type PrizesSharePayouts, type ShareAwardCard } from '@/lib/prizesShareData';
 
 export interface PrizesShareImageProps {
   open: boolean;
@@ -43,10 +43,23 @@ export const shareItemLabel = (it: PrizesShareItem): string => {
   return `${it.label}${place}${tie} · ${fmtMoney(it.amount)}`;
 };
 
-const awardsTitle = (labels: string[]) =>
-  labels.length > 0 && labels.every(l => /^oyes/i.test(l.trim()))
-    ? trs('Oyes')
-    : trs('Premios especiales');
+/* Special awards: two cards per row; an odd last card is centred with the same width. */
+const CARD_GAP = 24;
+const CARD_W = (CW - CARD_GAP) / 2;
+const CARD_PAD = 18;
+const CARD_TITLE_H = 46;
+const CARD_ROW_H = 36;
+const CARD_VGAP = 18;
+const cardHeight = (c: ShareAwardCard) => CARD_PAD + CARD_TITLE_H + Math.max(1, c.rows.length) * CARD_ROW_H + CARD_PAD - 6;
+const awardBlocks = (payouts: PrizesSharePayouts) => buildShareAwardBlocks(payouts.awards, trs('Premios especiales'));
+/** Height of each two-card row of a block. */
+const cardRowHeights = (cards: ShareAwardCard[]) => {
+  const out: number[] = [];
+  for (let i = 0; i < cards.length; i += 2) {
+    out.push(Math.max(cardHeight(cards[i]), cards[i + 1] ? cardHeight(cards[i + 1]) : 0));
+  }
+  return out;
+};
 
 const spaced = (s: string) => s.toUpperCase().split('').join(' ');
 
@@ -59,8 +72,9 @@ export function computePrizesShareHeight(payouts: PrizesSharePayouts, status: 'l
     h += BLOCK_GAP + SECTION_TITLE_H;
     for (const p of payouts.pools) h += POOL_TITLE_H + Math.max(1, p.rows.length) * LINE_H + BLOCK_GAP;
   }
-  if (payouts.awards.length > 0) {
-    h += BLOCK_GAP + SECTION_TITLE_H + payouts.awards.length * LINE_H;
+  for (const b of awardBlocks(payouts)) {
+    h += BLOCK_GAP + SECTION_TITLE_H;
+    for (const rh of cardRowHeights(b.cards)) h += rh + CARD_VGAP;
   }
   h += FOOTER_H;
   return Math.max(1080, Math.ceil(h));
@@ -257,36 +271,64 @@ export function drawPrizesShareCanvas(ctx: CanvasRenderingContext2D, props: Omit
     }
   }
 
-  // Oyes / special awards (hole → winner)
-  if (payouts.awards.length > 0) {
-    y += BLOCK_GAP;
-    sectionTitle(ctx, awardsTitle(payouts.awards.map(a => a.label)), y);
-    y += SECTION_TITLE_H;
-    for (const a of payouts.awards) {
-      const amt = fmtMoney(a.amount);
-      ctx.font = 'bold 24px Arial, sans-serif';
+  // Special awards: section title once ("Oyes"), one card per award with its places.
+  const drawCard = (c: ShareAwardCard, x: number, top: number, h: number) => {
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    roundRectPath(ctx, x, top, CARD_W, h, 14);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(252,227,0,0.22)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    const inner = CARD_W - CARD_PAD * 2;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = GOLD;
+    ctx.font = 'bold 25px Georgia, serif';
+    ctx.fillText(truncate(ctx, c.title || trs('Premio'), inner), x + CARD_PAD, top + CARD_PAD + 26);
+    let ry = top + CARD_PAD + CARD_TITLE_H;
+    const rows = c.rows.length > 0 ? c.rows : [{ place: 1, winnerName: null, amount: 0 }];
+    for (const r of rows) {
+      const base = ry + 24;
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(252,227,0,0.85)';
+      ctx.font = 'bold 20px Arial, sans-serif';
+      ctx.fillText(`${r.place}º`, x + CARD_PAD, base);
+      const amt = fmtMoney(r.amount);
+      ctx.font = 'bold 22px Arial, sans-serif';
       const amtW = ctx.measureText(amt).width;
       ctx.textAlign = 'right';
       ctx.fillStyle = '#ffffff';
-      ctx.fillText(amt, W - PAD, y + 27);
-      const labelW = CW * 0.42;
+      ctx.fillText(amt, x + CARD_W - CARD_PAD, base);
       ctx.textAlign = 'left';
-      ctx.fillStyle = 'rgba(255,255,255,0.75)';
-      ctx.font = '21px Arial, sans-serif';
-      ctx.fillText(truncate(ctx, a.label, labelW - 12), PAD, y + 27);
-      const winX = PAD + labelW;
-      const winMax = W - PAD - amtW - 24 - winX;
-      if (a.winnerName) {
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 22px Arial, sans-serif';
-        ctx.fillText(truncate(ctx, `→ ${a.winnerName}`, winMax), winX, y + 27);
+      const nameX = x + CARD_PAD + 44;
+      const nameMax = x + CARD_W - CARD_PAD - amtW - 14 - nameX;
+      if (r.winnerName) {
+        ctx.fillStyle = 'rgba(255,255,255,0.92)';
+        ctx.font = '21px Arial, sans-serif';
+        ctx.fillText(truncate(ctx, r.winnerName, nameMax), nameX, base);
       } else {
         ctx.fillStyle = 'rgba(255,255,255,0.50)';
-        ctx.font = 'italic 21px Arial, sans-serif';
-        ctx.fillText(truncate(ctx, trs('Sin ganador aún'), winMax), winX, y + 27);
+        ctx.font = 'italic 20px Arial, sans-serif';
+        ctx.fillText(truncate(ctx, trs('Sin ganador aún'), nameMax), nameX, base);
       }
-      y += LINE_H;
+      ry += CARD_ROW_H;
     }
+  };
+  for (const block of awardBlocks(payouts)) {
+    y += BLOCK_GAP;
+    sectionTitle(ctx, block.heading, y);
+    y += SECTION_TITLE_H;
+    const heights = cardRowHeights(block.cards);
+    heights.forEach((rh, ri) => {
+      const left = block.cards[ri * 2];
+      const right = block.cards[ri * 2 + 1];
+      if (right) {
+        drawCard(left, PAD, y, rh);
+        drawCard(right, PAD + CARD_W + CARD_GAP, y, rh);
+      } else {
+        drawCard(left, (W - CARD_W) / 2, y, cardHeight(left));
+      }
+      y += rh + CARD_VGAP;
+    });
   }
 
   // Footer
