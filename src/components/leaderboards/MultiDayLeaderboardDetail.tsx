@@ -18,6 +18,7 @@ import { PrizeSetupDialog } from './prizes/PrizeSetupDialog';
 import { PrizesPanel, isPrizesPanelVisible } from './prizes/PrizesPanel';
 import { PrizesChip } from './prizes/PrizesConfigEntry';
 import { multiDayCandidates } from '@/lib/prizeCandidates';
+import { multiDayResultStats } from '@/lib/prizeResultStats';
 import { useLeaderboardExpectedHoles } from '@/hooks/useLeaderboardExpectedHoles';
 import { useLeaderboardPrizes } from '@/hooks/useLeaderboardPrizes';
 import { cn } from '@/lib/utils';
@@ -455,6 +456,10 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
     }),
     [participants, standingsByDay, rules, expectedHolesInfo.expectedHolesByDay, accumulated],
   );
+  const prizeResultStats = useMemo(
+    () => multiDayResultStats({ participants, accumulated, aggregation: rules.aggregation }),
+    [participants, accumulated, rules.aggregation],
+  );
   const formatVsPar = (v: number): string => v === 0 ? 'E' : v > 0 ? `+${v}` : `${v}`;
   const vsParColor = (v: number): string => {
     if (v < 0) return 'text-green-600 font-semibold';
@@ -854,6 +859,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
                     }))}
                     candidates={prizeCandidates}
                     candidatesProjection={prizeCandidatesProjection}
+                    resultStats={prizeResultStats}
                     scoringModes={availableModes}
                     expectedHolesInfo={{
                       daysWithoutRound: expectedHolesInfo.daysWithoutRound,

@@ -6,8 +6,10 @@
 import { formatPlayerName } from '@/lib/playerInput';
 import type { PayoutResult } from '@/types/leaderboard';
 import { buildAwardDisplaySections } from '@/lib/prizeAwardDisplay';
+import type { PrizeResultStat } from '@/lib/prizeResultStats';
+import type { PrizeMode } from '@/types/leaderboard';
 
-export interface PrizesShareItem { label: string; place?: number; tied?: boolean; amount: number }
+export interface PrizesShareItem { kind?: 'pool' | 'award'; label: string; place?: number; tied?: boolean; amount: number }
 export interface PrizesSharePlayer {
   participantId: string;
   name: string;
@@ -16,7 +18,13 @@ export interface PrizesSharePlayer {
   total: number;
   items: PrizesShareItem[];
 }
-export interface PrizesSharePool { label: string; rows: { name: string; rank: number; tied: boolean; amount: number }[] }
+export interface PrizesSharePool {
+  label: string;
+  mode?: PrizeMode;
+  categoryName?: string | null;
+  /** hcp/result are display-only (handicap and the pool's result: gross, net or points). */
+  rows: { name: string; rank: number; tied: boolean; amount: number; hcp?: number | null; result?: string | null }[];
+}
 export interface PrizesShareAward {
   label: string; winnerName: string | null; amount: number;
   /** Optional identity so extra places (2º, 3º…) group under their base award. */
@@ -35,11 +43,13 @@ export const SHARE_POOL_MAX_RANK = 3;
 
 export function buildPrizesSharePayouts(params: {
   result: Pick<PayoutResult, 'byParticipant' | 'pools' | 'awards'>;
-  pools: { id: string; label: string }[];
+  pools: { id: string; label: string; mode?: PrizeMode; categoryName?: string | null }[];
   awards: { id: string; label: string; amount: number; groupId?: string | null; place?: number | null }[];
   nameOf: (participantId: string) => ShareNameInfo;
+  /** Optional handicap/result per player for the pool rows. */
+  statsOf?: (participantId: string) => PrizeResultStat | null;
 }): PrizesSharePayouts {
-  const { result, pools, awards, nameOf } = params;
+  const { result, pools, awards, nameOf, statsOf } = params;
   const who = (pid: string) => {
     const n = nameOf(pid);
     return { ...n, name: formatPlayerName(n.name || '') };
@@ -56,14 +66,23 @@ export function buildPrizesSharePayouts(params: {
         initials: n.initials,
         color: n.color,
         total: p.total,
-        items: p.items.map(it => ({ label: it.label, place: it.place, tied: it.tied, amount: it.amount })),
+        items: p.items.map(it => ({ kind: it.kind, label: it.label, place: it.place, tied: it.tied, amount: it.amount })),
       };
     }),
     pools: pools.map(pool => ({
       label: pool.label,
+      mode: pool.mode,
+      categoryName: pool.categoryName ?? null,
       rows: (payoutByPool.get(pool.id)?.rows || [])
         .filter(r => r.rank <= SHARE_POOL_MAX_RANK && r.amount > 0)
-        .map(r => ({ name: who(r.participantId).name, rank: r.rank, tied: r.tied, amount: r.amount })),
+        .map(r => {
+          const st = statsOf?.(r.participantId) ?? null;
+          return {
+            name: who(r.participantId).name, rank: r.rank, tied: r.tied, amount: r.amount,
+            hcp: st?.hcp ?? null,
+            result: (pool.mode && st?.results?.[pool.mode]) || null,
+          };
+        }),
     })),
     awards: awards.map(a => {
       const pid = winnerByAward.get(a.id) ?? null;
@@ -82,11 +101,16 @@ export function sharePayoutsFromSnapshot(
 ): PrizesSharePayouts {
   return buildPrizesSharePayouts({
     result: { byParticipant: snap.byParticipant || [], pools: snap.pools || [], awards: snap.awards || [] },
-    pools: ((snap.pools || []) as unknown as { id?: string; poolId?: string; label?: string }[])
-      .map(p => ({ id: p.id ?? p.poolId ?? '', label: p.label ?? '' })),
+    pools: ((snap.pools || []) as unknown as {
+      id?: string; poolId?: string; label?: string; mode?: PrizeMode; categoryName?: string | null;
+    }[]).map(p => ({ id: p.id ?? p.poolId ?? '', label: p.label ?? '', mode: p.mode, categoryName: p.categoryName ?? null })),
     awards: ((snap.awards || []) as unknown as { id?: string; awardId?: string; label?: string; amount?: number }[])
       .map(a => ({ id: a.id ?? a.awardId ?? '', label: a.label ?? '', amount: Number(a.amount) || 0 })),
     nameOf: pid => snap.participants?.[pid] ?? { name: fallbackName, initials: '??', color: '#3B82F6' },
+    statsOf: pid => {
+      const sp = snap.participants?.[pid];
+      return sp?.results ? { hcp: sp.hcp ?? null, results: sp.results } : null;
+    },
   });
 }
 

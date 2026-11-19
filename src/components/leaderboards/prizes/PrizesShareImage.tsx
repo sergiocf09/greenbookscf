@@ -6,6 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { roundRectPath, truncate } from '@/components/leaderboards/TeamsCupShareImage';
 import { buildShareAwardBlocks, type PrizesShareItem, type PrizesSharePayouts, type ShareAwardCard } from '@/lib/prizesShareData';
+import { summarizePrizeItems } from '@/lib/prizeResultStats';
+import { prizeSummaryChipLabel } from './PrizePlayerCard';
 
 export interface PrizesShareImageProps {
   open: boolean;
@@ -37,11 +39,9 @@ const LINE_H = 40;
 const BLOCK_GAP = 18;
 const FOOTER_H = 150;
 
-export const shareItemLabel = (it: PrizesShareItem): string => {
-  const place = it.place != null ? ` ${it.place}º` : '';
-  const tie = it.tied ? ` ${trs('(empate)')}` : '';
-  return `${it.label}${place}${tie} · ${fmtMoney(it.amount)}`;
-};
+/** Compact concepts line: "1º Stableford   •   Oyes ×2" (detail lives in the sections below). */
+export const shareItemsSummary = (items: PrizesShareItem[]): string =>
+  summarizePrizeItems(items).map(prizeSummaryChipLabel).join('   •   ');
 
 /* Special awards: two cards per row; an odd last card is centred with the same width. */
 const CARD_GAP = 24;
@@ -60,6 +60,10 @@ const cardRowHeights = (cards: ShareAwardCard[]) => {
   }
   return out;
 };
+
+/** Column title for a pool's result: points for Stableford, Gross or Net otherwise. */
+export const resultColumnLabel = (mode?: string): string =>
+  mode === 'stableford' ? trs('Pts') : mode === 'gross' ? trs('Gross') : mode === 'net' ? trs('Neto') : trs('Resultado');
 
 const spaced = (s: string) => s.toUpperCase().split('').join(' ');
 
@@ -220,7 +224,7 @@ export function drawPrizesShareCanvas(ctx: CanvasRenderingContext2D, props: Omit
     ctx.fillText(truncate(ctx, p.name, nameMax), textX, y + 46);
     ctx.fillStyle = 'rgba(255,255,255,0.68)';
     ctx.font = '19px Arial, sans-serif';
-    ctx.fillText(truncate(ctx, p.items.map(shareItemLabel).join('   •   '), nameMax), textX, y + 84);
+    ctx.fillText(truncate(ctx, shareItemsSummary(p.items), nameMax), textX, y + 84);
 
     y += PLAYER_ROW_H;
   });
@@ -237,11 +241,23 @@ export function drawPrizesShareCanvas(ctx: CanvasRenderingContext2D, props: Omit
     y += BLOCK_GAP;
     sectionTitle(ctx, trs('Ganadores por bolsa'), y);
     y += SECTION_TITLE_H;
+    const HCP_X = W - PAD - 300;
+    const RES_X = W - PAD - 190;
     for (const pool of payouts.pools) {
+      const withStats = pool.rows.some(r => r.hcp != null || !!r.result);
+      const poolTitle = [pool.label || trs('Bolsa'), pool.categoryName ? `${trs('Cat.')} ${pool.categoryName}` : null]
+        .filter(Boolean).join(' · ');
       ctx.textAlign = 'left';
       ctx.fillStyle = GOLD;
       ctx.font = 'bold 26px Georgia, serif';
-      ctx.fillText(truncate(ctx, pool.label || trs('Bolsa'), CW), PAD, y + 30);
+      ctx.fillText(truncate(ctx, poolTitle, withStats ? HCP_X - 40 - PAD : CW), PAD, y + 30);
+      if (withStats) {
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        ctx.font = 'bold 17px Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('HCP', HCP_X, y + 30);
+        ctx.fillText(resultColumnLabel(pool.mode).toUpperCase(), RES_X, y + 30);
+      }
       y += POOL_TITLE_H;
       if (pool.rows.length === 0) {
         ctx.fillStyle = 'rgba(255,255,255,0.55)';
@@ -264,7 +280,16 @@ export function drawPrizesShareCanvas(ctx: CanvasRenderingContext2D, props: Omit
         ctx.font = '22px Arial, sans-serif';
         ctx.fillStyle = 'rgba(255,255,255,0.92)';
         const nameX = PAD + 84;
-        ctx.fillText(truncate(ctx, r.name, W - PAD - amtW - 24 - nameX), nameX, y + 27);
+        ctx.fillText(truncate(ctx, r.name, (withStats ? HCP_X - 40 : W - PAD - amtW - 24) - nameX), nameX, y + 27);
+        if (withStats) {
+          ctx.textAlign = 'center';
+          ctx.fillStyle = 'rgba(255,255,255,0.75)';
+          ctx.font = '22px Arial, sans-serif';
+          ctx.fillText(r.hcp != null ? String(r.hcp) : '–', HCP_X, y + 27);
+          ctx.fillStyle = GOLD;
+          ctx.font = 'bold 23px Arial, sans-serif';
+          ctx.fillText(r.result || '–', RES_X, y + 27);
+        }
         y += LINE_H;
       }
       y += BLOCK_GAP;

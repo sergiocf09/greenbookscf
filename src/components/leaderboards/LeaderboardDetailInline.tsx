@@ -28,6 +28,7 @@ import { PrizesPanel, isPrizesPanelVisible } from './prizes/PrizesPanel';
 import { PrizesChip } from './prizes/PrizesConfigEntry';
 import { useLeaderboardPrizes } from '@/hooks/useLeaderboardPrizes';
 import { singleDayCandidates } from '@/lib/prizeCandidates';
+import { singleDayResultStats } from '@/lib/prizeResultStats';
 import { useLeaderboardExpectedHoles } from '@/hooks/useLeaderboardExpectedHoles';
 import { format as formatDate } from 'date-fns';
 import { enUS, es as esLocale } from 'date-fns/locale';
@@ -108,6 +109,7 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
     () => singleDayCandidates({ standings, expectedHoles: expectedHolesInfo.expectedHoles, projection: true }),
     [standings, expectedHolesInfo.expectedHoles],
   );
+  const prizeResultStats = useMemo(() => singleDayResultStats(standings), [standings]);
 
   const sortedStandings = useMemo(() => {
     const filtered = standings.filter(s => s.holesPlayed > 0);
@@ -356,6 +358,7 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
           }))}
           candidates={prizeCandidates}
           candidatesProjection={prizeCandidatesProjection}
+          resultStats={prizeResultStats}
           scoringModes={availableModes}
           expectedHolesInfo={{ daysWithoutRound: [], unreliable: expectedHolesInfo.unreliable }}
           onOpenSetup={canConfigurePrizes ? () => setShowPrizeSetup(true) : undefined}

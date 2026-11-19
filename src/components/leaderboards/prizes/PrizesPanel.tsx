@@ -25,7 +25,8 @@ import { useLeaderboardPrizes, type LeaderboardPrizesState } from '@/hooks/useLe
 import { buildAwardDisplaySections } from '@/lib/prizeAwardDisplay';
 import { buildPrizesSharePayouts, sharePayoutsFromSnapshot } from '@/lib/prizesShareData';
 import { PrizePlayerCard } from './PrizePlayerCard';
-import { PrizesShareImage } from './PrizesShareImage';
+import { PrizesShareImage, resultColumnLabel } from './PrizesShareImage';
+import type { PrizeResultStat, PrizeResultStats } from '@/lib/prizeResultStats';
 import type {
   FinalPayoutsSnapshot, PayoutResult, PrizeCandidate, PrizeMode,
 } from '@/types/leaderboard';
@@ -53,6 +54,8 @@ interface Props {
   /** Leaderboard name and date shown on the share image. */
   leaderboardName?: string;
   dateLabel?: string;
+  /** Display-only handicap and results (gross/net/points) per participant, shown next to pool winners. */
+  resultStats?: PrizeResultStats;
 }
 
 /** Spanish word, plus the English word shown when the UI is in English. */
@@ -82,7 +85,7 @@ export const formatFrozenAt = (iso: string | null | undefined) => {
 
 export const PrizesPanel: React.FC<Props> = ({
   leaderboardId, isMultiDay, participants, candidates, candidatesProjection, scoringModes, expectedHolesInfo, onOpenSetup,
-  leaderboardName, dateLabel,
+  leaderboardName, dateLabel, resultStats,
 }) => {
   const { profile } = useAuth();
   const { prizes, loading, isCreator, setStatus, saving } = useLeaderboardPrizes(leaderboardId);
@@ -125,9 +128,43 @@ export const PrizesPanel: React.FC<Props> = ({
   };
 
   const poolsList = useMemo(() => {
-    if (isFinal && snapshot?.pools) return snapshot.pools;
-    return (config?.pools ?? []).map(p => ({ id: p.id, label: p.label, mode: p.mode }));
-  }, [isFinal, snapshot, config?.pools]);
+    const catName = (id: string | null | undefined) =>
+      (id ? config?.categories.find(c => c.id === id)?.name : null) ?? null;
+    if (isFinal && snapshot?.pools) {
+      // Frozen pools carry their category; older snapshots fall back to the config by pool id.
+      type FrozenPool = { id: string; label: string; mode: PrizeMode; categoryId?: string | null; categoryName?: string | null };
+      return (snapshot.pools as unknown as FrozenPool[]).map(p => {
+        const live = config?.pools.find(x => x.id === p.id);
+        const categoryId = p.categoryId ?? live?.categoryId ?? null;
+        return { id: p.id, label: p.label, mode: p.mode, categoryId, categoryName: p.categoryName ?? catName(categoryId) };
+      });
+    }
+    return (config?.pools ?? []).map(p => ({
+      id: p.id, label: p.label, mode: p.mode, categoryId: p.categoryId ?? null, categoryName: catName(p.categoryId),
+    }));
+  }, [isFinal, snapshot, config?.pools, config?.categories]);
+
+  /** Pools grouped by category (display only), in the organizer's pool order. */
+  const poolGroups = useMemo(() => {
+    const groups: { key: string; name: string | null; pools: typeof poolsList }[] = [];
+    for (const p of poolsList) {
+      const key = p.categoryId ?? (p.categoryName ? `n:${p.categoryName}` : '__general');
+      let g = groups.find(x => x.key === key);
+      if (!g) { g = { key, name: p.categoryName ?? null, pools: [] }; groups.push(g); }
+      g.pools.push(p);
+    }
+    return groups;
+  }, [poolsList]);
+  const hasCategories = poolGroups.some(g => g.key !== '__general');
+
+  // Final: only the frozen stats (never live scores); live/draft: current leaderboard values.
+  const statsOf = (pid: string): PrizeResultStat | null => {
+    if (isFinal) {
+      const sp = snapshot?.participants?.[pid];
+      return sp?.results ? { hcp: sp.hcp ?? null, results: sp.results } : null;
+    }
+    return resultStats?.[pid] ?? null;
+  };
 
   const awardsList = useMemo(() => {
     const winnerById = new Map(result.awards.map(a => [a.awardId, a.participantId]));
@@ -181,11 +218,6 @@ export const PrizesPanel: React.FC<Props> = ({
   }
 
   const frozenLabel = formatFrozenAt(snapshot?.frozenAt ?? prizes.finalizedAt);
-  const categoryNameOf = (poolId: string) => {
-    const pool = config?.pools.find(p => p.id === poolId);
-    if (!pool?.categoryId) return null;
-    return config?.categories.find(c => c.id === pool.categoryId)?.name ?? null;
-  };
 
   const canShare = status === 'live' || status === 'final';
   // Share image: final reads ONLY the frozen snapshot; live uses the strict (official) calculation.
@@ -196,6 +228,7 @@ export const PrizesPanel: React.FC<Props> = ({
         pools: poolsList,
         awards: awardsList,
         nameOf: pid => nameOf(pid),
+        statsOf,
       });
   const shareDate = dateLabel || formatFrozenAt(snapshot?.frozenAt ?? prizes.finalizedAt).split(' · ')[0];
   const shareModes = (scoringModes || [])
@@ -208,14 +241,20 @@ export const PrizesPanel: React.FC<Props> = ({
     const snap: FinalPayoutsSnapshot = {
       ...res,
       frozenAt: new Date().toISOString(),
-      participants: Object.fromEntries(participants.map(p => [p.id, {
-        name: formatPlayerName(p.display_name), initials: p.initials || '??', color: p.avatar_color || '#3B82F6',
-      }])),
+      participants: Object.fromEntries(participants.map(p => {
+        const st = resultStats?.[p.id];
+        return [p.id, {
+          name: formatPlayerName(p.display_name), initials: p.initials || '??', color: p.avatar_color || '#3B82F6',
+          ...(st ? { hcp: st.hcp, results: st.results } : {}),
+        }];
+      })),
       // Each entry carries both the payout fields and its display metadata (id/label/mode),
       // so the snapshot satisfies PayoutResult and the FinalPayoutsSnapshot metadata at once.
       pools: res.pools.map((pp, i) => {
         const p = config.pools.find(x => x.id === pp.poolId) ?? config.pools[i];
-        return { ...pp, id: pp.poolId, label: p?.label ?? '', mode: (p?.mode ?? 'net') as PrizeMode };
+        const categoryId = p?.categoryId ?? null;
+        const categoryName = categoryId ? config.categories.find(c => c.id === categoryId)?.name ?? null : null;
+        return { ...pp, id: pp.poolId, label: p?.label ?? '', mode: (p?.mode ?? 'net') as PrizeMode, categoryId, categoryName };
       }),
       awards: res.awards.map(ra => {
         const a = awards.find(x => x.id === ra.awardId);
@@ -322,15 +361,25 @@ export const PrizesPanel: React.FC<Props> = ({
           )}
         </section>
 
-        {/* Pool detail */}
-        <Accordion type="multiple" className="rounded-md border px-2">
-          {poolsList.map(pool => {
+        {/* Pool detail, one section per category when categories are used */}
+        {poolGroups.map(group => (
+          <section key={group.key} className="space-y-1">
+            {hasCategories && (
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-primary px-1">
+                {group.name ? `${trs('Categoría')} ${group.name}` : trs('General')}
+              </h3>
+            )}
+            <Accordion type="multiple" defaultValue={group.pools.map(p => p.id)} className="rounded-md border px-2">
+          {group.pools.map(pool => {
             const payout = result.pools.find(p => p.poolId === pool.id);
-            const cat = categoryNameOf(pool.id);
             const modeLabel = trs(MODE_LABEL[pool.mode]);
             const title = pool.label || modeLabel;
-            const subtitle = [title === modeLabel ? null : modeLabel, cat ? `${trs('Cat.')} ${cat}` : null]
-              .filter(Boolean).join(' · ');
+            const subtitle = title === modeLabel ? '' : modeLabel;
+            const rows = payout?.rows ?? [];
+            const withStats = rows.some(r => !!statsOf(r.participantId));
+            const cols = withStats
+              ? 'grid-cols-[1.25rem_minmax(0,1fr)_1.75rem_2.25rem_3.5rem]'
+              : 'grid-cols-[1.5rem_minmax(0,1fr)_4.5rem]';
             return (
               <AccordionItem key={pool.id} value={pool.id}>
                 <AccordionTrigger className="py-2.5 text-sm hover:no-underline">
@@ -343,31 +392,49 @@ export const PrizesPanel: React.FC<Props> = ({
                   </span>
                 </AccordionTrigger>
                 <AccordionContent className="pb-2">
-                  {!payout || payout.rows.length === 0 ? (
+                  {rows.length === 0 ? (
                     <p className="text-xs text-muted-foreground py-1">{trs('Sin ganadores aún')}</p>
                   ) : (
-                    <table className="table-fixed w-full text-sm">
-                      <tbody>
-                        {payout.rows.map(r => {
+                    <div className="text-sm">
+                      {withStats && (
+                        <div className={cn('grid items-center gap-1 pb-1 text-[10px] font-semibold uppercase text-muted-foreground', cols)}>
+                          <span className="text-center">#</span>
+                          <span>{trs('Jugador')}</span>
+                          <span className="text-center">HCP</span>
+                          <span className="text-center">{resultColumnLabel(pool.mode)}</span>
+                          <span className="text-right">{trs('Premio')}</span>
+                        </div>
+                      )}
+                      <ul className="divide-y">
+                        {rows.map(r => {
                           const who = nameOf(r.participantId);
+                          const st = statsOf(r.participantId);
                           return (
-                            <tr key={r.participantId} className="border-b last:border-0">
-                              <td className="w-9 py-1.5 text-center font-bold text-muted-foreground">
+                            <li key={r.participantId} className={cn('grid items-center gap-1 py-1.5', cols)}>
+                              <span className="text-center font-bold text-muted-foreground tabular-nums">
                                 {r.tied ? `T${r.rank}` : r.rank}
-                              </td>
-                              <td className="py-1.5 px-1">
-                                <div className="flex items-center gap-1.5 min-w-0">
-                                  <PlayerAvatar initials={who.initials} background={who.color} size="sm"
-                                    isLoggedInUser={!!profile?.id && who.profileId === profile.id} />
-                                  <span className="truncate text-sm">{who.name}</span>
-                                </div>
-                              </td>
-                              <td className="w-20 py-1.5 text-right font-semibold tabular-nums">{fmtMoney(r.amount)}</td>
-                            </tr>
+                              </span>
+                              <span className="flex items-center gap-1.5 min-w-0">
+                                <PlayerAvatar initials={who.initials} background={who.color} size="sm"
+                                  isLoggedInUser={!!profile?.id && who.profileId === profile.id} />
+                                <span className={withStats ? 'line-clamp-2 leading-tight break-words' : 'truncate'}>{who.name}</span>
+                              </span>
+                              {withStats && (
+                                <>
+                                  <span className="text-center text-xs tabular-nums text-muted-foreground">
+                                    {st?.hcp != null ? st.hcp : '–'}
+                                  </span>
+                                  <span className="text-center font-bold tabular-nums">
+                                    {st?.results?.[pool.mode] ?? '–'}
+                                  </span>
+                                </>
+                              )}
+                              <span className="text-right font-semibold tabular-nums">{fmtMoney(r.amount)}</span>
+                            </li>
                           );
                         })}
-                      </tbody>
-                    </table>
+                      </ul>
+                    </div>
                   )}
                   {payout && payout.unallocated > 0 && (
                     <p className="text-[11px] text-muted-foreground mt-1.5">
@@ -378,7 +445,12 @@ export const PrizesPanel: React.FC<Props> = ({
               </AccordionItem>
             );
           })}
-          {awardsList.length > 0 && (
+            </Accordion>
+          </section>
+        ))}
+
+        {awardsList.length > 0 && (
+        <Accordion type="multiple" defaultValue={['__awards']} className="rounded-md border px-2">
             <AccordionItem value="__awards">
               <AccordionTrigger className="py-2.5 text-sm hover:no-underline">
                 <span className="flex items-center gap-1.5">
@@ -432,8 +504,8 @@ export const PrizesPanel: React.FC<Props> = ({
                 </div>
               </AccordionContent>
             </AccordionItem>
-          )}
         </Accordion>
+        )}
 
         {/* Notices */}
         <div className="space-y-1">

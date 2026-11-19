@@ -182,7 +182,11 @@ export interface PayoutResult {
 /** Immutable snapshot stored in leaderboard_prizes.final_payouts when prizes are frozen. */
 export type FinalPayoutsSnapshot = PayoutResult & {
   frozenAt: string;
-  participants: Record<string, { name: string; initials: string; color: string }>;
-  pools: { id: string; label: string; mode: PrizeMode }[];
+  /** hcp/results are frozen display-only stats (absent in snapshots frozen before they existed). */
+  participants: Record<string, {
+    name: string; initials: string; color: string;
+    hcp?: number | null; results?: Partial<Record<PrizeMode, string>>;
+  }>;
+  pools: { id: string; label: string; mode: PrizeMode; categoryId?: string | null; categoryName?: string | null }[];
   awards: { id: string; label: string; amount: number }[];
 };
