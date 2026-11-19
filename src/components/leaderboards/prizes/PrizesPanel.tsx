@@ -22,6 +22,7 @@ import { fmtMoney } from '@/lib/formatMoney';
 import { formatPlayerName } from '@/lib/playerInput';
 import { computePrizePayouts, validatePrizeConfig } from '@/lib/leaderboardPrizes';
 import { useLeaderboardPrizes, type LeaderboardPrizesState } from '@/hooks/useLeaderboardPrizes';
+import { buildAwardDisplaySections } from '@/lib/prizeAwardDisplay';
 import { buildPrizesSharePayouts, sharePayoutsFromSnapshot } from '@/lib/prizesShareData';
 import { PrizePlayerCard } from './PrizePlayerCard';
 import { PrizesShareImage } from './PrizesShareImage';
@@ -132,9 +133,10 @@ export const PrizesPanel: React.FC<Props> = ({
     const winnerById = new Map(result.awards.map(a => [a.awardId, a.participantId]));
     const source = isFinal && snapshot?.awards
       ? snapshot.awards
-      : awards.map(a => ({ id: a.id, label: a.label, amount: Number(a.amount) || 0 }));
+      : awards.map(a => ({ id: a.id, label: a.label, amount: Number(a.amount) || 0, groupId: a.groupId ?? null, place: a.place ?? null }));
     return source.map(a => ({ ...a, winner: winnerById.get(a.id) ?? null }));
   }, [isFinal, snapshot, awards, result.awards]);
+  const awardSections = useMemo(() => buildAwardDisplaySections(awardsList), [awardsList]);
 
   const validationErrors = useMemo(
     () => (config ? validatePrizeConfig(config, awards) : []),
@@ -385,26 +387,49 @@ export const PrizesPanel: React.FC<Props> = ({
                 </span>
               </AccordionTrigger>
               <AccordionContent className="pb-2">
-                <ul className="divide-y">
-                  {awardsList.map(a => {
-                    const who = a.winner ? nameOf(a.winner) : null;
-                    return (
-                      <li key={a.id} className="flex items-center gap-2 py-1.5 text-sm">
-                        <span className="flex-1 min-w-0 truncate">{a.label}</span>
-                        {who ? (
-                          <span className="flex items-center gap-1 min-w-0 max-w-[45%]">
-                            <PlayerAvatar initials={who.initials} background={who.color} size="sm"
-                              isLoggedInUser={!!profile?.id && who.profileId === profile.id} />
-                            <span className="truncate text-xs">{who.name}</span>
-                          </span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">{trs('Sin ganador aún')}</span>
-                        )}
-                        <span className="w-16 text-right font-semibold tabular-nums">{fmtMoney(a.amount)}</span>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <div className="space-y-3">
+                  {awardSections.map(section => (
+                    <div key={section.key}>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-primary border-b border-primary/20 pb-1 mb-1">
+                        {section.heading}
+                      </p>
+                      <div className="divide-y">
+                        {section.groups.map(group => {
+                          const multi = group.rows.length > 1;
+                          return (
+                            <div key={group.key} className="py-1.5">
+                              {group.title && (
+                                <p className="text-xs font-semibold text-foreground mb-0.5">{group.title}</p>
+                              )}
+                              <ul>
+                                {group.rows.map(r => {
+                                  const who = r.winner ? nameOf(r.winner) : null;
+                                  return (
+                                    <li key={r.id} className="grid grid-cols-[1.5rem_minmax(0,1fr)_4.5rem] items-center gap-1.5 py-0.5 text-sm">
+                                      <span className="text-center text-xs font-bold text-muted-foreground tabular-nums">
+                                        {multi ? `${r.place}º` : ''}
+                                      </span>
+                                      {who ? (
+                                        <span className="flex items-center gap-1.5 min-w-0">
+                                          <PlayerAvatar initials={who.initials} background={who.color} size="sm"
+                                            isLoggedInUser={!!profile?.id && who.profileId === profile.id} />
+                                          <span className="truncate">{who.name}</span>
+                                        </span>
+                                      ) : (
+                                        <span className="text-xs text-muted-foreground italic">{trs('Sin ganador aún')}</span>
+                                      )}
+                                      <span className="text-right font-semibold tabular-nums">{fmtMoney(r.amount)}</span>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </AccordionContent>
             </AccordionItem>
           )}
