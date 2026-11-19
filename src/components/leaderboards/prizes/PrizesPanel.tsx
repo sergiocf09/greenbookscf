@@ -516,6 +516,9 @@ export const PrizesPanel: React.FC<Props> = ({
                 : `${incompleteCount} ${trs('jugadores aún no completan sus hoyos y no cobran todavía.')}`}
             </Notice>
           )}
+          {isCreator && !isFinal && (config?.categories.length ?? 0) > 0 && poolsList.some(p => !p.categoryId) && (
+            <Notice>{trs('Hay categorías, pero algunas bolsas son para Todos. En Configurar premios usa "Dividir por categoría".')}</Notice>
+          )}
           {isCreator && pendingAwards.length > 0 && (
             <Notice>
               {`${trs('Premios especiales sin ganador:')} ${pendingAwards.length} (${fmtMoney(result.totalPendingAwards)})`}

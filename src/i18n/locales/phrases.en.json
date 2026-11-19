@@ -2179,5 +2179,14 @@
   "Se quitarán": "This will remove",
   "lugares con monto": "places with an amount",
   "Quitar": "Remove",
-  "General": "Overall"
+  "General": "Overall",
+  "Esta bolsa es para Todos: no se divide por categoría.": "This pool is for everyone: it isn't split by category.",
+  "Dividir por categoría": "Split by category",
+  "¿Dividir la bolsa por categoría?": "Split the pool by category?",
+  "Se creará una bolsa para cada categoría": "A pool will be created for each category",
+  "y cada una premiará solo a sus jugadores. ¿Cómo quedan los montos?": "and each one will only pay its own players. How should the amounts work?",
+  "Mismos montos en cada categoría": "Same amounts in each category",
+  "Dividir los montos actuales": "Divide the current amounts",
+  "Sin montos, los capturo yo": "No amounts, I'll enter them",
+  "Hay categorías, pero algunas bolsas son para Todos. En Configurar premios usa \"Dividir por categoría\".": "There are categories, but some pools are for everyone. In Set up prizes use \"Split by category\"."
 }

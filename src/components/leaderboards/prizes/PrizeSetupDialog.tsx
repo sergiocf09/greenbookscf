@@ -27,6 +27,7 @@ import {
   awardWinnerCount, extrasRemovedBy, groupSpecialAwards, MAX_AWARD_WINNERS, mergeGeneratedSlots,
   patchAwardBase, removeAwardGroup, setAwardWinnerCount, syncAwardGroups,
 } from '@/lib/prizeSlots';
+import { splitPoolByCategories, type CategorySplitMode } from '@/lib/prizeCategoryPools';
 import { useLeaderboardPrizes, type LeaderboardPrizesState } from '@/hooks/useLeaderboardPrizes';
 import { useLeaderboardPar3Slots } from '@/hooks/useLeaderboardPar3Slots';
 import type {
@@ -464,6 +465,16 @@ export const PrizeSetupDialog: React.FC<Props> = ({
         : p.label,
     }));
 
+  const [pendingSplitPool, setPendingSplitPool] = useState<string | null>(null);
+  const splitPool = (id: string, mode: CategorySplitMode) =>
+    setConfig(c => splitPoolByCategories({
+      config: c, poolId: id, mode,
+      labelFor: (pool, cat) => (pool.label === defaultPoolLabel(pool.mode, null) || !pool.label.trim()
+        ? defaultPoolLabel(pool.mode, cat.name)
+        : `${pool.label} · ${trs('Cat.')} ${cat.name}`),
+      newId: () => uid('pool'),
+    }));
+
   const setPoolCategory = (id: string, value: string) =>
     patchPool(id, p => {
       const catId = value === NONE ? null : value;
@@ -836,6 +847,17 @@ export const PrizeSetupDialog: React.FC<Props> = ({
                                 </SelectContent>
                               </Select>
                             </div>
+                            {useCategories && config.categories.length > 0 && pool.categoryId == null && (
+                              <div className="flex items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1.5">
+                                <p className="min-w-0 flex-1 text-[11px] leading-snug">
+                                  {trs('Esta bolsa es para Todos: no se divide por categoría.')}
+                                </p>
+                                <Button size="sm" variant="outline" className="h-7 shrink-0 px-2 text-[11px]"
+                                  onClick={() => setPendingSplitPool(pool.id)}>
+                                  {trs('Dividir por categoría')}
+                                </Button>
+                              </div>
+                            )}
 
                             <div className="flex items-center gap-2">
                               <span className="min-w-0 flex-1 truncate whitespace-nowrap text-xs font-medium">
@@ -1216,6 +1238,33 @@ export const PrizeSetupDialog: React.FC<Props> = ({
             <AlertDialogAction onClick={() => { setConfirmDiscard(false); onOpenChange(false); }}>
               {trs('Descartar')}
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!pendingSplitPool} onOpenChange={v => !v && setPendingSplitPool(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{trs('¿Dividir la bolsa por categoría?')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {trs('Se creará una bolsa para cada categoría')} ({config.categories.map(c => c.name || trs('sin nombre')).join(', ')}){' '}
+              {trs('y cada una premiará solo a sus jugadores. ¿Cómo quedan los montos?')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex flex-col gap-2">
+            {([
+              ['copy', trs('Mismos montos en cada categoría')],
+              ['split', trs('Dividir los montos actuales')],
+              ['empty', trs('Sin montos, los capturo yo')],
+            ] as [CategorySplitMode, string][]).map(([mode, label]) => (
+              <Button key={mode} variant={mode === 'copy' ? 'default' : 'outline'} className="h-9 text-sm"
+                onClick={() => { if (pendingSplitPool) splitPool(pendingSplitPool, mode); setPendingSplitPool(null); }}>
+                {label}
+              </Button>
+            ))}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{trs('Cancelar')}</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
