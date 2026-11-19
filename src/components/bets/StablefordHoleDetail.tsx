@@ -3,6 +3,7 @@ import { Star } from 'lucide-react';
 import { trs } from '@/i18n/tr';
 import { cn } from '@/lib/utils';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 export interface StablefordHoleDetailRow {
   id: string;
@@ -67,5 +68,50 @@ export const StablefordHoleDetail: React.FC<{ rows: StablefordHoleDetailRow[]; l
         {trs("Toca afuera para cerrar")}
       </div>
     </div>
+  );
+};
+
+export interface StablefordTapEntry {
+  participant: { id: string; initials?: string; avatar_color?: string; profile_id?: string | null };
+  holesPlayed: number;
+  stablefordHoles?: Array<{ holeNumber: number; points: number; strokesReceived: number }>;
+}
+
+/** Leaderboard rows → hole-detail rows (front/back summed from the same per-hole points). */
+export const leaderboardStablefordRows = (entries: StablefordTapEntry[], viewerProfileId?: string | null): StablefordHoleDetailRow[] =>
+  entries.filter(e => e.holesPlayed > 0).map(e => {
+    const holes = e.stablefordHoles ?? [];
+    return {
+      id: e.participant.id,
+      initials: e.participant.initials || '??',
+      color: e.participant.avatar_color || '#3B82F6',
+      isLoggedInUser: !!viewerProfileId && e.participant.profile_id === viewerProfileId,
+      holePoints: holes,
+      pointsFront: holes.filter(h => h.holeNumber <= 9).reduce((a, h) => a + h.points, 0),
+      pointsBack: holes.filter(h => h.holeNumber > 9).reduce((a, h) => a + h.points, 0),
+    };
+  });
+
+/** Wraps a leaderboard table so tapping it opens the Stableford hole-by-hole detail. */
+export const StablefordTapDetail: React.FC<{
+  enabled: boolean;
+  entries: StablefordTapEntry[];
+  viewerProfileId?: string | null;
+  children: React.ReactNode;
+}> = ({ enabled, entries, viewerProfileId, children }) => {
+  if (!enabled) return <>{children}</>;
+  const hint = trs("Toca la tabla para ver el detalle por hoyo");
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <div role="button" tabIndex={0} className="cursor-pointer" aria-label={hint}>
+          {children}
+          <p className="text-center text-[10px] text-muted-foreground pt-1">{hint}</p>
+        </div>
+      </PopoverTrigger>
+      <PopoverContent className="w-[340px] max-h-[70vh] overflow-y-auto" side="top">
+        <StablefordHoleDetail rows={leaderboardStablefordRows(entries, viewerProfileId)} />
+      </PopoverContent>
+    </Popover>
   );
 };

@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Trophy, Users, Star, ChevronDown, AlertTriangle, Check, X, Target, Eye } from 'lucide-react';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { StablefordHoleDetail } from '@/components/bets/StablefordHoleDetail';
 import { formatPlayerName, formatPlayerNameShort, formatPlayerNameTwoWords, disambiguateInitials } from '@/lib/playerInput';
 import { 
   calculateConejaSetResults, 
@@ -706,73 +707,18 @@ const StablefordResultBlock: React.FC<{
           </div>
         </PopoverTrigger>
         <PopoverContent className="w-[340px] max-h-[70vh] overflow-y-auto" side="top">
-          <div className="space-y-2">
-            <div className="font-semibold text-sm flex items-center gap-2">
-              <Star className="h-4 w-4 text-amber-500" />
-              Stableford - Detalle por Hoyo {label ? `(${label})` : ''}
-            </div>
-            {/* Front 9 */}
-            <div className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 text-[8px] text-muted-foreground">
-              <div></div>
-              {[1,2,3,4,5,6,7,8,9].map(h => <div key={h} className="text-center">{h}</div>)}
-              <div className="text-center font-semibold">{trs("F9")}</div>
-            </div>
-            {results.map(r => (
-              <div key={r.playerId} className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 items-center">
-                <PlayerAvatar initials={getPlayerAbbr(r.player)} background={r.player.color} size="sm" isLoggedInUser={r.playerId === basePlayerId} />
-                {[1,2,3,4,5,6,7,8,9].map(h => {
-                  const hp = r.holePoints.find(p => p.holeNumber === h);
-                  return (
-                    <div key={h} className={cn(
-                      "text-center text-[10px] font-bold rounded py-0.5 relative",
-                      !hp ? "text-muted-foreground" :
-                      hp.points >= 3 ? "bg-amber-500/30 text-amber-700" :
-                      hp.points >= 2 ? "bg-green-500/30 text-green-700" :
-                      hp.points >= 1 ? "bg-blue-500/20 text-blue-600" :
-                      hp.points === 0 ? "bg-muted/50" :
-                      "bg-red-500/20 text-destructive"
-                    )}>
-                      {hp?.points ?? '-'}
-                      {hp && hp.strokesReceived > 0 && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-foreground" />}
-                    </div>
-                  );
-                })}
-                <div className="text-center text-[10px] font-bold bg-muted/50 rounded py-0.5">{r.pointsFront}</div>
-              </div>
-            ))}
-            {/* Back 9 */}
-            <div className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 text-[8px] text-muted-foreground mt-2">
-              <div></div>
-              {[10,11,12,13,14,15,16,17,18].map(h => <div key={h} className="text-center">{h}</div>)}
-              <div className="text-center font-semibold">{trs("B9")}</div>
-            </div>
-            {results.map(r => (
-              <div key={`${r.playerId}-back`} className="grid grid-cols-[50px_repeat(9,1fr)_35px] gap-0.5 items-center">
-                <PlayerAvatar initials={getPlayerAbbr(r.player)} background={r.player.color} size="sm" isLoggedInUser={r.playerId === basePlayerId} />
-                {[10,11,12,13,14,15,16,17,18].map(h => {
-                  const hp = r.holePoints.find(p => p.holeNumber === h);
-                  return (
-                    <div key={h} className={cn(
-                      "text-center text-[10px] font-bold rounded py-0.5 relative",
-                      !hp ? "text-muted-foreground" :
-                      hp.points >= 3 ? "bg-amber-500/30 text-amber-700" :
-                      hp.points >= 2 ? "bg-green-500/30 text-green-700" :
-                      hp.points >= 1 ? "bg-blue-500/20 text-blue-600" :
-                      hp.points === 0 ? "bg-muted/50" :
-                      "bg-red-500/20 text-destructive"
-                    )}>
-                      {hp?.points ?? '-'}
-                      {hp && hp.strokesReceived > 0 && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-foreground" />}
-                    </div>
-                  );
-                })}
-                <div className="text-center text-[10px] font-bold bg-muted/50 rounded py-0.5">{r.pointsBack}</div>
-              </div>
-            ))}
-            <div className="border-t-2 border-primary/40 pt-2 mt-2 text-center text-[10px] text-muted-foreground">
-              {trs("Toca afuera para cerrar")}
-            </div>
-          </div>
+          <StablefordHoleDetail
+            label={label}
+            rows={results.map(r => ({
+              id: r.playerId,
+              initials: getPlayerAbbr(r.player),
+              color: r.player.color,
+              isLoggedInUser: r.playerId === basePlayerId,
+              holePoints: r.holePoints,
+              pointsFront: r.pointsFront,
+              pointsBack: r.pointsBack,
+            }))}
+          />
         </PopoverContent>
       </Popover>
       {/* Winner display */}

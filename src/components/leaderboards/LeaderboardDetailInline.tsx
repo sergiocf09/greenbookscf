@@ -14,6 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { StablefordTapDetail } from '@/components/bets/StablefordHoleDetail';
 import { Loader2, Trophy, Share2, Users, Copy, Hash, Link2, Unlink, Pencil, Trash2, Settings, CheckCircle, RefreshCw, Award } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
@@ -200,41 +201,7 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
     );
   }
 
-  const renderStandingsCard = () => (
-    <Card>
-        <CardHeader className="pb-1 pt-3 px-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">{trs("Leaderboard")}</CardTitle>
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Users className="h-3.5 w-3.5" />
-              {participants.length}
-            </span>
-          </div>
-        </CardHeader>
-        <CardContent className="px-0 pb-2 pt-0">
-          {availableModes.length > 1 && (
-            <div className="px-4 mb-2">
-              <Tabs value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
-                <TabsList className="w-full h-8">
-                  {availableModes.includes('gross') && (
-                    <TabsTrigger value="gross" className="flex-1 text-xs h-7">{trs("Gross")}</TabsTrigger>
-                  )}
-                  {availableModes.includes('net') && (
-                    <TabsTrigger value="net" className="flex-1 text-xs h-7">{trs("Neto")}</TabsTrigger>
-                  )}
-                  {availableModes.includes('stableford') && (
-                    <TabsTrigger value="stableford" className="flex-1 text-xs h-7">{trs("Stableford")}</TabsTrigger>
-                  )}
-                </TabsList>
-              </Tabs>
-            </div>
-          )}
-
-          {sortedStandings.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">
-              {trs("No hay participantes registrados")}
-            </p>
-          ) : (
+  const renderStandingsTable = () => (
             <table className="table-fixed w-full caption-bottom text-sm">
               <thead className="[&_tr]:border-b">
                 <tr className="text-xs border-b">
@@ -244,7 +211,7 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
                     {isCreator ? (
                       <button
                         type="button"
-                        onClick={() => setEditHcp(v => !v)}
+                        onClick={(e) => { e.stopPropagation(); setEditHcp(v => !v); }}
                         className={cn('inline-flex items-center gap-0.5 rounded px-1', editHcp && 'bg-primary text-primary-foreground')}
                         aria-label={trs("Editar hándicaps")}
                       >
@@ -331,6 +298,46 @@ export const LeaderboardDetailInline: React.FC<LeaderboardDetailInlineProps> = (
                 })}
               </tbody>
             </table>
+  );
+
+  const renderStandingsCard = () => (
+    <Card>
+        <CardHeader className="pb-1 pt-3 px-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">{trs("Leaderboard")}</CardTitle>
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Users className="h-3.5 w-3.5" />
+              {participants.length}
+            </span>
+          </div>
+        </CardHeader>
+        <CardContent className="px-0 pb-2 pt-0">
+          {availableModes.length > 1 && (
+            <div className="px-4 mb-2">
+              <Tabs value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
+                <TabsList className="w-full h-8">
+                  {availableModes.includes('gross') && (
+                    <TabsTrigger value="gross" className="flex-1 text-xs h-7">{trs("Gross")}</TabsTrigger>
+                  )}
+                  {availableModes.includes('net') && (
+                    <TabsTrigger value="net" className="flex-1 text-xs h-7">{trs("Neto")}</TabsTrigger>
+                  )}
+                  {availableModes.includes('stableford') && (
+                    <TabsTrigger value="stableford" className="flex-1 text-xs h-7">{trs("Stableford")}</TabsTrigger>
+                  )}
+                </TabsList>
+              </Tabs>
+            </div>
+          )}
+
+          {sortedStandings.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground py-8">
+              {trs("No hay participantes registrados")}
+            </p>
+          ) : (
+            <StablefordTapDetail enabled={sortMode === 'stableford' && !editHcp} entries={sortedStandings} viewerProfileId={profile?.id}>
+              {renderStandingsTable()}
+            </StablefordTapDetail>
           )}
         </CardContent>
     </Card>

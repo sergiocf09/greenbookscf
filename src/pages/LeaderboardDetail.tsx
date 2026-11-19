@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { StablefordTapDetail } from '@/components/bets/StablefordHoleDetail';
 import { ArrowLeft, Loader2, Trophy, Share2, Users, Copy, Hash, Settings, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -177,6 +178,7 @@ const LeaderboardDetail = () => {
                 {trs("No hay participantes registrados")}
               </p>
             ) : (
+              <StablefordTapDetail enabled={sortMode === 'stableford'} entries={sortedStandings} viewerProfileId={profile?.id}>
               <table className="table-fixed w-full caption-bottom text-sm">
                 <thead className="[&_tr]:border-b">
                   <tr className="text-xs border-b">
@@ -242,6 +244,7 @@ const LeaderboardDetail = () => {
                   })}
                 </tbody>
               </table>
+              </StablefordTapDetail>
             )}
           </CardContent>
         </Card>

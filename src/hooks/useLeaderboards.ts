@@ -58,6 +58,8 @@ export interface StandingsEntry {
   netTotal: number;
   holesPlayed: number;
   roundsPlayed: number;
+  /** Stableford points per hole (same rules as the totals) for the hole-by-hole detail. */
+  stablefordHoles?: Array<{ holeNumber: number; points: number; strokesReceived: number }>;
   /** Handicap the player has in the linked round (for transparency when edited). */
   roundHandicap?: number;
 }
@@ -264,6 +266,7 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
           netTotal: 0,
           holesPlayed: 0,
           roundsPlayed: 0,
+          stablefordHoles: [],
         });
       }
 
@@ -367,6 +370,7 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
             entry.netTotal += netStrokes;
             entry.netVsPar += netVsPar;
             entry.stablefordTotal += stbPoints;
+            entry.stablefordHoles?.push({ holeNumber: hs.hole_number, points: stbPoints, strokesReceived });
             entry.holesPlayed += 1;
           }
 
