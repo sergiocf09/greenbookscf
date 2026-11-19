@@ -9,8 +9,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import {
   AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
@@ -45,7 +43,7 @@ interface Props {
   participants: PrizesPanelParticipant[];
   /** Strict candidates: only players who completed are eligible. */
   candidates: PrizeCandidate[];
-  /** Projection candidates: players in progress are eligible. */
+  /** Players with any holes (used only to count who is still in progress). */
   candidatesProjection: PrizeCandidate[];
   scoringModes: string[];
   expectedHolesInfo: { daysWithoutRound: number[]; unreliable: boolean };
@@ -89,7 +87,6 @@ export const PrizesPanel: React.FC<Props> = ({
 }) => {
   const { profile } = useAuth();
   const { prizes, loading, isCreator, setStatus, saving } = useLeaderboardPrizes(leaderboardId);
-  const [projection, setProjection] = useState(false);
   const [freezeOpen, setFreezeOpen] = useState(false);
   const [freezeText, setFreezeText] = useState('');
   const [reopenOpen, setReopenOpen] = useState(false);
@@ -100,19 +97,14 @@ export const PrizesPanel: React.FC<Props> = ({
   const config = prizes?.config;
   const awards = useMemo(() => prizes?.awards ?? [], [prizes?.awards]);
   const snapshot: FinalPayoutsSnapshot | null = isFinal ? prizes?.finalPayouts ?? null : null;
-  const useProjection = isCreator && !isFinal && projection;
 
   const strictResult = useMemo<PayoutResult>(
     () => (config ? computePrizePayouts({ config, awards, candidates }) : EMPTY_RESULT),
     [config, awards, candidates],
   );
-  const projectionResult = useMemo<PayoutResult>(
-    () => (config ? computePrizePayouts({ config, awards, candidates: candidatesProjection }) : EMPTY_RESULT),
-    [config, awards, candidatesProjection],
-  );
   const result: PayoutResult = isFinal
     ? (snapshot ? { ...EMPTY_RESULT, ...snapshot } : EMPTY_RESULT)
-    : useProjection ? projectionResult : strictResult;
+    : strictResult;
 
   const partById = useMemo(() => new Map(participants.map(p => [p.id, p])), [participants]);
   const nameOf = (pid: string) => {
@@ -266,7 +258,6 @@ export const PrizesPanel: React.FC<Props> = ({
       toast.success(trs('Premios congelados'));
       setFreezeOpen(false);
       setFreezeText('');
-      setProjection(false);
     }
   };
 
@@ -315,12 +306,6 @@ export const PrizesPanel: React.FC<Props> = ({
               ? trs('Los montos pueden cambiar mientras se capturan scores.')
               : trs('Los premios quedaron congelados y ya no cambian con los scores.')}
         </p>
-
-        {useProjection && (
-          <span className="inline-flex w-fit rounded-full border border-dashed border-amber-500/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
-            {trs('Proyección — no oficial')}
-          </span>
-        )}
       </CardHeader>
 
       <CardContent className="px-3 pb-3 space-y-3">
@@ -571,15 +556,6 @@ export const PrizesPanel: React.FC<Props> = ({
                     <RotateCcw className="h-3.5 w-3.5" />{trs('Reabrir premios')}
                   </Button>
                 )}
-              </div>
-            )}
-
-            {isCreator && !isFinal && (
-              <div className="flex items-center justify-between gap-2 rounded-md bg-muted/50 px-2.5 py-1.5">
-                <Label htmlFor={`prize-projection-${leaderboardId}`} className="text-xs font-normal leading-tight">
-                  {trs('Proyección (incluye jugadores en curso)')}
-                </Label>
-                <Switch id={`prize-projection-${leaderboardId}`} checked={projection} onCheckedChange={setProjection} />
               </div>
             )}
           </section>
