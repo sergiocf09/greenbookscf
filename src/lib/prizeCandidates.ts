@@ -68,3 +68,18 @@ export function multiDayCandidates(params: {
     };
   });
 }
+
+/**
+ * Clears special-award winners that point at players no longer in the tournament
+ * (e.g. the organizer replaced the participant list), so they count as "no winner yet"
+ * instead of paying an unknown player.
+ */
+export function withoutStaleWinners<T extends { winnerParticipantId?: string | null }>(
+  awards: T[],
+  participantIds: Iterable<string>,
+): T[] {
+  const ids = new Set(participantIds);
+  return (awards || []).map(a =>
+    a.winnerParticipantId && !ids.has(a.winnerParticipantId) ? { ...a, winnerParticipantId: null } : a,
+  );
+}

@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { fmtMoney } from '@/lib/formatMoney';
 import { formatPlayerName } from '@/lib/playerInput';
 import { computePrizePayouts, validatePrizeConfig } from '@/lib/leaderboardPrizes';
+import { withoutStaleWinners } from '@/lib/prizeCandidates';
 import { useLeaderboardPrizes, type LeaderboardPrizesState } from '@/hooks/useLeaderboardPrizes';
 import { buildAwardDisplaySections } from '@/lib/prizeAwardDisplay';
 import { buildPrizesSharePayouts, poolModeSubtitle, sharePayoutsFromSnapshot } from '@/lib/prizesShareData';
@@ -98,15 +99,24 @@ export const PrizesPanel: React.FC<Props> = ({
   const awards = useMemo(() => prizes?.awards ?? [], [prizes?.awards]);
   const snapshot: FinalPayoutsSnapshot | null = isFinal ? prizes?.finalPayouts ?? null : null;
 
+  const partById = useMemo(() => new Map(participants.map(p => [p.id, p])), [participants]);
+  // Winners pointing at players no longer in the tournament count as "no winner yet".
+  const liveAwards = useMemo(() => withoutStaleWinners(awards, partById.keys()), [awards, partById]);
+
+  // Official (strict): only players who completed every expected hole — used to freeze.
   const strictResult = useMemo<PayoutResult>(
-    () => (config ? computePrizePayouts({ config, awards, candidates }) : EMPTY_RESULT),
-    [config, awards, candidates],
+    () => (config ? computePrizePayouts({ config, awards: liveAwards, candidates }) : EMPTY_RESULT),
+    [config, liveAwards, candidates],
+  );
+  // Live/draft view: provisional ranking with every confirmed hole so far, so players
+  // can follow who is winning each prize during the round. Never frozen.
+  const provisionalResult = useMemo<PayoutResult>(
+    () => (config ? computePrizePayouts({ config, awards: liveAwards, candidates: candidatesProjection }) : EMPTY_RESULT),
+    [config, liveAwards, candidatesProjection],
   );
   const result: PayoutResult = isFinal
     ? (snapshot ? { ...EMPTY_RESULT, ...snapshot } : EMPTY_RESULT)
-    : strictResult;
-
-  const partById = useMemo(() => new Map(participants.map(p => [p.id, p])), [participants]);
+    : provisionalResult;
   const nameOf = (pid: string) => {
     const snap = snapshot?.participants?.[pid];
     if (snap) return { name: snap.name, initials: snap.initials, color: snap.color, profileId: partById.get(pid)?.profile_id ?? null };
@@ -162,9 +172,9 @@ export const PrizesPanel: React.FC<Props> = ({
     const winnerById = new Map(result.awards.map(a => [a.awardId, a.participantId]));
     const source = isFinal && snapshot?.awards
       ? snapshot.awards
-      : awards.map(a => ({ id: a.id, label: a.label, amount: Number(a.amount) || 0, groupId: a.groupId ?? null, place: a.place ?? null }));
+      : liveAwards.map(a => ({ id: a.id, label: a.label, amount: Number(a.amount) || 0, groupId: a.groupId ?? null, place: a.place ?? null }));
     return source.map(a => ({ ...a, winner: winnerById.get(a.id) ?? null }));
-  }, [isFinal, snapshot, awards, result.awards]);
+  }, [isFinal, snapshot, liveAwards, result.awards]);
   const awardSections = useMemo(() => buildAwardDisplaySections(awardsList), [awardsList]);
 
   const validationErrors = useMemo(
@@ -212,11 +222,11 @@ export const PrizesPanel: React.FC<Props> = ({
   const frozenLabel = formatFrozenAt(snapshot?.frozenAt ?? prizes.finalizedAt);
 
   const canShare = status === 'live' || status === 'final';
-  // Share image: final reads ONLY the frozen snapshot; live uses the strict (official) calculation.
+  // Share image: final reads ONLY the frozen snapshot; live shares the same provisional view.
   const sharePayouts = !canShare ? null : isFinal
     ? (snapshot ? sharePayoutsFromSnapshot(snapshot, trs('Jugador')) : null)
     : buildPrizesSharePayouts({
-        result: strictResult,
+        result: provisionalResult,
         pools: poolsList,
         awards: awardsList,
         nameOf: pid => nameOf(pid),
@@ -229,7 +239,7 @@ export const PrizesPanel: React.FC<Props> = ({
 
   const handleFreeze = async () => {
     if (!config) return;
-    const res = computePrizePayouts({ config, awards, candidates });
+    const res = computePrizePayouts({ config, awards: liveAwards, candidates });
     const snap: FinalPayoutsSnapshot = {
       ...res,
       frozenAt: new Date().toISOString(),
@@ -249,7 +259,7 @@ export const PrizesPanel: React.FC<Props> = ({
         return { ...pp, id: pp.poolId, label: p?.label ?? '', mode: (p?.mode ?? 'net') as PrizeMode, categoryId, categoryName };
       }),
       awards: res.awards.map(ra => {
-        const a = awards.find(x => x.id === ra.awardId);
+        const a = liveAwards.find(x => x.id === ra.awardId);
         return { ...ra, id: ra.awardId, label: a?.label ?? '' };
       }),
     };
@@ -303,7 +313,7 @@ export const PrizesPanel: React.FC<Props> = ({
           {status === 'draft'
             ? trs('Los participantes no ven estos premios hasta que los publiques.')
             : status === 'live'
-              ? trs('Los montos pueden cambiar mientras se capturan scores.')
+              ? trs('Provisional con los hoyos confirmados. Al congelar solo cuentan quienes completen sus 18 hoyos.')
               : trs('Los premios quedaron congelados y ya no cambian con los scores.')}
         </p>
       </CardHeader>

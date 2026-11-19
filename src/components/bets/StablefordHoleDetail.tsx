@@ -109,7 +109,10 @@ export const StablefordTapDetail: React.FC<{
           <p className="text-center text-[10px] text-muted-foreground pt-1">{hint}</p>
         </div>
       </PopoverTrigger>
-      <PopoverContent className="w-[340px] max-h-[70vh] overflow-y-auto" side="top">
+      <PopoverContent
+        className="w-[340px] max-h-[min(70dvh,calc(var(--radix-popover-content-available-height,70dvh)_-_0.5rem))] overflow-y-auto overscroll-contain"
+        side="top"
+      >
         <StablefordHoleDetail rows={leaderboardStablefordRows(entries, viewerProfileId)} />
       </PopoverContent>
     </Popover>
