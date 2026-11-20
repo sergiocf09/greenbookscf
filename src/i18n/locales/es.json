@@ -136,6 +136,7 @@
     "inheritedDesc": "Esta es la plantilla que tu grupo hereda. No se puede modificar desde aquí.",
     "myGroupTitle": "Apuestas de tu grupo",
     "myGroupDesc": "Heredas la base del Grupo 1. Aquí puedes modificar montos o activar/desactivar apuestas para tu grupo.",
+    "groupOnlyOrganizer": "Esta opción solo la cambia el organizador desde el Grupo 1; no se aplicó a tu grupo.",
     "saveTemplate": "Guarda esta configuración como plantilla",
     "saveTemplateDesc": "Cárgala después para iniciar rondas recurrentes",
     "templates": "Plantillas"

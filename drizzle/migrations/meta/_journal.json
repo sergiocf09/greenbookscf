@@ -239,6 +239,13 @@
       "when": 1795141221507,
       "tag": "0033_milestones_count_rounds_100_plus",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1795193058129,
+      "tag": "0034_bet_config_secondary_coadmin_group_scope",
+      "breakpoints": true
     }
   ]
 }

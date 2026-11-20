@@ -9,7 +9,8 @@ import { BetTemplatesDialog } from './bets/BetTemplatesDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { BookMarked, Lock, Pencil, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { setGroupBetOverride, resolveConfigForGroup } from '@/lib/groupBetOverrides';
+import { setGroupBetOverride, resolveConfigForGroup, applyConfigChangeForGroup } from '@/lib/groupBetOverrides';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 
@@ -110,9 +111,25 @@ export const BetSetup: React.FC<BetSetupProps> = ({
     // Read-only — do nothing
   }, []);
 
+  // Whole-config edits (matrix column toggles, parejas/grupal sections, templates)
+  // from a secondary group are stored only as that group's overrides; options
+  // that cannot be set per group are left to the organizer.
+  const updateConfigForMyGroup = useCallback(
+    (next: BetConfig) => {
+      if (!isSecondaryGroup || !userGroupId) {
+        safeOnChange(next);
+        return;
+      }
+      const { config: scoped, blocked } = applyConfigChangeForGroup(config, userGroupId, next);
+      if (scoped !== config) safeOnChange(scoped);
+      if (blocked.length > 0) toast.info(t('betSetup.groupOnlyOrganizer'));
+    },
+    [isSecondaryGroup, userGroupId, config, safeOnChange, t]
+  );
+
   const handleApplyTemplate = useCallback((cfg: BetConfig) => {
-    safeOnChange(cfg);
-  }, [safeOnChange]);
+    updateConfigForMyGroup(cfg);
+  }, [updateConfigForMyGroup]);
 
   // The resolved config for the user's group (base + overrides merged)
   const resolvedConfig = isSecondaryGroup
@@ -123,7 +140,7 @@ export const BetSetup: React.FC<BetSetupProps> = ({
   const isReadOnly = isSecondaryGroup && groupTab === 'inherited';
   const activeConfig = isReadOnly ? config : resolvedConfig;
   const activeUpdateBet = isReadOnly ? noOpUpdateBet : updateBetForMyGroup;
-  const activeOnChange = isReadOnly ? noOpOnChange : safeOnChange;
+  const activeOnChange = isReadOnly ? noOpOnChange : updateConfigForMyGroup;
 
   const renderBetContent = () => (
     <div className="min-h-[200px]">

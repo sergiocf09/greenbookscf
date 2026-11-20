@@ -99,3 +99,51 @@ export const setGroupBetOverride = <K extends keyof BetConfig>(
     },
   };
 };
+
+const isPlainObject = (v: unknown): v is Record<string, unknown> =>
+  !!v && typeof v === 'object' && !Array.isArray(v);
+
+const sameValue = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
+
+/**
+ * Translate a whole-config edit made on a secondary group's resolved view
+ * (base + that group's overrides) into changes to that group's overrides only.
+ *
+ * - Bet types that exist as objects in the base config become per-field
+ *   overrides for `groupId` (only the fields that actually changed).
+ * - Anything that cannot be expressed per group (arrays, flags, keys missing
+ *   from the base) is NOT applied and is returned in `blocked`, so the
+ *   inherited Group 1 config and the other groups are never modified.
+ */
+export const applyConfigChangeForGroup = (
+  config: BetConfig,
+  groupId: string,
+  next: BetConfig
+): { config: BetConfig; blocked: string[] } => {
+  const resolved = resolveConfigForGroup(config, groupId) as unknown as Record<string, unknown>;
+  const nextRec = next as unknown as Record<string, unknown>;
+  const baseRec = config as unknown as Record<string, unknown>;
+  let out = config;
+  const blocked: string[] = [];
+  const keys = new Set([...Object.keys(resolved), ...Object.keys(nextRec)]);
+
+  for (const key of keys) {
+    if (key === 'groupBetOverrides') continue;
+    const before = resolved[key];
+    const after = nextRec[key];
+    if (sameValue(before, after)) continue;
+
+    if (isPlainObject(baseRec[key]) && isPlainObject(after)) {
+      const prev = isPlainObject(before) ? before : {};
+      const updates: Record<string, unknown> = {};
+      for (const field of new Set([...Object.keys(prev), ...Object.keys(after)])) {
+        if (!sameValue(prev[field], after[field])) updates[field] = after[field];
+      }
+      out = setGroupBetOverride(out, groupId, key as keyof BetConfig, updates as never);
+    } else {
+      blocked.push(key);
+    }
+  }
+
+  return { config: out, blocked };
+};
