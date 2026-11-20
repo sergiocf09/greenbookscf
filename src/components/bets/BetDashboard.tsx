@@ -2981,22 +2981,31 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             </Card>
           );
         }
-        // Card titles numbered per bet type, as in setup: "Carritos 1…" / "Medal por Parejas 1…".
+        // Only cards with a member in the displayed group are shown; number them
+        // per bet type within that group, as in setup: "Carritos 1…" / "Medal por Parejas 1…".
+        const displayPlayerIds = new Set(displayPlayers.map(p => p.id));
+        const visibleCarritos = allCarritosResults
+          .map((result, idx) => ({ result, idx }))
+          .filter(({ result }) => {
+            const hasAnyData = result.netByHoleFront.some(v => v !== null) || result.netByHoleBack.some(v => v !== null);
+            if (isHistorical && !hasAnyData) return false;
+            if (!hasMultipleGroups) return true;
+            return [...result.teamA, ...result.teamB].some(id => displayPlayerIds.has(id));
+          });
         const typeCounters = { points: 0, strokes: 0 };
-        const cardTitles = allCarritosResults.map((r) => {
+        const cardTitles = visibleCarritos.map(({ result: r }) => {
           const m = r.method === 'strokes' ? 'strokes' : 'points';
           typeCounters[m] += 1;
           return `${m === 'strokes' ? trs("Medal por Parejas") : 'Carritos'} ${typeCounters[m]}`;
         });
-        return allCarritosResults.map((result, idx) => {
+        return visibleCarritos.map(({ result, idx }, visibleIdx) => {
           const carritosId = result.id || `carritos-primary-${idx}`;
           const disabled = isTeamBetDisabled(carritosId);
-          const hasAnyData = result.netByHoleFront.some(v => v !== null) || result.netByHoleBack.some(v => v !== null);
-          if (isHistorical && !hasAnyData) return null;
-          const displayPlayerIds = new Set(displayPlayers.map(p => p.id));
-          const allTeamMembers = [...result.teamA, ...result.teamB];
-          const hasGroupMember = allTeamMembers.some(id => displayPlayerIds.has(id));
-          if (hasMultipleGroups && !hasGroupMember) return null;
+          // Perspective: the selected player when they play this match, else a member of the displayed group.
+          const members = [...result.teamA, ...result.teamB];
+          const perspectivePlayerId = basePlayer?.id && members.includes(basePlayer.id)
+            ? basePlayer.id
+            : members.find(id => displayPlayerIds.has(id)) ?? result.teamA[0];
           const carritosTeamCfg = result.id
             ? effectiveBetConfig.carritosTeams?.find(t => t.id === result.id)
             : undefined;
@@ -3004,9 +3013,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
             <CarritosResultsCard 
               key={carritosId}
               results={result} 
-              players={players}
-              basePlayerId={basePlayer?.id}
-              title={cardTitles[idx]}
+              players={allPlayersForCalculations}
+              basePlayerId={perspectivePlayerId}
+              title={cardTitles[visibleIdx]}
               roundHoles={(betConfig.roundHoles ?? 18) as 9 | 18}
               isDisabled={disabled}
               teamHandicaps={carritosTeamCfg?.teamHandicaps ?? effectiveBetConfig.carritos.teamHandicaps}
