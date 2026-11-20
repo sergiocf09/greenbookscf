@@ -120,11 +120,12 @@ export const BetSetup: React.FC<BetSetupProps> = ({
         safeOnChange(next);
         return;
       }
-      const { config: scoped, blocked } = applyConfigChangeForGroup(config, userGroupId, next);
+      const myIds = players.flatMap(p => [p.id, p.profileId].filter(Boolean) as string[]);
+      const { config: scoped, blocked } = applyConfigChangeForGroup(config, userGroupId, next, myIds);
       if (scoped !== config) safeOnChange(scoped);
       if (blocked.length > 0) toast.info(t('betSetup.groupOnlyOrganizer'));
     },
-    [isSecondaryGroup, userGroupId, config, safeOnChange, t]
+    [isSecondaryGroup, userGroupId, config, players, safeOnChange, t]
   );
 
   const handleApplyTemplate = useCallback((cfg: BetConfig) => {

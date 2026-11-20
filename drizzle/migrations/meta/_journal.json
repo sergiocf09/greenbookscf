@@ -246,6 +246,13 @@
       "when": 1795193058129,
       "tag": "0034_bet_config_secondary_coadmin_group_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1795200938537,
+      "tag": "0035_bet_config_merge_zoo_events_by_id",
+      "breakpoints": true
     }
   ]
 }

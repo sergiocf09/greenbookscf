@@ -105,44 +105,137 @@ const isPlainObject = (v: unknown): v is Record<string, unknown> =>
 
 const sameValue = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
 
+/** Team-bet lists computed from the base config; entries are scoped by their players. */
+const TEAM_LIST_KEYS = ['carritosTeams', 'sixesBets', 'vegasBets', 'ninesBets'] as const;
+const TEAM_LIST_FLAGS: Record<string, string> = { sixesBets: 'sixesEnabled', vegasBets: 'vegasEnabled' };
+const OWN_PAIR_KEYS = ['basePairCarritos', 'basePairTeamPressures'];
+
+const collectStrings = (value: unknown, out: Set<string> = new Set()): Set<string> => {
+  if (typeof value === 'string') out.add(value);
+  else if (Array.isArray(value)) value.forEach(v => collectStrings(v, out));
+  else if (isPlainObject(value)) Object.values(value).forEach(v => collectStrings(v, out));
+  return out;
+};
+
+const touchesGroup = (entry: unknown, myIds: Set<string>): boolean => {
+  for (const s of collectStrings(entry)) if (myIds.has(s)) return true;
+  return false;
+};
+
+const entryKey = (entry: unknown): string =>
+  isPlainObject(entry) && typeof entry.id === 'string' && entry.id
+    ? `id:${entry.id}`
+    : `json:${JSON.stringify(entry)}`;
+
+/**
+ * Merge a team-bet list edited by a secondary group into the base list:
+ * entries involving the group's players may be added/changed/removed; entries of
+ * other groups always keep their base version and position.
+ */
+export const mergeGroupScopedList = (
+  baseList: unknown,
+  nextList: unknown,
+  myIds: Set<string>
+): unknown[] => {
+  const base = Array.isArray(baseList) ? baseList : [];
+  const next = Array.isArray(nextList) ? nextList : [];
+  const nextMap = new Map(next.map(e => [entryKey(e), e]));
+  const baseKeys = new Set(base.map(entryKey));
+  const out: unknown[] = [];
+  for (const b of base) {
+    const mine = touchesGroup(b, myIds);
+    const n = nextMap.get(entryKey(b));
+    if (n === undefined) {
+      if (!mine) out.push(b); // other groups' bets cannot be deleted from here
+    } else {
+      out.push(mine ? n : b); // only own bets may change
+    }
+  }
+  for (const n of next) if (!baseKeys.has(entryKey(n))) out.push(n);
+  return out;
+};
+
 /**
  * Translate a whole-config edit made on a secondary group's resolved view
- * (base + that group's overrides) into changes to that group's overrides only.
+ * (base + that group's overrides) into changes scoped to that group only.
  *
  * - Bet types that exist as objects in the base config become per-field
  *   overrides for `groupId` (only the fields that actually changed).
- * - Anything that cannot be expressed per group (arrays, flags, keys missing
- *   from the base) is NOT applied and is returned in `blocked`, so the
- *   inherited Group 1 config and the other groups are never modified.
+ * - Team-bet lists (Carritos, Sixes, Vegas, Nines, team pressures) are computed
+ *   from the base config, so the group's own entries (those involving
+ *   `myPlayerIds`) are merged into the base list; other groups' entries are kept.
+ * - Anything else that cannot be expressed per group is NOT applied and is
+ *   returned in `blocked`, so the inherited Group 1 config is never modified.
  */
 export const applyConfigChangeForGroup = (
   config: BetConfig,
   groupId: string,
-  next: BetConfig
+  next: BetConfig,
+  myPlayerIds: Iterable<string> = []
 ): { config: BetConfig; blocked: string[] } => {
+  const myIds = new Set([...myPlayerIds].filter(Boolean));
   const resolved = resolveConfigForGroup(config, groupId) as unknown as Record<string, unknown>;
   const nextRec = next as unknown as Record<string, unknown>;
   const baseRec = config as unknown as Record<string, unknown>;
   let out = config;
+  const setBase = (key: string, value: unknown) => {
+    out = { ...(out as unknown as Record<string, unknown>), [key]: value } as unknown as BetConfig;
+  };
   const blocked: string[] = [];
   const keys = new Set([...Object.keys(resolved), ...Object.keys(nextRec)]);
+  const flagKeys = new Set(Object.values(TEAM_LIST_FLAGS));
 
   for (const key of keys) {
-    if (key === 'groupBetOverrides') continue;
+    if (key === 'groupBetOverrides' || flagKeys.has(key)) continue;
     const before = resolved[key];
     const after = nextRec[key];
     if (sameValue(before, after)) continue;
+
+    if (myIds.size > 0 && (TEAM_LIST_KEYS as readonly string[]).includes(key)) {
+      const merged = mergeGroupScopedList(baseRec[key], after, myIds);
+      if (!sameValue(merged, baseRec[key] ?? [])) setBase(key, merged);
+      continue;
+    }
+
+    if (myIds.size > 0 && OWN_PAIR_KEYS.includes(key)) {
+      const ids = Array.isArray(after) ? after.filter(Boolean) : [];
+      if (after === undefined || ids.every(id => myIds.has(String(id)))) setBase(key, after);
+      else blocked.push(key);
+      continue;
+    }
 
     if (isPlainObject(baseRec[key]) && isPlainObject(after)) {
       const prev = isPlainObject(before) ? before : {};
       const updates: Record<string, unknown> = {};
       for (const field of new Set([...Object.keys(prev), ...Object.keys(after)])) {
-        if (!sameValue(prev[field], after[field])) updates[field] = after[field];
+        if (sameValue(prev[field], after[field])) continue;
+        if (key === 'teamPressures' && field === 'bets' && myIds.size > 0) {
+          const baseTp = baseRec.teamPressures as Record<string, unknown>;
+          const merged = mergeGroupScopedList(baseTp.bets, after.bets, myIds);
+          if (!sameValue(merged, baseTp.bets ?? [])) {
+            const curTp = (out as unknown as Record<string, unknown>).teamPressures as Record<string, unknown>;
+            setBase('teamPressures', { ...curTp, bets: merged });
+          }
+          continue;
+        }
+        updates[field] = after[field];
       }
-      out = setGroupBetOverride(out, groupId, key as keyof BetConfig, updates as never);
+      if (Object.keys(updates).length > 0) {
+        out = setGroupBetOverride(out, groupId, key as keyof BetConfig, updates as never);
+      }
     } else {
       blocked.push(key);
     }
+  }
+
+  // Sixes/Vegas on-off flags are shared: follow the group only when no other
+  // group's bets remain in that list.
+  for (const [listKey, flagKey] of Object.entries(TEAM_LIST_FLAGS)) {
+    if (sameValue(resolved[flagKey], nextRec[flagKey])) continue;
+    const list = (out as unknown as Record<string, unknown>)[listKey];
+    const foreign = myIds.size > 0 && Array.isArray(list) && list.some(e => !touchesGroup(e, myIds));
+    if (myIds.size > 0 && !foreign) setBase(flagKey, nextRec[flagKey]);
+    else blocked.push(flagKey);
   }
 
   return { config: out, blocked };

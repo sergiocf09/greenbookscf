@@ -2680,6 +2680,10 @@ export type Database = {
         }
         Returns: number
       }
+      _merge_bet_config_id_array: {
+        Args: { p_base: Json; p_local: Json; p_remote: Json }
+        Returns: Json
+      }
       _recompute_league_round_scores: {
         Args: { p_leaderboard_id: string; p_round_id: string }
         Returns: undefined
