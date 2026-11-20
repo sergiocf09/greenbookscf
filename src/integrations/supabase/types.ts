@@ -3100,6 +3100,7 @@ export type Database = {
           handicap_delta: number
           holes_in_one: number
           organizer_rounds: number
+          rounds_100_plus: number
           rounds_no_bogey: number
           rounds_sub_100: number
           rounds_sub_70: number

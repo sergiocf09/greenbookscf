@@ -348,7 +348,7 @@ function Milestones({ milestones: m, roundsPlayed, courseName }: { milestones: P
     { emoji: '__arrow_down_green', label: '\n', value: m.rounds_sub_80, sub: trs("Rondas < 80's"), zero: true },
     { emoji: '__arrow_right_amber', label: '\n', value: m.rounds_sub_90 - m.rounds_sub_80, sub: trs("Rondas 80–89"), zero: true },
     { emoji: '__arrow_up_red', label: '\n', value: m.rounds_sub_100 - m.rounds_sub_90, sub: trs("Rondas 90–99"), zero: true },
-    { emoji: '💯', label: '> 100', value: Math.max(0, roundsPlayed - m.rounds_sub_100), zero: true },
+    { emoji: '💯', label: '> 100', value: m.rounds_100_plus ?? 0, zero: true },
   ] as Array<{ emoji: string; label: string; value: string | number; sub?: string; zero?: boolean; special?: boolean }>;
 
 

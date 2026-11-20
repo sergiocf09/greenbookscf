@@ -48,6 +48,8 @@ export interface PlayerMilestone {
   unique_opponents: number;
   total_holes: number;
   handicap_delta: number | null;
+  /** 18-hole rounds with 100+ strokes (9-hole rounds never count). */
+  rounds_100_plus: number;
 }
 
 export interface CourseSummary {
