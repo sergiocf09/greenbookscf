@@ -218,6 +218,13 @@
       "when": 1794956232603,
       "tag": "0030_leaderboard_prizes",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1795138668242,
+      "tag": "0031_round_close_email_logo_header",
+      "breakpoints": true
     }
   ]
 }
