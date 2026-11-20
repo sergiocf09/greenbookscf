@@ -1,4 +1,4 @@
-import { BetOverride, Player } from '@/types/golf';
+import { BetConfig, BetOverride, Player } from '@/types/golf';
 import { BetSummary } from '@/lib/betCalculations';
 
 const EXCLUDED_BET_TYPES = new Set([
@@ -121,3 +121,34 @@ export const getCrossGroupPairBalance = ({
     )
     .reduce((sum, summary) => sum + summary.amount, 0);
 };
+
+/**
+ * Cross-group pairs are settled by running the engine on a synthetic 2-player
+ * context. Team bets (Presiones por Parejas, Carritos) ignore the player list and
+ * would be recalculated with every team in the round, so they are removed here:
+ * the main engine already settles them once with their real players.
+ */
+export const stripTeamBetsForCrossPair = (config: BetConfig): BetConfig => ({
+  ...config,
+  teamPressures: config.teamPressures
+    ? { ...config.teamPressures, bets: [] }
+    : config.teamPressures,
+  carritos: config.carritos ? { ...config.carritos, enabled: false } : config.carritos,
+  carritosTeams: [],
+});
+
+/**
+ * Keep only summaries that belong exactly to the cross-group pair. Any entry
+ * involving a third player came from a bet that is not this pair's and must never
+ * be re-attributed to it.
+ */
+export const keepCrossPairSummaries = <T extends { playerId: string; vsPlayer: string }>(
+  summaries: T[],
+  playerAId: string,
+  playerBId: string,
+): T[] =>
+  summaries.filter(
+    (s) =>
+      (s.playerId === playerAId && s.vsPlayer === playerBId) ||
+      (s.playerId === playerBId && s.vsPlayer === playerAId),
+  );

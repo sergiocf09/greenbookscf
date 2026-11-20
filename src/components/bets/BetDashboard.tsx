@@ -23,7 +23,7 @@ import {
   getPressureEvolution,
   getSkinsEvolution,
 } from '@/lib/betCalculations';
-import { getCrossGroupPairBalance, isCrossGroupPairInMap } from '@/lib/crossGroupBalance';
+import { getCrossGroupPairBalance, isCrossGroupPairInMap, keepCrossPairSummaries, stripTeamBetsForCrossPair } from '@/lib/crossGroupBalance';
 import { getOyesesDisplayData, getOyesesPairResult } from '@/lib/oyesesCalculations';
 import { getRayasDetailForPair, RayasPairResult, isRayasActiveForPair, getSkinVariantConflict, getPairKey, RayaDetail, getRayasSegmentConflicts, RayasSegmentConflict, getOyesModalityForPair, getAuthoritativeRayasBalance } from '@/lib/rayasCalculations';
 import { RayasSegmentPopover } from './RayasSegmentPopover';
@@ -374,7 +374,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
         });
 
         const crossGroupConfig: BetConfig = {
-          ...effectiveBetConfig,
+          ...stripTeamBetsForCrossPair(effectiveBetConfig),
           // CRITICAL: Only use THIS pair's bilateral handicap — exclude all intra-group
           // handicaps so the engine doesn't accidentally find another handicap record
           // for one of these players and compute wrong net scores.
@@ -422,14 +422,9 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           confirmedHoles
         );
 
-        // Map synthetic IDs back to real IDs (they're the same, groupId is the only change)
-        pairSummaries.forEach(s => {
-          summaries.push({
-            ...s,
-            playerId: s.playerId === syntheticPlayerA.id ? playerA.id : playerB.id,
-            vsPlayer: s.vsPlayer === syntheticPlayerA.id ? playerA.id : playerB.id,
-          });
-        });
+        // Synthetic players keep their real IDs (only groupId changes). Keep only
+        // this pair's own entries so no third-player bet is re-attributed to it.
+        summaries.push(...keepCrossPairSummaries(pairSummaries, playerA.id, playerB.id));
       });
     });
 

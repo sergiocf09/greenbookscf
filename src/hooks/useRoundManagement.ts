@@ -23,7 +23,7 @@ import { calculateNinesBets } from '@/lib/bets/nines';
 import { isSixesSettlementActive, isVegasSettlementActive, isWolfSettlementActive } from '@/lib/teamBetPersistence';
 import type { WolfConfig, WolfHoleState, SixesConfig, VegasConfig, NinesConfig } from '@/types/golf';
 import { resolveConfigForGroup } from '@/lib/groupBetOverrides';
-import { isCrossGroupPairInMap } from '@/lib/crossGroupBalance';
+import { isCrossGroupPairInMap, keepCrossPairSummaries, stripTeamBetsForCrossPair } from '@/lib/crossGroupBalance';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { calculateSlidingResults, SlidingResult } from '@/lib/slidingCalculations';
 import {
@@ -1403,7 +1403,7 @@ export const useRoundManagement = ({
             // General). If either player is excluded, the bet engine returns no
             // summaries for that pair, matching the live BetDashboard.
             const crossGroupConfig: BetConfig = {
-              ...betConfigWithHandicaps,
+              ...stripTeamBetsForCrossPair(betConfigWithHandicaps),
               bilateralHandicaps: [crossGroupBilateral],
               betOverrides: pairOverrides,
               groupBetOverrides: {},
@@ -1439,13 +1439,7 @@ export const useRoundManagement = ({
             );
 
 
-            pairSummaries.forEach(s => {
-              crossGroupSummaries.push({
-                ...s,
-                playerId: s.playerId === syntheticA.id ? playerA.id : playerB.id,
-                vsPlayer: s.vsPlayer === syntheticA.id ? playerA.id : playerB.id,
-              });
-            });
+            crossGroupSummaries.push(...keepCrossPairSummaries(pairSummaries, playerA.id, playerB.id));
           });
         });
       }
