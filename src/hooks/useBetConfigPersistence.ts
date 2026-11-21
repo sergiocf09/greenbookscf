@@ -285,6 +285,23 @@ function diffBetSection(label: string, prev: any, next: any): string[] {
   return changes;
 }
 
+/** Pair/team-level sections a player edits directly (not covered by BET_LABELS). */
+const PAIR_LEVEL_KEYS = [
+  'bilateralHandicaps', 'betOverrides', 'parejasExcluded', 'crossGroupRivals',
+  'carritosTeams', 'disabledTeamBetIds', 'pressurePairOverrides',
+] as const;
+
+/**
+ * True when a rejected save carried a change the player would notice (a bet
+ * section or a pair-level edit such as per-pair amounts, Parejas exclusions or
+ * cross-group rivals), so the app must tell them it was not saved.
+ */
+export function isUserVisibleBetChange(prev: any, next: any): boolean {
+  const description = diffBetConfigs(prev, next);
+  if (description !== 'Ajustes menores en configuración' && description !== 'Sin cambios detectables') return true;
+  return PAIR_LEVEL_KEYS.some((k) => JSON.stringify(prev?.[k] ?? null) !== JSON.stringify(next?.[k] ?? null));
+}
+
 function diffBetConfigs(prev: any, next: any): string {
   if (!prev) return 'Configuración inicial guardada';
   const allChanges: string[] = [];
@@ -337,6 +354,8 @@ export const useBetConfigPersistence = ({
   const isApplyingRemoteRef = useRef(false);
   // Snapshot of last saved config for diffing in audit log
   const prevSavedConfigRef = useRef<any>(null);
+  // Last payload the server rejected as admin-only (loop guard for silent drift).
+  const lastRejectedRef = useRef<string | null>(null);
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const activeRoundRef = useRef(roundId);
   activeRoundRef.current = roundId;
@@ -716,18 +735,23 @@ export const useBetConfigPersistence = ({
 
       if (error) {
         if (String(error.message ?? '').includes('ROUND_ADMIN_REQUIRED')) {
-          // Only organizer/co-admins may change bets. Revert a deliberate edit
-          // to the saved config; silently ignore background drift.
-          const description = diffBetConfigs(prevSavedConfigRef.current, configToSave);
-          if (description !== 'Ajustes menores en configuración' && description !== 'Sin cambios detectables') {
+          // Only organizer/co-admins may change bets. Never leave a rejected edit
+          // on screen: always restore the saved config, and tell the player when
+          // the rejected change was one they would notice.
+          const signature = JSON.stringify(configToSave);
+          // Same payload rejected again right after a revert = background drift
+          // re-applied by the app; stop here so it can never loop.
+          if (lastRejectedRef.current === signature) return;
+          lastRejectedRef.current = signature;
+          if (isUserVisibleBetChange(prevSavedConfigRef.current, configToSave)) {
             toast.error(trs('Solo el organizador o un coadmin puede cambiar las apuestas. Tu cambio no se guardó.'), { id: 'bet-config-admin-only' });
-            const { data: fresh } = await supabase
-              .from('rounds').select('bet_config').eq('id', roundId).single();
-            if (fresh?.bet_config && activeRoundRef.current === roundId) {
-              isApplyingRemoteRef.current = true;
-              applyDbConfigToState(fresh.bet_config as RoundBetConfig);
-              prevSavedConfigRef.current = fresh.bet_config;
-            }
+          }
+          const { data: fresh } = await supabase
+            .from('rounds').select('bet_config').eq('id', roundId).single();
+          if (fresh?.bet_config && activeRoundRef.current === roundId) {
+            isApplyingRemoteRef.current = true;
+            applyDbConfigToState(fresh.bet_config as RoundBetConfig);
+            prevSavedConfigRef.current = fresh.bet_config;
           }
           return;
         }
@@ -735,6 +759,7 @@ export const useBetConfigPersistence = ({
         return;
       }
 
+      lastRejectedRef.current = null;
       if (activeRoundRef.current !== roundId) return;
       const updated = data as { updated_at?: string; bet_config?: RoundBetConfig } | null;
 
