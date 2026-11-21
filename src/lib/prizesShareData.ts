@@ -39,9 +39,6 @@ export interface PrizesSharePayouts {
 
 export interface ShareNameInfo { name: string; initials: string; color: string }
 
-/** Max places listed per pool in the "winners by pool" block. */
-export const SHARE_POOL_MAX_RANK = 3;
-
 const normText = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 const tokensOf = (s: string) => normText(s).split(/[^a-z0-9]+/).filter(Boolean);
 
@@ -107,7 +104,8 @@ export function buildPrizesSharePayouts(params: {
       mode: pool.mode,
       categoryName: pool.categoryName ?? null,
       rows: (payoutByPool.get(pool.id)?.rows || [])
-        .filter(r => r.rank <= SHARE_POOL_MAX_RANK && r.amount > 0)
+        // Every paid place the organizer configured (no fixed top-N cap).
+        .filter(r => r.amount > 0)
         .map(r => {
           const st = statsOf?.(r.participantId) ?? null;
           return {

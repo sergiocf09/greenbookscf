@@ -21,9 +21,22 @@ describe('prizes share data', () => {
     expect(out.awards).toEqual([{ label: 'Oyes · Hoyo 3', winnerName: null, amount: 500, id: 'o1', groupId: null, place: null }]);
   });
 
-  it('pool block lists only places 1–3', () => {
+  it('pool block lists every paid place, beyond the 3rd', () => {
     const out = sharePayoutsFromSnapshot(snap, 'Jugador');
-    expect(out.pools[0].rows.map(r => r.rank)).toEqual([1]);
+    expect(out.pools[0].rows.map(r => r.rank)).toEqual([1, 4]);
+  });
+
+  it('shows all 6 configured Stableford places in the live share', () => {
+    const ids = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+    const out = buildPrizesSharePayouts({
+      result: { byParticipant: [], awards: [], pools: [{ poolId: 's', rows: ids.map((id, i) => ({
+        participantId: id, rank: i + 1, tied: false, tiedCount: 1, amount: i < 6 ? 600 - i * 50 : 0,
+      })) }] } as never,
+      pools: [{ id: 's', label: 'Stableford', mode: 'stableford' }],
+      awards: [],
+      nameOf: id => ({ name: id, initials: id, color: '#000' }),
+    });
+    expect(out.pools[0].rows.map(r => r.rank)).toEqual([1, 2, 3, 4, 5, 6]);
   });
 
   it('live share maps award winners through the name resolver', () => {
