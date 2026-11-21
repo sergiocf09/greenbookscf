@@ -23,7 +23,7 @@ import {
   getPressureEvolution,
   getSkinsEvolution,
 } from '@/lib/betCalculations';
-import { getCrossGroupPairBalance, isCrossGroupPairInMap, keepCrossPairSummaries, stripTeamBetsForCrossPair } from '@/lib/crossGroupBalance';
+import { buildCrossPairConfig, getCrossGroupPairBalance, isCrossGroupPairInMap, keepCrossPairSummaries } from '@/lib/crossGroupBalance';
 import { getOyesesDisplayData, getOyesesPairResult } from '@/lib/oyesesCalculations';
 import { getRayasDetailForPair, RayasPairResult, isRayasActiveForPair, getSkinVariantConflict, getPairKey, RayaDetail, getRayasSegmentConflicts, RayasSegmentConflict, getOyesModalityForPair, getAuthoritativeRayasBalance } from '@/lib/rayasCalculations';
 import { RayasSegmentPopover } from './RayasSegmentPopover';
@@ -373,45 +373,7 @@ export const BetDashboard: React.FC<BetDashboardProps> = ({
           return ids.includes(o.playerAId) && ids.includes(o.playerBId);
         });
 
-        const crossGroupConfig: BetConfig = {
-          ...stripTeamBetsForCrossPair(effectiveBetConfig),
-          // CRITICAL: Only use THIS pair's bilateral handicap — exclude all intra-group
-          // handicaps so the engine doesn't accidentally find another handicap record
-          // for one of these players and compute wrong net scores.
-          bilateralHandicaps: [crossGroupBilateral],
-          // CRITICAL: Only include overrides for THIS pair — intra-group overrides from
-          // other pairs must NOT be applied. The close engine does the same filtering.
-          betOverrides: pairOverrides,
-          // Clear groupBetOverrides so group-specific config doesn't interfere
-          groupBetOverrides: {},
-          // Clear participantIds so both cross-group players are always included.
-          // CRITICAL: Use `undefined` (not `[]`), because `[]` means "nobody participates"
-          // in resolveParticipantsForGroup, while `undefined` means "everyone participates".
-          medal: { ...effectiveBetConfig.medal, participantIds: undefined },
-          pressures: { ...effectiveBetConfig.pressures, participantIds: undefined },
-          skins: { ...effectiveBetConfig.skins, participantIds: undefined },
-          caros: { ...effectiveBetConfig.caros, participantIds: undefined },
-          units: { ...effectiveBetConfig.units, participantIds: undefined },
-          putts: { ...effectiveBetConfig.putts, participantIds: undefined },
-          stableford: { ...effectiveBetConfig.stableford, participantIds: undefined },
-          // CRITICAL: Disable Medal General in cross-group synthetic context.
-          // Medal General is a POOL bet calculated across ALL players in the main engine
-          // (liveBetSummaries). If we also calculate it here, it gets double-counted
-          // because both sets merge into betSummaries.
-          medalGeneral: { ...effectiveBetConfig.medalGeneral, enabled: false },
-          // Disable group-scoped bets for cross-group pairs
-          manchas: { ...effectiveBetConfig.manchas, enabled: false },
-          culebras: { ...effectiveBetConfig.culebras, enabled: false },
-          pinguinos: { ...effectiveBetConfig.pinguinos, enabled: false },
-          zoologico: { ...effectiveBetConfig.zoologico, enabled: false },
-          coneja: { ...effectiveBetConfig.coneja, enabled: false },
-          // Disable Oyes and Rayas for cross-group (too complex for now)
-          oyeses: { ...effectiveBetConfig.oyeses, enabled: false },
-          rayas: { ...effectiveBetConfig.rayas, enabled: false },
-          // Disable Side Bets for cross-group — they are explicit per-player and
-          // residual bets from other pairs can contaminate balances.
-          sideBets: { bets: [], enabled: false },
-        };
+        const crossGroupConfig = buildCrossPairConfig(effectiveBetConfig, crossGroupBilateral, pairOverrides);
 
         const pairSummaries = calculateAllBets(
           [syntheticPlayerA, syntheticPlayerB],

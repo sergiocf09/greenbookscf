@@ -152,3 +152,38 @@ export const keepCrossPairSummaries = <T extends { playerId: string; vsPlayer: s
       (s.playerId === playerAId && s.vsPlayer === playerBId) ||
       (s.playerId === playerBId && s.vsPlayer === playerAId),
   );
+
+/**
+ * Single source for the synthetic 2-player config used to settle a cross-group
+ * pair, shared by the live dashboard and the close engine so both settle the
+ * same bets: only this pair's handicap and overrides, no group overrides,
+ * participant lists cleared (`undefined` = both play; G1's lists must never
+ * exclude a G2/G3 rival), and pool/group-scoped/team bets disabled because the
+ * main engine already settles them once.
+ */
+export const buildCrossPairConfig = (
+  config: BetConfig,
+  bilateral: NonNullable<BetConfig['bilateralHandicaps']>[number],
+  pairOverrides: BetOverride[],
+): BetConfig => ({
+  ...stripTeamBetsForCrossPair(config),
+  bilateralHandicaps: [bilateral],
+  betOverrides: pairOverrides,
+  groupBetOverrides: {},
+  medal: { ...config.medal, participantIds: undefined },
+  pressures: { ...config.pressures, participantIds: undefined },
+  skins: { ...config.skins, participantIds: undefined },
+  caros: { ...config.caros, participantIds: undefined },
+  units: { ...config.units, participantIds: undefined },
+  putts: { ...config.putts, participantIds: undefined },
+  stableford: { ...config.stableford, participantIds: undefined },
+  medalGeneral: { ...config.medalGeneral, enabled: false },
+  manchas: { ...config.manchas, enabled: false },
+  culebras: { ...config.culebras, enabled: false },
+  pinguinos: { ...config.pinguinos, enabled: false },
+  zoologico: { ...config.zoologico, enabled: false },
+  coneja: { ...config.coneja, enabled: false },
+  oyeses: { ...config.oyeses, enabled: false },
+  rayas: { ...config.rayas, enabled: false },
+  sideBets: { bets: [], enabled: false },
+} as BetConfig);

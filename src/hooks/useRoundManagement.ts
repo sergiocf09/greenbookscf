@@ -22,8 +22,7 @@ import { calculateVegasBets } from '@/lib/bets/vegas';
 import { calculateNinesBets } from '@/lib/bets/nines';
 import { isSixesSettlementActive, isVegasSettlementActive, isWolfSettlementActive } from '@/lib/teamBetPersistence';
 import type { WolfConfig, WolfHoleState, SixesConfig, VegasConfig, NinesConfig } from '@/types/golf';
-import { resolveConfigForGroup } from '@/lib/groupBetOverrides';
-import { isCrossGroupPairInMap, keepCrossPairSummaries, stripTeamBetsForCrossPair } from '@/lib/crossGroupBalance';
+import { buildCrossPairConfig, isCrossGroupPairInMap, keepCrossPairSummaries } from '@/lib/crossGroupBalance';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { calculateSlidingResults, SlidingResult } from '@/lib/slidingCalculations';
 import {
@@ -1316,43 +1315,19 @@ export const useRoundManagement = ({
         return set;
       })();
 
-      // Intra-group bet calculation: resolve config per group when overrides exist
-      let intraGroupBetResults: BetSummary[];
-      const hasGroupOverrides = betConfigWithHandicaps.groupBetOverrides && 
-        Object.keys(betConfigWithHandicaps.groupBetOverrides).length > 0;
-      
-      // Detect distinct groups from sanitizedPlayers
-      const distinctGroupIds = new Set(sanitizedPlayers.map(p => p.groupId).filter(Boolean) as string[]);
-      
-      if (hasGroupOverrides && distinctGroupIds.size > 1) {
-        // Multiple groups with overrides: calculate per group with resolved config
-        intraGroupBetResults = [];
-        for (const gId of distinctGroupIds) {
-          const groupPlayers = sanitizedPlayers.filter(p => p.groupId === gId);
-          if (groupPlayers.length < 2) continue; // Need at least 2 players for intra-group bets
-          
-          const resolvedConfig = resolveConfigForGroup(betConfigWithHandicaps, gId);
-          const groupResults = calculateAllBets(
-            groupPlayers,
-            confirmedScoresForClose,
-            resolvedConfig,
-            course,
-            roundState.startingHole,
-            confirmedHolesForClose
-          );
-          intraGroupBetResults.push(...groupResults);
-        }
-      } else {
-        // Single group or no overrides: use global config as before
-        intraGroupBetResults = calculateAllBets(
-          sanitizedPlayers,
-          confirmedScoresForClose,
-          betConfigWithHandicaps,
-          course,
-          roundState.startingHole,
-          confirmedHolesForClose
-        );
-      }
+      // Intra-group bets: one engine call over ALL players, exactly like the live
+      // BetDashboard. Every engine groups players and resolves groupBetOverrides
+      // itself; calling it per group hid G1 participant lists from G2/G3
+      // (template inheritance needs the full player list) and re-ran team bets
+      // (Carritos, Presiones por Parejas) once per group.
+      const intraGroupBetResults: BetSummary[] = calculateAllBets(
+        sanitizedPlayers,
+        confirmedScoresForClose,
+        betConfigWithHandicaps,
+        course,
+        roundState.startingHole,
+        confirmedHolesForClose
+      );
 
 
       // ─── CROSS-GROUP BET CALCULATION ────────────────────────────────────────
@@ -1402,23 +1377,9 @@ export const useRoundManagement = ({
             // exclusions configured by the organizer (e.g. Eduardo not in Medal
             // General). If either player is excluded, the bet engine returns no
             // summaries for that pair, matching the live BetDashboard.
-            const crossGroupConfig: BetConfig = {
-              ...stripTeamBetsForCrossPair(betConfigWithHandicaps),
-              bilateralHandicaps: [crossGroupBilateral],
-              betOverrides: pairOverrides,
-              groupBetOverrides: {},
-              // Pool results already come from the main engine; never settle
-              // Medal General a second time as an isolated cross-group pair.
-              medalGeneral: { ...betConfigWithHandicaps.medalGeneral, enabled: false },
-              manchas: { ...betConfigWithHandicaps.manchas, enabled: false },
-              culebras: { ...betConfigWithHandicaps.culebras, enabled: false },
-              pinguinos: { ...betConfigWithHandicaps.pinguinos, enabled: false },
-              zoologico: { ...betConfigWithHandicaps.zoologico, enabled: false },
-              coneja: { ...betConfigWithHandicaps.coneja, enabled: false },
-              oyeses: { ...betConfigWithHandicaps.oyeses, enabled: false },
-              rayas: { ...betConfigWithHandicaps.rayas, enabled: false },
-              sideBets: { bets: [], enabled: false },
-            };
+            // Same synthetic pair config as the live dashboard (participant lists
+            // cleared, pool/group/team bets off) so close totals match the UI.
+            const crossGroupConfig = buildCrossPairConfig(betConfigWithHandicaps, crossGroupBilateral, pairOverrides);
 
 
             // Cross-group pair: confirmedHoles = holes where BOTH players confirmed
