@@ -253,6 +253,13 @@
       "when": 1795200938537,
       "tag": "0035_bet_config_merge_zoo_events_by_id",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1795225035216,
+      "tag": "0036_revoke_backfill_handicap_history_client_access",
+      "breakpoints": true
     }
   ]
 }
