@@ -78,7 +78,7 @@ export const StatsInlineView: React.FC = () => {
             <ChevronDown className="h-4 w-4 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]" align="start">
+        <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] max-h-[60vh] overflow-y-auto" align="start">
           <DropdownMenuItem onClick={() => setCourseId(null)}>
             {trs("Global — Todos los campos")}
           </DropdownMenuItem>
