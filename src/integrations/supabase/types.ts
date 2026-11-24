@@ -945,6 +945,54 @@ export type Database = {
           },
         ]
       }
+      leaderboard_audit_log: {
+        Row: {
+          action: string
+          actor_profile_id: string | null
+          created_at: string
+          details: Json
+          id: string
+          leaderboard_id: string
+          round_date: string | null
+          round_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_profile_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          leaderboard_id: string
+          round_date?: string | null
+          round_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_profile_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          leaderboard_id?: string
+          round_date?: string | null
+          round_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaderboard_audit_log_actor_profile_id_fkey"
+            columns: ["actor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leaderboard_audit_log_leaderboard_id_fkey"
+            columns: ["leaderboard_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leaderboard_events: {
         Row: {
           code: string
@@ -2945,6 +2993,36 @@ export type Database = {
           score_cuenta: number
         }[]
       }
+      get_league_audit_log: {
+        Args: { p_leaderboard_id: string; p_limit?: number; p_offset?: number }
+        Returns: {
+          action: string
+          actor_name: string
+          actor_profile_id: string
+          created_at: string
+          details: Json
+          id: string
+          leaderboard_id: string
+          round_date: string
+          round_id: string
+        }[]
+      }
+      get_league_linked_rounds: {
+        Args: { p_leaderboard_id: string }
+        Returns: {
+          counts_in_standings: boolean
+          course_name: string
+          date: string
+          linked_at: string
+          linked_by_name: string
+          organizer_name: string
+          players_counted: number
+          players_total: number
+          reason_not_counted: string
+          round_id: string
+          status: string
+        }[]
+      }
       get_money_ranking_balances: {
         Args: {
           p_date_from?: string
@@ -3289,6 +3367,10 @@ export type Database = {
       }
       rebuild_snapshot_balances_from_ledger: { Args: never; Returns: Json }
       rebuild_snapshot_bilateral_handicaps: { Args: never; Returns: Json }
+      recalculate_league: {
+        Args: { p_leaderboard_id: string }
+        Returns: number
+      }
       refresh_league_scores: {
         Args: { p_leaderboard_id: string }
         Returns: undefined
@@ -3332,6 +3414,14 @@ export type Database = {
       settle_cross_bet: {
         Args: { p_cross_bet_id: string; p_lines: Json }
         Returns: number
+      }
+      unlink_league_round: {
+        Args: {
+          p_leaderboard_id: string
+          p_reason?: string
+          p_round_id: string
+        }
+        Returns: undefined
       }
       update_cross_bet_config: {
         Args: { p_bet_config: Json; p_cross_bet_id: string }

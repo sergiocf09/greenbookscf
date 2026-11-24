@@ -260,6 +260,13 @@
       "when": 1795225035216,
       "tag": "0036_revoke_backfill_handicap_history_client_access",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1795562905316,
+      "tag": "0037_league_rounds_management_and_audit_log",
+      "breakpoints": true
     }
   ]
 }

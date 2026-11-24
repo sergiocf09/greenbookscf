@@ -16,6 +16,8 @@ import {
   Star, CheckCircle, Clock, Share2, RefreshCw, Link2,
 } from 'lucide-react';
 import { LinkRoundToLeagueDialog } from '@/components/leaderboards/LinkRoundToLeagueDialog';
+import { LeagueRoundsTab } from '@/components/leaderboards/LeagueRoundsTab';
+import type { LeagueAuditEntry, LeagueLinkedRound } from '@/lib/leagueRoundsAudit';
 import { toast } from 'sonner';
 import type { LeagueRulesJson } from '@/components/leaderboards/CreateLeagueDialog';
 
@@ -57,7 +59,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
   const [event, setEvent] = useState<any>(null);
   const [standings, setStandings] = useState<StandingRow[]>([]);
   const [jornadas, setJornadas] = useState<JornadaSummary[]>([]);
-  const [selectedTab, setSelectedTab] = useState<'standings' | 'jornadas' | 'detalle'>('standings');
+  const [selectedTab, setSelectedTab] = useState<'standings' | 'jornadas' | 'detalle' | 'rondas'>('standings');
   const [selectedParticipant, setSelectedParticipant] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
@@ -65,6 +67,13 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
   const [grossByParticipant, setGrossByParticipant] = useState<Record<string, Record<string, number>>>({});
   const [netByParticipant, setNetByParticipant] = useState<Record<string, Record<string, number>>>({});
   const [roundDateMap, setRoundDateMap] = useState<Record<string, string>>({});
+  const [linkedRounds, setLinkedRounds] = useState<LeagueLinkedRound[]>([]);
+  const [roundsLoading, setRoundsLoading] = useState(false);
+  const [roundsError, setRoundsError] = useState<string | null>(null);
+  const [auditEntries, setAuditEntries] = useState<LeagueAuditEntry[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditHasMore, setAuditHasMore] = useState(false);
+  const [auditLoadingMore, setAuditLoadingMore] = useState(false);
 
   const isCreator = event?.created_by === profile?.id;
 
@@ -145,11 +154,63 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
     }
   }, [leaderboardId]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  const fetchLinkedRounds = useCallback(async () => {
+    setRoundsLoading(true);
+    setRoundsError(null);
+    try {
+      const { data, error } = await supabase.rpc('get_league_linked_rounds', {
+        p_leaderboard_id: leaderboardId,
+      });
+      if (error) throw error;
+      setLinkedRounds((data ?? []) as unknown as LeagueLinkedRound[]);
+    } catch (err: any) {
+      setRoundsError(err.message ?? trs('Error cargando rondas ligadas'));
+    } finally {
+      setRoundsLoading(false);
+    }
+  }, [leaderboardId]);
+
+  const AUDIT_PAGE_SIZE = 20;
+
+  const fetchAuditLog = useCallback(
+    async (offset = 0, append = false) => {
+      if (append) setAuditLoadingMore(true);
+      else setAuditLoading(true);
+      try {
+        const { data, error } = await supabase.rpc('get_league_audit_log', {
+          p_leaderboard_id: leaderboardId,
+          p_limit: AUDIT_PAGE_SIZE + 1,
+          p_offset: offset,
+        });
+        if (error) throw error;
+        const rows = (data ?? []) as unknown as LeagueAuditEntry[];
+        const hasMore = rows.length > AUDIT_PAGE_SIZE;
+        const page = hasMore ? rows.slice(0, AUDIT_PAGE_SIZE) : rows;
+        setAuditHasMore(hasMore);
+        setAuditEntries((prev) => (append ? [...prev, ...page] : page));
+      } catch {
+        if (!append) setAuditEntries([]);
+      } finally {
+        setAuditLoading(false);
+        setAuditLoadingMore(false);
+      }
+    },
+    [leaderboardId],
+  );
+
+  const refreshAll = useCallback(async () => {
+    await Promise.all([fetchData(), fetchLinkedRounds(), fetchAuditLog(0, false)]);
+  }, [fetchData, fetchLinkedRounds, fetchAuditLog]);
+
+  useEffect(() => {
+    fetchData();
+    fetchLinkedRounds();
+    fetchAuditLog(0, false);
+  }, [fetchData, fetchLinkedRounds, fetchAuditLog]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchData();
+    await refreshAll();
     setRefreshing(false);
   };
 
@@ -158,7 +219,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
     const { error } = await supabase.rpc('close_leaderboard' as any, { p_leaderboard_id: leaderboardId });
     if (error) { toast.error(error.message); return; }
     toast.success(trs("Liga cerrada"));
-    await fetchData();
+    await refreshAll();
   };
 
   const handleShare = async () => {
@@ -278,10 +339,11 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
 
       {/* Tabs */}
       <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v as any)} className="flex-1 flex flex-col min-h-0 min-w-0">
-        <TabsList className="grid grid-cols-3 mx-3 mt-2 shrink-0">
-          <TabsTrigger value="standings">{trs("Standings")}</TabsTrigger>
-          <TabsTrigger value="jornadas">{trs("Jornadas")}</TabsTrigger>
-          <TabsTrigger value="detalle">{trs("Detalle")}</TabsTrigger>
+        <TabsList className="grid grid-cols-4 mx-3 mt-2 shrink-0">
+          <TabsTrigger value="standings" className="text-xs px-1.5 truncate">{trs("Standings")}</TabsTrigger>
+          <TabsTrigger value="jornadas" className="text-xs px-1.5 truncate">{trs("Jornadas")}</TabsTrigger>
+          <TabsTrigger value="detalle" className="text-xs px-1.5 truncate">{trs("Detalle")}</TabsTrigger>
+          <TabsTrigger value="rondas" className="text-xs px-1.5 truncate">{trs("Rondas")}</TabsTrigger>
         </TabsList>
 
         {/* TAB: STANDINGS */}
@@ -536,6 +598,26 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
             </div>
           </ScrollArea>
         </TabsContent>
+
+        {/* TAB: RONDAS */}
+        <TabsContent value="rondas" className="flex-1 min-h-0 mt-2">
+          <LeagueRoundsTab
+            leaderboardId={leaderboardId}
+            isCreator={isCreator}
+            isCompleted={event?.status === 'completed'}
+            rounds={linkedRounds}
+            roundsLoading={roundsLoading}
+            roundsError={roundsError}
+            onRetryRounds={fetchLinkedRounds}
+            auditEntries={auditEntries}
+            auditLoading={auditLoading}
+            auditHasMore={auditHasMore}
+            auditLoadingMore={auditLoadingMore}
+            onLoadMoreAudit={() => fetchAuditLog(auditEntries.length, true)}
+            onOpenLinkDialog={() => setLinkDialogOpen(true)}
+            onAfterMutation={refreshAll}
+          />
+        </TabsContent>
       </Tabs>
 
       {/* Footer acciones del creador */}
@@ -551,7 +633,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
         open={linkDialogOpen}
         onOpenChange={setLinkDialogOpen}
         leaderboardId={leaderboardId}
-        onLinked={fetchData}
+        onLinked={refreshAll}
       />
     </div>
   );
