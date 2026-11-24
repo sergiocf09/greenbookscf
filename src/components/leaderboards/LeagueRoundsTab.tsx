@@ -24,6 +24,7 @@ import {
   Loader2,
   RefreshCw,
   RotateCcw,
+  Search,
   Unlink,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -35,11 +36,13 @@ import {
   formatRoundDateDDMMYYYY,
   getReasonNotCountedText,
 } from '@/lib/leagueRoundsAudit';
+import { LeagueLinkCandidatesDialog } from '@/components/leaderboards/LeagueLinkCandidatesDialog';
 
 interface LeagueRoundsTabProps {
   leaderboardId: string;
   isCreator: boolean;
   isCompleted: boolean;
+  savedMinPlayers?: number;
   rounds: LeagueLinkedRound[];
   roundsLoading: boolean;
   roundsError: string | null;
@@ -57,6 +60,7 @@ export const LeagueRoundsTab: React.FC<LeagueRoundsTabProps> = ({
   leaderboardId,
   isCreator,
   isCompleted,
+  savedMinPlayers,
   rounds,
   roundsLoading,
   roundsError,
@@ -78,6 +82,7 @@ export const LeagueRoundsTab: React.FC<LeagueRoundsTabProps> = ({
 
   const [reopenOpen, setReopenOpen] = useState(false);
   const [reopening, setReopening] = useState(false);
+  const [candidatesOpen, setCandidatesOpen] = useState(false);
 
   const handleConfirmUnlink = async () => {
     if (!unlinkTarget) return;
@@ -145,16 +150,27 @@ export const LeagueRoundsTab: React.FC<LeagueRoundsTabProps> = ({
   return (
     <ScrollArea className="h-full w-full px-3 pb-4 [&>div>div]:!block">
       <div className="space-y-4">
-        {/* Header: count + link button */}
-        <div className="flex items-center justify-between gap-2">
+        {/* Header: count + link buttons */}
+        <div className="space-y-2">
           <p className="text-sm font-semibold">
             {rounds.length} {trs(rounds.length === 1 ? 'ronda ligada' : 'rondas ligadas')}
           </p>
           {isCreator && !isCompleted && (
-            <Button size="sm" onClick={onOpenLinkDialog} className="h-8 gap-1.5 text-xs">
-              <Link2 className="h-3.5 w-3.5" />
-              {trs('Ligar ronda')}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" onClick={onOpenLinkDialog} className="h-8 gap-1.5 text-xs">
+                <Link2 className="h-3.5 w-3.5" />
+                {trs('Ligar ronda')}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCandidatesOpen(true)}
+                className="h-8 gap-1.5 text-xs"
+              >
+                <Search className="h-3.5 w-3.5" />
+                {trs('Buscar rondas candidatas')}
+              </Button>
+            </div>
           )}
         </div>
 
@@ -396,6 +412,16 @@ export const LeagueRoundsTab: React.FC<LeagueRoundsTabProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {isCreator && !isCompleted && (
+        <LeagueLinkCandidatesDialog
+          open={candidatesOpen}
+          onOpenChange={setCandidatesOpen}
+          leaderboardId={leaderboardId}
+          savedMinPlayers={savedMinPlayers}
+          onAfterMutation={onAfterMutation}
+        />
+      )}
     </ScrollArea>
   );
 };

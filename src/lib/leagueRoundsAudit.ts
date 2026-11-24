@@ -12,7 +12,8 @@ export type LeagueAuditAction =
   | 'round_unlinked'
   | 'standings_recalculated'
   | 'league_reopened'
-  | 'league_closed';
+  | 'league_closed'
+  | 'league_rule_changed';
 
 export interface LeagueLinkedRound {
   round_id: string;
@@ -102,6 +103,18 @@ export function formatAuditActionText(
       return translate('reabrió la liga');
     case 'league_closed':
       return translate('cerró la liga');
+    case 'league_rule_changed': {
+      const key = entry.details?.['key'];
+      const oldVal = entry.details?.['old'];
+      const newVal = entry.details?.['new'];
+      if (key === 'min_players_per_round' && newVal !== undefined && newVal !== null) {
+        if (oldVal !== undefined && oldVal !== null) {
+          return `${translate('cambió el mínimo de jugadores por ronda de')} ${oldVal} ${translate('a')} ${newVal}`;
+        }
+        return `${translate('definió el mínimo de jugadores por ronda en')} ${newVal}`;
+      }
+      return translate('actualizó las reglas de la liga');
+    }
     default:
       return entry.action;
   }

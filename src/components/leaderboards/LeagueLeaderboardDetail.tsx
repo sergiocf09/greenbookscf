@@ -605,6 +605,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
             leaderboardId={leaderboardId}
             isCreator={isCreator}
             isCompleted={event?.status === 'completed'}
+            savedMinPlayers={rules.min_players_per_round}
             rounds={linkedRounds}
             roundsLoading={roundsLoading}
             roundsError={roundsError}

@@ -3007,6 +3007,27 @@ export type Database = {
           round_id: string
         }[]
       }
+      get_league_link_candidates: {
+        Args: {
+          p_include_in_progress?: boolean
+          p_leaderboard_id: string
+          p_limit?: number
+          p_min_players?: number
+          p_offset?: number
+          p_search?: string
+        }
+        Returns: {
+          course_name: string
+          date: string
+          guests_in_round: number
+          league_players_matched: number
+          matched_names: string[]
+          organizer_name: string
+          players_total: number
+          round_id: string
+          status: string
+        }[]
+      }
       get_league_linked_rounds: {
         Args: { p_leaderboard_id: string }
         Returns: {
@@ -3319,6 +3340,10 @@ export type Database = {
             }
             Returns: Json
           }
+      link_league_candidate_round: {
+        Args: { p_leaderboard_id: string; p_round_id: string }
+        Returns: undefined
+      }
       log_round_event: {
         Args: {
           p_event_type: string
@@ -3410,6 +3435,10 @@ export type Database = {
           p_target_profile_id: string
         }
         Returns: string
+      }
+      set_league_min_players: {
+        Args: { p_leaderboard_id: string; p_min_players: number }
+        Returns: undefined
       }
       settle_cross_bet: {
         Args: { p_cross_bet_id: string; p_lines: Json }

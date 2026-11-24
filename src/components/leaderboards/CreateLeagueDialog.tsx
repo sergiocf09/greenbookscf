@@ -21,6 +21,7 @@ export interface LeagueRulesJson {
   points_per_position: number[];
   period_months: number;
   allow_open_join: boolean;
+  min_players_per_round?: number;
 }
 
 interface Props {
@@ -55,6 +56,8 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
   const [aggregation, setAggregation] = useState<'sum' | 'best_n' | 'average'>('sum');
   const [bestN, setBestN] = useState('5');
   const [minRounds, setMinRounds] = useState('3');
+  const [minPlayersPerRound, setMinPlayersPerRound] = useState('2');
+  const [minPlayersTouched, setMinPlayersTouched] = useState(false);
   const [periodMonths, setPeriodMonths] = useState(6);
   const [allowOpenJoin, setAllowOpenJoin] = useState(true);
   const [pointsPerPosition, setPointsPerPosition] = useState<string[]>(DEFAULT_POINTS.map(String));
@@ -73,6 +76,8 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
     setAggregation('sum');
     setBestN('5');
     setMinRounds('3');
+    setMinPlayersPerRound('2');
+    setMinPlayersTouched(false);
     setPeriodMonths(6);
     setAllowOpenJoin(true);
     setPointsPerPosition(DEFAULT_POINTS.map(String));
@@ -91,6 +96,16 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
     const parsedBestN = aggregation === 'best_n' ? (parseInt(bestN) || null) : null;
     const parsedMinRounds = parseInt(minRounds) || 0;
 
+    let parsedMinPlayers: number | undefined;
+    if (minPlayersTouched) {
+      const n = parseInt(minPlayersPerRound, 10);
+      if (!Number.isInteger(n) || n < 1 || n > 12) {
+        toast.error(trs('El mínimo de jugadores debe estar entre 1 y 12'));
+        return;
+      }
+      parsedMinPlayers = n;
+    }
+
     const scoringModes =
       scoringSystem === 'stableford'
         ? ['stableford']
@@ -107,6 +122,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
       points_per_position: scoringSystem === 'points' ? parsedPoints : [],
       period_months: periodMonths,
       allow_open_join: allowOpenJoin,
+      ...(parsedMinPlayers !== undefined ? { min_players_per_round: parsedMinPlayers } : {}),
     };
 
     setSaving(true);
@@ -349,6 +365,29 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
                   {parseInt(minRounds) === 0 ? trs("(sin mínimo)") : trs("jornadas jugadas")}
                 </span>
               </div>
+            </div>
+
+            {/* Mínimo de jugadores para sugerir rondas candidatas */}
+            <div className="space-y-1.5">
+              <Label>{trs('Mínimo de jugadores de la liga para sugerir una ronda')}</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min={1}
+                  max={12}
+                  value={minPlayersPerRound}
+                  onChange={e => {
+                    setMinPlayersPerRound(e.target.value);
+                    setMinPlayersTouched(true);
+                  }}
+                  className="h-8 w-20 text-sm"
+                  inputMode="numeric"
+                />
+                <span className="text-xs text-muted-foreground">{trs('jugadores')}</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                {trs('Solo sirve para sugerirte rondas de otros organizadores. No cambia los puntos')}
+              </p>
             </div>
 
             {/* Unión abierta */}
