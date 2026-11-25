@@ -2,12 +2,12 @@ import { StablefordPointsEditor } from '@/components/leaderboards/StablefordPoin
 import { LEADERBOARD_DEFAULT_STABLEFORD_POINTS, type LeaderboardStablefordPoints } from '@/lib/leaderboardAggregation';
 import { trs } from '@/i18n/tr';
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useLeaderboards } from '@/hooks/useLeaderboards';
 import { useAuth } from '@/contexts/AuthContext';
 import { CreateTeamsCupDialog } from '@/components/leaderboards/CreateTeamsCupDialog';
 import { EditLeaderboardConfigDialog } from '@/components/leaderboards/EditLeaderboardConfigDialog';
 import { EditMultiDayConfigDialog } from '@/components/leaderboards/EditMultiDayConfigDialog';
+import { EditLeagueConfigDialog } from '@/components/leaderboards/EditLeagueConfigDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,7 +32,6 @@ interface LeaderboardsInlineViewProps {
 export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
   onNavigateToDetail,
 }) => {
-  const navigate = useNavigate();
   const { profile } = useAuth();
   const { events, loading, createEvent, joinByCode, fetchEvents } = useLeaderboards();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -145,10 +144,6 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
   };
 
   const handleOpenEvent = (eventId: string, competitionType?: string | null) => {
-    if (competitionType === 'league') {
-      navigate(`/leaderboards/league/${eventId}`);
-      return;
-    }
     onNavigateToDetail(eventId, competitionType);
   };
 
@@ -615,7 +610,22 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
         }}
       />
 
-      {editTarget && (editTarget.competition_type === 'multi_day' ? (
+      {editTarget && (editTarget.competition_type === 'league' ? (
+        <EditLeagueConfigDialog
+          open={!!editTarget}
+          onOpenChange={(v) => { if (!v) setEditTarget(null); }}
+          event={{
+            id: editTarget.id,
+            name: editTarget.name,
+            description: editTarget.description,
+            start_date: editTarget.start_date,
+            end_date: editTarget.end_date,
+            scoring_modes: editTarget.scoring_modes || ['gross', 'net'],
+            rules_json: editTarget.rules_json || {},
+          }}
+          onSaved={() => { setEditTarget(null); fetchEvents(); }}
+        />
+      ) : editTarget.competition_type === 'multi_day' ? (
         <EditMultiDayConfigDialog
           open={!!editTarget}
           onOpenChange={(v) => { if (!v) setEditTarget(null); }}

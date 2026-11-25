@@ -2258,5 +2258,19 @@
   "invitados (no cuentan para el mínimo)": "guests (do not count toward minimum)",
   "cambió el mínimo de jugadores por ronda de": "changed the minimum players per round from",
   "definió el mínimo de jugadores por ronda en": "set the minimum players per round to",
-  "actualizó las reglas de la liga": "updated league rules"
+  "actualizó las reglas de la liga": "updated league rules",
+  "Editar configuración de liga": "Edit league settings",
+  "Modifica fechas, sistema de puntos y reglas de clasificación.": "Update dates, scoring system, and qualification rules.",
+  "Fecha de inicio *": "Start date *",
+  "Fecha de fin": "End date",
+  "La fecha de inicio es obligatoria": "Start date is required",
+  "La fecha de fin no puede ser anterior a la fecha de inicio": "End date cannot be earlier than start date",
+  "Las mejores jornadas deben ser al menos 1": "Best rounds must be at least 1",
+  "El mínimo de jornadas debe ser 0 o mayor": "Minimum rounds must be 0 or greater",
+  "Verifica los puntos por posición (números mayores o iguales a 0)": "Check points per place (numbers 0 or greater)",
+  "Puntos": "Points",
+  "lugar": "place",
+  "Quitar lugar": "Remove place",
+  "Mejores": "Best",
+  "cuentan": "count"
 }

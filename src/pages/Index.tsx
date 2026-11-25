@@ -7,6 +7,7 @@ import { LeaderboardsInlineView } from '@/components/leaderboards/LeaderboardsIn
 import { LeaderboardDetailInline } from '@/components/leaderboards/LeaderboardDetailInline';
 import { TeamsCupDetailInline } from '@/components/leaderboards/TeamsCupDetailInline';
 import { MultiDayLeaderboardDetail } from '@/components/leaderboards/MultiDayLeaderboardDetail';
+import { LeagueLeaderboardDetail } from '@/components/leaderboards/LeagueLeaderboardDetail';
 
 import { RankingsInlineView } from '@/components/rankings/RankingsInlineView';
 const StatsInlineView = lazy(() => import('@/pages/Stats').then(m => ({ default: m.StatsInlineView })));
@@ -135,7 +136,7 @@ const Index = () => {
   }, [scores]);
   const [preselectedLeaderboardId, setPreselectedLeaderboardId] = useState<string | null>(null);
   const [leaderboardDetailId, setLeaderboardDetailId] = useState<string | null>(null);
-  const [leaderboardDetailType, setLeaderboardDetailType] = useState<'standard' | 'teams_cup' | 'multi_day'>('standard');
+  const [leaderboardDetailType, setLeaderboardDetailType] = useState<'standard' | 'teams_cup' | 'multi_day' | 'league'>('standard');
   const [isRoundLinkedToLeaderboard, setIsRoundLinkedToLeaderboard] = useState(false);
   const [linkedLeaderboards, setLinkedLeaderboards] = useState<Array<{ id: string; name: string; code: string; competition_type: string }>>([]);
   const [rankingDetailId, setRankingDetailId] = useState<string | null>(null);
@@ -589,8 +590,14 @@ const Index = () => {
         .maybeSingle();
       if (cancelled || !data) return;
       const ct = (data as any).competition_type;
-      const resolved: 'standard' | 'teams_cup' | 'multi_day' =
-        ct === 'teams_cup' ? 'teams_cup' : ct === 'multi_day' ? 'multi_day' : 'standard';
+      const resolved: 'standard' | 'teams_cup' | 'multi_day' | 'league' =
+        ct === 'teams_cup'
+          ? 'teams_cup'
+          : ct === 'multi_day'
+            ? 'multi_day'
+            : ct === 'league'
+              ? 'league'
+              : 'standard';
       setLeaderboardDetailType(prev => (prev === resolved ? prev : resolved));
     })();
     return () => { cancelled = true; };
@@ -2658,6 +2665,7 @@ const Index = () => {
                     setLeaderboardDetailType(
                       lb.competition_type === 'teams_cup' ? 'teams_cup'
                         : lb.competition_type === 'multi_day' ? 'multi_day'
+                        : lb.competition_type === 'league' ? 'league'
                         : 'standard'
                     );
                     setView('leaderboards');
@@ -2802,6 +2810,12 @@ const Index = () => {
             leaderboardDetailType === 'teams_cup' ? (
               <TeamsCupDetailInline
                 leaderboardId={leaderboardDetailId}
+                onBack={() => setLeaderboardDetailId(null)}
+              />
+            ) : leaderboardDetailType === 'league' ? (
+              <LeagueLeaderboardDetail
+                leaderboardId={leaderboardDetailId}
+                inline
                 onBack={() => setLeaderboardDetailId(null)}
               />
             ) : leaderboardDetailType === 'multi_day' ? (
@@ -2969,6 +2983,7 @@ const Index = () => {
                 setLeaderboardDetailType(
                   type === 'teams_cup' ? 'teams_cup'
                     : type === 'multi_day' ? 'multi_day'
+                    : type === 'league' ? 'league'
                     : 'standard'
                 );
               }}

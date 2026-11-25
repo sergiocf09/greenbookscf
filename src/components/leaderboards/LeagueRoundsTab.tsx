@@ -42,6 +42,7 @@ interface LeagueRoundsTabProps {
   leaderboardId: string;
   isCreator: boolean;
   isCompleted: boolean;
+  inline?: boolean;
   savedMinPlayers?: number;
   rounds: LeagueLinkedRound[];
   roundsLoading: boolean;
@@ -60,6 +61,7 @@ export const LeagueRoundsTab: React.FC<LeagueRoundsTabProps> = ({
   leaderboardId,
   isCreator,
   isCompleted,
+  inline = false,
   savedMinPlayers,
   rounds,
   roundsLoading,
@@ -147,8 +149,8 @@ export const LeagueRoundsTab: React.FC<LeagueRoundsTabProps> = ({
     return trs('En preparación');
   };
 
-  return (
-    <ScrollArea className="h-full w-full px-3 pb-4 [&>div>div]:!block">
+  const content = (
+    <>
       <div className="space-y-4">
         {/* Header: count + link buttons */}
         <div className="space-y-2">
@@ -422,6 +424,16 @@ export const LeagueRoundsTab: React.FC<LeagueRoundsTabProps> = ({
           onAfterMutation={onAfterMutation}
         />
       )}
+    </>
+  );
+
+  if (inline) {
+    return <div className="pb-4">{content}</div>;
+  }
+
+  return (
+    <ScrollArea className="h-full w-full px-3 pb-4 [&>div>div]:!block">
+      {content}
     </ScrollArea>
   );
 };

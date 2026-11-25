@@ -97,6 +97,10 @@ const JoinLeaderboard = () => {
           // Standard leaderboard OR teams cup with no teams yet
           const dest = eventData?.competition_type === 'teams_cup'
             ? `/leaderboards/cup/${leaderboardId}`
+            : eventData?.competition_type === 'league'
+              ? `/leaderboards/league/${leaderboardId}`
+              : eventData?.competition_type === 'multi_day'
+                ? `/leaderboards/multi/${leaderboardId}`
             : `/leaderboards/${leaderboardId}`;
           navigate(dest, { replace: true });
         } else {

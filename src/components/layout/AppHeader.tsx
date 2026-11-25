@@ -118,7 +118,7 @@ interface AppHeaderProps {
   onNavigate: (path: string, opts?: { state?: unknown; replace?: boolean }) => void;
   onSignOut: () => Promise<void> | void;
   onSetLeaderboardDetailId: (id: string | null) => void;
-  onSetLeaderboardDetailType: (t: 'standard' | 'teams_cup') => void;
+  onSetLeaderboardDetailType: (t: 'standard' | 'teams_cup' | 'multi_day' | 'league') => void;
   onSetRankingDetailId: (id: string | null) => void;
 }
 

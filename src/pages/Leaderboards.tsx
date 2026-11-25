@@ -4,6 +4,9 @@ import { trs } from '@/i18n/tr';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CreateTeamsCupDialog } from '@/components/leaderboards/CreateTeamsCupDialog';
+import { EditLeaderboardConfigDialog } from '@/components/leaderboards/EditLeaderboardConfigDialog';
+import { EditMultiDayConfigDialog } from '@/components/leaderboards/EditMultiDayConfigDialog';
+import { EditLeagueConfigDialog } from '@/components/leaderboards/EditLeagueConfigDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useLeaderboards } from '@/hooks/useLeaderboards';
@@ -15,7 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trophy, Plus, Search, ArrowLeft, Loader2, Calendar, Users, Hash, RefreshCw } from 'lucide-react';
+import { Trophy, Plus, Search, ArrowLeft, Loader2, Calendar, Users, Hash, RefreshCw, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import GreenBookLogo from '@/components/GreenBookLogo';
@@ -32,12 +35,13 @@ const Leaderboards = () => {
   const navigate = useNavigate();
   const { profile, signOut, updateProfile } = useAuth();
   const { canCreateLeaderboard } = useSubscription();
-  const { events, loading, createEvent, joinByCode } = useLeaderboards();
+  const { events, loading, createEvent, joinByCode, fetchEvents } = useLeaderboards();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showCupDialog, setShowCupDialog] = useState(false);
   const [createType, setCreateType] = useState<'standard' | null>(null);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [editTarget, setEditTarget] = useState<any | null>(null);
   const [joinCode, setJoinCode] = useState('');
   const [creating, setCreating] = useState(false);
 
@@ -50,6 +54,15 @@ const Leaderboards = () => {
 
   const activeEvents = events.filter(e => e.status === 'active');
   const completedEvents = events.filter(e => e.status === 'completed');
+
+  const eventPath = (ev: { id: string; competition_type?: string | null }) =>
+    ev.competition_type === 'teams_cup'
+      ? `/leaderboards/cup/${ev.id}`
+      : ev.competition_type === 'league'
+        ? `/leaderboards/league/${ev.id}`
+        : ev.competition_type === 'multi_day'
+          ? `/leaderboards/multi/${ev.id}`
+          : `/leaderboards/${ev.id}`;
 
   const toggleMode = (mode: string) => {
     setFormModes(prev => 
@@ -84,11 +97,7 @@ const Leaderboards = () => {
     if (result) {
       setShowJoinDialog(false);
       setJoinCode('');
-      navigate(
-        result.competition_type === 'teams_cup'
-          ? `/leaderboards/cup/${result.id}`
-          : `/leaderboards/${result.id}`
-      );
+      navigate(eventPath(result));
     }
   };
 
@@ -296,7 +305,7 @@ const Leaderboards = () => {
                 <Card 
                   key={ev.id} 
                   className="cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => navigate((ev as any).competition_type === 'teams_cup' ? `/leaderboards/cup/${ev.id}` : `/leaderboards/${ev.id}`)}
+                  onClick={() => navigate(eventPath(ev as any))}
                 >
                   <CardHeader className="pb-2 pt-4 px-4">
                     <div className="flex items-start justify-between">
@@ -306,12 +315,30 @@ const Leaderboards = () => {
                           {(ev as any).competition_type === 'teams_cup' && (
                             <Badge className="bg-emerald-100 text-emerald-700 text-[10px]">{trs("TEAMS CUP")}</Badge>
                           )}
+                          {(ev as any).competition_type === 'league' && (
+                            <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-600 dark:text-amber-400">
+                              {trs("Liga")}
+                            </Badge>
+                          )}
                         </div>
                         {ev.description && (
                           <CardDescription className="text-xs mt-0.5">{ev.description}</CardDescription>
                         )}
                       </div>
-                      <Trophy className="h-5 w-5 text-amber-500 shrink-0" />
+                      <div className="flex items-center gap-1 shrink-0">
+                        {ev.created_by === profile?.id && (ev as any).competition_type !== 'teams_cup' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            aria-label={trs("Editar configuración")}
+                            onClick={(e) => { e.stopPropagation(); setEditTarget(ev); }}
+                          >
+                            <Pencil className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        )}
+                        <Trophy className="h-5 w-5 text-amber-500" />
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent className="px-4 pb-3 pt-0">
@@ -353,10 +380,17 @@ const Leaderboards = () => {
                 <Card 
                   key={ev.id} 
                   className="cursor-pointer hover:bg-muted/50 transition-colors opacity-80"
-                  onClick={() => navigate((ev as any).competition_type === 'teams_cup' ? `/leaderboards/cup/${ev.id}` : `/leaderboards/${ev.id}`)}
+                  onClick={() => navigate(eventPath(ev as any))}
                 >
                   <CardHeader className="pb-2 pt-4 px-4">
-                    <CardTitle className="text-base">{ev.name}</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-base">{ev.name}</CardTitle>
+                      {(ev as any).competition_type === 'league' && (
+                        <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-600 dark:text-amber-400">
+                          {trs("Liga")}
+                        </Badge>
+                      )}
+                    </div>
                   </CardHeader>
                   <CardContent className="px-4 pb-3 pt-0">
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -378,6 +412,49 @@ const Leaderboards = () => {
         onOpenChange={setShowProfileDialog}
       />
       <CreateTeamsCupDialog open={showCupDialog} onClose={() => setShowCupDialog(false)} />
+      {editTarget && (editTarget.competition_type === 'league' ? (
+        <EditLeagueConfigDialog
+          open={!!editTarget}
+          onOpenChange={(v) => { if (!v) setEditTarget(null); }}
+          event={{
+            id: editTarget.id,
+            name: editTarget.name,
+            description: editTarget.description,
+            start_date: editTarget.start_date,
+            end_date: editTarget.end_date,
+            scoring_modes: editTarget.scoring_modes || ['gross', 'net'],
+            rules_json: editTarget.rules_json || {},
+          }}
+          onSaved={() => { setEditTarget(null); fetchEvents(); }}
+        />
+      ) : editTarget.competition_type === 'multi_day' ? (
+        <EditMultiDayConfigDialog
+          open={!!editTarget}
+          onOpenChange={(v) => { if (!v) setEditTarget(null); }}
+          event={{
+            id: editTarget.id,
+            name: editTarget.name,
+            description: editTarget.description,
+            scoring_modes: editTarget.scoring_modes || ['gross', 'net'],
+            rules_json: editTarget.rules_json || {},
+          }}
+          onSaved={() => { setEditTarget(null); fetchEvents(); }}
+        />
+      ) : (
+        <EditLeaderboardConfigDialog
+          open={!!editTarget}
+          onOpenChange={(v) => { if (!v) setEditTarget(null); }}
+          event={{
+            id: editTarget.id,
+            name: editTarget.name,
+            description: editTarget.description,
+            start_date: editTarget.start_date,
+            scoring_modes: editTarget.scoring_modes || ['gross', 'net'],
+            rules_json: editTarget.rules_json || {},
+          }}
+          onSaved={() => { setEditTarget(null); fetchEvents(); }}
+        />
+      ))}
     </div>
   );
 };
