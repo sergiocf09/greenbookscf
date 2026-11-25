@@ -12,6 +12,7 @@ import { Loader2, Plus, Trash2, Trophy, Target, TrendingUp } from 'lucide-react'
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { LeagueRulesJson } from '@/components/leaderboards/CreateLeagueDialog';
+import { LeagueHandicapModeSelect, type LeagueHandicapMode } from './LeagueHandicapModeSelect';
 
 interface Props {
   open: boolean;
@@ -44,10 +45,12 @@ export const EditLeagueConfigDialog: React.FC<Props> = ({ open, onOpenChange, ev
   const [allowOpenJoin, setAllowOpenJoin] = useState(true);
   const [pointsPerPosition, setPointsPerPosition] = useState<string[]>(DEFAULT_POINTS.map(String));
   const [saving, setSaving] = useState(false);
+  const [handicapMode, setHandicapMode] = useState<LeagueHandicapMode>('fixed');
 
   useEffect(() => {
     if (!open) return;
     const r = (event.rules_json || {}) as Partial<LeagueRulesJson>;
+    setHandicapMode(r.handicap_mode === 'per_round' ? 'per_round' : 'fixed');
     setName(event.name || '');
     setDescription(event.description || '');
     setStartDate(event.start_date || '');
@@ -134,6 +137,7 @@ export const EditLeagueConfigDialog: React.FC<Props> = ({ open, onOpenChange, ev
       points_per_position: nextPoints,
       allow_open_join: allowOpenJoin,
       min_players_per_round: parsedMinPlayers,
+      handicap_mode: handicapMode,
     };
 
     const scoringModes =
@@ -163,7 +167,8 @@ export const EditLeagueConfigDialog: React.FC<Props> = ({ open, onOpenChange, ev
         .eq('id', event.id);
       if (error) throw error;
 
-      if (scoringChanged) {
+      // A mode change recomputes all rounds atomically in the update trigger.
+      if (scoringChanged && (prevRules.handicap_mode ?? 'fixed') === handicapMode) {
         const { error: recalcError } = await supabase.rpc('recalculate_league', {
           p_leaderboard_id: event.id,
         });
@@ -266,6 +271,8 @@ export const EditLeagueConfigDialog: React.FC<Props> = ({ open, onOpenChange, ev
                 </div>
               </div>
             )}
+
+            <LeagueHandicapModeSelect value={handicapMode} onChange={setHandicapMode} />
 
             {scoringSystem === 'points' && (
               <div className="space-y-2">

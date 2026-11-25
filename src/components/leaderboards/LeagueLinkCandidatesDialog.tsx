@@ -59,6 +59,26 @@ export const LeagueLinkCandidatesDialog: React.FC<LeagueLinkCandidatesDialogProp
 
   const [linkTarget, setLinkTarget] = useState<LeagueLinkCandidate | null>(null);
   const [linking, setLinking] = useState(false);
+  const [handicapPreview, setHandicapPreview] = useState<{ round_player_id: string; display_name: string; effective_handicap: number; handicap_mode: string }[]>([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
+
+  useEffect(() => {
+    setHandicapPreview([]);
+    setPreviewError(false);
+    if (!linkTarget) return;
+    let cancelled = false;
+    setPreviewLoading(true);
+    supabase.rpc('get_league_round_handicaps', {
+      p_leaderboard_id: leaderboardId, p_round_id: linkTarget.round_id,
+    }).then(({ data, error }) => {
+      if (cancelled) return;
+      setPreviewLoading(false);
+      if (error) { setPreviewError(true); toast.error(error.message); }
+      else setHandicapPreview(data ?? []);
+    });
+    return () => { cancelled = true; };
+  }, [linkTarget, leaderboardId]);
 
   const requestIdRef = useRef(0);
 
@@ -388,9 +408,19 @@ export const LeagueLinkCandidatesDialog: React.FC<LeagueLinkCandidatesDialogProp
                 : ''}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="max-h-[35vh] overflow-y-auto space-y-1">
+            <p className="text-xs font-medium text-muted-foreground">{trs(handicapPreview[0]?.handicap_mode === 'per_round' ? 'Hándicap guardado en esta ronda' : 'Hándicap fijo de la liga')}</p>
+            {previewLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+            {handicapPreview.map(player => (
+              <div key={player.round_player_id} className="flex items-center justify-between gap-2 text-xs">
+                <span className="min-w-0 break-words">{player.display_name}</span>
+                <span className="shrink-0 tabular-nums">HCP {player.effective_handicap}</span>
+              </div>
+            ))}
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={linking}>{trs('Cancelar')}</AlertDialogCancel>
-            <Button onClick={handleConfirmLink} disabled={linking}>
+            <Button onClick={handleConfirmLink} disabled={linking || previewLoading || previewError}>
               {linking && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
               {trs('Ligar')}
             </Button>

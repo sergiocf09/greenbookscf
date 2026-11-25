@@ -1,0 +1,3 @@
+- League handicap configuration uses the shared mode selector; missing mode means fixed for backward compatibility.
+- League linking previews use the creator-authorized get_league_round_handicaps RPC, never the current profile handicap, so displayed handicaps match league scoring without expanding round access.
+- League handicap mode changes recompute linked scores and points in the same database transaction, so a failed recalculation cannot leave the new mode with old results.

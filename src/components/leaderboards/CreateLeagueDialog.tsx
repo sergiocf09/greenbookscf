@@ -11,6 +11,7 @@ import { Loader2, Plus, Trash2, Trophy, Target, TrendingUp } from 'lucide-react'
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { format, addMonths } from 'date-fns';
+import { LeagueHandicapModeSelect, type LeagueHandicapMode } from './LeagueHandicapModeSelect';
 
 export interface LeagueRulesJson {
   scoring_system: 'strokes' | 'stableford' | 'points';
@@ -22,6 +23,7 @@ export interface LeagueRulesJson {
   period_months: number;
   allow_open_join: boolean;
   min_players_per_round?: number;
+  handicap_mode?: LeagueHandicapMode;
 }
 
 interface Props {
@@ -62,6 +64,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
   const [allowOpenJoin, setAllowOpenJoin] = useState(true);
   const [pointsPerPosition, setPointsPerPosition] = useState<string[]>(DEFAULT_POINTS.map(String));
   const [saving, setSaving] = useState(false);
+  const [handicapMode, setHandicapMode] = useState<LeagueHandicapMode>('fixed');
 
   const addPointsPlace = () => setPointsPerPosition(prev => [...prev, '0']);
   const removePointsPlace = (idx: number) => setPointsPerPosition(prev => prev.filter((_, i) => i !== idx));
@@ -70,6 +73,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
 
   const reset = () => {
     setName('');
+    setHandicapMode('fixed');
     setDescription('');
     setScoringSystem('points');
     setScoreBasis('net');
@@ -122,6 +126,7 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
       points_per_position: scoringSystem === 'points' ? parsedPoints : [],
       period_months: periodMonths,
       allow_open_join: allowOpenJoin,
+      handicap_mode: handicapMode,
       ...(parsedMinPlayers !== undefined ? { min_players_per_round: parsedMinPlayers } : {}),
     };
 
@@ -258,6 +263,8 @@ export const CreateLeagueDialog: React.FC<Props> = ({ open, onClose, onCreate })
             )}
 
             {/* Tabla de puntos */}
+            <LeagueHandicapModeSelect value={handicapMode} onChange={setHandicapMode} />
+
             {scoringSystem === 'points' && (
               <div className="space-y-2">
                 <Label>{trs("Puntos por posición")}</Label>

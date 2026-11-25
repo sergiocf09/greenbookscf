@@ -281,6 +281,13 @@
       "when": 1795568838071,
       "tag": "0039_leaderboard_linked_rounds_meta_rpc",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1795569797485,
+      "tag": "0040_league_fixed_or_round_handicap",
+      "breakpoints": true
     }
   ]
 }

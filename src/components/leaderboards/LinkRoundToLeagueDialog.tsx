@@ -61,6 +61,7 @@ export const LinkRoundToLeagueDialog: React.FC<LinkRoundToLeagueDialogProps> = (
   const [handicaps, setHandicaps] = useState<Map<string, number>>(new Map());
   const [existingKeys, setExistingKeys] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
+  const [handicapMode, setHandicapMode] = useState<'fixed' | 'per_round'>('fixed');
 
   const playerKey = (p: { profileId: string | null; name: string }) =>
     p.profileId ? `pid:${p.profileId}` : `name:${p.name.trim().toLowerCase()}`;
@@ -126,19 +127,26 @@ export const LinkRoundToLeagueDialog: React.FC<LinkRoundToLeagueDialogProps> = (
       setSelectedRound(round);
       setStep('select-participants');
       setLoadingPlayers(true);
+      setRoundPlayers([]);
+      setSelectedKeys(new Set());
       try {
-        const [{ data: playersData, error }, { data: existingParts }] = await Promise.all([
+        const [{ data: playersData, error }, { data: existingParts, error: partsError }, { data: preview, error: previewError }] = await Promise.all([
           supabase
             .from('round_players')
             .select('id, profile_id, guest_name, guest_initials, guest_color, handicap_for_round, profiles!round_players_profile_id_fkey(display_name, initials, avatar_color)')
             .eq('round_id', round.id),
           supabase
             .from('leaderboard_participants')
-            .select('profile_id, guest_name')
+            .select('profile_id, guest_name, handicap_for_leaderboard')
             .eq('leaderboard_id', leaderboardId)
             .eq('is_active', true),
+          supabase.rpc('get_league_round_handicaps', { p_leaderboard_id: leaderboardId, p_round_id: round.id }),
         ]);
         if (error) throw error;
+        if (partsError) throw partsError;
+        if (previewError) throw previewError;
+        const previewMap = new Map((preview ?? []).map(p => [p.round_player_id, p]));
+        setHandicapMode(preview?.[0]?.handicap_mode === 'per_round' ? 'per_round' : 'fixed');
 
         const existing = new Set<string>();
         for (const ep of existingParts ?? []) {
@@ -152,6 +160,7 @@ export const LinkRoundToLeagueDialog: React.FC<LinkRoundToLeagueDialogProps> = (
         const seen = new Set<string>();
         const rows: RoundPlayerRow[] = [];
         for (const rp of playersData ?? []) {
+          if (!previewMap.has(rp.id)) continue;
           const prof = (rp as any).profiles;
           const name = prof?.display_name ?? (rp as any).guest_name ?? '';
           const row: RoundPlayerRow = {
@@ -160,7 +169,7 @@ export const LinkRoundToLeagueDialog: React.FC<LinkRoundToLeagueDialogProps> = (
             name,
             initials: prof?.initials ?? (rp as any).guest_initials ?? '?',
             color: prof?.avatar_color ?? (rp as any).guest_color ?? '#888',
-            handicap: Math.round(Number((rp as any).handicap_for_round) || 0),
+            handicap: previewMap.get(rp.id)?.effective_handicap ?? 0,
           };
           const k = playerKey(row);
           if (seen.has(k)) continue;
@@ -168,7 +177,7 @@ export const LinkRoundToLeagueDialog: React.FC<LinkRoundToLeagueDialogProps> = (
           rows.push(row);
         }
         setRoundPlayers(rows);
-        setSelectedKeys(new Set(rows.filter(r => !existing.has(playerKey(r))).map(r => r.key)));
+        setSelectedKeys(new Set(rows.map(r => r.key)));
         setHandicaps(new Map(rows.map(r => [r.key, r.handicap])));
       } catch (err: any) {
         toast.error(trs('Error cargando jugadores: ') + err.message);
@@ -374,7 +383,7 @@ export const LinkRoundToLeagueDialog: React.FC<LinkRoundToLeagueDialogProps> = (
               ) : (
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground">
-                    {trs('Selecciona jugadores y asigna handicap para la liga')}
+                    {trs(handicapMode === 'per_round' ? 'Hándicap guardado en esta ronda' : 'Hándicap fijo de la liga')}
                   </Label>
                   {roundPlayers.map(player => {
                     const isSelected = selectedKeys.has(player.key);
@@ -416,7 +425,7 @@ export const LinkRoundToLeagueDialog: React.FC<LinkRoundToLeagueDialogProps> = (
                               updateHandicap(player.key, Math.round(parseFloat(e.target.value) || 0))
                             }
                             className="w-16 h-7 text-center text-sm"
-                            disabled={!isSelected}
+                            disabled={handicapMode === 'per_round' || alreadyIn || !isSelected}
                             step="1"
                             inputMode="numeric"
                           />

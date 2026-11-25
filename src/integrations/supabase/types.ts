@@ -2728,6 +2728,10 @@ export type Database = {
         }
         Returns: number
       }
+      _league_effective_handicap: {
+        Args: { p_fixed: number; p_round: number; p_rules: Json }
+        Returns: number
+      }
       _merge_bet_config_id_array: {
         Args: { p_base: Json; p_local: Json; p_remote: Json }
         Returns: Json
@@ -3053,6 +3057,19 @@ export type Database = {
           reason_not_counted: string
           round_id: string
           status: string
+        }[]
+      }
+      get_league_round_handicaps: {
+        Args: { p_leaderboard_id: string; p_round_id: string }
+        Returns: {
+          display_name: string
+          effective_handicap: number
+          fixed_handicap: number
+          handicap_mode: string
+          is_member: boolean
+          profile_id: string
+          round_handicap: number
+          round_player_id: string
         }[]
       }
       get_money_ranking_balances: {

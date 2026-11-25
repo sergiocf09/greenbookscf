@@ -1,4 +1,7 @@
 # Roadmap — English translation
+## League handicap mode
+- [x] Add fixed/per-round configuration, linking previews and matching net/Stableford calculation; mode changes recompute atomically.
+- [x] Verify recalculation, anonymous denial and signed-in mobile linking with two different daily handicaps, plus foreign-organizer candidate preview; existing leagues stay fixed unless their creator changes them. Five database integration tests and nineteen league tests pass; temporary league removed after verification.
 ## Second-group player removal
 - [x] Persist individual removals in secondary groups; both group paths now verify a returned deleted row before hiding players, retaining them on failed saves. Seven removal/group-pool tests pass; build OK. Existing Jorge/Luis/Felipe cards (18 scores each) were not deleted; live destructive save/reload remains unverified to preserve their captures.
 ## November 3 close discrepancy

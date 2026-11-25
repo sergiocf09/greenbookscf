@@ -364,6 +364,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
 
       {/* Info chips */}
       <div className={cn('flex flex-wrap items-center justify-center gap-1.5 border-b border-border shrink-0', inline ? 'pb-2' : 'px-3 py-2')}>
+        <Badge variant="outline">{trs(rules.handicap_mode === 'per_round' ? 'HCP por ronda' : 'HCP fijo')}</Badge>
         <Badge variant="outline" className="gap-1">
           <Hash className="h-3 w-3" />
           {event?.code}
