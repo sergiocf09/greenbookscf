@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trophy, Plus, Search, Loader2, Calendar, Hash, X, CalendarDays, Pencil } from 'lucide-react';
+import { Trophy, Plus, Search, Loader2, Calendar, Hash, X, CalendarDays, Settings } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { MultiDayRulesJson } from '@/types/leaderboard';
@@ -517,7 +517,7 @@ export const LeaderboardsInlineView: React.FC<LeaderboardsInlineViewProps> = ({
                           aria-label={trs("Editar configuración")}
                           onClick={(e) => { e.stopPropagation(); setEditTarget(ev); }}
                         >
-                          <Pencil className="h-4 w-4 text-muted-foreground" />
+                          <Settings className="h-4 w-4 text-muted-foreground" />
                         </Button>
                       )}
                       <Trophy className="h-5 w-5 text-amber-500" />

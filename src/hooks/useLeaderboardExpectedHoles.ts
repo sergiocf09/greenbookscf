@@ -10,9 +10,6 @@ export interface ExpectedHolesInfo {
   unreliable: boolean;
 }
 
-const holesOf = (betConfig: unknown): number =>
-  Number((betConfig as { roundHoles?: unknown } | null)?.roundHoles) === 9 ? 9 : 18;
-
 /**
  * Expected holes per linked round (bet_config.roundHoles === 9 ? 9 : 18).
  * Multi-day maps rounds to days by exact date (same as dayByDate).
@@ -36,43 +33,31 @@ export function useLeaderboardExpectedHoles(
         unreliable: true,
       });
       try {
-        const { data: linked, error: linkedErr } = await supabase
-          .from('leaderboard_rounds')
-          .select('round_id')
-          .eq('leaderboard_id', leaderboardId!);
-        if (linkedErr) return assumeAll();
-        const roundIds = (linked || []).map(l => l.round_id);
-        if (roundIds.length === 0) {
+        const { data: rounds, error: roundsErr } = await supabase.rpc(
+          'get_leaderboard_linked_rounds_meta',
+          { p_leaderboard_id: leaderboardId! },
+        );
+        if (roundsErr) return assumeAll();
+        if (!rounds || rounds.length === 0) {
           return { expectedHoles: 18, expectedHolesByDay: {}, daysWithoutRound: isMultiDay ? allDays : [], unreliable: false };
         }
-        const { data: rounds, error: roundsErr } = await supabase
-          .from('rounds')
-          .select('id, date, bet_config')
-          .in('id', roundIds);
-        if (roundsErr || !rounds || rounds.length === 0) return assumeAll();
-        const unreliable = rounds.length < roundIds.length;
+        const holesOf = (n: number | null | undefined) => (Number(n) === 9 ? 9 : 18);
 
         if (!isMultiDay) {
-          let max = Math.max(...rounds.map(r => holesOf(r.bet_config)));
-          if (unreliable) max = 18;
-          return { expectedHoles: max, expectedHolesByDay: {}, daysWithoutRound: [], unreliable };
+          const max = Math.max(...rounds.map(r => holesOf(r.expected_holes)));
+          return { expectedHoles: max, expectedHolesByDay: {}, daysWithoutRound: [], unreliable: false };
         }
 
         const dayByDate: Record<string, number> = {};
         for (const d of days || []) dayByDate[d.date] = d.day_number;
         const byDay: Record<number, number> = {};
         for (const r of rounds) {
-          const dn = dayByDate[r.date];
+          const dn = dayByDate[r.round_date];
           if (!dn) continue;
-          byDay[dn] = Math.max(byDay[dn] ?? 0, holesOf(r.bet_config));
+          byDay[dn] = Math.max(byDay[dn] ?? 0, holesOf(r.expected_holes));
         }
-        let daysWithoutRound = allDays.filter(d => byDay[d] == null);
-        if (unreliable) {
-          // Unreadable rounds could belong to any day: assume 18 instead of flagging them.
-          for (const d of daysWithoutRound) byDay[d] = 18;
-          daysWithoutRound = [];
-        }
-        return { expectedHoles: 18, expectedHolesByDay: byDay, daysWithoutRound, unreliable };
+        const daysWithoutRound = allDays.filter(d => byDay[d] == null);
+        return { expectedHoles: 18, expectedHolesByDay: byDay, daysWithoutRound, unreliable: false };
       } catch {
         return assumeAll();
       }

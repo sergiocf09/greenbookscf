@@ -13,7 +13,7 @@ import { enUS, es } from 'date-fns/locale';
 import i18n from '@/i18n';
 import {
   ArrowLeft, Trophy, Calendar, Users, Hash, Loader2,
-  Star, CheckCircle, CheckCircle2, Clock, Share2, RefreshCw, Link2, Pencil,
+  Star, CheckCircle, CheckCircle2, Clock, Share2, RefreshCw, Link2, Settings,
 } from 'lucide-react';
 import { LinkRoundToLeagueDialog } from '@/components/leaderboards/LinkRoundToLeagueDialog';
 import { EditLeagueConfigDialog } from '@/components/leaderboards/EditLeagueConfigDialog';
@@ -339,7 +339,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
             aria-label={trs("Editar configuración")}
             title={trs("Editar configuración")}
           >
-            <Pencil className="h-4 w-4" />
+            <Settings className="h-4 w-4" />
           </Button>
         )}
         {event?.status !== 'completed' && (
@@ -363,7 +363,7 @@ export const LeagueLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBack
       </div>
 
       {/* Info chips */}
-      <div className={cn('flex flex-wrap gap-2 border-b border-border shrink-0', inline ? 'pb-2' : 'px-3 py-2')}>
+      <div className={cn('flex flex-wrap items-center justify-center gap-1.5 border-b border-border shrink-0', inline ? 'pb-2' : 'px-3 py-2')}>
         <Badge variant="outline" className="gap-1">
           <Hash className="h-3 w-3" />
           {event?.code}

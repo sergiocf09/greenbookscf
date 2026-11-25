@@ -18,7 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trophy, Plus, Search, ArrowLeft, Loader2, Calendar, Users, Hash, RefreshCw, Pencil } from 'lucide-react';
+import { Trophy, Plus, Search, ArrowLeft, Loader2, Calendar, Users, Hash, RefreshCw, Settings } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import GreenBookLogo from '@/components/GreenBookLogo';
@@ -334,7 +334,7 @@ const Leaderboards = () => {
                             aria-label={trs("Editar configuración")}
                             onClick={(e) => { e.stopPropagation(); setEditTarget(ev); }}
                           >
-                            <Pencil className="h-4 w-4 text-muted-foreground" />
+                            <Settings className="h-4 w-4 text-muted-foreground" />
                           </Button>
                         )}
                         <Trophy className="h-5 w-5 text-amber-500" />

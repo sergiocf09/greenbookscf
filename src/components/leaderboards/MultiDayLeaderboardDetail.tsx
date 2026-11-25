@@ -29,9 +29,14 @@ import type { MultiDayRulesJson } from '@/types/leaderboard';
 import {
   computeAccumulatedStandings,
   resolveLeaderboardStablefordPoints,
-  stablefordPointsForDiff,
   type DayStanding,
 } from '@/lib/leaderboardAggregation';
+import {
+  buildMultiDayStandings,
+  parseLinkedRoundHoles,
+  type LeaderboardLiveScoreRow,
+  type LinkedRoundMeta,
+} from '@/lib/multiDayStandings';
 import { format } from 'date-fns';
 import { enUS, es } from 'date-fns/locale';
 import i18n from '@/i18n';
@@ -116,19 +121,24 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [eventRes, partRes, linkedRes] = await Promise.all([
+      const [eventRes, partRes, liveRes, metaRes] = await Promise.all([
         supabase.from('leaderboard_events').select('*').eq('id', leaderboardId).single(),
         supabase
           .from('leaderboard_participants')
           .select('*')
           .eq('leaderboard_id', leaderboardId)
           .eq('is_active', true),
-        supabase.from('leaderboard_rounds').select('round_id').eq('leaderboard_id', leaderboardId),
+        supabase.rpc('get_leaderboard_live_scores', { p_leaderboard_id: leaderboardId }),
+        supabase.rpc('get_leaderboard_linked_rounds_meta', { p_leaderboard_id: leaderboardId }),
       ]);
       if (eventRes.error) throw eventRes.error;
       if (partRes.error) throw partRes.error;
+      if (liveRes.error) throw liveRes.error;
+      if (metaRes.error) throw metaRes.error;
       setEvent(eventRes.data);
       const mdStbTable = resolveLeaderboardStablefordPoints(eventRes.data?.rules_json);
+      const fetchedRules = (eventRes.data?.rules_json ?? {}) as unknown as MultiDayRulesJson;
+      const daysList = Array.isArray(fetchedRules.days) ? fetchedRules.days : [];
 
       const partData = partRes.data || [];
       const profileIds = partData.filter(p => p.profile_id).map(p => p.profile_id!);
@@ -156,131 +166,21 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
       });
       setParticipants(enriched);
 
-      const roundIds = (linkedRes.data || []).map(l => l.round_id);
-      if (roundIds.length === 0) {
+      const roundMetas: LinkedRoundMeta[] = (metaRes.data || []).map((r) => ({
+        round_id: r.round_id,
+        round_date: r.round_date,
+        course_id: r.course_id,
+        course_name: r.course_name || 'Campo',
+        expected_holes: Number(r.expected_holes) === 9 ? 9 : 18,
+        holes: parseLinkedRoundHoles(r.holes),
+      }));
+      if (roundMetas.length === 0) {
         setStandingsByDay({});
         return;
       }
 
-      const [rpRes, roundsRes] = await Promise.all([
-        supabase
-          .from('round_players')
-          .select('id, profile_id, round_id, handicap_for_round, guest_name')
-          .in('round_id', roundIds),
-        supabase.from('rounds').select('id, course_id, date').in('id', roundIds),
-      ]);
-      const rpData = rpRes.data || [];
-      const roundsData = roundsRes.data || [];
-
-      const roundCourse: Record<string, string> = {};
-      const roundDate: Record<string, string> = {};
-      for (const r of roundsData) {
-        roundCourse[r.id] = r.course_id;
-        roundDate[r.id] = r.date;
-      }
-
-      const courseIds = [...new Set(roundsData.map(r => r.course_id))];
-      const holesMap: Record<string, { hole_number: number; par: number; stroke_index: number }[]> = {};
-      if (courseIds.length > 0) {
-        const { data: holesData } = await supabase
-          .from('course_holes')
-          .select('course_id, hole_number, par, stroke_index')
-          .in('course_id', courseIds);
-        for (const h of (holesData || [])) {
-          if (!holesMap[h.course_id]) holesMap[h.course_id] = [];
-          holesMap[h.course_id].push(h);
-        }
-      }
-
-      const profileToPart = new Map<string, string>();
-      const guestToPart = new Map<string, string>();
-      for (const part of enriched) {
-        if (part.profile_id) profileToPart.set(part.profile_id, part.id);
-        if (part.guest_name) guestToPart.set(part.guest_name, part.id);
-      }
-
-      const rpToPart = new Map<string, string>();
-      const rpToRound = new Map<string, string>();
-      const rpToHcp = new Map<string, number>();
-      const rpIds: string[] = [];
-      for (const rp of rpData) {
-        let pid: string | undefined;
-        if (rp.profile_id && profileToPart.has(rp.profile_id)) pid = profileToPart.get(rp.profile_id);
-        else if (rp.guest_name && guestToPart.has(rp.guest_name)) pid = guestToPart.get(rp.guest_name);
-        if (pid) {
-          rpIds.push(rp.id);
-          rpToPart.set(rp.id, pid);
-          rpToRound.set(rp.id, rp.round_id);
-          const part = enriched.find(p => p.id === pid);
-          rpToHcp.set(rp.id, part?.handicap_for_leaderboard ?? Number(rp.handicap_for_round) ?? 0);
-        }
-      }
-
-      // dayNum -> participantId -> running totals
-      const acc: Record<number, Record<string, DayStanding>> = {};
-      for (const d of rules.days) {
-        acc[d.day_number] = {};
-        for (const part of enriched) {
-          acc[d.day_number][part.id] = {
-            participantId: part.id,
-            profile_id: part.profile_id,
-            grossTotal: 0,
-            netTotal: 0,
-            grossVsPar: 0,
-            netVsPar: 0,
-            stablefordTotal: 0,
-            holesPlayed: 0,
-            position: 0,
-          };
-        }
-      }
-
-      if (rpIds.length > 0) {
-        const { data: holeScores } = await supabase
-          .from('hole_scores')
-          .select('round_player_id, hole_number, strokes, confirmed')
-          .in('round_player_id', rpIds)
-          .eq('confirmed', true);
-
-        const dayByDate: Record<string, number> = {};
-        for (const d of rules.days) dayByDate[d.date] = d.day_number;
-
-        for (const hs of (holeScores || [])) {
-          const partId = rpToPart.get(hs.round_player_id);
-          if (!partId || !hs.strokes) continue;
-          const roundId = rpToRound.get(hs.round_player_id)!;
-          const date = roundDate[roundId];
-          const dayNum = dayByDate[date];
-          if (!dayNum) continue;
-          const courseId = roundCourse[roundId];
-          const courseHoles = holesMap[courseId] || [];
-          const holeInfo = courseHoles.find(h => h.hole_number === hs.hole_number);
-          const par = holeInfo?.par || 4;
-          const handicap = rpToHcp.get(hs.round_player_id) ?? 0;
-          const sortedHoles = [...courseHoles].sort((a, b) => a.stroke_index - b.stroke_index);
-          const idx = sortedHoles.findIndex(h => h.hole_number === hs.hole_number);
-          const fullStrokes = Math.floor(handicap / 18);
-          const remainder = Math.round(handicap) % 18;
-          const strokesReceived = fullStrokes + (idx < remainder ? 1 : 0);
-          const netStrokes = hs.strokes - strokesReceived;
-          const diff = netStrokes - par;
-          const stb = stablefordPointsForDiff(diff, mdStbTable);
-
-          const entry = acc[dayNum][partId];
-          if (!entry) continue;
-          entry.grossTotal += hs.strokes;
-          entry.netTotal += netStrokes;
-          entry.grossVsPar += hs.strokes - par;
-          entry.netVsPar += diff;
-          entry.stablefordTotal += stb;
-          entry.holesPlayed += 1;
-        }
-      }
-
-      const byDay: Record<number, DayStanding[]> = {};
-      for (const dayNum of Object.keys(acc)) {
-        byDay[Number(dayNum)] = Object.values(acc[Number(dayNum)]);
-      }
+      const liveRows = (liveRes.data || []) as LeaderboardLiveScoreRow[];
+      const byDay = buildMultiDayStandings(daysList, enriched, liveRows, roundMetas, mdStbTable);
       setStandingsByDay(byDay);
     } catch (err: any) {
       console.error(err);
@@ -288,7 +188,7 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
     } finally {
       setLoading(false);
     }
-  }, [leaderboardId, rules.days.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [leaderboardId]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
@@ -374,30 +274,21 @@ export const MultiDayLeaderboardDetail: React.FC<Props> = ({ leaderboardId, onBa
   );
 
   const fetchLinkedRounds = useCallback(async () => {
-    const { data: lr } = await supabase
-      .from('leaderboard_rounds')
-      .select('round_id')
-      .eq('leaderboard_id', leaderboardId);
-    const ids = (lr || []).map(r => r.round_id);
-    if (ids.length === 0) { setLinkedRounds([]); return; }
-    const { data: rds } = await supabase
-      .from('rounds')
-      .select('id, date, course_id')
-      .in('id', ids);
-    const courseIds = [...new Set((rds || []).map(r => r.course_id))];
-    let courseMap: Record<string, string> = {};
-    if (courseIds.length > 0) {
-      const { data: cs } = await supabase.from('golf_courses').select('id, name').in('id', courseIds);
-      courseMap = Object.fromEntries(((cs as any[]) || []).map((c: any) => [c.id, c.name]));
+    const { data: metas } = await supabase.rpc('get_leaderboard_linked_rounds_meta', {
+      p_leaderboard_id: leaderboardId,
+    });
+    if (!metas || metas.length === 0) {
+      setLinkedRounds([]);
+      return;
     }
     const dayByDate: Record<string, number> = {};
     for (const d of rules.days) dayByDate[d.date] = d.day_number;
     setLinkedRounds(
-      (rds || []).map(r => ({
-        round_id: r.id,
-        date: r.date,
-        course_name: courseMap[r.course_id] || 'Campo',
-        day_number: dayByDate[r.date] ?? null,
+      metas.map(r => ({
+        round_id: r.round_id,
+        date: r.round_date,
+        course_name: r.course_name || 'Campo',
+        day_number: dayByDate[r.round_date] ?? null,
       })).sort((a, b) => a.date.localeCompare(b.date)),
     );
   }, [leaderboardId, rules.days]);

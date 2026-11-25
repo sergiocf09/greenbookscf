@@ -274,6 +274,13 @@
       "when": 1795563791632,
       "tag": "0038_league_link_candidates_and_min_players_rule",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1795568838071,
+      "tag": "0039_leaderboard_linked_rounds_meta_rpc",
+      "breakpoints": true
     }
   ]
 }

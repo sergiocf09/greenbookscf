@@ -2965,6 +2965,17 @@ export type Database = {
           recorded_at: string
         }[]
       }
+      get_leaderboard_linked_rounds_meta: {
+        Args: { p_leaderboard_id: string }
+        Returns: {
+          course_id: string
+          course_name: string
+          expected_holes: number
+          holes: Json
+          round_date: string
+          round_id: string
+        }[]
+      }
       get_leaderboard_live_scores: {
         Args: { p_leaderboard_id: string }
         Returns: {

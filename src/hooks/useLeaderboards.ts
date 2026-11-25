@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { formatPlayerName } from '@/lib/playerInput';
 import { resolveLeaderboardStablefordPoints, stablefordPointsForDiff } from '@/lib/leaderboardAggregation';
+import { parseLinkedRoundHoles } from '@/lib/multiDayStandings';
 
 export interface LeaderboardEvent {
   id: string;
@@ -271,13 +272,13 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
       }
 
       if (roundIds.length > 0) {
-        // Server-side RPC so every viewer sees all linked rounds' players/scores,
-        // not only those of rounds they participate in (RLS on hole_scores).
-        const [liveRes, roundsRes] = await Promise.all([
-          (supabase.rpc as any)('get_leaderboard_live_scores', { p_leaderboard_id: leaderboardId }),
-          supabase.from('rounds').select('id, course_id').in('id', roundIds),
+        // Server-side RPCs so every tournament viewer sees all linked rounds' scores
+        // and hole metadata, not only rounds they participated in.
+        const [liveRes, metaRes] = await Promise.all([
+          supabase.rpc('get_leaderboard_live_scores', { p_leaderboard_id: leaderboardId }),
+          supabase.rpc('get_leaderboard_linked_rounds_meta', { p_leaderboard_id: leaderboardId }),
         ]);
-        const liveRows: any[] = liveRes.data || [];
+        const liveRows = liveRes.data || [];
         const rpSeen = new Map<string, any>();
         for (const r of liveRows) {
           if (!rpSeen.has(r.round_player_id)) rpSeen.set(r.round_player_id, {
@@ -286,24 +287,9 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
           });
         }
         const rpData = Array.from(rpSeen.values());
-        const roundsData = roundsRes.data;
-        
-        const courseIds = [...new Set((roundsData || []).map(r => r.course_id))];
-        let holesMap: Record<string, { hole_number: number; par: number; stroke_index: number }[]> = {};
-        if (courseIds.length > 0) {
-          const { data: holesData } = await supabase
-            .from('course_holes')
-            .select('course_id, hole_number, par, stroke_index')
-            .in('course_id', courseIds);
-          for (const h of (holesData || [])) {
-            if (!holesMap[h.course_id]) holesMap[h.course_id] = [];
-            holesMap[h.course_id].push(h);
-          }
-        }
-
-        const roundCourseMap: Record<string, string> = {};
-        for (const r of (roundsData || [])) {
-          roundCourseMap[r.id] = r.course_id;
+        const roundHolesMap: Record<string, { hole_number: number; par: number; stroke_index: number }[]> = {};
+        for (const m of (metaRes.data || [])) {
+          roundHolesMap[m.round_id] = parseLinkedRoundHoles(m.holes);
         }
 
         const profileToParticipant = new Map<string, string>();
@@ -346,8 +332,7 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
             if (!entry) continue;
 
             const roundId = rpToRound.get(hs.round_player_id)!;
-            const courseId = roundCourseMap[roundId];
-            const courseHoles = holesMap[courseId] || [];
+            const courseHoles = roundHolesMap[roundId] || [];
             const holeInfo = courseHoles.find(h => h.hole_number === hs.hole_number);
             const par = holeInfo?.par || 4;
 
@@ -356,7 +341,7 @@ export function useLeaderboardDetail(leaderboardId: string | null) {
             const holeStrokeIndex = sortedHoles.findIndex(h => h.hole_number === hs.hole_number);
             const fullStrokes = Math.floor(handicap / 18);
             const remainder = Math.round(handicap) % 18;
-            const strokesReceived = fullStrokes + (holeStrokeIndex < remainder ? 1 : 0);
+            const strokesReceived = fullStrokes + (holeStrokeIndex >= 0 && holeStrokeIndex < remainder ? 1 : 0);
 
             const netStrokes = hs.strokes - strokesReceived;
             const grossVsPar = hs.strokes - par;
